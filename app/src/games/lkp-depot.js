@@ -15,6 +15,7 @@ import { pose } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { CrankWatch } from '../tracking/gestures.js';
 import { P, drawDepot, PACE } from './lkp-art.js';
+import { callout } from './lkp-ui.js';
 
 /* Powering up: everyone rolling their arms this long fills it; it fills
    by itself AUTO seconds in. Then the surge, SURGE seconds. */
@@ -115,10 +116,6 @@ export class Depot {
       c.fillStyle = `rgba(127,243,255,${0.3 * Math.max(0, 1 - this.st)})`; c.fillRect(0, 0, W, H);
       c.restore();
     }
-    c.save();
-    c.font = `700 ${Math.round(H * 0.075)}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.lineWidth = H * 0.012; c.strokeStyle = '#2c2c39'; c.strokeText(this.banner, W / 2, H * 0.22);
-    c.fillStyle = this.state === 'surge' ? '#e18784' : '#a2dfe3'; c.fillText(this.banner, W / 2, H * 0.22);
-    c.restore();
+    callout(c, W, H, this.banner, this.state === 'surge' ? '#e18784' : '#7fb8c9', 1, H * 0.22);
   }
 }

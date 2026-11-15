@@ -20,6 +20,7 @@ import { pose, L, PLAYER_COLORS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { P, RUN } from './lkp-art.js';
 import { glow } from './lkp-world.js';
+import { callout, card, INK } from './lkp-ui.js';
 
 /* Seconds: the count in, how long after it you can still jump for it, how
    long hands have to be up to count, the ride, the landing, and running
@@ -261,8 +262,8 @@ export class Zip {
       if (n >= 1 && n <= COUNT){
         const f = this.left - Math.floor(this.left);
         c.save(); c.translate(W / 2, H * 0.4); c.scale(1 + f * 0.4, 1 + f * 0.4); c.globalAlpha = 0.5 + 0.5 * f;
-        c.font = `700 ${Math.round(H * 0.16)}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-        c.lineWidth = H * 0.02; c.strokeStyle = '#05060f'; c.strokeText(String(n), 0, 0); c.fillStyle = '#ffffff'; c.fillText(String(n), 0, 0);
+        const r = H * 0.085; card(c, -r, -r, r * 2, r * 2, r);
+        c.font = `700 ${Math.round(H * 0.11)}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = INK; c.fillText(String(n), 0, H * 0.004);
         c.restore();
       }
       return;
@@ -315,11 +316,8 @@ export function tick(c, x, y, r, done, fill, col, t){
 }
 
 export function banner(c, W, H, text, col, s = 1, y = H * 0.2){
-  c.save(); c.translate(W / 2, y); c.scale(s, s);
-  c.font = `700 ${Math.round(H * 0.075)}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.lineWidth = H * 0.014; c.strokeStyle = '#05060f'; c.strokeText(text, 0, 0);
-  c.fillStyle = col; c.fillText(text, 0, 0);
-  c.restore();
+  /* (the painted house style: a cream pill - lkp-ui.js) */
+  callout(c, W, H, text, col, s, y);
 }
 
 /* Both hands up over the head. (With the mouse, up near the top.) */

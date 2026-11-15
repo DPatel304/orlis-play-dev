@@ -33,6 +33,7 @@ import { Treasure } from './lkp-treasure.js';
 import { levelUp, goldPick, meleePick, needFor, PICK_TIME } from './lkp-levelup.js';
 import { LEVELS } from './lkp-levels.js';
 import { Captain, Scene, NAMES, drawOpening, drawBossRising, drawEnding } from './lkp-captain.js';
+import { card, word, INK, SOFT_INK } from './lkp-ui.js';
 
 /* The bosses, by the name a level gives (lkp-levels.js). Each is a fight
    with its own step(dt, W, H, jumped), arena(), items(), hud() and
@@ -2039,7 +2040,7 @@ class LastKnownPosition {
     if (rn.huh > 0){
       c.save(); c.globalAlpha = rn.huh; c.font = `800 ${Math.round(h * 0.22)}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'bottom';
       const by = top - H * 0.05 - Math.abs(Math.sin(this.t * 6 + i)) * h * 0.05;
-      c.lineWidth = h * 0.035; c.strokeStyle = '#1a1430'; c.strokeText('???', p.x, by); c.fillStyle = '#ffffff'; c.fillText('???', p.x, by);
+      word(c, '???', p.x, by - h * 0.1, h * 0.22);
       c.restore();
     }
     if (this.seg.kind === 'cross' && i === this.guide) drawCrown(c, p.x, top - H * 0.065, H * 0.022, this.t);
@@ -2083,17 +2084,17 @@ class LastKnownPosition {
       const at = this._xpAt(W, H), x0 = at.x - H * 0.045, x1 = W - H * 0.04, y = at.y, pulse = this.xpPulse;
       const bx = at.x + H * 0.13, bw = x1 - H * 0.025 - bx, bh = H * 0.02;
       c.save();
-      c.fillStyle = 'rgba(5,6,15,.75)'; c.beginPath(); c.roundRect(x0, y - H * 0.04, x1 - x0, H * 0.08, H * 0.04); c.fill();
+      card(c, x0, y - H * 0.04, x1 - x0, H * 0.08, H * 0.04);
       drawCrystal(c, at.x, y, H * 0.022 * (1 + 0.35 * pulse), this.t);
       c.font = `700 ${Math.round(H * 0.038)}px Fredoka, sans-serif`; c.textAlign = 'left'; c.textBaseline = 'middle';
-      c.fillStyle = '#e9e3ff'; c.fillText(`LV ${this.lvl}`, at.x + H * 0.035, y + H * 0.003);
-      c.fillStyle = 'rgba(255,255,255,.12)'; c.beginPath(); c.roundRect(bx, y - bh / 2, bw, bh, bh / 2); c.fill();
-      c.fillStyle = pulse > 0 ? `rgb(${Math.round(127 + 128 * pulse)},${Math.round(243 + 12 * pulse)},255)` : '#7ff3ff';
+      c.fillStyle = INK; c.fillText(`LV ${this.lvl}`, at.x + H * 0.035, y + H * 0.003);
+      c.fillStyle = 'rgba(58,51,96,.12)'; c.beginPath(); c.roundRect(bx, y - bh / 2, bw, bh, bh / 2); c.fill();
+      c.fillStyle = pulse > 0 ? `rgb(${Math.round(127 + 100 * pulse)},${Math.round(184 + 50 * pulse)},${Math.round(201 + 40 * pulse)})` : '#7fb8c9';
       c.beginPath(); c.roundRect(bx, y - bh / 2, Math.max(bh, bw * Math.min(1, this.xp / needFor(this.lvl))), bh, bh / 2); c.fill();
       /* Under it, a star for each level up waiting to be picked - gold for a gold pick. */
       const stars = '\u2605'.repeat(Math.min(5, this.golds));
       c.textAlign = 'right'; c.font = `700 ${Math.round(H * 0.03)}px Fredoka, sans-serif`;
-      if (this.pending > 0){ c.fillStyle = '#e9e3ff'; c.fillText('\u2605'.repeat(Math.min(5, this.pending)), x1 - H * 0.02, y + H * 0.065); }
+      if (this.pending > 0){ c.fillStyle = SOFT_INK; c.fillText('\u2605'.repeat(Math.min(5, this.pending)), x1 - H * 0.02, y + H * 0.065); }
       if (this.golds > 0){ c.fillStyle = '#ffd24a'; c.fillText(stars, x1 - H * 0.02 - (this.pending > 0 ? H * 0.03 * Math.min(5, this.pending) : 0), y + H * 0.065); }
       c.restore();
     }
@@ -2102,7 +2103,7 @@ class LastKnownPosition {
     const plan = this.level.plan.slice(0, this.level.plan.indexOf('end') + 1), n = plan.length - 1, w = H * 0.034;
     for (let k = 0; k < n; k++){
       const px = W / 2 + (k - (n - 1) / 2) * w * 1.6, done = k < this.step_, now = k === this.step_, kind = plan[k];
-      c.fillStyle = done ? '#7ff3ff' : now ? '#fff6e2' : 'rgba(255,255,255,.25)';
+      c.fillStyle = done ? '#7fb8c9' : now ? '#fffaf0' : 'rgba(250,247,238,.55)';
       c.beginPath();
       if (kind === 'corridor') c.roundRect(px - w * 0.6, H * 0.055 - w * 0.2, w * 1.2, w * 0.4, w * 0.2);
       else if (kind === 'boss') c.arc(px, H * 0.055, w * (now ? 0.55 : 0.45), 0, 6.2832);
@@ -2166,9 +2167,7 @@ class LastKnownPosition {
         c.restore();
       } else if (b.kind === 'num'){
         c.save(); c.globalAlpha = 1 - k;
-        c.font = `700 ${Math.round(H * (b.small ? 0.028 : 0.045))}px Fredoka, sans-serif`; c.textAlign = 'center';
-        c.lineWidth = H * 0.008; c.strokeStyle = '#05060f'; c.strokeText(b.text, b.x * W, b.y * H);
-        c.fillStyle = b.col || '#ff6b6b'; c.fillText(b.text, b.x * W, b.y * H);
+        word(c, b.text, b.x * W, b.y * H, H * (b.small ? 0.028 : 0.045), b.col || '#f0a090');
         c.restore();
       }
     }
@@ -2190,20 +2189,20 @@ class LastKnownPosition {
     const o = this.out, lines = this.tallyLines(), x = W * 0.62, w = W * 0.32, lh = H * 0.085, y0 = H * 0.36;
     const up = (k) => clamp((o.t - k * TALLY_STEP) / TALLY_COUNT, 0, 1);
     c.save();
-    c.fillStyle = 'rgba(5,6,15,.72)'; c.beginPath(); c.roundRect(x - w * 0.08, y0 - lh * 0.8, w * 1.16, lh * (lines.length + 2.4), H * 0.03); c.fill();
+    card(c, x - w * 0.08, y0 - lh * 0.8, w * 1.16, lh * (lines.length + 2.4), H * 0.03);
     c.textBaseline = 'middle';
     lines.forEach(([icon, count, worth], k) => {
       if (o.t < k * TALLY_STEP) return;
       const u = up(k), y = y0 + k * lh;
       c.font = `${Math.round(lh * 0.55)}px sans-serif`; c.textAlign = 'left'; c.fillStyle = '#ffffff'; c.fillText(icon, x, y);
       c.font = `700 ${Math.round(lh * 0.48)}px Fredoka, sans-serif`;
-      c.fillStyle = '#cfd6f5'; c.fillText(`\u00D7 ${Math.round(count * u)}`, x + lh * 0.9, y);
-      c.textAlign = 'right'; c.fillStyle = '#ffffff'; c.fillText(String(Math.round(worth * u)), x + w, y);
+      c.fillStyle = SOFT_INK; c.fillText(`\u00D7 ${Math.round(count * u)}`, x + lh * 0.9, y);
+      c.textAlign = 'right'; c.fillStyle = INK; c.fillText(String(Math.round(worth * u)), x + w, y);
     });
     if (o.t >= lines.length * TALLY_STEP){
       const u = up(lines.length), y = y0 + lines.length * lh + lh * 0.3;
-      c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(x, y - lh * 0.55, w, 3);
-      c.font = `700 ${Math.round(lh * 0.7)}px Fredoka, sans-serif`; c.textAlign = 'right'; c.fillStyle = '#ffd24a';
+      c.fillStyle = 'rgba(58,51,96,.2)'; c.fillRect(x, y - lh * 0.55, w, 3);
+      c.font = `700 ${Math.round(lh * 0.7)}px Fredoka, sans-serif`; c.textAlign = 'right'; c.fillStyle = '#b07a2a';
       c.fillText(String(Math.round(o.score * u)), x + w, y + lh * 0.1);
       if (u >= 1 && o.score > o.best){
         c.textAlign = 'left'; c.font = `700 ${Math.round(lh * 0.45)}px Fredoka, sans-serif`;

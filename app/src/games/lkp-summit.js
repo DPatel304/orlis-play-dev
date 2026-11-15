@@ -29,6 +29,7 @@ import { worldOverlook, treeKind } from './lkp-world.js';
 import { shipAt } from './lkp-places.js';
 import { banner, smooth } from './lkp-zip.js';
 import { TITLE } from './lkp-title.js';
+import { plate, SOFT_INK } from './lkp-ui.js';
 
 export const SHIP = 7, CORE = 4, WALK = 9, CLIMB = 16, CREST = 4.5, LOOK = 16, SLIDE = 2.4;
 export const PULL = 0.16, CREEP = 0.025, HELP = 0.35;
@@ -204,8 +205,7 @@ export class Summit {
     /* the climb's words */
     if (this.phase === 'climb' && this.pt < CLIMB - 1){
       banner(c, W, H, 'CLIMB!', '#dec478', 1.15 + 0.04 * Math.sin(t * 8), H * 0.16);
-      c.font = `600 ${H * 0.03}px Fredoka, sans-serif`; c.textAlign = 'center'; c.lineWidth = H * 0.006; c.strokeStyle = 'rgba(20,15,45,.8)';
-      c.strokeText('REACH UP - HAND OVER HAND', W / 2, H * 0.25); c.fillStyle = '#fff'; c.fillText('REACH UP - HAND OVER HAND', W / 2, H * 0.25);
+      plate(c, 'Reach up, hand over hand', W / 2, H * 0.27, H * 0.026, { ink: SOFT_INK });
     }
     /* the title, over the world */
     if (this.phase === 'look'){ const a = Math.min(1, Math.max(0, (this.pt - TITLE_AT) / 2.5)) * Math.min(1, Math.max(0, (TITLE_END - this.pt) / 1.2)); this._title(c, W, H, a); }

@@ -7,6 +7,7 @@
 
    guideMove(game) says which move (or null); drawGuide draws him. */
 import { RUN } from './lkp-art.js';
+import { card, INK } from './lkp-ui.js';
 
 /* Each move, and the word under him. */
 export const MOVES = {
@@ -145,12 +146,12 @@ export function figure(c, x, y, s, move, t){
     return [x + px * s, y + (py - lift) * s];
   };
   const line = (pts) => { c.beginPath(); pts.map(pt).forEach(([a, b], k) => (k ? c.lineTo(a, b) : c.moveTo(a, b))); c.stroke(); };
-  c.strokeStyle = '#ffffff'; c.lineWidth = s * 0.055; c.lineCap = 'round'; c.lineJoin = 'round';
+  c.strokeStyle = INK; c.fillStyle = INK; c.lineWidth = s * 0.055; c.lineCap = 'round'; c.lineJoin = 'round';
   for (const [k, f] of legs) line([hip, k, f]);
   line([hip, neck]);
   for (const [e, h] of arms) line([neck, e, h]);
   /* hands: dots, so a clap reads */
-  c.fillStyle = '#ffffff';
+  c.fillStyle = INK;
   for (const [, h] of arms){ const q = pt(h); c.beginPath(); c.arc(q[0], q[1], s * 0.04, 0, 6.2832); c.fill(); }
   /* the head, clear of the shoulders, on a short neck */
   line([neck, [neck[0], neck[1] - 0.05]]);
@@ -174,11 +175,10 @@ export function drawGuide(c, W, H, g){
   const pw = H * 0.17, ph = H * 0.16, ease = st.a * st.a * (3 - 2 * st.a);
   const x = W - H * 0.04 - pw + (1 - ease) * (pw + H * 0.06), y = H * 0.13;
   c.save(); c.globalAlpha = ease;
-  c.fillStyle = 'rgba(5,6,15,.72)'; c.beginPath(); c.roundRect(x, y, pw, ph, H * 0.025); c.fill();
-  c.strokeStyle = 'rgba(127,243,255,.5)'; c.lineWidth = Math.max(1.5, H * 0.003); c.stroke();
+  card(c, x, y, pw, ph, H * 0.025);
   figure(c, x + pw / 2, y + ph * 0.56, ph * 0.6, st.move, st.t);
   const word = MOVES[st.move];
   c.font = `700 ${Math.round(H * (word.length > 10 ? 0.016 : 0.022))}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillStyle = '#ffd24a'; c.fillText(word, x + pw / 2, y + ph * 0.88);
+  c.fillStyle = '#b07a2a'; c.fillText(word, x + pw / 2, y + ph * 0.88);
   c.restore();
 }

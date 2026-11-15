@@ -16,6 +16,7 @@ import { pose, PLAYER_COLORS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { WaveWatch, handsFrom } from '../tracking/wave.js';
 import { CARDS, MAX_LEVEL, draw, level, take, MELEE } from './lkp-weapons.js';
+import { plate, inkOf } from './lkp-ui.js';
 
 /* The XP from one level to the next: FIRST to level 2, then STEP more
    each level after - often at first, and steadily less often. */
@@ -146,8 +147,7 @@ export class Pick {
     c.fillStyle = 'rgba(5,6,15,.72)'; c.fillRect(0, 0, W, H);
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.font = `700 ${Math.round(H * 0.08)}px Fredoka, sans-serif`;
-    c.lineWidth = H * 0.012; c.strokeStyle = '#05060f'; c.strokeText(this.title, W / 2, H * 0.1);
-    c.fillStyle = '#ffd24a'; c.fillText(this.title, W / 2, H * 0.1);
+    plate(c, this.title, W / 2, H * 0.1, H * 0.06, { ink: inkOf('#ffd24a'), accent: '#ffd24a' });
     if (this.shared){ this._drawShared(c, W, H); c.restore(); return; }
     const rowH = Math.min(H * 0.2, H * 0.78 / Math.max(1, here.length)), cw = rowH * 1.25, gap = cw * 0.25;
     here.forEach((i, r) => {

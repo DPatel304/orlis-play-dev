@@ -21,6 +21,7 @@ import { voice, lineTime } from '../audio/voice.js';
 import { sfx } from '../audio/sound.js';
 import { commanderFace } from './lkp-cast.js';
 import { novaFeed } from './lkp-nova.js';
+import { plate, card, INK, SOFT_INK } from './lkp-ui.js';
 
 export const NOVA = 'Nova';
 /* Each player by their colour, as she'd call them. */
@@ -76,9 +77,7 @@ export class Captain {
     const w = this.line && this.line.words;
     if (w){
       c.save(); c.globalAlpha = this.show;
-      c.font = `700 ${Math.round(H * 0.04)}px Fredoka, sans-serif`; c.textAlign = 'left'; c.textBaseline = 'top';
-      c.lineWidth = H * 0.008; c.strokeStyle = '#05060f'; c.strokeText(w, x, y + s + H * 0.015);
-      c.fillStyle = '#ffffff'; c.fillText(w, x, y + s + H * 0.015);
+      plate(c, w, x, y + s + H * 0.045, H * 0.032, { align: 'left' });
       c.restore();
     }
   }
@@ -144,8 +143,11 @@ export function subtitle(c, W, H, text, a = 1){
    called label - talking or not; static, 0..1, over it. */
 export function radio(c, x, y, w, h, t, talking, staticK = 0, who = 'nova', label = 'ROBOT'){
   c.save();
-  c.fillStyle = '#0b1220'; c.strokeStyle = who === 'robot' ? '#ff3b3b' : 'rgba(255,255,255,.6)'; c.lineWidth = who === 'robot' ? h * 0.03 : Math.max(1.5, h * 0.008);
-  c.beginPath(); c.roundRect(x, y, w, h, h * 0.08); c.fill();
+  /* (the painted house style: the feed in a thick cream frame, like a photo card) */
+  const fr = Math.max(3, h * 0.045);
+  card(c, x - fr, y - fr, w + fr * 2, h + fr * 2, h * 0.1);
+  c.fillStyle = '#0b1220'; c.strokeStyle = who === 'robot' ? '#e0705a' : 'rgba(0,0,0,0)'; c.lineWidth = who === 'robot' ? h * 0.025 : 0;
+  c.beginPath(); c.roundRect(x, y, w, h, h * 0.07); c.fill();
   c.save(); c.clip();
   if (who === 'robot') robotFace(c, x + w / 2, y + h * 0.5, h * 0.42, t, talking);
   /* Nova: her video feed, far off, the signal weak (lkp-nova.js) - or, with
@@ -159,12 +161,12 @@ export function radio(c, x, y, w, h, t, talking, staticK = 0, who = 'nova', labe
     for (let k = 0; k < 80; k++){ c.fillStyle = Math.random() < 0.5 ? '#ffffff' : '#7a8396'; c.fillRect(x + Math.random() * w, y + Math.random() * h, w * 0.06, 2); }
   }
   c.restore();
-  c.stroke();
+  if (who === 'robot') c.stroke();
   /* Her name, small, on the frame. */
   c.font = `700 ${Math.round(h * 0.11)}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillStyle = who === 'robot' ? '#ff3b3b' : '#3fd0ff';
   if (who === 'robot') c.fillText(label, x + w / 2, y + h * 0.92);
-  else { c.textAlign = 'right'; c.fillStyle = '#ffffff'; c.font = `700 ${Math.round(h * 0.075)}px Fredoka, sans-serif`; c.fillText('CMDR ' + NOVA.toUpperCase(), x + w * 0.95, y + h * 0.08); }
+  else plate(c, NOVA.toUpperCase(), x + w * 0.04, y + h, Math.max(8, h * 0.075), { align: 'left', ink: SOFT_INK, weight: 800, accent: '#7fb8c9' });
   c.restore();
 }
 
@@ -270,11 +272,8 @@ export class Scene {
     if (!this.line) return;
     if (this.title){
       c.save(); c.globalAlpha = Math.min(1, this.t * 1.5); c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.lineWidth = H * 0.012; c.strokeStyle = '#05060f';
-      c.font = `700 ${Math.round(H * 0.09)}px Fredoka, sans-serif`;
-      c.strokeText(this.title[0].toUpperCase(), W / 2, H * 0.13); c.fillStyle = '#ffffff'; c.fillText(this.title[0].toUpperCase(), W / 2, H * 0.13);
-      c.font = `700 ${Math.round(H * 0.045)}px Fredoka, sans-serif`;
-      c.strokeText(this.title[1].toUpperCase(), W / 2, H * 0.23); c.fillStyle = '#ffd24a'; c.fillText(this.title[1].toUpperCase(), W / 2, H * 0.23);
+      plate(c, this.title[0], W / 2, H * 0.13, H * 0.07);
+      plate(c, this.title[1], W / 2, H * 0.24, H * 0.035, { ink: SOFT_INK });
       c.restore();
     }
     /* Big on the left - or, where a scene says (corner: 'top-left'), up in
@@ -285,10 +284,7 @@ export class Scene {
     radio(c, x, y, s, s, this.t, this.talking, Math.max(0, 1 - this.t * 3), who, this.label);
     if (this.line.words){
       c.save();
-      c.font = `700 ${Math.round(H * 0.075)}px Fredoka, sans-serif`; c.textAlign = 'left'; c.textBaseline = 'middle';
-      const wx = x + s + H * 0.05;
-      c.lineWidth = H * 0.012; c.strokeStyle = '#05060f'; c.strokeText(this.line.words, wx, y + s * 0.5);
-      c.fillStyle = who === 'robot' ? '#ff5b5b' : '#ffffff'; c.fillText(this.line.words, wx, y + s * 0.5);
+      plate(c, this.line.words, x + s + H * 0.04, y + s * 0.5, H * 0.055, { align: 'left', ink: who === 'robot' ? '#a8433a' : INK, accent: who === 'robot' ? '#e0705a' : null });
       c.restore();
     }
     /* Wave to skip: a hand, with how much of a wave it's had. */

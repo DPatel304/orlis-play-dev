@@ -30,6 +30,7 @@ import { RUN, P, drawCorridor, drawSweep, drawScout } from './lkp-art.js';
 import { sfx } from '../audio/sound.js';
 import { Fight, FRONT, FIGHT_MAX } from './lkp-combat.js';
 import { healthBar, stripe } from './lkp-boss.js';
+import { callout } from './lkp-ui.js';
 
 /* For a crew of four (fewer, less: as a fight's robots). */
 export const SCOUT_HP = 3500;
@@ -200,9 +201,7 @@ export class Scout {
     healthBar(c, W, H, this.body.hp / this.body.max, this.phase >= 2, PHASES);
     if (this.staggered > 0){
       c.save();
-      c.font = `700 ${Math.round(H * 0.08)}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.lineWidth = H * 0.012; c.strokeStyle = '#05060f'; c.strokeText('BURN IT!', W / 2, H * 0.24);
-      c.fillStyle = `hsl(${30 + 20 * Math.sin(this.t * 12)},100%,60%)`; c.fillText('BURN IT!', W / 2, H * 0.24);
+      callout(c, W, H, 'BURN IT!', '#e0884a', 1 + 0.05 * Math.sin(this.t * 12), H * 0.24);
       c.restore();
     }
   }

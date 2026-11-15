@@ -18,6 +18,7 @@ import { worldVault, stretchArm, worldPool } from './lkp-places.js';
 import { worldCrew } from './lkp-cast.js';
 import { head } from '../ui/avatar-art.js';
 import { crew } from '../ui/crew.js';
+import { callout } from './lkp-ui.js';
 
 export const TREASURE_TIME = 20;
 /* Empty at first, this long; then crystals coming down, RAIN a second
@@ -163,10 +164,8 @@ export class Treasure {
     if (this.pool > 0 || (this.wet > 0 && !this.done)){
       const k = Math.max(0, this.pool) / POOL, w = W * 0.4;
       c.save(); c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.font = `700 ${Math.round(H * 0.08)}px Fredoka, sans-serif`;
-      c.lineWidth = H * 0.012; c.strokeStyle = '#05060f'; c.strokeText('HUG TO HEAL!', W / 2, H * 0.22);
-      c.fillStyle = '#7dd3fc'; c.fillText('HUG TO HEAL!', W / 2, H * 0.22);
-      c.fillStyle = 'rgba(5,6,15,.75)'; c.fillRect(W / 2 - w / 2, H * 0.145, w, H * 0.018);
+      callout(c, W, H, 'HUG TO HEAL!', '#7fb8c9', 1, H * 0.22);
+      c.fillStyle = 'rgba(250,247,238,.85)'; c.fillRect(W / 2 - w / 2, H * 0.145, w, H * 0.018);
       c.fillStyle = '#38bdf8'; c.fillRect(W / 2 - w / 2, H * 0.145, w * k, H * 0.018);
       c.restore();
       return;

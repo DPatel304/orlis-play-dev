@@ -18,6 +18,7 @@
    L is the level's world palette. */
 import { P } from './lkp-art.js';
 import { glow, mix, rgba } from './lkp-world.js';
+import { word } from './lkp-ui.js';
 
 const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 const circ = (c, x, y, r) => { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, 6.2832); c.fill(); };
@@ -323,9 +324,7 @@ export function healRipple(c, x, y, size, age, col = '#b9e7e9'){
   c.beginPath(); c.ellipse(x, y, size * (0.3 + age), size * (0.08 + age * 0.25), 0, 0, 6.2832); c.stroke(); c.restore();
 }
 export function healNumber(c, x, y, size, age, text){
-  c.save(); c.globalAlpha = Math.max(0, 1 - age); c.font = `700 ${Math.round(size)}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.lineWidth = size * 0.18; c.strokeStyle = '#273d40'; c.strokeText(text, x, y - age * size * 2); c.fillStyle = '#a1e6b8'; c.fillText(text, x, y - age * size * 2);
-  c.restore();
+  c.save(); c.globalAlpha = Math.max(0, 1 - age); word(c, text, x, y - age * size * 2, size, '#c4ecc4'); c.restore();
 }
 
 /* The ground you wake up looking at, round lane, rel: pebbles, moss and
