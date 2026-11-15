@@ -173,7 +173,7 @@ function claude(files, prompt){
   const t1 = await tryIt(bro, 'Firefly Jar', 14);
   check(t1 && t1.sandboxed && !t1.failed, 'Try it works with no server: ' + JSON.stringify(t1));
   let said = await sendIt(bro, 'Firefly Jar');
-  check(/send by itself when this PC is on the home Wi-Fi/.test(said), 'Check and send: "' + said + '"');
+  check(/send by itself as soon as this PC can reach the Orlis server/.test(said), 'Check and send: "' + said + '"');
   check(JSON.stringify(await outboxOf(bro)) === JSON.stringify([['Firefly Jar', '0.1', '']]), 'it waits on his PC: ' + JSON.stringify(await outboxOf(bro)));
   await tab(bro, 'Create'); await shot(bro, '05-waiting');
 

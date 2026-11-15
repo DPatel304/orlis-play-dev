@@ -22,7 +22,7 @@
 
    A device stays signed in until someone signs out on it, so a family can
    play at home with no server in reach. */
-import { Fail, isLocal } from './http.js';
+import { Fail, isLocal, isTailscale } from './http.js';
 import { now } from './db.js';
 import { history } from './history.js';
 import { look } from './looks.js';
@@ -42,7 +42,11 @@ const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 export function api(db, info, extra = () => [], manageKey = null){
   const q = (sql) => db.prepare(sql);
   const tries = new Map();
-  const EVERYONE_CREATES = info.everyoneCreates !== false;      /* email -> { n, until } */
+  const EVERYONE_CREATES = info.everyoneCreates !== false;
+  /* Over Tailscale, no invite is needed: being shared this laptop is the invite. */
+  const AWAY_JOINS = info.tailscaleJoin !== false;
+  /* (tailscaleJoin: false to need invites from everyone; a function, in the tests, says who's "away") */
+  const joinsFree = (ip) => typeof info.tailscaleJoin === 'function' ? info.tailscaleJoin(ip) : AWAY_JOINS && isTailscale(ip);      /* email -> { n, until } */
 
   /* ---------- who's asking ---------- */
   function who(headers){
@@ -119,17 +123,18 @@ export function api(db, info, extra = () => [], manageKey = null){
   return [
     ...extra(who, owner),
     /* The app's "is this an Orlis server, and does it need setting up?" */
-    ['GET', '/api/hello', () => ({ app: 'orlis', id: info.id, name: info.name, version: info.version, setup: accounts() === 0 })],
+    ['GET', '/api/hello', ({ ip }) => ({ app: 'orlis', id: info.id, name: info.name, version: info.version, setup: accounts() === 0, invite: !joinsFree(ip) })],
 
     /* Joining: a grown-up's email and password, an invite (unless this is
        the first account), their own profile's name, and a yes to "I'm a
        parent or guardian, 18 or over". */
-    ['POST', '/api/signup', ({ body }) => {
+    ['POST', '/api/signup', ({ body, ip }) => {
       if (body.adult !== true) throw new Fail(400, 'adult', 'Accounts are for parents and guardians, 18 or over. Kids get profiles on a grown-up\'s account.');
       const e = email(body.email), p = password(body.password), n = name(body.name);
       const first = accounts() === 0;
       let invite = null;
-      if (!first){
+      const free = !first && joinsFree(ip) && !text(body.invite);
+      if (!first && !free){
         invite = q('SELECT * FROM invites WHERE code = ? AND used_by IS NULL').get(tidyInvite(body.invite));
         if (!invite) throw new Fail(400, 'bad_invite', 'That invite code isn\'t right, or it\'s been used. Ask for a new one.');
       }
@@ -143,10 +148,11 @@ export function api(db, info, extra = () => [], manageKey = null){
           home = newId();
           q('INSERT INTO households (id, name, created_at) VALUES (?, ?, ?)').run(home, familyName(body.family, `${n}'s family`), t);
         }
-        q('INSERT INTO accounts (id, email, password_hash, role, created_at, household_id) VALUES (?, ?, ?, ?, ?, ?)').run(id, e, hashPassword(p), first ? 'owner' : EVERYONE_CREATES ? 'creator' : invite.role, t, home);
+        q('INSERT INTO accounts (id, email, password_hash, role, created_at, household_id) VALUES (?, ?, ?, ?, ?, ?)').run(id, e, hashPassword(p), first ? 'owner' : EVERYONE_CREATES || free ? 'creator' : invite.role, t, home);
         q('INSERT INTO profiles (id, account_id, name, avatar, created_at) VALUES (?, ?, ?, ?, ?)').run(newId(), id, n, avatar(body.avatar), t);
         if (invite) q('UPDATE invites SET used_by = ?, used_at = ? WHERE code = ?').run(id, t, invite.code);
         db.exec('COMMIT');
+        if (free) history(db).add({ id, email: e }, 'joined', { note: e });
       } catch (err){ db.exec('ROLLBACK'); throw err; }
       return [201, signIn(id, body.device)];
     }],

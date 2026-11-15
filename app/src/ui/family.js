@@ -71,7 +71,7 @@ export function familyPage({ nav = {}, onWho, onRecalibrate }){
     let mine, invites;
     try { [mine, invites] = await Promise.all([account.call('GET', '/api/household'), account.call('GET', '/api/invites')]); }
     catch (e){
-      body.appendChild(h('p', 'fmsg', esc(e.status === 0 ? 'Can’t reach your Orlis server right now. Is it running, and is this PC on the home Wi-Fi?'
+      body.appendChild(h('p', 'fmsg', esc(e.status === 0 ? 'Can’t reach your Orlis server right now. Is it running, and is this PC on its Wi-Fi (or on Tailscale)?'
         : e.status === 404 ? 'Your Orlis server needs updating for this page - it updates itself shortly.' : e.message)));
       return;
     }

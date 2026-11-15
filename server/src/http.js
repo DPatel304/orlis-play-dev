@@ -16,6 +16,16 @@ export class Page {
 }
 /* Is this request from this very machine? */
 export const isLocal = (ip) => ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+/* Whether someone's coming in over Tailscale: its addresses are 100.64.0.0/10
+   (IPv4) and fd7a:115c:a1e0::/48 (IPv6). Only people the owner has shared
+   this laptop with in Tailscale (or their own devices) can come from there. */
+export function isTailscale(ip){
+  if (typeof ip !== 'string') return false;
+  const v4 = ip.replace(/^::ffff:/i, '');
+  const m = /^(\d+)\.(\d+)\.\d+\.\d+$/.exec(v4);
+  if (m) return +m[1] === 100 && +m[2] >= 64 && +m[2] <= 127;
+  return /^fd7a:115c:a1e0:/i.test(ip);
+}
 
 /* A reply that's a file rather than JSON. */
 export class Raw {

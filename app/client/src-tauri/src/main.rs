@@ -251,9 +251,60 @@ async fn install_update(app: AppHandle, pending: tauri::State<'_, Pending>) -> R
 /// home Wi-Fi (server/src/discovery.js).
 const DISCOVERY_PORT: u16 = 47870;
 
-/// Orlis servers on this Wi-Fi: call out "orlis?" to the whole network (and
-/// to this PC itself, in case the server is running right here), and collect
-/// the answers for a moment. A broadcast never leaves the home network.
+/// The machines Tailscale says this PC can reach (its own and any shared with
+/// it): their Tailscale addresses, from `tailscale status --json`. None if
+/// Tailscale isn't installed or isn't running - that's fine, the Wi-Fi's
+/// still looked on. Only IPv4 (what the server's discovery listens on).
+fn tailscale_peers() -> Vec<std::net::Ipv4Addr> {
+    let mut tried: Vec<std::path::PathBuf> = vec!["tailscale".into()];
+    if cfg!(windows) {
+        for var in ["ProgramFiles", "ProgramW6432"] {
+            if let Ok(dir) = std::env::var(var) {
+                tried.push(std::path::Path::new(&dir).join("Tailscale").join("tailscale.exe"));
+            }
+        }
+    }
+    for exe in tried {
+        let mut cmd = std::process::Command::new(&exe);
+        cmd.args(["status", "--json"]);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            const NO_WINDOW: u32 = 0x0800_0000;
+            cmd.creation_flags(NO_WINDOW);
+        }
+        let Ok(out) = cmd.output() else { continue };
+        if !out.status.success() {
+            continue;
+        }
+        return peers_from_status(&out.stdout);
+    }
+    Vec::new()
+}
+
+/// From Tailscale's status, as JSON: each peer's IPv4 address (online ones
+/// first), at most 64.
+fn peers_from_status(json: &[u8]) -> Vec<std::net::Ipv4Addr> {
+    let Ok(v) = serde_json::from_slice::<serde_json::Value>(json) else { return Vec::new() };
+    let Some(peers) = v.get("Peer").and_then(|p| p.as_object()) else { return Vec::new() };
+    let mut on = Vec::new();
+    let mut off = Vec::new();
+    for peer in peers.values() {
+        let ip = peer.get("TailscaleIPs").and_then(|a| a.as_array())
+            .and_then(|a| a.iter().filter_map(|x| x.as_str()).find_map(|x| x.parse::<std::net::Ipv4Addr>().ok()));
+        let Some(ip) = ip else { continue };
+        if peer.get("Online").and_then(|o| o.as_bool()).unwrap_or(true) { on.push(ip) } else { off.push(ip) }
+    }
+    on.extend(off);
+    on.truncate(64);
+    on
+}
+
+/// Orlis servers this PC can reach: call out "orlis?" to the whole Wi-Fi
+/// (and to this PC itself, in case the server is running right here), and
+/// to each machine shared with it over Tailscale - for someone who lives
+/// elsewhere - and collect the answers for a moment. A broadcast never
+/// leaves the home network; Tailscale reaches only what's been shared.
 #[tauri::command]
 async fn find_servers() -> Vec<serde_json::Value> {
     tauri::async_runtime::spawn_blocking(|| {
@@ -263,17 +314,21 @@ async fn find_servers() -> Vec<serde_json::Value> {
         let Ok(sock) = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)) else { return found };
         let _ = sock.set_broadcast(true);
         let _ = sock.set_read_timeout(Some(Duration::from_millis(150)));
-        let targets = [
+        let mut targets = vec![
             SocketAddrV4::new(Ipv4Addr::BROADCAST, DISCOVERY_PORT),
             SocketAddrV4::new(Ipv4Addr::LOCALHOST, DISCOVERY_PORT),
         ];
+        let away = tailscale_peers();
+        for ip in &away {
+            targets.push(SocketAddrV4::new(*ip, DISCOVERY_PORT));
+        }
         let started = Instant::now();
         let mut sent = 0;
         let mut buf = [0u8; 2048];
         while started.elapsed() < Duration::from_millis(1500) {
             // (called out three times, in case one goes astray)
             if sent < 3 && started.elapsed() >= Duration::from_millis(400 * sent) {
-                for t in targets {
+                for t in &targets {
                     let _ = sock.send_to(b"orlis?", t);
                 }
                 sent += 1;
@@ -291,7 +346,9 @@ async fn find_servers() -> Vec<serde_json::Value> {
             if found.iter().any(|f| f["name"] == name.as_str()) {
                 continue;
             }
-            found.push(serde_json::json!({ "url": url, "name": name }));
+            // (over Tailscale: said so, and its address never changes)
+            let via = match from.ip() { std::net::IpAddr::V4(a) if away.contains(&a) => "tailscale", _ => "wifi" };
+            found.push(serde_json::json!({ "url": url, "name": name, "via": via }));
         }
         found
     })
@@ -405,3 +462,18 @@ fn allow_camera(window: &tauri::WebviewWindow) {
 
 #[cfg(not(windows))]
 fn allow_camera(_: &tauri::WebviewWindow) {}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn tailscale_status_gives_the_peers_addresses_online_first() {
+        let status = br#"{"Self":{"TailscaleIPs":["100.64.0.9"]},"Peer":{
+            "a":{"TailscaleIPs":["100.101.0.2","fd7a:115c:a1e0::2"],"Online":false},
+            "b":{"TailscaleIPs":["fd7a:115c:a1e0::3","100.101.0.3"],"Online":true},
+            "c":{"TailscaleIPs":["fd7a:115c:a1e0::4"],"Online":true}}}"#;
+        let got = super::peers_from_status(status);
+        assert_eq!(got, vec!["100.101.0.3".parse::<std::net::Ipv4Addr>().unwrap(), "100.101.0.2".parse().unwrap()]);
+        assert!(super::peers_from_status(b"not json").is_empty());
+        assert!(super::peers_from_status(b"{}").is_empty());
+    }
+}

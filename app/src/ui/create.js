@@ -285,7 +285,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   async function send(){
     const r = await outbox.sync();
     if (r.sent) { said = `Sent ${r.sent === 1 ? 'it' : r.sent + ' games'} for the owner’s OK.`; sfx.gold?.(); }
-    else if (!r.reached) said = (said ? said + ' ' : '') + 'It’ll send by itself when this PC is on the home Wi-Fi with the Orlis server.';
+    else if (!r.reached) said = (said ? said + ' ' : '') + 'It’ll send by itself as soon as this PC can reach the Orlis server - on its Wi-Fi, or over Tailscale.';
     draw();
   }
 
@@ -327,7 +327,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     }
 
     if (waiting.length){
-      const sec = row('Waiting to send', 'Sends when this PC is on the home Wi-Fi with the Orlis server');
+      const sec = row('Waiting to send', 'Sends as soon as this PC can reach the Orlis server (its Wi-Fi, or Tailscale)');
       const list = h('div', 'clist');
       for (const x of waiting){
         const r = h('div', 'citem');

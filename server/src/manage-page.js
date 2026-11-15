@@ -24,7 +24,7 @@ nav{ display:flex; gap:4px; margin-left:auto; padding:4px; border-radius:999px; 
 nav button{ border:0; background:transparent; font:inherit; font-weight:600; color:#3b3e4d; padding:8px 18px; border-radius:999px; cursor:pointer; }
 nav button.on{ background:var(--ink); color:#fff; }
 main{ max-width:880px; margin:8px auto 60px; padding:0 24px; }
-.card{ background:var(--card); border-radius:18px; padding:22px 24px; box-shadow:0 6px 22px rgba(20,24,50,.07); margin-bottom:18px; }
+.steps{margin:6px 0 10px 20px;line-height:1.55}.steps li{margin:4px 0}.card{ background:var(--card); border-radius:18px; padding:22px 24px; box-shadow:0 6px 22px rgba(20,24,50,.07); margin-bottom:18px; }
 .card h2{ margin:0 0 6px; font-size:19px; }
 .row{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-top:1px solid var(--line); }
 .row:first-of-type{ border-top:0; }
@@ -121,6 +121,18 @@ var TRY = ${TRY_SECS};
         row(c, 'Last backup<small>' + (s.backups[0] ? esc(when(s.backups[0].at)) : 'None yet - one is made each day') + '</small>');
         if (s.addresses && s.addresses.length) row(c, 'Its address on the home Wi-Fi<small>' + esc(s.addresses.join('  or  ')) + ' - Orlis Play finds it by itself; this is in case it ever asks</small>');
         if (s.restoring) note(c, 'A restore is waiting: it happens as the server next starts.', 'warn');
+        /* people who live elsewhere: Tailscale */
+        var t = card('Family who live elsewhere');
+        if (s.tailscale){
+          row(t, '<span class="ok">Tailscale is on</span><small>This laptop\u2019s Tailscale address: http://' + esc(s.tailscale) + ':47871</small>');
+          note(t, 'To let someone make and send games from their own home:');
+          var ol = h('<ol class="steps"><li>In Tailscale on this laptop, <b>share this laptop</b> with them (right-click Tailscale by the clock > Admin console > Machines > this laptop > Share). They get an email.</li><li>They install Tailscale, sign in, and accept your share.</li><li>They install Orlis Play. It finds this server by itself, and they make an account - <b>no invite code needed</b>. They\u2019re a creator straight away.</li></ol>');
+          t.appendChild(ol);
+          if (!s.awayJoins) note(t, 'Joining over Tailscale needs an invite code on this server.', 'warn');
+        } else {
+          row(t, '<span>Tailscale isn\u2019t on</span><small>To let family make and send games from their own homes, install Tailscale on this laptop (tailscale.com/download) and sign in - then this shows the next steps.</small>');
+        }
+        note(t, 'This laptop needs to be on for their games to send; until then they wait on their PC and go in by themselves later.');
       });
     },
     families: function(){
@@ -155,7 +167,7 @@ var TRY = ${TRY_SECS};
       return call('GET', '/api/history').then(function(r){
         var c = card('What happened to the family\\u2019s games');
         if (!r.history.length) note(c, 'Nothing yet. Every game sent, played, approved, declined or taken out is kept here, and every grown-up made a creator or not.');
-        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator' };
+        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)' };
         r.history.forEach(function(x){
           row(c, '<span class="tag ' + (x.what === 'approved' ? 'ok' : x.what === 'declined' || x.what === 'removed' ? 'declined' : '') + '">' + esc(SAY[x.what] || x.what) + '</span> ' +
             (x.name ? '<b>' + esc(x.name) + '</b>' + (x.version ? ' <span class="tag">version ' + esc(x.version) + '</span>' : '') : '') +

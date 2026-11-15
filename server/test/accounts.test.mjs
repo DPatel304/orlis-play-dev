@@ -29,7 +29,7 @@ test('a new server asks to be set up; the first account is the owner and needs n
     const hi = await call('GET', '/api/hello');
     assert.match(hi.id, /^[0-9a-f]{18}$/, 'the server\'s own id, for finding it again');
     delete hi.id;
-    assert.deepEqual(hi, { status: 200, app: 'orlis', name: 'Test Orlis', version: '0.1.0', setup: true });
+    assert.deepEqual(hi, { status: 200, app: 'orlis', name: 'Test Orlis', version: '0.1.0', setup: true, invite: true });
     const me = await call('POST', '/api/signup', grownUp('Parent@Example.com'));
     assert.equal(me.status, 201);
     assert.equal(me.account.role, 'owner');
@@ -279,5 +279,33 @@ test("a profile's avatar: its look saved, checked, and sent with the profiles", 
     const app = await import('../../app/src/ui/avatar-art.js');
     const { PARTS } = await import('../src/looks.js');
     assert.deepEqual(app.PARTS, PARTS);
+  } finally { await s.close(); }
+});
+
+test('Tailscale addresses are told apart from everything else', async () => {
+  const { isTailscale } = await import('../src/http.js');
+  for (const ip of ['100.64.0.1', '100.101.102.103', '100.127.255.254', '::ffff:100.88.1.2', 'fd7a:115c:a1e0::1234']) assert.equal(isTailscale(ip), true, ip);
+  for (const ip of ['100.63.0.1', '100.128.0.1', '192.168.1.20', '10.0.0.5', '127.0.0.1', '::1', 'fd00::1', undefined]) assert.equal(isTailscale(ip), false, String(ip));
+});
+
+test('over Tailscale, joining needs no invite: they become a creator, in a family of their own, and it\'s in the history', async () => {
+  let away = false;
+  const { s, call } = await fresh({ tailscaleJoin: () => away });
+  try {
+    const owner = await call('POST', '/api/signup', grownUp('owner@example.com'));
+    /* on the Wi-Fi: still an invite */
+    assert.equal((await call('GET', '/api/hello')).invite, true);
+    assert.equal((await call('POST', '/api/signup', grownUp('wifi@example.com'))).error, 'bad_invite');
+    /* from away, over Tailscale */
+    away = true;
+    assert.equal((await call('GET', '/api/hello')).invite, false, 'the app is told no code is needed');
+    const bro = await call('POST', '/api/signup', grownUp('bro@example.com', { family: 'The Brothers' }));
+    assert.equal(bro.status, 201);
+    assert.equal(bro.account.role, 'creator');
+    assert.notEqual(bro.household.id, owner.household.id);
+    away = false;
+    const { history } = await import('../src/history.js');
+    const joined = history(s.db).list().find(e => e.what === 'joined');
+    assert.equal(joined && joined.who, 'bro@example.com');
   } finally { await s.close(); }
 });

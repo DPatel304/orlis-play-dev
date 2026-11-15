@@ -7,7 +7,7 @@ import { managePage } from './manage-page.js';
 import { history } from './history.js';
 import { hostname, networkInterfaces } from 'node:os';
 import { openDb } from './db.js';
-import { makeServer, activity, Fail, Page, isLocal } from './http.js';
+import { makeServer, activity, Fail, Page, isLocal, isTailscale } from './http.js';
 import { backups } from './backup.js';
 import { submissions } from './submissions.js';
 import { api } from './api.js';
@@ -20,7 +20,10 @@ import { store } from './store.js';
 export const VERSION = typeof __ORLIS_SERVER_VERSION__ === 'string' ? __ORLIS_SERVER_VERSION__ : '0.1.0';
 export const PORT = 47871;
 /* this laptop's addresses on the home network, for the app to be pointed at */
-const lan = (port) => Object.values(networkInterfaces()).flat().filter(n => n && n.family === 'IPv4' && !n.internal).map(n => `http://${n.address}:${port}`);
+const ipv4 = () => Object.values(networkInterfaces()).flat().filter(n => n && n.family === 'IPv4' && !n.internal).map(n => n.address);
+const lan = (port) => ipv4().filter(a => !isTailscale(a)).map(a => `http://${a}:${port}`);
+/* This laptop's Tailscale address, if Tailscale's on (for people who live elsewhere) */
+const tailscaleAt = () => ipv4().find(isTailscale) || null;
 
 /* How often it looks to see whether a daily backup is due, and how long
    nobody must have used it first. */
@@ -29,7 +32,7 @@ const BACKUP_LOOK = 60 * 60 * 1000, QUIET = 2 * 60 * 1000;
 /* restart(): how to start this server again (to finish a restore) - given
    when something's there to do it. status.update: what the updater last
    found, for the owner's page. */
-export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true } = {}){
+export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true } = {}){
   mkdirSync(dataDir, { recursive: true });
   const safe = backups(dataDir, { version: VERSION });
   /* a restore the owner asked for, done before anything is opened */
@@ -44,7 +47,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
      the Wi-Fi when its address changes (a router gives the laptop a new one) */
   const idFile = join(dataDir, 'server.id');
   if (!existsSync(idFile)) writeFileSync(idFile, randomBytes(9).toString('hex'));
-  const info = { id: readFileSync(idFile, 'utf8').trim(), name: name || `${hostname()}'s Orlis`, version: VERSION, everyoneCreates };
+  const info = { id: readFileSync(idFile, 'utf8').trim(), name: name || `${hostname()}'s Orlis`, version: VERSION, everyoneCreates, tailscaleJoin };
   const shop = store(dataDir, starters);
   const log = history(db);
   const sent = submissions(db, dataDir, shop, log);
@@ -61,7 +64,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
     /* the owner's page in the app: this server, its backups */
     ['GET', '/api/server', ({ headers, ip }) => {
       owner(headers, ip);
-      return { name: info.name, version: VERSION, addresses: lan(at), update: status.update, backups: safe.list(), restoring: safe.pending(), restored: restored ? restored.id : null, canRestart: !!restart };
+      return { name: info.name, version: VERSION, addresses: lan(at), tailscale: tailscaleAt(), awayJoins: info.tailscaleJoin !== false, update: status.update, backups: safe.list(), restoring: safe.pending(), restored: restored ? restored.id : null, canRestart: !!restart };
     }],
     ['POST', '/api/backups', ({ headers, ip }) => { owner(headers, ip); return [201, safe.make('manual', db)]; }],
     ['POST', '/api/backups/:id/restore', ({ headers, params, ip }) => {

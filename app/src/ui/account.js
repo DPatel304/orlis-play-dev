@@ -100,7 +100,7 @@ export async function call(url, method, path, body, token){
       body: body ? JSON.stringify(body) : undefined
     });
   } catch (e){
-    const err = new Error('Couldn\'t reach the Orlis server. Is it running, and is this PC on the home Wi-Fi?');
+    const err = new Error('Couldn\'t reach the Orlis server. Is it running, and is this PC on its Wi-Fi (or on Tailscale)?');
     err.status = 0; throw err;
   }
   let data = {};
@@ -169,13 +169,13 @@ export function welcome(done, { auto = true } = {}){
 
   /* 1: find the server */
   async function find(){
-    show(h('h2', '', 'Finding your Orlis server…'), h('p', 'lede', 'Looking on this Wi-Fi.'));
+    show(h('h2', '', 'Finding your Orlis server…'), h('p', 'lede', 'Looking on this Wi-Fi, and over Tailscale.'));
     const saved = account.state && account.state.server;
     let found = [];
-    if (saved){ try { const r = await hello(saved.url); found = [{ url: saved.url, id: r.id, name: r.name, setup: r.setup }]; } catch {} }
+    if (saved){ try { const r = await hello(saved.url); found = [{ url: saved.url, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false }]; } catch {} }
     if (!found.length){
       const list = await findServers();
-      for (const sv of list){ try { const r = await hello(sv.url); found.push({ url: sv.url, id: r.id, name: r.name, setup: r.setup }); } catch {} }
+      for (const sv of list){ try { const r = await hello(sv.url); found.push({ url: sv.url, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false }); } catch {} }
     }
     if (found.length === 1) return connect(found[0]);
     if (found.length > 1) return choose(found);
@@ -189,10 +189,10 @@ export function welcome(done, { auto = true } = {}){
       let u = url.trim(); if (!/^https?:\/\//.test(u)) u = 'http://' + u;
       if (!/:\d+$/.test(u.replace(/\/$/, ''))) u = u.replace(/\/$/, '') + ':47871';
       const r = await hello(u);
-      connect({ url: u, id: r.id, name: r.name, setup: r.setup });
+      connect({ url: u, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false });
     });
     show(h('h2', '', 'Couldn\'t find an Orlis server'),
-      h('p', 'lede', 'Make sure Orlis Server is running on the laptop, and that this PC is on the same home Wi-Fi.'),
+      h('p', 'lede', 'Make sure Orlis Server is running on the laptop, and that this PC is on the same home Wi-Fi - or, from somewhere else, that Tailscale is on and signed in.'),
       onPick(button('Try again', 'wide'), () => { sfx.select(); find(); }), addr, msg);
   }
 
@@ -223,12 +223,15 @@ export function welcome(done, { auto = true } = {}){
         ['password', 'Password', 'password', 'current-password']
       ], 'Sign in', async (v) => finish(await call(sv.url, 'POST', '/api/signin', { ...v, device: device() }))),
       msg,
-      onPick(button('New here? Join with an invite', 'link'), () => { sfx.select(); join(sv); }));
+      /* (over Tailscale, no invite is needed - being shared the laptop is the invite) */
+      onPick(button(sv.invite === false ? 'New here? Make an account' : 'New here? Join with an invite', sv.invite === false ? 'wide' : 'link'), () => { sfx.select(); join(sv); }));
   }
   function join(sv){
-    show(h('h2', '', 'Join with an invite'), h('p', 'lede', 'Ask the owner for an invite code.'),
+    const free = sv.invite === false;
+    show(h('h2', '', free ? 'Make an account' : 'Join with an invite'),
+      h('p', 'lede', free ? `On "${sv.name}", over Tailscale - no invite needed.` : 'Ask the owner for an invite code.'),
       form([
-        ['invite', 'Invite code', 'text'],
+        ...(free ? [] : [['invite', 'Invite code', 'text']]),
         ['email', 'Your email (a grown-up\'s)', 'email', 'email'],
         ['password', 'A password (8 or more characters)', 'password', 'new-password'],
         ['name', 'Your first name (your profile)', 'text'],

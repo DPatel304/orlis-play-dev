@@ -289,7 +289,7 @@ export function storePage({ nav = {}, onPlay, onChange = () => {}, onWho, onReca
         } catch { waiting = []; }
       }
     }
-    catch (e){ if (!seen) say(e.status === 0 ? 'Can’t reach your Orlis server right now. Is it running, and is this PC on the home Wi-Fi?' : e.message); return; }
+    catch (e){ if (!seen) say(e.status === 0 ? 'Can’t reach your Orlis server right now. Is it running, and is this PC on its Wi-Fi (or on Tailscale)?' : e.message); return; }
     seen = { games, waiting };
     if (left || JSON.stringify(seen) === was) return;
     if (was) redraw(); else build();

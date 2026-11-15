@@ -28,15 +28,37 @@ home Wi-Fi** - it is not on the internet.
 
 ## Creators who live somewhere else
 
-Someone who doesn't live with you sets up at your house, once: Orlis Play on
-their laptop, on your Wi-Fi, with an invite code. After that, at home, they
-stay signed in and make games as usual: **Check and send** keeps the game on
-their laptop ("It'll send by itself..."). The next time they're at your
-house with the app open (and this server running), it goes in by itself
-within a couple of minutes, to wait for your OK. A change made at home gets
-the next version number by itself, and their Create tab shows how each one
-went as of their last visit. If your laptop's Wi-Fi address has changed in
-between, the app finds it again.
+**From their own home, with Tailscale (no visit needed).** Tailscale is a
+free app that links computers privately over the internet. Set it up once:
+
+1. On this laptop, install Tailscale (tailscale.com/download) and sign in.
+   The management page's Overview then shows **Tailscale is on**.
+2. Share this laptop with them: Tailscale's admin console > Machines > this
+   laptop > **Share**, and send them the link. (Sharing one machine is free.
+   They can reach this laptop only - nothing else on your network - and it
+   can't reach into theirs.)
+3. They install Tailscale, sign in, and accept the share.
+4. They install Orlis Play. It finds this server over Tailscale by itself,
+   and they **make an account with no invite code** - being shared this
+   laptop is the invite. They're a creator straight away, in a family of
+   their own, and the History says they joined from away.
+
+After that it all works from their home: making games, **Check and send**
+(straight to your approval queue whenever this laptop is on), and your OKs
+and notes. If this laptop's off, their games wait on their PC and go in by
+themselves later. Windows' firewall: Tailscale counts as a Private network,
+so ticking "Private networks" when Windows first asked already covers it.
+
+**Without Tailscale.** They set up at your house, once, on your Wi-Fi, with
+an invite code. At home they stay signed in and make games as usual:
+**Check and send** keeps the game on their laptop ("It'll send by
+itself..."), and the next time they're at your house with the app open, it
+goes in by itself within a couple of minutes. A change made at home gets the
+next version number by itself, and their Create tab shows how each one went
+as of their last visit.
+
+On your own Wi-Fi, joining always needs an invite code, so a visitor on the
+Wi-Fi can't just make an account.
 
 ## The Store
 
