@@ -563,6 +563,8 @@ export const sfx = {
   /* Something big winding up to hit: a rising growl. */
   windup(){ blip({ freq: 160, to: 420, dur: 0.7, type: 'sawtooth', gain: 0.08 }); },
   zap(){ blip({ freq: 1400, to: 300, dur: 0.18, type: 'square', gain: 0.07 }); hiss({ dur: 0.12, gain: 0.06, hp: 3000 }); },
+  /* Leaves swished along the grass: a short, dry rustle. */
+  rustle(){ hiss({ dur: 0.18 + Math.random() * 0.1, gain: 0.07, hp: 2400 + Math.random() * 1500, type: 'bandpass', q: 0.7 }); },
   /* A big sleepy bear, grumbling: a low, rumbly "hrrmmph", down. */
   grumble(){ blip({ freq: 120, to: 70, dur: 0.55, type: 'sawtooth', gain: 0.12 }); blip({ freq: 95, to: 60, dur: 0.6, type: 'sine', gain: 0.22, delay: 0.05 }); hiss({ dur: 0.4, gain: 0.05, hp: 300, type: 'lowpass', q: 0.6 }); },
   /* Snoring, softly: a slow rasp in, a whistle out. */
