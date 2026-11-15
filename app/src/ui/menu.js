@@ -73,7 +73,7 @@ export function looks(g){
 
 
 /* Games kept off the home screen for now (still there, just not shown). */
-export const HIDDEN = new Set(['uncle-bs-boat', 'dance-party', 'castle-defense']);
+export const HIDDEN = new Set(['uncle-bs-boat', 'dance-party', 'castle-defense', 'last-known-position']);
 /* What was picked last - kept between launches, by game. */
 const LAST = 'orlis.lastGame';
 let lastFocus = null;

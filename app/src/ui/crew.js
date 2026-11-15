@@ -21,6 +21,16 @@
    crew.popped()                    names to show: [{ i, id }] (taken) */
 import { MAX_PLAYERS } from '../tracking/pose-shared.js';
 
+/* The two generic crew avatars, one per player, while making your own is
+   off (avatar-maker.js MAKING): friendly, plain, told apart at a glance by
+   their colour (the player's colour) and their hair. */
+export const GENERIC = [
+  { skin: '#c98f6a', hair: 'short', hairColor: '#4a2c1a', eyes: 'dots', mouth: 'smile', color: '#3da9ff', outfit: 'plain', extra: 'none' },
+  { skin: '#e9b892', hair: 'ponytail', hairColor: '#2b1a12', eyes: 'dots', mouth: 'grin', color: '#ff8a3d', outfit: 'plain', extra: 'none' },
+  { skin: '#8d5a3b', hair: 'curly', hairColor: '#1c120d', eyes: 'dots', mouth: 'smile', color: '#3fcf7f', outfit: 'plain', extra: 'none' },
+  { skin: '#f2c6a0', hair: 'bob', hairColor: '#8a4b23', eyes: 'dots', mouth: 'grin', color: '#c46bff', outfit: 'plain', extra: 'none' }
+];
+
 /* Clothes this alike (distance in RGB, 0..441) are the same clothes; a
    match must also be this much nearer than the next best. */
 export const SAME_CLOTHES = 70, CLEARLY = 25;
@@ -45,7 +55,10 @@ export function makeCrew(n = MAX_PLAYERS){
     of(i){ return this.seat[i]; },
     /* player i's profile, look, name and colour - or nulls for a guest */
     profileOf(i){ const id = this.seat[i]; return id == null ? null : this.profiles.find(p => p.id === id) || null; },
-    lookOf(i){ const p = this.profileOf(i); return (p && p.look) || null; },
+    /* player i's avatar: their own, if avatars are made (personal), else the
+       generic one for their place */
+    personal: false,
+    lookOf(i){ const p = this.personal && this.profileOf(i); return (p && p.look) || GENERIC[i % GENERIC.length]; },
     nameOf(i){ const p = this.profileOf(i); return p ? p.name : null; },
     colorOf(i, fallback = null){ const l = this.lookOf(i); return (l && l.color) || fallback; },
     playerOf(id){ const i = this.seat.indexOf(id); return i < 0 ? null : i; },

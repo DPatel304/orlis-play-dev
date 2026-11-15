@@ -10,7 +10,7 @@ import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
 import { account, AVATARS } from './account.js';
-import { openMaker, faceOf, withFace } from './avatar-maker.js';
+import { openMaker, faceOf, withFace, MAKING } from './avatar-maker.js';
 import { topBar } from './tabs.js';
 import { PAPER } from './boot.js';
 
@@ -104,7 +104,7 @@ export function familyPage({ nav = {}, onWho, onRecalibrate }){
       const me = a.id === account.state.account.id;
       const chip = withFace(h('div', 'fchip', `<span class="av">${p ? AVATARS[p.avatar] || AVATARS.cube : AVATARS.cube}</span><span><b>${esc(p ? p.name : a.email)}${me ? ' (you)' : ''}</b><small>${esc(a.email)}</small></span>`), p, 96);
       /* (your own: a button for your avatar - grown-ups play too) */
-      if (me && p) chip.appendChild(btn(p.look ? 'Change my avatar' : 'Make my avatar', () => openMaker(p, { onDone: draw }), 'fsmall'));
+      if (MAKING && me && p) chip.appendChild(btn(p.look ? 'Change my avatar' : 'Make my avatar', () => openMaker(p, { onDone: draw }), 'fsmall'));
       grown.appendChild(chip);
     }
     const waiting = invites.invites.filter(i => !i.usedAt && i.kind === 'join');
@@ -130,22 +130,22 @@ export function familyPage({ nav = {}, onWho, onRecalibrate }){
     let pick = p ? p.avatar : 'rocket';
     const box = nameBox(p ? p.name : '');
     const card = popup(h('h2', '', p ? esc(p.name) : 'Add a kid'), box);
-    if (p && p.look){
+    if (MAKING && p && p.look){
       /* they have an avatar: it, and a way to change it, instead of the old pictures */
       const row = h('div', 'favrow'); row.append(faceOf(p, 140), btn('Change their avatar', () => { closePop(); openMaker(p, { onDone: draw }); }, 'go'));
       card.appendChild(row);
     } else {
       card.appendChild(pictures(pick, (id) => { pick = id; }));
-      if (p) card.appendChild(btn('Make their avatar', () => { closePop(); openMaker(p, { onDone: draw }); }, 'go fsmall'));
+      if (MAKING && p) card.appendChild(btn('Make their avatar', () => { closePop(); openMaker(p, { onDone: draw }); }, 'go fsmall'));
     }
-    card.appendChild(h('p', 'fnote', p ? 'Just a name and an avatar - nothing else is kept about a child.' : 'Just a name - next, they make their avatar. Nothing else is kept about a child.'));
+    card.appendChild(h('p', 'fnote', !MAKING ? 'Just a name and a picture - nothing else is kept about a child.' : p ? 'Just a name and an avatar - nothing else is kept about a child.' : 'Just a name - next, they make their avatar. Nothing else is kept about a child.'));
     const go = async () => {
       const name = box.value.trim(); if (!name) return box.focus();
       try {
         if (p) await account.call('PATCH', `/api/profiles/${encodeURIComponent(p.id)}`, { name, avatar: pick });
         else {
           const made = await account.call('POST', '/api/profiles', { name, avatar: pick });
-          sfx.gold?.(); closePop(); draw(); openMaker(made, { onDone: draw }); return;
+          sfx.gold?.(); closePop(); draw(); if (MAKING) openMaker(made, { onDone: draw }); return;
         }
         sfx.gold?.(); closePop(); draw();
       } catch (e){ problem(card)(e); }

@@ -15,6 +15,11 @@ import { sfx } from '../audio/sound.js';
 import { account, AVATARS } from './account.js';
 import { PARTS, body, head, portrait, surprise } from './avatar-art.js';
 
+/* Making your own avatar is off for now: everyone plays as the two
+   generic crew avatars (crew.js GENERIC), and profiles keep their pictures.
+   Turn this on to bring the maker back (Family, Add a kid). */
+export const MAKING = false;
+
 /* a small canvas, sharp on any screen, drawn by fn(c, size) */
 function pic(size, fn, cls = 'avpic'){
   const cv = document.createElement('canvas'); cv.className = cls;
@@ -26,7 +31,7 @@ function pic(size, fn, cls = 'avpic'){
 }
 
 export function faceOf(profile, size = 48){
-  if (profile && profile.look) return pic(size, (c, s) => portrait(c, s / 2, s / 2, s, profile.look, 1.3), 'avface');
+  if (MAKING && profile && profile.look) return pic(size, (c, s) => portrait(c, s / 2, s / 2, s, profile.look, 1.3), 'avface');
   const span = document.createElement('span'); span.className = 'av';
   span.textContent = AVATARS[profile && profile.avatar] || AVATARS.cube;
   return span;
@@ -34,7 +39,7 @@ export function faceOf(profile, size = 48){
 /* put their face in place of an element's emoji picture (.av) */
 export function withFace(el, profile, size){
   const av = el.querySelector('.av');
-  if (av && profile && profile.look) av.replaceWith(faceOf(profile, size));
+  if (MAKING && av && profile && profile.look) av.replaceWith(faceOf(profile, size));
   return el;
 }
 

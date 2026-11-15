@@ -20,6 +20,7 @@ import { byId } from './games/index.js';
 import { PLAYER_COLORS, MAX_PLAYERS } from './tracking/pose.js';
 import { crew, clothesOf } from './ui/crew.js';
 import { lineUp, whoRow, namePop } from './ui/lineup.js';
+import { MAKING } from './ui/avatar-maker.js';
 
 const stage = document.getElementById('stage');
 const c = stage.getContext('2d');
@@ -137,8 +138,9 @@ function family(){
   return me ? [me, ...list.filter(p => p.id !== me.id)] : list;
 }
 function lineUpThenPlay(){
-  crew.profiles = family();
-  if (crew.lined || crew.profiles.length < 2){ startRound(); return; }
+  crew.profiles = family(); crew.personal = MAKING;
+  /* (while everyone plays as the generic avatars, there's nobody to line up) */
+  if (!MAKING || crew.lined || crew.profiles.length < 2){ startRound(); return; }
   go('lineup', () => lineUp({ profiles: crew.profiles, onDone: () => { if (mode === 'lineup') startRound(); } }));
 }
 /* Each frame of a game: the tracking keeps each child on their player, and
@@ -149,7 +151,7 @@ function crewTick(dt){
     const i = pose.players.findIndex(p => p.present);
     if (i >= 0){ crew.set(i, crew.profiles[0].id); crew.lined = true; }
   }
-  for (const { i } of crew.popped()){ const p = crew.profileOf(i); if (p) namePop(p); }
+  for (const { i } of crew.popped()){ const p = crew.profileOf(i); if (p && MAKING) namePop(p); }
 }
 
 function startRound(){
@@ -214,7 +216,7 @@ function openPause(){
     () => { paused.remove(); paused = null; roundDone(); (game.back || toMenu)(); },
     game.back ? 'Back to Create' : 'Home');
   /* who's who, to put right a mix-up */
-  if (crew.profiles.length >= 2) paused.querySelector('.gbtext').appendChild(whoRow(crew.profiles));
+  if (MAKING && crew.profiles.length >= 2) paused.querySelector('.gbtext').appendChild(whoRow(crew.profiles));
   sfx.whoosh();
 }
 

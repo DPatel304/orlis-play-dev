@@ -12,7 +12,7 @@
 import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
-import { openMaker, withFace } from './avatar-maker.js';
+import { openMaker, withFace, MAKING } from './avatar-maker.js';
 
 const KEY = 'orlis.account';
 export const AVATARS = {
@@ -238,7 +238,8 @@ export function welcome(done, { auto = true } = {}){
       const p = await account.call('POST', '/api/profiles', { name, avatar: pick });
       account.set({ profiles: [...(account.state.profiles || []), p] });
       /* straight on to making their avatar (Cancel keeps the picture) */
-      openMaker(p, { onDone: who }); who();
+      if (MAKING) openMaker(p, { onDone: who });
+      who();
     });
     f.insertBefore(grid, f.lastChild);
     show(h('h2', '', 'Add a kid'), h('p', 'lede', 'Just a name and a picture - nothing else is needed.'), f, msg,
