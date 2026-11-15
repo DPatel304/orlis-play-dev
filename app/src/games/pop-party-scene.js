@@ -23,10 +23,10 @@ const BLACK = [0, 0, 0];
 /* Time of day across the round, by progress 0..1. light/amt tint the
    ground; dark dims it. */
 const DAY = [
-  { p:0,    top:'#5ab8ff', mid:'#a8dcff', low:'#ffe9cf', light:'#ffe2c8', amt:0.10, dark:0.00, sun:'#fff1b0', cloud:'#ffffff' },
-  { p:0.35, top:'#2f9bf5', mid:'#7cc9ff', low:'#d6f1ff', light:'#ffffff', amt:0.00, dark:0.00, sun:'#fff4b8', cloud:'#ffffff' },
-  { p:0.72, top:'#3a74d6', mid:'#f2b07a', low:'#ffd98a', light:'#ffb35c', amt:0.22, dark:0.04, sun:'#ffd36b', cloud:'#ffeedd' },
-  { p:1,    top:'#2a2f78', mid:'#e0668c', low:'#ffad66', light:'#ff7a5c', amt:0.30, dark:0.20, sun:'#ff9a55', cloud:'#ffc8b4' }
+  { p:0,    top:'#9fc8e6', mid:'#cfe0e6', low:'#f6ead2', light:'#ffe6c4', amt:0.08, dark:0.00, sun:'#fff3cf', cloud:'#ffffff' },
+  { p:0.35, top:'#8fc0e2', mid:'#c4dde8', low:'#f1ead8', light:'#ffffff', amt:0.00, dark:0.00, sun:'#fff6d8', cloud:'#ffffff' },
+  { p:0.72, top:'#8aa8d6', mid:'#e9c7a8', low:'#f6d9a8', light:'#ffc888', amt:0.18, dark:0.03, sun:'#ffe2a0', cloud:'#fff1e2' },
+  { p:1,    top:'#6a6fae', mid:'#e3a3a8', low:'#f5c08e', light:'#ff9f7a', amt:0.25, dark:0.14, sun:'#ffc48a', cloud:'#ffd9c8' }
 ].map(k => ({ ...k, ...Object.fromEntries(['top','mid','low','light','sun','cloud'].map(f => [f, hex(k[f])])) }));
 
 export function lighting(p){
@@ -40,10 +40,12 @@ export function lighting(p){
 }
 
 const GROUND = {
-  hills: ['#7fcf86', '#5fbb70', '#48a65d'].map(hex),
-  trunk: hex('#7a5434'), leaf: hex('#3d9a55'), leafLit: hex('#5cbc6c'),
-  grass: [hex('#3f9a52'), hex('#6cc874')],
-  farPeak: hex('#9db7e0'), nearPeak: hex('#6f93b8')
+  hills: ['#a9c98f', '#93bb7c', '#80ae6a'].map(hex),
+  trunk: hex('#7a6550'), leaf: hex('#6f9a5e'), leafLit: hex('#9fbf78'), leafShade: hex('#4f7350'),
+  grass: [hex('#5f8a4c'), hex('#a3c98a')],
+  farPeak: hex('#a9b8c4'), nearPeak: hex('#8fa3a8'),
+  /* the one shadow tone everything takes on its right */
+  shade: hex('#3a3360')
 };
 
 /* Deterministic scatter, so the landscape holds still between frames. */
@@ -56,8 +58,10 @@ const CLOUDS = Array.from({ length: 9 }, (_, i) => ({
   s: i % 3 === 0 ? 1.4 : (i % 3 === 1 ? 1 : 0.65), speed: i % 3 === 0 ? 0.012 : (i % 3 === 1 ? 0.008 : 0.005)
 }));
 const TREES = [[0.07,0.775,0.7,0],[0.17,0.85,0.95,1],[0.30,0.785,0.6,0],[0.70,0.845,0.85,1],[0.86,0.775,0.65,0],[0.95,0.855,0.95,1]];
-const TUFTS = Array.from({ length: 44 }, (_, i) => ({ x: -0.06 + hash(i, 13) * 1.12, y: 0.935 + hash(i, 17) * 0.065,
-                                                       h: 0.022 + hash(i, 19) * 0.022, ph: hash(i, 23) * 6.28 }));
+const TUFTS = Array.from({ length: 110 }, (_, i) => ({ x: -0.06 + hash(i, 13) * 1.12, y: 0.9 + Math.pow(hash(i, 17), 0.6) * 0.1,
+                                                       h: 0.02 + hash(i, 19) * 0.026, ph: hash(i, 23) * 6.28 }));
+/* petals and seeds drifting on the wind */
+const PETALS = Array.from({ length: 26 }, (_, i) => ({ seed: hash(i, 29), y: 0.08 + hash(i, 31) * 0.75, sp: 0.02 + hash(i, 37) * 0.03, ph: hash(i, 41) * 6.28, col: ['#fff6d8', '#ffd2e0', '#e3f0cf'][i % 3] }));
 /* Each band of hills fades toward the horizon's colour by its haze: the
    way distance looks, and what lets the bright balloons sit in front. */
 const HILLS = [{ y:0.74, h:0.07, n:3, depth:0.03, haze:0.40 },
@@ -142,6 +146,36 @@ export class Scene {
     const ground = (base) => mix(mix(base, L.light, L.amt), BLACK, L.dark);
     if (!this.lite) this._grass(c, W, H, ground);
     this._flowers(c, W, H);
+    if (!this.lite) this._petals(c, W, H);
+    this._grain(c, W, H);
+  }
+
+  /* petals and seeds on the wind, drifting across */
+  _petals(c, W, H){
+    const wind = 1 + Math.max(0, this.wind) * 0.5;
+    for (const pt of PETALS){
+      const x = (((pt.seed + this.t * pt.sp * wind) % 1.2) - 0.1) * W, y = (pt.y + Math.sin(this.t * 0.9 + pt.ph) * 0.02) * H;
+      c.save(); c.translate(x, y); c.rotate(-0.5 + Math.sin(this.t * 2 + pt.ph) * 0.4);
+      c.fillStyle = pt.col; c.beginPath(); c.ellipse(0, 0, H * 0.0075, H * 0.0036, 0, 0, 6.2832); c.fill();
+      c.restore();
+    }
+  }
+
+  /* a faint paper grain over the whole picture: made once, laid down whole */
+  _grain(c, W, H){
+    if (this._grainFail) return;
+    try {
+      if (!this._grainCv || this._grainCv.width !== Math.round(W / 2)){
+        const cv = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+        if (!cv || !cv.getContext) { this._grainFail = true; return; }
+        cv.width = Math.round(W / 2); cv.height = Math.round(H / 2);
+        const g = cv.getContext('2d');
+        let sd = 3; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+        for (let i = 0; i < cv.width * cv.height / 18; i++){ g.fillStyle = r() < 0.5 ? 'rgba(255,255,255,.08)' : 'rgba(60,40,20,.05)'; g.fillRect(r() * cv.width, r() * cv.height, 1, 1); }
+        this._grainCv = cv;
+      }
+      c.drawImage(this._grainCv, 0, 0, W, H);
+    } catch (e){ this._grainFail = true; }
   }
 
   /* ---------- layers ---------- */
@@ -161,7 +195,7 @@ export class Scene {
     }
 
     c.save(); c.translate(sx, sy); c.rotate(this.t * (0.08 + this.joy * 0.5));
-    c.fillStyle = rgb(mix(L.sun, [255, 255, 255], 0.3), 0.22 + this.joy * 0.15);
+    c.fillStyle = rgb(mix(L.sun, [255, 255, 255], 0.3), 0.1 + this.joy * 0.12);
     const len = sr * (4.2 + this.joy * 1.8);
     c.beginPath();
     for (let i = 0; i < 12; i++){
@@ -229,6 +263,14 @@ export class Scene {
         if (q) c.lineTo(((p.x + q.x) / 2) * W + dx, Math.max(p.y, q.y) * H + H * 0.06);
       }
       c.lineTo(W * 1.2, H * 0.8); c.closePath(); c.fill();
+      /* the shadow side of each peak, one flat tone */
+      c.fillStyle = rgb(mix(col, GROUND.shade, 0.12));
+      c.beginPath();
+      for (let i = 0; i < peaks.length - 1; i++){
+        const p = peaks[i], q = peaks[i + 1], vx = ((p.x + q.x) / 2) * W + dx, vy = Math.max(p.y, q.y) * H + H * 0.06;
+        c.moveTo(p.x * W + dx, p.y * H); c.lineTo(vx, vy); c.lineTo(vx, H * 0.8); c.lineTo(p.x * W + dx + H * 0.02, H * 0.8); c.closePath();
+      }
+      c.fill();
       if (snow){
         c.fillStyle = rgb(mix([255, 255, 255], col, 0.5));
         for (const p of peaks){
@@ -275,17 +317,31 @@ export class Scene {
         c.quadraticCurveTo(x0 + span * 0.5, H * (band.y - band.h * 0.5), x0 + span, H * band.y);
       }
       c.lineTo(W + m + dx, H); c.closePath(); c.fill();
+      /* each hump's shadow side */
+      c.save(); c.clip();
+      c.fillStyle = rgb(mix(ground(GROUND.hills[b]), GROUND.shade, 0.05), 1);
+      c.beginPath();
+      for (let i = 0; i < band.n; i++){ const x0 = -m + dx + i * span; c.moveTo(x0 + span, H * band.y); c.ellipse(x0 + span * 0.82, H * band.y, span * 0.3, H * band.h * 0.75, 0, 0, 6.2832); }
+      c.fill(); c.restore();
 
       /* The trees standing on this band, swaying with the wind. */
       for (const [fx, fy, fs, onBand] of TREES){
         if (onBand !== b) continue;
         const x = W * fx + dx, y = H * fy, sc = (H / 900) * fs;
         const sway = (Math.sin(this.t * 1.3 + fx * 20) * 0.25 + this.wind * 0.5) * 6 * sc;
+        /* its shadow on the grass, falling right */
+        c.fillStyle = 'rgba(58,51,96,.14)'; c.beginPath(); c.ellipse(x + 30 * sc, y + 42 * sc, 40 * sc, 9 * sc, 0, 0, 6.2832); c.fill();
         c.fillStyle = far(GROUND.trunk); c.fillRect(x - 5 * sc, y, 10 * sc, 42 * sc);
-        c.fillStyle = far(GROUND.leaf);
-        c.beginPath(); c.arc(x + sway, y - 10 * sc, 34 * sc, 0, 6.2832); c.fill();
-        c.fillStyle = far(GROUND.leafLit);
-        c.beginPath(); c.arc(x + sway * 1.3 - 10 * sc, y - 22 * sc, 22 * sc, 0, 6.2832); c.fill();
+        /* clumps: lit on the left, one shadow tone on the right */
+        const clumps = [[0, -12, 30], [-20, -2, 21], [20, 0, 22], [2, -34, 20]];
+        for (const [cx, cy, cr] of clumps){
+          const px = x + sway * (1 + cy / -60) + cx * sc, py = y + cy * sc, rr = cr * sc;
+          c.fillStyle = far(GROUND.leaf); c.beginPath(); c.arc(px, py, rr, 0, 6.2832); c.fill();
+          c.save(); c.beginPath(); c.arc(px, py, rr, 0, 6.2832); c.clip();
+          c.fillStyle = far(GROUND.leafLit); c.beginPath(); c.arc(px - rr * 0.3, py - rr * 0.3, rr * 0.75, 0, 6.2832); c.fill();
+          c.fillStyle = far(GROUND.leafShade); c.beginPath(); c.arc(px + rr * 0.7, py + rr * 0.45, rr * 0.75, 0, 6.2832); c.fill();
+          c.restore();
+        }
       }
       /* A thinner veil of mist between the far hills and the nearer ones. */
       if (b === 0) this._mist(c, W, H, L, 0.7, 0.84, 0.3);
@@ -301,7 +357,7 @@ export class Scene {
       TUFTS.forEach((tf, i) => {
         if (i % 2 !== k) return;
         const x = tf.x * W + dx, y = tf.y * H, h = tf.h * H;
-        const bend = (this.wind * 0.35 + Math.sin(this.t * 2.2 + tf.ph) * 0.18) * h;
+        const bend = (0.35 + this.wind * 0.35 + Math.sin(this.t * 2.2 + tf.ph) * 0.18) * h;
         for (const off of [-0.35, 0, 0.35]){
           c.moveTo(x + off * h * 0.4, y);
           c.quadraticCurveTo(x + off * h * 0.5 + bend * 0.3, y - h * 0.6, x + off * h * 0.7 + bend, y - h * (0.9 + Math.abs(off) * -0.2));
@@ -343,14 +399,16 @@ export class Scene {
 
 }
 
+/* A painted cloud: long and soft, stretched by the wind - layered
+   translucent washes rather than a hard shape, a cooler tone underneath. */
 function cloud(c, x, y, w, col, alpha){
-  c.globalAlpha = alpha;
+  c.globalAlpha = alpha * 0.45;
+  c.fillStyle = 'rgb(206,216,228)';
+  c.beginPath(); c.ellipse(x + w * 0.04, y + w * 0.05, w * 0.62, w * 0.09, 0, 0, 6.2832); c.fill();
   c.fillStyle = col;
-  c.beginPath();
-  c.ellipse(x, y, w * 0.5, w * 0.16, 0, 0, 6.2832);
-  c.arc(x - w * 0.2, y - w * 0.06, w * 0.17, 0, 6.2832);
-  c.arc(x + w * 0.02, y - w * 0.13, w * 0.22, 0, 6.2832);
-  c.arc(x + w * 0.24, y - w * 0.04, w * 0.15, 0, 6.2832);
-  c.fill();
+  for (const [dx, dy, rx, ry, a] of [[0, 0, 0.7, 0.12, 0.5], [-0.12, -0.03, 0.45, 0.1, 0.7], [0.15, -0.05, 0.38, 0.09, 0.8], [0.02, -0.07, 0.28, 0.07, 0.9]]){
+    c.globalAlpha = alpha * a;
+    c.beginPath(); c.ellipse(x + dx * w, y + dy * w, rx * w, ry * w, 0, 0, 6.2832); c.fill();
+  }
   c.globalAlpha = 1;
 }

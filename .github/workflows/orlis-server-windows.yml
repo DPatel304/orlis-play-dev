@@ -13,6 +13,9 @@ on:
       - 'server/**'
       - 'app/kit/**'
       - 'app/src/games/pop-party*.js'
+      - 'app/src/ui/avatar-art.js'
+      - 'app/src/ui/avatars.js'
+      - 'app/src/ui/crew.js'
       - 'app/src/games/common.js'
       - '.github/workflows/orlis-server-windows.yml'
   workflow_dispatch:

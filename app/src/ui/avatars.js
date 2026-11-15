@@ -1,4 +1,5 @@
 import { pose, L, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
+import { figure } from './avatar-art.js';
 
 /* The players, in the picture. Two layers, drawn by the game at different
    depths:
@@ -72,14 +73,19 @@ export class Avatars {
   }
 
   /* lift: how far each player has floated up, in screen heights; alpha: how
-     strongly the silhouettes show. */
-  drawBodies(c, W, H, players, lift = [], alpha = 0.32){
+     strongly the silhouettes show. looks(i): a player's avatar, to draw them
+     as it - posed as they are - instead of a silhouette. */
+  drawBodies(c, W, H, players, lift = [], alpha = 0.32, looks = null){
     const people = [];
     for (let i = 0; i < players; i++){
       const p = pose.players[i];
       if (p && p.present && p.lm) people.push([i, p.lm]);
     }
     if (!people.length) return;
+    if (looks){
+      for (const [i, lm] of people) figure(c, lm, W, H, looks(i), this.t + i * 1.7, { lift: (lift[i] || 0) * H });
+      return;
+    }
 
     /* Drawn solid onto a half-size layer and laid down translucent in one
        go, so where an arm crosses the body it doesn't show a darker seam -

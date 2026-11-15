@@ -3,6 +3,7 @@ import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx, music } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
+import { crew } from '../ui/crew.js';
 import { ANIMALS, animalParts, animalCol, touches, drawAnimal } from './pop-party-animals.js';
 
 /* Three-minute rounds; the storm is always the last ten seconds. */
@@ -576,7 +577,7 @@ class PopParty {
     /* The players stand in the scene behind the balloons, feet in the grass. */
     const lift = [];
     if (this.out) for (const g of this.out.groups) lift[g.who] = g.lift;
-    this.avatars.drawBodies(c, W, H, this.players, lift);
+    this.avatars.drawBodies(c, W, H, this.players, lift, 1, (i) => crew.lookOf(i));
     const shook = this.j.applyShake(c);
 
     c.lineCap = 'round'; c.lineJoin = 'round';
@@ -608,7 +609,7 @@ class PopParty {
     if (b.kind === 'rainbow'){
       fill = c.createLinearGradient(-r, -r, r, r);
       for (let k = 0; k <= 6; k++) fill.addColorStop(k / 6, `hsl(${(k * 60 + this.t * 120) % 360} 95% 60%)`);
-    } else fill = `hsl(${b.hue} 86% 56%)`;
+    } else fill = `hsl(${b.hue} 78% 62%)`;
 
     c.fillStyle = fill;
     c.beginPath();
@@ -616,14 +617,12 @@ class PopParty {
     c.closePath(); c.fill();
 
     balloonPath(c, r); c.fill();
-    /* One overlay gives every colour the same volume: a hot spot top-left,
-       falling to a darker rim. */
-    const sh = c.createRadialGradient(-r * 0.35, -r * 0.45, 0, -r * 0.1, -r * 0.1, r * 1.45);
-    sh.addColorStop(0,    'rgba(255,255,255,.55)');
-    sh.addColorStop(0.28, 'rgba(255,255,255,0)');
-    sh.addColorStop(0.7,  'rgba(0,0,0,0)');
-    sh.addColorStop(1,    'rgba(0,0,0,.38)');
-    c.fillStyle = sh; balloonPath(c, r); c.fill();
+    /* Cel-shaded, like everything else: one flat shadow tone on the right,
+       the sun being up on the left. */
+    c.save(); balloonPath(c, r); c.clip();
+    c.fillStyle = 'rgba(52,40,96,.2)';
+    c.beginPath(); c.ellipse(r * 0.62, r * 0.35, r * 0.85, r * 1.25, 0, 0, 6.2832); c.fill();
+    c.restore();
 
     c.fillStyle = 'rgba(255,255,255,.8)';
     c.beginPath(); c.ellipse(-r * 0.38, -r * 0.42, r * 0.13, r * 0.26, 0.5, 0, 6.2832); c.fill();

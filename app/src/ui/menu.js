@@ -114,6 +114,20 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
   hero.append(heroPic, h('div', 'shshade'), htext);
   s.appendChild(hero);
 
+  /* no games yet (a new install: they come from the Store) - a way there */
+  if (!items.length){
+    htext.querySelector('.skicker').textContent = 'Welcome';
+    hname.textContent = 'Get your first game'; hblurb.textContent = 'Pop Party is waiting for you in the Store.';
+    play.remove();
+    if (nav.store) btns.appendChild(onPick(button('Open the Store', 'sbtn play'), () => { sfx.select(); nav.store(); }));
+    ambience.start();
+    return {
+      focus: 0,
+      tick(dt){ bar.tick(dt); },
+      draw(c, W, H){ c.fillStyle = PAPER; c.fillRect(0, 0, W, H); }
+    };
+  }
+
   /* the rows */
   const shelves = h('div', 'shelves'), wrap = h('div', 'shelfwrap');
   shelves.appendChild(wrap); s.appendChild(shelves);
