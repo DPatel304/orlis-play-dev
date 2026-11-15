@@ -168,29 +168,10 @@ test('a clear trail: every game sent, played, approved, declined, taken back or 
   } finally { await s.close(); }
 });
 
-test("a game emailed to the owner, added from a file on the management page: the same checks, and it waits to be played like any other", async () => {
+test("games come in only from a creator's app: the management page can't add one", async () => {
   const { s, call } = await server();
   try {
-    const key = { 'X-Orlis-Manage': s.manageKey, 'X-Orlis-From': 'bird-hoops.orlis' };
-    /* a bad one is turned away, just as from the app */
-    const bad = await call('POST', '/api/submissions', game('sneaky', { code: 'fetch("http://x"); postMessage({ t: "ready" });' }), null, key);
-    assert.equal(bad.status, 400);
-    const rude = await call('POST', '/api/submissions', game('rude', { blurb: 'kill them all' }), null, key);
-    assert.equal(rude.status, 400);
-    /* a good one waits - it is not in the Store yet */
-    const ok = await call('POST', '/api/submissions', game('bird-hoops'), null, key);
-    assert.equal(ok.status, 201); assert.equal(ok.state, 'waiting');
-    const store = await call('GET', '/api/store', null, null, key);
-    assert.ok(!(store.games || []).some(g => g.id === 'bird-hoops'), 'not in the Store before it is approved');
-    /* approve only once it's been played */
-    assert.notEqual((await call('POST', `/api/submissions/${ok.id}/approve`, null, null, key)).ok, true, 'play it first');
-    await call('POST', `/api/submissions/${ok.id}/tried`, { secs: 30 }, null, key);
-    assert.equal((await call('POST', `/api/submissions/${ok.id}/approve`, null, null, key)).ok, true);
-    /* the trail says where it came from */
-    const hist = await call('GET', '/api/history', null, null, key);
-    assert.ok(hist.history.some(e => /added from a file \(bird-hoops\.orlis\)/.test(e.note || '')), 'logged as added from a file');
-    /* and nobody can add one without the key, from outside */
-    const noKey = await call('POST', '/api/submissions', game('other'), null, { 'X-Orlis-Manage': 'nope' });
-    assert.equal(noKey.status, 403);
+    const r = await call('POST', '/api/submissions', game('bird-hoops'), null, { 'X-Orlis-Manage': s.manageKey });
+    assert.equal(r.status, 401);
   } finally { await s.close(); }
 });
