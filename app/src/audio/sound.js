@@ -1055,7 +1055,8 @@ export const audio = {
      rests); back in front, it carries on where it was. */
   away(on){
     if (AC){ try { on ? AC.suspend() : AC.resume(); } catch (e) {} }
-    songs.setVolume(on ? 0 : state.vol, state.muted);
+    /* (back in front mid-freeze: the music stays stopped) */
+    songs.setVolume(on || held ? 0 : state.vol, state.muted);
   }
 };
 

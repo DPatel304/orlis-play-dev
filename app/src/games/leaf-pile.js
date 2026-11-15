@@ -29,7 +29,8 @@ export const SWEEP_SPEED = 0.3, REACH = 0.09;
 export const JUMP_WAIT = 6;
 /* where the pile sits (screen fractions), and how far its pull reaches */
 export const PILE = { x: 0.5, y: 0.86 }, PULL = 0.28;
-const GROUND_TOP = 0.66, GROUND_BOTTOM = 0.97, START_LEAVES = 46, MAX_LEAVES = 90;
+/* where leaves lie: knee to shin height, where bending hands reach */
+const GROUND_TOP = 0.7, GROUND_BOTTOM = 0.9, START_LEAVES = 46, MAX_LEAVES = 90;
 const COLS = ['#e0893b', '#d4643a', '#e8b44a', '#c9503a', '#d99a3b'];
 
 export default {
@@ -69,7 +70,15 @@ class LeafPile {
 
   /* a leaf: lying on the grass (onGround), or falling from the trees */
   _leaf(onGround, x = Math.random(), y = null){
-    if (this.leaves.length >= MAX_LEAVES) return;
+    if (this.leaves.length >= MAX_LEAVES){
+      /* full: the lying leaf furthest from anyone playing makes way */
+      const here = pose.players.slice(0, this.players).filter(p => p && p.present && p.centre).map(p => p.centre.x);
+      if (!here.length) return;
+      let worst = -1, far = -1;
+      this.leaves.forEach((L, n) => { if (L.air) return; const d = Math.min(...here.map(hx => Math.abs(L.x - hx))); if (d > far){ far = d; worst = n; } });
+      if (worst < 0) return;
+      this.leaves.splice(worst, 1);
+    }
     const away = Math.abs(x - PILE.x) < 0.12 ? (x < PILE.x ? -0.14 : 0.14) : 0;
     this.leaves.push({
       x: Math.min(0.98, Math.max(0.02, x + away)), y: y ?? (onGround ? GROUND_TOP + Math.random() * (GROUND_BOTTOM - GROUND_TOP) : -0.05),
@@ -87,7 +96,13 @@ class LeafPile {
 
     /* leaves keep drifting down from the trees */
     this.fallT -= dt;
-    if (this.fallT <= 0){ this.fallT = 0.8 + Math.random() * 1.2; this._leaf(false); }
+    if (this.fallT <= 0){
+      this.fallT = 0.8 + Math.random() * 1.2;
+      /* they come down near someone who's playing, within reach */
+      const here = pose.players.slice(0, this.players).filter(p => p && p.present && p.centre);
+      const near = here.length ? here[(Math.random() * here.length) | 0].centre.x + (Math.random() - 0.5) * 0.5 : Math.random();
+      this._leaf(false, Math.min(0.95, Math.max(0.05, near)));
+    }
 
     /* hands sweeping */
     const hands = [];
@@ -101,7 +116,10 @@ class LeafPile {
       for (const [i, h] of hands){
         const dx = (L.x - h.x) * aspect, dy = L.y - h.y;
         if (dx * dx + dy * dy > REACH * REACH) continue;
-        L.vx = clampV(L.vx + h.vx * 0.9); L.vy = clampV(L.vy + h.vy * 0.5);
+        /* sweeping back the other way (away from the pile) barely moves them:
+           children sweep back and forth, and only the way in should count */
+        const inward = Math.sign(h.vx) === Math.sign(PILE.x - L.x) ? 1 : 0.25;
+        L.vx = clampV(L.vx + h.vx * 0.9 * inward); L.vy = clampV(L.vy + h.vy * 0.5 * inward);
         if (!L.air && L.vy < 0){ L.air = true; L.rest = Math.min(GROUND_BOTTOM, Math.max(GROUND_TOP, L.y + 0.04)); }
         L.spin = (Math.random() - 0.5) * 12; L.who = i;
         if (Math.random() < 0.08) sfx.rustle?.();
@@ -123,10 +141,15 @@ class LeafPile {
         L.y = Math.min(GROUND_BOTTOM, Math.max(GROUND_TOP, L.y));
       }
       if (L.x < -0.05 || L.x > 1.05){ L.x = Math.min(1.02, Math.max(-0.02, L.x)); L.vx = -L.vx * 0.3; }
+      /* leaves at the very edges drift back in, where hands can reach them */
+      if (!L.air && (L.x < 0.07 || L.x > 0.93)) L.x += (L.x < 0.5 ? 1 : -1) * 0.03 * dt;
       /* nearly there: a gentle pull in, so a toddler's sweep lands */
       const px = (PILE.x - L.x) * aspect, py = PILE.y - L.y, d = Math.hypot(px, py);
       const moving = Math.hypot(L.vx, L.vy) > 0.05;
       if (moving && d < PULL){ L.vx += (px / aspect) * dt * 2.5; L.vy += py * dt * 2.5; }
+      /* lying right beside the pile: it creeps in by itself (the pile gathers
+         what's at its edge - nobody's sweep, so nobody's count) */
+      else if (!L.air && d < PULL * 0.6){ L.x += (px / aspect) / d * 0.05 * dt; L.y += py / d * 0.05 * dt; }
       /* in! */
       if (!this.ready && d < this._pileR()){
         L.inPile = true; this.pile++;

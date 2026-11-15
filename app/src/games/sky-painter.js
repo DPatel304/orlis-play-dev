@@ -20,6 +20,10 @@ export const ROUND = 180;
 /* the brush (screen heights across), how much painted finishes a picture,
    and how long it plays before the next */
 export const BRUSH = 0.18, DONE = 0.8, ALIVE = 5;
+/* once this much is painted, if nobody's painted anywhere new for STALL
+   seconds, the paint starts spreading by itself, like watercolour - so a
+   child alone, or one who stays in one spot, still sees the picture through */
+export const SPREAD_FROM = 0.25, STALL = 4;
 export const GRID = [48, 27];
 export const PICTURES = ['whale', 'balloon', 'butterfly'];
 const PAPER = '#f2ebdc';
@@ -58,6 +62,7 @@ class SkyPainter {
     this.mask = null; this.bg = null; this.size = null;
     this.alive = 0;
     this.last = {};
+    this.still = 0;
   }
   get covered(){ return this.painted / this.cells.length; }
 
@@ -84,6 +89,10 @@ class SkyPainter {
           if (h.speed > 0.4 && Math.random() < dt * 20) this.flecks.push({ x: h.x, y: h.y, vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2, age: 0, col: PALETTE[this._pic()][(Math.random() * 3) | 0] });
         }
       }
+      /* nobody painting anywhere new: the paint spreads a little */
+      this.still = this.painted > this._was ? 0 : this.still + dt;
+      this._was = this.painted;
+      if (this.still > STALL && this.covered >= SPREAD_FROM) this._spread(dt);
       if (this.covered >= DONE){ this.alive = 0.001; this.done++; sfx.hooray?.(); sfx.chime?.(); }
     }
     for (const f of this.flecks){ f.age += dt; f.x += f.vx * dt; f.y += f.vy * dt; }
@@ -92,6 +101,24 @@ class SkyPainter {
   }
 
   _pic(){ return PICTURES[this.which]; }
+
+  /* watercolour: unpainted cells next to painted ones fill in, a few a
+     frame (nobody's, so no one's count goes up), and the mask with them */
+  _spread(dt){
+    const [gx, gy] = GRID, n = Math.max(1, Math.round(this.cells.length * 0.04 * dt)), edge = [];
+    for (let c = 0; c < this.cells.length; c++){
+      if (this.cells[c]) continue;
+      const x = c % gx, y = (c / gx) | 0;
+      if ((x > 0 && this.cells[c - 1]) || (x < gx - 1 && this.cells[c + 1]) || (y > 0 && this.cells[c - gx]) || (y < gy - 1 && this.cells[c + gx])) edge.push(c);
+    }
+    const m = this.mask && this.mask.getContext('2d');
+    for (let k = 0; k < n && edge.length; k++){
+      const c = edge.splice((Math.random() * edge.length) | 0, 1)[0];
+      this.cells[c] = 1; this.painted++;
+      if (m){ const sx = this.mask.width / gx, sy = this.mask.height / gy; m.fillStyle = '#000'; m.beginPath(); m.arc(((c % gx) + 0.5) * sx, (((c / gx) | 0) + 0.5) * sy, Math.max(sx, sy) * 0.9, 0, 6.2832); m.fill(); }
+    }
+    this._was = this.painted;
+  }
 
   /* paint along a line: the grid's cells it covers (and the mask, if it's made) */
   _stroke(who, x0, y0, x1, y1, aspect){
