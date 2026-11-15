@@ -3,7 +3,6 @@ import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx, music } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
-import { crew } from '../ui/crew.js';
 import { ANIMALS, animalParts, animalCol, touches, drawAnimal } from './pop-party-animals.js';
 
 /* Three-minute rounds; the storm is always the last ten seconds. */
@@ -574,10 +573,8 @@ class PopParty {
 
   draw(c, W, H){
     this.scene.drawBack(c, W, H);
-    /* The players stand in the scene behind the balloons, feet in the grass. */
-    const lift = [];
-    if (this.out) for (const g of this.out.groups) lift[g.who] = g.lift;
-    this.avatars.drawBodies(c, W, H, this.players, lift, 1, (i) => crew.lookOf(i));
+    /* First person: the players aren't drawn - the screen is what they
+       see, and their hands are the glowing mitts, on top of everything. */
     const shook = this.j.applyShake(c);
 
     c.lineCap = 'round'; c.lineJoin = 'round';

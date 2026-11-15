@@ -317,12 +317,6 @@ export class Scene {
         c.quadraticCurveTo(x0 + span * 0.5, H * (band.y - band.h * 0.5), x0 + span, H * band.y);
       }
       c.lineTo(W + m + dx, H); c.closePath(); c.fill();
-      /* each hump's shadow side */
-      c.save(); c.clip();
-      c.fillStyle = rgb(mix(ground(GROUND.hills[b]), GROUND.shade, 0.05), 1);
-      c.beginPath();
-      for (let i = 0; i < band.n; i++){ const x0 = -m + dx + i * span; c.moveTo(x0 + span, H * band.y); c.ellipse(x0 + span * 0.82, H * band.y, span * 0.3, H * band.h * 0.75, 0, 0, 6.2832); }
-      c.fill(); c.restore();
 
       /* The trees standing on this band, swaying with the wind. */
       for (const [fx, fy, fs, onBand] of TREES){
