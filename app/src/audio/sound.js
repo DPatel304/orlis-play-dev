@@ -4,7 +4,7 @@
 import { createAction } from './action.js';
 import { createSoundtrack } from './soundtrack.js';
 
-let AC = null, master = null, musicGain = null;
+let AC = null, master = null, musicGain = null, holdGain = null, held = false;
 let state = { vol: 0.7, muted: false };
 
 try {
@@ -49,7 +49,9 @@ function ctx(){
     /* Wide open normally; slow motion softens the top end. */
     musicFilter = AC.createBiquadFilter();
     musicFilter.type = 'lowpass'; musicFilter.frequency.value = 20000;
-    musicGain.connect(musicFilter); musicFilter.connect(master);
+    /* (and a tap the games can close: freeze dance stops the music dead) */
+    holdGain = AC.createGain(); holdGain.gain.value = held ? 0 : 1;
+    musicGain.connect(musicFilter); musicFilter.connect(holdGain); holdGain.connect(master);
     /* The ukulele's body: a little warmth low down, the harshest top taken
        off, the way a small wooden box colours a string. */
     ukeBus = AC.createGain();
@@ -561,6 +563,10 @@ export const sfx = {
   /* Something big winding up to hit: a rising growl. */
   windup(){ blip({ freq: 160, to: 420, dur: 0.7, type: 'sawtooth', gain: 0.08 }); },
   zap(){ blip({ freq: 1400, to: 300, dur: 0.18, type: 'square', gain: 0.07 }); hiss({ dur: 0.12, gain: 0.06, hp: 3000 }); },
+  /* A big sleepy bear, grumbling: a low, rumbly "hrrmmph", down. */
+  grumble(){ blip({ freq: 120, to: 70, dur: 0.55, type: 'sawtooth', gain: 0.12 }); blip({ freq: 95, to: 60, dur: 0.6, type: 'sine', gain: 0.22, delay: 0.05 }); hiss({ dur: 0.4, gain: 0.05, hp: 300, type: 'lowpass', q: 0.6 }); },
+  /* Snoring, softly: a slow rasp in, a whistle out. */
+  snore(){ hiss({ dur: 0.7, gain: 0.05, hp: 250, type: 'lowpass', q: 0.8 }); blip({ freq: 700, to: 900, dur: 0.35, type: 'sine', gain: 0.03, delay: 0.75 }); },
   /* Falling asleep: a sleepy slide down. */
   yawn(){ blip({ freq: 520, to: 260, dur: 0.6, type: 'sine', gain: 0.14 }); blip({ freq: 390, to: 200, dur: 0.5, type: 'sine', gain: 0.08, delay: 0.25 }); },
   scrap(){ hiss({ dur: 0.45, gain: 0.26, hp: 200, sweep: -150 }); blip({ freq: 140, to: 40, dur: 0.3, type: 'sawtooth', gain: 0.16 }); },
@@ -1011,7 +1017,15 @@ export const music = {
     else band.start();
   },
   /* Fades the song out; the generated band just stops booking notes. */
-  stop(){ songs.stop(1.2); band.stop(); ownBand.stop(); },
+  stop(){ songs.stop(1.2); band.stop(); ownBand.stop(); this.hold(false); },
+  /* Stops the music dead, mid-note (on) - for freeze dance - and brings it
+     straight back (off). The song carries on underneath, silent. */
+  hold(on){
+    held = !!on;
+    if (AC && holdGain) holdGain.gain.setTargetAtTime(held ? 0 : 1, AC.currentTime, held ? 0.015 : 0.04);
+    songs.setVolume(held ? 0 : state.vol, state.muted);
+  },
+  get held(){ return held; },
   /* A song starts a round quietly - about 40% - and swells with the round
      to full volume for the balloon storm, the same arc the generated band
      follows by adding instruments. */
