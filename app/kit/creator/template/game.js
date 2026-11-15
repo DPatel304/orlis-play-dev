@@ -1,6 +1,6 @@
-/* Star Catch - the starter game. Stars drift down; reach out and catch
-   them with your hands. Gold ones are worth double. Up to four play at once,
-   each with their own score.
+/* Star Catch - the starter game. Stars drift down through an evening sky;
+   reach out and catch them with your hands. Gold ones are worth double. Two
+   play at once (one alone is fine), each with their own score.
 
    A game is one object handed to Orlis.run at the end of this file. Its
    create(n) starts a round and gives back the round: step it, draw it,
@@ -50,25 +50,20 @@ function makeRound(players){
     },
 
     draw(c, W, H){
-      /* a night sky */
-      const sky = c.createLinearGradient(0, 0, 0, H);
-      sky.addColorStop(0, '#1e1b4b'); sky.addColorStop(1, '#4c1d95');
-      c.fillStyle = sky; c.fillRect(0, 0, W, H);
-      /* the stars */
+      /* the world: a calm painted evening - see "The Orlis look and feel" */
+      drawWorld(c, W, H);
+      /* the stars: flat colour, one shadow tone on the right */
       for (const s of stars){
         c.save();
         c.globalAlpha = Math.max(0, s.fade);
-        c.translate(s.x * W, s.y * H); c.rotate(s.spin);
-        drawStar(c, s.r * H, s.gold ? '#fbbf24' : '#f0f9ff', s.caught >= 0 ? Orlis.PLAYER_COLORS[s.caught] : null);
+        c.translate(s.x * W, s.y * H); c.rotate(s.spin * 0.3);
+        drawStar(c, s.r * H, s.gold ? '#ffb02e' : '#ffe680', s.caught >= 0 ? Orlis.PLAYER_COLORS[s.caught] : null);
         c.restore();
       }
-      /* each player's hands, as glowing circles in their colour */
+      /* each player's hands: glowing mitts in their colour, on top of everything */
       Orlis.pose.players.forEach((p, i) => {
         if (!p.present) return;
-        for (const hand of [p.hands.left, p.hands.right]){
-          c.beginPath(); c.arc(hand.x * W, hand.y * H, H * 0.03, 0, Math.PI * 2);
-          c.fillStyle = Orlis.PLAYER_COLORS[i]; c.globalAlpha = 0.8; c.fill(); c.globalAlpha = 1;
-        }
+        for (const hand of [p.hands.left, p.hands.right]) mitt(c, hand.x * W, hand.y * H, H * 0.03, Orlis.PLAYER_COLORS[i]);
       });
     },
 
@@ -80,16 +75,51 @@ function makeRound(players){
   };
 }
 
-/* a five-pointed star, centred on 0,0 */
-function drawStar(c, r, fill, ring){
-  c.beginPath();
-  for (let k = 0; k < 10; k++){
-    const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r * 0.45 : r;
-    c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+/* The world behind the stars: a sky that fades from evening blue to cream
+   at the horizon, a warm glow where the sun's going down on the left, and
+   two bands of hills - the far one paler, fading into the sky. */
+function drawWorld(c, W, H){
+  const sky = c.createLinearGradient(0, 0, 0, H * 0.8);
+  sky.addColorStop(0, '#8aa8d6'); sky.addColorStop(1, '#f6ead2');
+  c.fillStyle = sky; c.fillRect(0, 0, W, H);
+  const sun = c.createRadialGradient(W * 0.15, H * 0.62, 10, W * 0.15, H * 0.62, H * 0.7);
+  sun.addColorStop(0, 'rgba(255,226,170,.8)'); sun.addColorStop(1, 'rgba(255,226,170,0)');
+  c.fillStyle = sun; c.fillRect(0, 0, W, H);
+  for (const [y, col, amp] of [[0.8, '#a9c98f', 0.05], [0.9, '#8fbf6a', 0.04]]){
+    c.fillStyle = col; c.beginPath(); c.moveTo(0, H);
+    for (let x = 0; x <= W; x += W / 40) c.lineTo(x, H * (y - amp * (0.5 + 0.5 * Math.sin(x / W * 7 + y * 10))));
+    c.lineTo(W, H); c.closePath(); c.fill();
   }
-  c.closePath();
-  c.fillStyle = fill; c.shadowColor = fill; c.shadowBlur = r * 0.8; c.fill(); c.shadowBlur = 0;
-  if (ring){ c.lineWidth = r * 0.2; c.strokeStyle = ring; c.stroke(); }
+}
+
+/* a five-pointed star, centred on 0,0: flat colour, its shadow side on the
+   right (the sun's on the left), a ring in the catcher's colour */
+function drawStar(c, r, fill, ring){
+  const shape = () => {
+    c.beginPath();
+    for (let k = 0; k < 10; k++){
+      const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r * 0.45 : r;
+      c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    }
+    c.closePath();
+  };
+  shape(); c.fillStyle = fill; c.fill();
+  c.save(); shape(); c.clip();
+  c.fillStyle = 'rgba(52,40,96,.2)'; c.beginPath(); c.arc(r * 0.7, r * 0.4, r, 0, Math.PI * 2); c.fill();
+  c.restore();
+  if (ring){ shape(); c.lineWidth = r * 0.2; c.strokeStyle = ring; c.stroke(); }
+}
+
+/* a player's hand: a glowing mitt in their colour (every Orlis game's hands) */
+function mitt(c, x, y, r, col){
+  const g = c.createRadialGradient(x, y, r * 0.4, x, y, r * 2.4);
+  g.addColorStop(0, col + 'aa'); g.addColorStop(1, col + '00');
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 2.4, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+  c.lineWidth = r * 0.28; c.strokeStyle = col; c.stroke();
+  c.fillStyle = col; c.beginPath();
+  for (let i = 0; i < 8; i++){ const a = i * Math.PI / 4, d = i % 2 ? r * 0.22 : r * 0.55; c.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d); }
+  c.closePath(); c.fill();
 }
 
 Orlis.run({

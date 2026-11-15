@@ -4,7 +4,7 @@
   "version": "0.1",
   "blurb": "{{blurb}}",
   "about": "",
-  "players": [1, 4],
+  "players": [1, 2],
   "uses": "hands",
   "ages": 4,
   "tags": [],

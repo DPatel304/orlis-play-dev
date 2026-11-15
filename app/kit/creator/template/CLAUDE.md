@@ -41,7 +41,8 @@ Orlis.run({
 });
 ```
 
-Players are `Orlis.pose.players` (up to 4). Each has `present`, `hands.left`
+Players are `Orlis.pose.players` (4 places; for now only the first two
+fill - Orlis Play is played two at a time). Each has `present`, `hands.left`
 and `hands.right` (`x`, `y` from 0 to 1 across and down the screen, plus
 `speed`), `centre`, and `lm` (33 body points). Sounds: `Orlis.sfx.pop()`,
 `Orlis.sfx.gold()` and others in the skill - only those.
@@ -61,16 +62,28 @@ and `hands.right` (`x`, `y` from 0 to 1 across and down the screen, plus
   that Orlis Play games can't, and suggest a gentle version instead.
 - **Moving is the controller.** Big, simple movements anyone can do. No
   reading needed to play; show, don't tell.
-- **Fair for everyone at once.** Up to 4 players together; each has their
-  own colour (`Orlis.PLAYER_COLORS`) and score. A child joining or leaving
-  partway mustn't break anything.
+- **Fair for everyone at once.** Two players together for now (make it work
+  for one alone, too); each has their own colour (`Orlis.PLAYER_COLORS`) and
+  score. A child joining, leaving, or the camera losing them for a moment
+  partway mustn't break anything - and nobody scores while they're away.
+- **First person.** The players are their hands: a glowing circle in their
+  colour on each hand (the skill shows how). Don't draw the players - no
+  bodies, stick figures or skeletons. The screen is what they're looking at.
+- **Nothing to lose.** No lives, no game over, nothing that punishes: only
+  things to chase, catch, build or make. A two-year-old should get somewhere
+  without being told anything - big targets, generous reach, and a little
+  help when they're nearly there.
 - **Sealed off.** The game runs in a sandbox with no internet. Never use
   `fetch`, `XMLHttpRequest`, `WebSocket`, `import()`, `eval`, `new Function`,
   `localStorage`, `indexedDB`, `document.cookie`, `window.parent`,
   `window.top`, `window.open`, `navigator`, or workers. Draw everything
   yourself on the canvas - no images or files from anywhere.
-- **The Orlis look.** Bright, soft colours, rounded shapes, big readable
-  shapes from the sofa. Simple shapes drawn on the canvas.
+- **The Orlis look - a calm painted world.** Flat colour, no outlines, one
+  soft shadow tone on the right of things (the sun is up on the left), a
+  sky that fades to cream at the horizon, far hills fading into it. A few
+  muted colours for the world; the players' hands and the things they
+  catch are the brightest on screen. Lots of room. Words in cream rounded
+  "pill" cards. The skill has the colours and how - follow it.
 - **Smooth.** It runs on a family laptop: keep it light (no huge loops every
   frame).
 
