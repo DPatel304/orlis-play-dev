@@ -2,8 +2,8 @@ import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
 
 /* (the names of the body's points, the skeleton, and the players' colours:
    in pose-shared.js, which games can carry without the camera engine) */
-import { L, BONES, MAX_PLAYERS, PLAYER_COLORS } from './pose-shared.js';
-export { L, BONES, MAX_PLAYERS, PLAYER_COLORS };
+import { L, BONES, MAX_PLAYERS, PLAYING, PLAYER_COLORS } from './pose-shared.js';
+export { L, BONES, MAX_PLAYERS, PLAYING, PLAYER_COLORS };
 
 /* Steadying the landmarks: a One Euro filter on each - smoothing hard
    while a point is nearly still, where the camera's jitter shows, and less
@@ -130,6 +130,7 @@ function withTimeout(promise, ms){
 export const pose = {
   ready:false, usingCamera:false, reason:'', detail:'', activeId:'',
   players:Array.from({ length: MAX_PLAYERS }, (_, i) => blank(i)),
+  cap:PLAYING,               /* how many places can fill (see PLAYING) */
   personCount:0,             /* players: people in the game */
   seenCount:0,               /* everyone the camera can see, watchers too */
   /* Measured, not declared. "Will it run on a Pi" is a question about these
@@ -393,7 +394,7 @@ export const pose = {
     }
     for (const c of cands) if (!c.hit) c.miss += dt;
     this._cands = cands.filter(c => c.miss < 0.25);
-    const free = this.players.filter(p => !p.present);
+    const free = this.players.filter((p, i) => !p.present && i < this.cap);
     const joiners = this._cands.filter(c => c.hit && c.seen >= JOIN_AFTER).map(c => c.hit).sort((a, b) => a.x - b.x);
     for (const d of joiners) this._cands = this._cands.filter(c => c.hit !== d);
     for (const p of free){

@@ -17,6 +17,9 @@ export const BONES = [
   [11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]
 ];
 
-/* Up to four play at once, each in their own colour. */
+/* Up to four can play at once, each in their own colour - the games are
+   made for four. For now, while we play-test with our own children, two do
+   (PLAYING): only the first two places ever fill. Change it to open up. */
 export const MAX_PLAYERS = 4;
+export const PLAYING = 2;
 export const PLAYER_COLORS = ['#3da9ff', '#ff8a3d', '#3fcf7f', '#c46bff'];

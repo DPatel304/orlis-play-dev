@@ -414,3 +414,17 @@ test('the cursor stays on one hand when both are about as clearly seen', () => {
   pose.mouse.active = false;
   assert.equal(pose.cursorHand(p), p.hands.left, 'one clearly better seen: that one');
 });
+
+test('while play is capped at two, a third person waits; opened up, they join', () => {
+  resetPose();
+  for (const p of pose.players){ p.present = false; p.lm = null; p.lostFor = 99; }
+  assert.equal(pose.cap, 2);
+  arrive([person(0.2), person(0.5), person(0.8)]);
+  assert.equal(pose.personCount, 2);
+  assert.equal(pose.players[2].present, false);
+  pose.cap = 4;
+  arrive([person(0.2), person(0.5), person(0.8)]);
+  assert.equal(pose.personCount, 3);
+  pose.cap = 2;
+  for (const p of pose.players){ p.present = false; p.lm = null; p.lostFor = 99; }
+});

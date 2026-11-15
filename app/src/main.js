@@ -113,7 +113,7 @@ function toCalibration(){
 function toGame(g){
   game = g;
   ambience.stop();
-  players = MAX_PLAYERS;
+  players = pose.cap;
   /* The camera first, if it's off: a moment's "Starting the camera" (the
      first time, a few, while the body tracker loads). */
   if (pose.on || pose.mouse.active && pose.reason === 'debug'){ music.start(game.music); lineUpThenPlay(); return; }

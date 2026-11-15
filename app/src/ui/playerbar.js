@@ -40,8 +40,9 @@ export class PlayerBar {
      faint rings, so it's clear there's room for more. */
   draw(c, cx, cy, r, ring = '#fff6e2'){
     const gap = r * 2.7;
-    for (let i = 0; i < MAX_PLAYERS; i++){
-      const x = cx + (i - (MAX_PLAYERS - 1) / 2) * gap, k = this.in[i];
+    const n = Math.min(MAX_PLAYERS, pose.cap);
+    for (let i = 0; i < n; i++){
+      const x = cx + (i - (n - 1) / 2) * gap, k = this.in[i];
       /* An empty place: a faint dashed ring. */
       c.save();
       c.globalAlpha = 0.35 * (1 - k);

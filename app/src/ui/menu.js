@@ -252,7 +252,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
 
 /* How many can play: '1-4 players', or just the one number. */
 export function howMany(g){
-  const lo = g.minPlayers || 1, hi = g.maxPlayers || MAX_PLAYERS;
+  const lo = Math.min(g.minPlayers || 1, pose.cap), hi = Math.min(g.maxPlayers || MAX_PLAYERS, pose.cap);
   return lo === hi ? `${hi} player${hi > 1 ? 's' : ''}` : `${lo}\u2013${hi} players`;
 }
 
