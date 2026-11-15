@@ -100,10 +100,10 @@ function popTrailer(game){
   return self;
 }
 
-/* ---------- Last Known Position: three astronauts on the run ---------- */
+/* ---------- Last Known Position: the two crew on the run ---------- */
 function lkpTrailer(game){
   const fake = { players: fakePlayers(), mouse: { active: true, x: 0.5, y: 0.5 } };
-  const N = 3;
+  const N = 2;
   let inst = null, bots = null;
   const fresh = () => sandbox(fake, () => {
     const was = story.on; story.on = false;

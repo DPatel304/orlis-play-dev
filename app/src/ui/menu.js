@@ -37,7 +37,7 @@ const BLURB = {
    a simple white picture on it. */
 export const ICONS = {
   'pop-party': { cols: ['#ff7eb3', '#ffa25a'], glyph: 'balloon' },
-  'last-known-position': { cols: ['#4f46e5', '#22d3ee'], glyph: 'rocket' },
+  'last-known-position': { cols: ['#7fb8c9', '#b4c79a'], glyph: 'rocket' },
   'uncle-bs-boat': { cols: ['#0ea5e9', '#5eead4'], glyph: 'boat' },
   'dance-party': { cols: ['#f43f5e', '#fbbf24'], glyph: 'note' },
   'castle-defense': { cols: ['#10b981', '#a3e635'], glyph: 'tower' },
@@ -85,7 +85,7 @@ export function looks(g){
 
 
 /* Games kept off the home screen for now (still there, just not shown). */
-export const HIDDEN = new Set(['uncle-bs-boat', 'dance-party', 'castle-defense', 'last-known-position']);
+export const HIDDEN = new Set(['uncle-bs-boat', 'dance-party', 'castle-defense']);
 /* What was picked last - kept between launches, by game. */
 const LAST = 'orlis.lastGame';
 let lastFocus = null;
