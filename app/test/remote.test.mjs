@@ -84,6 +84,17 @@ test('Back closes an open window; with none, it goes back (pauses a game, leaves
   assert.equal(backs, 1);
 });
 
+test('Back closes a small card (Create\'s, Family\'s) as a tap outside it does, and goes no further', () => {
+  const { ui } = home();
+  const card = screen(ui, 'dim fpopwrap');
+  btn(card, 'ok', 700, 800, 200, 100, 'btn go');
+  let shut = 0; card.addEventListener('pointerdown', (e) => { if (e.target === card) shut++; });
+  let backs = 0; remote.back = () => backs++;
+  press('Backspace');
+  assert.equal(shut, 1, 'the card closed');
+  assert.equal(backs, 0, 'and the page behind stays');
+});
+
 test('the boot plays the kalimba as the lights merge, and hands over without waiting for the camera', () => {
   resetDom();
   let chimed = 0; sfx.boot = () => { chimed++; };

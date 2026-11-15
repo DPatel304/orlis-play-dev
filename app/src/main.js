@@ -201,13 +201,14 @@ function handsAboveHead(p){
 }
 
 function checkPause(dt){
-  /* A game can say both hands up means something else right now - copying
-     a giraffe, say - and isn't asking to pause. */
-  if (mode !== 'play' || paused || (inst && inst.pausable && !inst.pausable())) { handsUp = 0; return; }
+  /* Pausing is the remote's Back (or everyone stepping away). Holding both
+     hands up pauses only a game that asks for it (pauseHold, in seconds) -
+     in most, reaching up is part of play - and a game can say it means
+     something else right now (copying a giraffe, say). */
+  if (mode !== 'play' || paused || !game.pauseHold || (inst && inst.pausable && !inst.pausable())) { handsUp = 0; return; }
   const any = pose.players.slice(0, players).some(handsAboveHead);
   handsUp = any ? handsUp + dt : 0;
-  /* A game where reaching up is part of play can ask for a longer hold. */
-  if (handsUp >= (game.pauseHold || 1.5)){ handsUp = 0; openPause(); }
+  if (handsUp >= game.pauseHold){ handsUp = 0; openPause(); }
 }
 function openPause(){
   if (paused) return;

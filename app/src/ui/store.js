@@ -23,6 +23,7 @@ import { trailer } from './trailer.js';
 import { topBar } from './tabs.js';
 import { byId } from '../games/index.js';
 import { PAPER } from './boot.js';
+import { pose } from '../tracking/pose.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const kb = (n) => n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
@@ -35,7 +36,9 @@ const FEW = 4;               /* fewer games than this: the banner and one row */
 let seen = null, seenBy = null;
 
 /* Words for a game's details. */
-const players = (g) => { const [lo, hi] = g.players || [1, 4]; return lo === hi ? `${hi} player${hi > 1 ? 's' : ''}` : `${lo}–${hi} players`; };
+/* (as many as play at once for now: pose.cap) */
+const range = (g) => { const [lo, hi] = g.players || [1, 4]; return [Math.min(lo, pose.cap), Math.min(hi, pose.cap)]; };
+const players = (g) => { const [lo, hi] = range(g); return lo === hi ? `${hi} player${hi > 1 ? 's' : ''}` : `${lo}–${hi} players`; };
 const USES = { hands: 'Hands & arms', body: 'Full body' };
 const KIND = (g) => [(g.tags || [])[0], USES[g.uses]].filter(Boolean).join(' · ') || players(g);
 const ages = (g) => g.ages ? `Ages ${g.ages}+` : '';
@@ -238,7 +241,7 @@ export function storePage({ nav = {}, onPlay, onChange = () => {}, onWho, onReca
       /* (the owner's note, apart from the game's own words: what to do) */
       if (g.submission) left.appendChild(h('p', 'sowner', `Waiting for your OK. Play it for 20 seconds with Try it, then approve it on the management page.`));
       const here = library.installed.get(g.id);
-      const rows = [['Made by', g.by || 'Someone in the family'], ['Players', (([lo, hi]) => lo === hi ? String(hi) : `${lo} to ${hi}`)(g.players || [1, 4])], ['You’ll use', USES[g.uses] || 'Hands & arms'],
+      const rows = [['Made by', g.by || 'Someone in the family'], ['Players', (([lo, hi]) => lo === hi ? String(hi) : `${lo} to ${hi}`)(range(g))], ['You’ll use', USES[g.uses] || 'Hands & arms'],
         ['Ages', g.ages ? `${g.ages} and up` : 'All ages'], ['Size', kb(g.bytes)], ['On this PC', here ? (newer(g.version, here) ? `Version ${here} (update ready)` : 'Yes, on the home screen') : 'Not yet']];
       facts.innerHTML = rows.map(([k, v]) => `<div><b>${esc(k)}</b><span>${esc(v)}</span></div>`).join('');
       p.querySelector('.smoves')?.remove();

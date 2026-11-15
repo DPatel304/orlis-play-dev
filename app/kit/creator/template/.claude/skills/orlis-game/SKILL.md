@@ -17,7 +17,7 @@ Orlis.run({
   endless: false,
   music: undefined,    // Orlis Play's band, which builds through the round; or 'action' (tense)
   loud: false,         // true: the music's up from the start (a dance game)
-  pauseHold: 1.5,      // seconds both hands up to pause (more if reaching up is part of play)
+  // (pausing: Back on the remote, or everyone stepping away - leave pausing to Orlis Play)
   keepSitters: false,  // true: someone squatting or sitting stays a player (squat games)
   minPlayers: 1, maxPlayers: 4,
   create(n){ return round; }

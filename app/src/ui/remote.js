@@ -89,6 +89,8 @@ export const remote = {
       const layer = this.layer();
       const close = layer && layer.classList.contains('dim') && layer.querySelector('.btn.close');
       if (close){ sfx.back(); close.click(); return true; }
+      /* a small card (Create's, Family's) closes as a tap outside it does */
+      if (layer && layer.classList.contains('fpopwrap')){ layer.dispatchEvent(new Event('pointerdown')); return true; }
       if (this.back) this.back();
       return true;
     }
