@@ -25,19 +25,22 @@ export const PARTS = {
   extra: ['none', 'cap', 'bow', 'glasses', 'headphones', 'crown', 'flower']
 };
 const INK = '#1f1a3a';
-/* The style: how avatars are drawn (Orlis Play's look by default).
+/* The style: how avatars are drawn. The default is Orlis Play's house
+   style: no outlines, flat colour cel-shaded - one shadow tone on the right,
+   the sun being up on the left - and a soft rim of sunlight on the left.
      outline  the outline's colour (null: none), width  its thickness (x1)
-     shade    'lit' (lit from the left), 'flat' (one colour each), 'clay'
-              (soft and rounded, a shine on top)
-     feature  the colour of eyes, brows and mouth */
-const STYLE = { outline: INK, width: 1, shade: 'lit', feature: INK };
+     shade    'cel' (the house style), 'lit' (soft gradients, lit from the
+              left), 'flat' (one colour each), 'clay' (soft, a shine on top)
+     feature  the colour of eyes, brows and mouth
+     rim      the rim light's colour (null: none; 'cel' only) */
+const STYLE = { outline: null, width: 1, shade: 'cel', feature: '#2d2a26', rim: 'rgba(255,240,200,.95)' };
 let S = { ...STYLE };
 export function setStyle(s = {}){ S = { ...STYLE, ...s }; }
 /* a shape's outline, if the style has one */
 const edge = (c) => { if (!S.outline) return; c.strokeStyle = S.outline; c.stroke(); };
 /* a fill in a colour, shaded the style's way, over a shape about r across centred (cx, cy) */
 function shaded(c, col, cx, cy, r){
-  if (S.shade === 'flat') return col;
+  if (S.shade === 'flat' || S.shade === 'cel') return col;
   if (S.shade === 'clay'){
     const g = c.createRadialGradient(cx - r * 0.35, cy - r * 0.45, r * 0.05, cx, cy, r * 1.15);
     g.addColorStop(0, mix(col, '#ffffff', 0.45)); g.addColorStop(0.35, mix(col, '#ffffff', 0.12)); g.addColorStop(0.8, col); g.addColorStop(1, mix(col, '#000000', 0.28));
@@ -58,6 +61,37 @@ function mix(a, b, k){
 }
 const circle = (c, x, y, r) => { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, Math.PI * 2); };
 
+/* The cel pass: the figure drawn flat into a scratch canvas, a hard-edged
+   shadow tone laid over its right side (the line from (top, bottom) x),
+   then put down over a copy of its shape in sunlight, nudged up-left - the
+   rim. Only the outermost call does it (a body's head is part of the body). */
+let depth = 0;
+const scratch = [null, null];
+function sheet(i, w, h){
+  if (!scratch[i]){ if (typeof document === 'undefined') return null; scratch[i] = document.createElement('canvas'); }
+  const cv = scratch[i]; if (cv.width < w) cv.width = w; if (cv.height < h) cv.height = h;
+  return cv;
+}
+function cel(c, box, line, rimOff, draw){
+  if (S.shade !== 'cel' || depth > 0 || !c.getTransform){ depth++; try { draw(c); } finally { depth--; } return; }
+  const [bx, by, bw, bh] = box, m = c.getTransform(), k = Math.min(3, Math.max(0.25, Math.hypot(m.a, m.b)));
+  const w = Math.ceil(bw * k), h = Math.ceil(bh * k);
+  const A = sheet(0, w, h), B = sheet(1, w, h);
+  if (!A || !B){ depth++; try { draw(c); } finally { depth--; } return; }
+  const a = A.getContext('2d'); a.setTransform(1, 0, 0, 1, 0, 0); a.clearRect(0, 0, w, h);
+  a.setTransform(k, 0, 0, k, -bx * k, -by * k);
+  depth++; try { draw(a); } finally { depth--; }
+  a.save(); a.setTransform(k, 0, 0, k, -bx * k, -by * k); a.globalCompositeOperation = 'source-atop'; a.fillStyle = 'rgba(52,40,96,.2)';
+  a.beginPath(); a.moveTo(line[0], by); a.lineTo(bx + bw, by); a.lineTo(bx + bw, by + bh); a.lineTo(line[1], by + bh); a.closePath(); a.fill(); a.restore();
+  const sw = w / k, sh = h / k;
+  if (S.rim){
+    const b = B.getContext('2d'); b.setTransform(1, 0, 0, 1, 0, 0); b.globalCompositeOperation = 'copy'; b.drawImage(A, 0, 0, w, h, 0, 0, w, h);
+    b.globalCompositeOperation = 'source-in'; b.fillStyle = S.rim; b.fillRect(0, 0, w, h); b.globalCompositeOperation = 'source-over';
+    c.drawImage(B, 0, 0, w, h, bx - rimOff, by - rimOff * 0.75, sw, sh);
+  }
+  c.drawImage(A, 0, 0, w, h, bx, by, sw, sh);
+}
+
 /* A random look ("Surprise me"). */
 export function surprise(rand = Math.random){
   const o = {};
@@ -66,7 +100,10 @@ export function surprise(rand = Math.random){
 }
 
 /* ---------- the head ---------- */
-export function head(c, x, y, r, look, t = 0, { back = false } = {}){
+export function head(c, x, y, r, look, t = 0, opts = {}){
+  cel(c, [x - r * 1.9, y - r * 1.8, r * 3.8, r * 3.3], [x + r * 0.5, x + r * 0.62], r * 0.07, (cc) => headFlat(cc, x, y, r, look, t, opts));
+}
+function headFlat(c, x, y, r, look, t, { back = false } = {}){
   const skin = pick(look, 'skin'), hc = pick(look, 'hairColor'), style = pick(look, 'hair');
   const lw = Math.max(1.5, r * 0.07) * (S.width || 1), fw = Math.max(1.5, r * 0.07);
   c.save(); c.translate(x, y); c.lineJoin = 'round'; c.lineCap = 'round';
@@ -179,14 +216,18 @@ export function head(c, x, y, r, look, t = 0, { back = false } = {}){
 /* ---------- the whole avatar, standing ---------- */
 /* opts: { costume: 'space' (a space suit in their colour, a glass helmet),
    back: true (seen from behind) } */
-export function body(c, x, base, h, look, t = 0, pose = 'stand', { costume = null, back = false } = {}){
+export function body(c, x, base, h, look, t = 0, pose = 'stand', opts = {}){
+  const u = h / 300;
+  /* their shadow on the ground (outside the cel pass: no rim on it) */
+  c.fillStyle = 'rgba(20,15,45,.22)'; c.beginPath(); c.ellipse(x, base, 60 * u, 12 * u, 0, 0, Math.PI * 2); c.fill();
+  cel(c, [x - 160 * u, base - 400 * u, 320 * u, 425 * u], [x + 33 * u, x + 42 * u], h * 0.012, (cc) => bodyFlat(cc, x, base, h, look, t, pose, opts));
+}
+function bodyFlat(c, x, base, h, look, t, pose, { costume = null, back = false } = {}){
   const u = h / 300, fav = pick(look, 'color'), space = costume === 'space';
   const skin = pick(look, 'skin'), outfit = space ? 'plain' : pick(look, 'outfit');
   const lite = mix(fav, '#ffffff', 0.3), dark = mix(fav, '#000000', 0.3);
   const lw = Math.max(1.5, 5 * u) * (S.width || 1);
   c.save(); c.translate(x, base); c.lineJoin = 'round'; c.lineCap = 'round';
-  /* shadow */
-  c.fillStyle = 'rgba(20,15,45,.22)'; c.beginPath(); c.ellipse(0, 0, 60 * u, 12 * u, 0, 0, Math.PI * 2); c.fill();
   const limb = (pts, w, col) => {
     for (const [ww, sc] of (S.outline ? [[w + lw * 2, S.outline], [w, col]] : [[w, col]])){ c.strokeStyle = sc; c.lineWidth = ww; c.beginPath(); pts.forEach(([a, b], k) => (k ? c.lineTo(a * u, b * u) : c.moveTo(a * u, b * u))); c.stroke(); }
   };
@@ -238,7 +279,8 @@ export function portrait(c, x, y, s, look, t = 0){
   c.save();
   const r = s * 0.22;
   c.beginPath(); c.roundRect(x - s / 2, y - s / 2, s, s, r);
-  const g = c.createLinearGradient(x - s / 2, y - s / 2, x + s / 2, y + s / 2); g.addColorStop(0, mix(fav, '#ffffff', 0.35)); g.addColorStop(1, fav);
+  let g = mix(fav, '#ffffff', 0.3);
+  if (S.shade !== 'cel'){ g = c.createLinearGradient(x - s / 2, y - s / 2, x + s / 2, y + s / 2); g.addColorStop(0, mix(fav, '#ffffff', 0.35)); g.addColorStop(1, fav); }
   c.fillStyle = g; c.fill(); c.clip();
   /* shoulders, then the head */
   c.fillStyle = mix(fav, '#000000', 0.18); c.beginPath(); c.ellipse(x, y + s * 0.55, s * 0.36, s * 0.22, 0, 0, Math.PI * 2); c.fill();
