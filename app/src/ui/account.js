@@ -26,7 +26,7 @@ const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || null;
 const save = (v) => { try { v ? localStorage.setItem(KEY, JSON.stringify(v)) : localStorage.removeItem(KEY); } catch {} };
 
 export const account = {
-  /* { server: { url, name }, token, account: { id, email, role }, household: { id, name }, profiles: [...] (the whole family's), current } */
+  /* { server: { url, id, name }, token, account: { id, email, role }, household: { id, name }, profiles: [...] (the whole family's), current } */
   state: load(),
   get needed(){ return inApp(); },
   get signedIn(){ return !!(this.state && this.state.token); },
@@ -57,9 +57,37 @@ export const account = {
       this.set({ account: me.account, household: me.household || null, profiles: me.profiles });
     } catch (e){ if (e.status === 401) this.signOut(); }
   },
-  call: (method, path, body) => {
+  call: async (method, path, body) => {
     const s = account.state;
-    return call(s.server.url, method, path, body, s.token);
+    try { return await call(s.server.url, method, path, body, s.token); }
+    catch (e){
+      /* out of reach: perhaps the server's laptop has a new address */
+      if (e.status === 0 && await account.findAgain()) return call(account.state.server.url, method, path, body, s.token);
+      throw e;
+    }
+  },
+
+  /* The server's laptop can get a new address on the Wi-Fi (a router does
+     that, now and then) - and someone who only comes by once a month would
+     never reach it again. So: out of reach at the old address, look for the
+     same server on this Wi-Fi (the same id, or - signed in before servers
+     had ids - the same name) and keep its new address. True if it's found
+     somewhere new. (At most once a minute: it takes a moment.) */
+  lastLook: 0,
+  async findAgain(){
+    const s = this.state;
+    if (!s || !s.server || Date.now() - this.lastLook < 60 * 1000) return false;
+    this.lastLook = Date.now();
+    for (const f of await findServers()){
+      if (!f || !f.url || f.url === s.server.url) continue;
+      try {
+        const r = await hello(f.url);
+        if (s.server.id ? r.id !== s.server.id : r.name !== s.server.name) continue;
+        this.set({ server: { ...s.server, url: f.url, id: r.id || s.server.id } });
+        return true;
+      } catch {}
+    }
+    return false;
   }
 };
 
@@ -144,10 +172,10 @@ export function welcome(done, { auto = true } = {}){
     show(h('h2', '', 'Finding your Orlis server…'), h('p', 'lede', 'Looking on this Wi-Fi.'));
     const saved = account.state && account.state.server;
     let found = [];
-    if (saved){ try { const r = await hello(saved.url); found = [{ url: saved.url, name: r.name, setup: r.setup }]; } catch {} }
+    if (saved){ try { const r = await hello(saved.url); found = [{ url: saved.url, id: r.id, name: r.name, setup: r.setup }]; } catch {} }
     if (!found.length){
       const list = await findServers();
-      for (const sv of list){ try { const r = await hello(sv.url); found.push({ url: sv.url, name: r.name, setup: r.setup }); } catch {} }
+      for (const sv of list){ try { const r = await hello(sv.url); found.push({ url: sv.url, id: r.id, name: r.name, setup: r.setup }); } catch {} }
     }
     if (found.length === 1) return connect(found[0]);
     if (found.length > 1) return choose(found);
@@ -161,7 +189,7 @@ export function welcome(done, { auto = true } = {}){
       let u = url.trim(); if (!/^https?:\/\//.test(u)) u = 'http://' + u;
       if (!/:\d+$/.test(u.replace(/\/$/, ''))) u = u.replace(/\/$/, '') + ':47871';
       const r = await hello(u);
-      connect({ url: u, name: r.name, setup: r.setup });
+      connect({ url: u, id: r.id, name: r.name, setup: r.setup });
     });
     show(h('h2', '', 'Couldn\'t find an Orlis server'),
       h('p', 'lede', 'Make sure Orlis Server is running on the laptop, and that this PC is on the same home Wi-Fi.'),
@@ -170,7 +198,7 @@ export function welcome(done, { auto = true } = {}){
 
   /* 2: in - set up, sign in, or join */
   function connect(sv){
-    account.set({ server: { url: sv.url, name: sv.name } });
+    account.set({ server: { url: sv.url, name: sv.name, ...(sv.id ? { id: sv.id } : {}) } });
     if (sv.setup) return setup(sv);
     signIn(sv);
   }

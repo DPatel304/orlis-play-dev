@@ -29,6 +29,24 @@ async function tx(mode, fn){
     t.onerror = () => { d.close(); no(t.error); };
   });
 }
+/* What this PC knows was sent, kept for when the server's out of reach (a
+   creator who only comes by now and then): each game's highest version sent
+   - so a change made away from the server still gets a newer number - and
+   how they went, as of the last visit. Per account. */
+const SENT = 'orlis.sent';
+const vOf = (v) => String(v).split('.').map(Number);
+const later = (a, b) => { const x = vOf(a), y = vOf(b); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
+function known(){
+  const me = account.state && account.state.account && account.state.account.id;
+  let all = {}; try { all = JSON.parse(localStorage.getItem(SENT)) || {}; } catch {}
+  const mine = all[me] || { versions: {}, list: null, at: 0 };
+  return { mine, save(){ if (!me) return; all[me] = mine; try { localStorage.setItem(SENT, JSON.stringify(all)); } catch {} } };
+}
+function remember(gameId, version){
+  const k = known(), was = k.mine.versions[gameId];
+  if (!was || later(version, was)){ k.mine.versions[gameId] = String(version); k.save(); }
+}
+
 const canCreate = () => account.signedIn && (account.role === 'creator' || account.role === 'owner');
 
 let busy = null;
@@ -60,14 +78,18 @@ export const outbox = {
     busy = (async () => {
       const done = { sent: 0, turnedAway: 0, reached: true };
       if (!canCreate()) return done;
-      const s = account.state;
+      const send = (x) => { const s = account.state;
+        return fetch(s.server.url.replace(/\/$/, '') + '/api/submissions', { method: 'POST', signal: AbortSignal.timeout(20000),
+          headers: { 'Content-Type': 'application/octet-stream', Authorization: `Bearer ${s.token}` }, body: x.bytes }); };
       for (const x of await this.list()){
         let r;
-        try {
-          r = await fetch(s.server.url.replace(/\/$/, '') + '/api/submissions', { method: 'POST', signal: AbortSignal.timeout(20000),
-            headers: { 'Content-Type': 'application/octet-stream', Authorization: `Bearer ${s.token}` }, body: x.bytes });
-        } catch { done.reached = false; break; }
-        if (r.ok){ await this.remove(x.key); done.sent++; continue; }
+        try { r = await send(x); }
+        catch {
+          /* not at the old address: the server may have a new one */
+          if (!(await account.findAgain())){ done.reached = false; break; }
+          try { r = await send(x); } catch { done.reached = false; break; }
+        }
+        if (r.ok){ remember(x.gameId, x.version); await this.remove(x.key); done.sent++; continue; }
         let why = 'The server didn’t take it.';
         try { why = (await r.json()).message || why; } catch {}
         await tx('readwrite', st => st.put({ ...x, problem: why }));
@@ -79,6 +101,16 @@ export const outbox = {
   },
   async sent(){
     if (!canCreate()) return [];
-    try { return (await account.call('GET', '/api/submissions')).submissions || []; } catch { return null; }
-  }
+    let list;
+    try { list = (await account.call('GET', '/api/submissions')).submissions || []; } catch { return null; }
+    const k = known();
+    k.mine.list = list.slice(0, 50); k.mine.at = Date.now();
+    for (const x of list) if (!k.mine.versions[x.gameId] || later(x.version, k.mine.versions[x.gameId])) k.mine.versions[x.gameId] = String(x.version);
+    k.save();
+    return list;
+  },
+  /* as of the last time the server was in reach: { list, at } (list null if never) */
+  lastSent(){ const { mine } = known(); return { list: mine.list, at: mine.at }; },
+  /* the highest version of a game this PC knows was sent, or null */
+  sentVersion(gameId){ return known().mine.versions[gameId] || null; }
 };

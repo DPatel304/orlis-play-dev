@@ -20,7 +20,21 @@ home Wi-Fi** - it is not on the internet.
    Your home Wi-Fi should be set to Private: Settings > Network & internet >
    Wi-Fi > your network > Private network.
 5. The first account made becomes the **owner** (you). After that, joining
-   needs an invite code from the owner.
+   needs an invite code from the owner. For now, everyone who joins is a
+   **creator** (they can make games); on the management page you can make
+   anyone a player instead.
+
+## Creators who live somewhere else
+
+Someone who doesn't live with you sets up at your house, once: Orlis Play on
+their laptop, on your Wi-Fi, with an invite code. After that, at home, they
+stay signed in and make games as usual: **Check and send** keeps the game on
+their laptop ("It'll send by itself..."). The next time they're at your
+house with the app open (and this server running), it goes in by itself
+within a couple of minutes, to wait for your OK. A change made at home gets
+the next version number by itself, and their Create tab shows how each one
+went as of their last visit. If your laptop's Wi-Fi address has changed in
+between, the app finds it again.
 
 ## The Store
 

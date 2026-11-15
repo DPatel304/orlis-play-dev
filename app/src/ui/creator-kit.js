@@ -22,6 +22,8 @@ const UNSAFE_PICTURE = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*
 export const EDITABLE = ['game.js', 'orlis.json'];
 
 /* a game's id, from its name: "Bird Hoops!" -> "bird-hoops" */
+const tag = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
+
 export function idOf(name){
   const s = String(name).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
   return s.length >= 2 ? s : `game-${s || 'new'}`;
@@ -37,8 +39,11 @@ const KEPT = ['about', 'players', 'uses', 'ages', 'tags', 'howto', 'icon'];
 export function newGame({ name, idea = '', from = null, taken = [] }){
   name = String(name).trim().slice(0, 40) || 'My game';
   idea = String(idea).trim().slice(0, 300) || (from ? `A new version of ${from.name}` : 'A movement game for the family');
-  let id = idOf(name);
-  for (let n = 2; taken.includes(id); n++) id = `${idOf(name).slice(0, 37)}-${n}`;
+  /* the name, and a short tag of its own: two creators who both make a
+     "Firefly Jar" never clash at the server (the id never changes, and no
+     one sees it) */
+  let id;
+  do { id = `${idOf(name).slice(0, 35)}-${tag()}`; } while (taken.includes(id));
   const files = {};
   for (const [path, text] of Object.entries(TEMPLATE)){
     let t = text;

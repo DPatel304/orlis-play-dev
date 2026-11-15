@@ -12,7 +12,7 @@ const game = (id, { version = '1.0', code = 'postMessage({ t: "ready" });', kit 
 
 async function server(){
   const dataDir = mkdtempSync(join(tmpdir(), 'orlis-sub-'));
-  const s = await start({ dataDir, port: 0, discoveryPort: false, starters: [{ name: 'pop-party.orlis', data: writeOrlis({ 'manifest.json': JSON.stringify({ format: 1, kit: 2, id: 'pop-party', name: 'Pop Party', version: '1.1', by: 'Orlis Play', blurb: 'x' }), 'game.js': 'x' }) }] });
+  const s = await start({ everyoneCreates: false, dataDir, port: 0, discoveryPort: false, starters: [{ name: 'pop-party.orlis', data: writeOrlis({ 'manifest.json': JSON.stringify({ format: 1, kit: 2, id: 'pop-party', name: 'Pop Party', version: '1.1', by: 'Orlis Play', blurb: 'x' }), 'game.js': 'x' }) }] });
   const base = `http://127.0.0.1:${s.port}`;
   const call = async (method, path, body, token, extra = {}) => {
     const file = Buffer.isBuffer(body);
@@ -54,6 +54,12 @@ test('a creator sends a game in; the owner tries it and approves it; it is in th
     assert.equal(g.by, "Max's family");
     assert.ok(existsSync(join(dataDir, 'games', 'bird-hoops.orlis')));
     assert.equal((await call('GET', '/api/submissions', null, friend)).submissions[0].state, 'approved');
+    /* a change sent as the same version (or older) is turned away, saying why -
+       families who have 1.0 would never be offered it */
+    for (const v of ['1.0', '0.9']){
+      const same = await call('POST', '/api/submissions', game('bird-hoops', { version: v, code: 'postMessage({ t: "ready" }); /* changed */' }), friend);
+      assert.equal(same.status, 409); assert.equal(same.error, 'old_version'); assert.match(same.message, /already has version 1\.0/);
+    }
     /* a newer version, sent later */
     assert.equal((await call('POST', '/api/submissions', game('bird-hoops', { version: '1.1' }), friend)).status, 201);
   } finally { await s.close(); }

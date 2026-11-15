@@ -9,9 +9,9 @@ import { HELLO } from '../src/discovery.js';
 import { LIMITS } from '../src/api.js';
 
 /* A fresh server on a spare port, with its own empty data folder. */
-async function fresh(){
+async function fresh(opts = { everyoneCreates: false }){
   const dataDir = mkdtempSync(join(tmpdir(), 'orlis-'));
-  const s = await start({ dataDir, port: 0, discoveryPort: 0, name: 'Test Orlis' });
+  const s = await start({ ...opts, dataDir, port: 0, discoveryPort: 0, name: 'Test Orlis' });
   const call = async (method, path, body, token) => {
     const r = await fetch(`http://127.0.0.1:${s.port}${path}`, {
       method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -26,7 +26,10 @@ const grownUp = (email, extra = {}) => ({ email, password: 'correct horse', name
 test('a new server asks to be set up; the first account is the owner and needs no invite', async () => {
   const { s, call } = await fresh();
   try {
-    assert.deepEqual(await call('GET', '/api/hello'), { status: 200, app: 'orlis', name: 'Test Orlis', version: '0.1.0', setup: true });
+    const hi = await call('GET', '/api/hello');
+    assert.match(hi.id, /^[0-9a-f]{18}$/, 'the server\'s own id, for finding it again');
+    delete hi.id;
+    assert.deepEqual(hi, { status: 200, app: 'orlis', name: 'Test Orlis', version: '0.1.0', setup: true });
     const me = await call('POST', '/api/signup', grownUp('Parent@Example.com'));
     assert.equal(me.status, 201);
     assert.equal(me.account.role, 'owner');
@@ -35,6 +38,34 @@ test('a new server asks to be set up; the first account is the owner and needs n
     assert.ok(me.token.length >= 40);
     assert.equal((await call('GET', '/api/hello')).setup, false);
   } finally { await s.close(); }
+});
+
+test('for now everyone who joins makes games: any invite makes a creator, and the owner can still make one a player', async () => {
+  const { s, call } = await fresh({});
+  try {
+    const owner = await call('POST', '/api/signup', grownUp('owner@example.com'));
+    const fam = await call('POST', '/api/invites', { household: 'new' }, owner.token);
+    assert.equal(fam.role, 'creator', 'an invite for a new family');
+    const bro = await call('POST', '/api/signup', grownUp('bro@example.com', { invite: fam.code }));
+    assert.equal(bro.account.role, 'creator');
+    const mine = await call('POST', '/api/invites', { household: 'mine' }, bro.token);
+    assert.equal(mine.status, 201, 'a grown-up can still bring in their own family');
+    const wife = await call('POST', '/api/signup', grownUp('wife@example.com', { invite: mine.code }));
+    assert.equal(wife.account.role, 'creator', 'and they make games too');
+    const r = await call('POST', `/api/accounts/${wife.account.id}/role`, { role: 'player' }, owner.token);
+    assert.equal(r.role, 'player');
+  } finally { await s.close(); }
+});
+
+test('the server keeps its id when it restarts', async () => {
+  const { s, dataDir, call } = await fresh({});
+  const id = (await call('GET', '/api/hello')).id;
+  await s.close();
+  const again = await start({ dataDir, port: 0, discoveryPort: false });
+  try {
+    const r = await (await fetch(`http://127.0.0.1:${again.port}/api/hello`)).json();
+    assert.equal(r.id, id);
+  } finally { await again.close(); }
 });
 
 test('after that, joining needs an invite from the owner - used once, with its role', async () => {

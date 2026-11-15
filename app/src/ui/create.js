@@ -213,7 +213,9 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     if (problems.length) return problemsPop(g, `${g.manifest.name} needs a fix before it’s sent`, problems);
     let m = JSON.parse(now.manifest);
     try {
+      /* (out of reach of the server, what this PC remembers sending counts too) */
       const before = [...((await outbox.sent()) || []).filter(x => x.gameId === m.id), ...(await outbox.list()).filter(x => x.gameId === m.id)].map(x => x.version);
+      if (outbox.sentVersion(m.id)) before.push(outbox.sentVersion(m.id));
       const top = before.reduce((a, v) => (!a || newer(v, a) ? v : a), null);
       if (top && !newer(m.version, top)){
         const v = nextVersion(top);
@@ -336,12 +338,15 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
       sec.appendChild(list);
     }
 
-    const sec = row('Sent', 'And how each one went');
-    if (sent === null) sec.appendChild(h('p', 'cempty', 'Can’t reach the Orlis server right now to see how they went.'));
-    else if (!sent.length) sec.appendChild(h('p', 'cempty', 'Nothing sent yet.'));
+    /* out of reach: how they'd gone, as of the last visit */
+    const last = sent === null ? outbox.lastSent() : null;
+    const shown = sent === null ? last.list : sent;
+    const sec = row('Sent', sent === null && last.list ? `How each one went, as of ${new Date(last.at).toLocaleDateString([], { month: 'short', day: 'numeric' })} - the Orlis server’s out of reach right now` : 'And how each one went');
+    if (shown === null) sec.appendChild(h('p', 'cempty', 'Can’t reach the Orlis server right now to see how they went.'));
+    else if (!shown.length) sec.appendChild(h('p', 'cempty', 'Nothing sent yet.'));
     else {
       const list = h('div', 'clist');
-      for (const x of sent){
+      for (const x of shown){
         const [label, cls] = STATE[x.state] || [x.state, ''];
         list.appendChild(h('div', 'citem', `<div><b>${esc(x.name)}</b> <span class="ctag">version ${esc(x.version)}</span><small>${esc(new Date(x.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' }))}${x.note ? ` · the owner says: “${esc(x.note)}”` : ''}</small></div><span class="cstate ${cls}">${esc(label)}</span>`));
       }

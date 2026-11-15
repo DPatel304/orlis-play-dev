@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { readOrlis, manifestOf, sha256 } from './orlis-file.js';
 import { Fail, Raw } from './http.js';
 
-const newer = (a, b) => {
+export const newer = (a, b) => {
   const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
   for (let i = 0; i < 3; i++){ if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); }
   return false;

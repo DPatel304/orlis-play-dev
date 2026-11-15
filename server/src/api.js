@@ -16,6 +16,10 @@
      creator - may upload games they've made (to the owner's approval queue)
      player  - plays
 
+   For now, everyone who joins is a creator (everyoneCreates, on unless the
+   server's started with it off): the owner can
+   still make anyone a player, one by one, on the management page.
+
    A device stays signed in until someone signs out on it, so a family can
    play at home with no server in reach. */
 import { Fail, isLocal } from './http.js';
@@ -37,7 +41,8 @@ const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 
 export function api(db, info, extra = () => [], manageKey = null){
   const q = (sql) => db.prepare(sql);
-  const tries = new Map();      /* email -> { n, until } */
+  const tries = new Map();
+  const EVERYONE_CREATES = info.everyoneCreates !== false;      /* email -> { n, until } */
 
   /* ---------- who's asking ---------- */
   function who(headers){
@@ -114,7 +119,7 @@ export function api(db, info, extra = () => [], manageKey = null){
   return [
     ...extra(who, owner),
     /* The app's "is this an Orlis server, and does it need setting up?" */
-    ['GET', '/api/hello', () => ({ app: 'orlis', name: info.name, version: info.version, setup: accounts() === 0 })],
+    ['GET', '/api/hello', () => ({ app: 'orlis', id: info.id, name: info.name, version: info.version, setup: accounts() === 0 })],
 
     /* Joining: a grown-up's email and password, an invite (unless this is
        the first account), their own profile's name, and a yes to "I'm a
@@ -138,7 +143,7 @@ export function api(db, info, extra = () => [], manageKey = null){
           home = newId();
           q('INSERT INTO households (id, name, created_at) VALUES (?, ?, ?)').run(home, familyName(body.family, `${n}'s family`), t);
         }
-        q('INSERT INTO accounts (id, email, password_hash, role, created_at, household_id) VALUES (?, ?, ?, ?, ?, ?)').run(id, e, hashPassword(p), first ? 'owner' : invite.role, t, home);
+        q('INSERT INTO accounts (id, email, password_hash, role, created_at, household_id) VALUES (?, ?, ?, ?, ?, ?)').run(id, e, hashPassword(p), first ? 'owner' : EVERYONE_CREATES ? 'creator' : invite.role, t, home);
         q('INSERT INTO profiles (id, account_id, name, avatar, created_at) VALUES (?, ?, ?, ?, ?)').run(newId(), id, n, avatar(body.avatar), t);
         if (invite) q('UPDATE invites SET used_by = ?, used_at = ? WHERE code = ?').run(id, t, invite.code);
         db.exec('COMMIT');
@@ -222,8 +227,8 @@ export function api(db, info, extra = () => [], manageKey = null){
       const isOwner = a.role === 'owner';
       const fresh = body.household === 'new';
       if (fresh && !isOwner) throw new Fail(403, 'not_owner', 'Only the owner can invite a new family.');
-      const role = body.role === 'creator' ? 'creator' : 'player';
-      if (role === 'creator' && !isOwner) throw new Fail(403, 'not_owner', 'Only the owner can invite a creator.');
+      const role = body.role === 'creator' || EVERYONE_CREATES ? 'creator' : 'player';
+      if (role === 'creator' && !isOwner && !EVERYONE_CREATES) throw new Fail(403, 'not_owner', 'Only the owner can invite a creator.');
       if (q('SELECT COUNT(*) AS n FROM invites WHERE used_by IS NULL').get().n >= LIMITS.invites) throw new Fail(400, 'too_many', 'There are lots of unused invites already.');
       let code; do { code = newInviteCode(); } while (q('SELECT 1 FROM invites WHERE code = ?').get(code));
       const home = fresh ? null : a.household_id;

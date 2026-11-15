@@ -19,10 +19,11 @@ test("the app's checks and the server's are the same list", () => {
 
 test('a new game: the starter, its orlis.json, the rules and the guardrails', () => {
   const g = newGame({ name: 'Bird Hoops!', idea: 'Flap your arms to fly a bird through hoops' });
-  assert.equal(g.id, 'bird-hoops');
+  assert.match(g.id, /^bird-hoops-[a-z2-9]{4}$/, 'the name, and a tag of its own');
+  assert.notEqual(newGame({ name: 'Bird Hoops!' }).id, g.id, 'two creators making a Bird Hoops never clash');
   assert.deepEqual(Object.keys(g.files).sort(), ['.claude/hooks/check.ps1', '.claude/hooks/guard.ps1', '.claude/hooks/prompt.ps1', '.claude/settings.json', '.claude/skills/orlis-game/SKILL.md', 'CLAUDE.md', 'game.js', 'orlis.json']);
   const m = JSON.parse(g.files['orlis.json']);
-  assert.deepEqual([m.id, m.name, m.blurb, m.version], ['bird-hoops', 'Bird Hoops!', 'Flap your arms to fly a bird through hoops', '0.1']);
+  assert.deepEqual([m.id, m.name, m.blurb, m.version], [g.id, 'Bird Hoops!', 'Flap your arms to fly a bird through hoops', '0.1']);
   assert.match(g.files['CLAUDE.md'], /^# Bird Hoops!: an Orlis Play game/);
   assert.match(g.files['CLAUDE.md'], /The idea: Flap your arms/);
   assert.ok(!Object.values(g.files).some(t => /\{\{\w+\}\}/.test(t)), 'nothing left to fill in');
@@ -64,9 +65,9 @@ test('packed, a new game is one the family\'s server takes', async () => {
   const { bytes, manifest } = await pack({ game: g.files['game.js'], manifest: g.files['orlis.json'] });
   assert.equal(manifest.kit, 2);
   const { manifest: m, parts } = checkGame(Buffer.from(bytes));
-  assert.deepEqual([m.id, m.name, m.version, m.blurb], ['bird-hoops', 'Bird Hoops', '0.1', 'Flap to fly']);
+  assert.deepEqual([m.id, m.name, m.version, m.blurb], [g.id, 'Bird Hoops', '0.1', 'Flap to fly']);
   const code = parts['game.js'].toString();
-  assert.match(code, /Orlis\.manifest=\{"id":"bird-hoops"/);
+  assert.ok(code.includes(`Orlis.manifest={"id":"${g.id}"`));
   assert.ok(code.indexOf('globalThis.Orlis') < code.indexOf('Star Catch') || code.includes('Orlis.run'), 'the runtime first, then the game');
   await assert.rejects(pack({ game: 'fetch(1)', manifest: g.files['orlis.json'] }), /the internet/);
 });
@@ -84,8 +85,8 @@ test('a new game can start from another: its code and its look, a new id and ver
   assert.equal(unpack('just some code'), null, 'not made in Create: nothing');
   const copy = make({ name: 'Bird Hoops', idea: 'Hoops at night', from: { name: 'Bird Hoops', game: code, manifest }, taken: ['bird-hoops'] });
   const m = JSON.parse(copy.files['orlis.json']);
-  assert.equal(copy.id, 'bird-hoops-2', 'a new id, not the one it came from');
-  assert.deepEqual([m.id, m.version, m.blurb, m.by, m.tags], ['bird-hoops-2', '0.1', 'Hoops at night', undefined, ['Flying']]);
+  assert.ok(copy.id.startsWith('bird-hoops-') && copy.id !== 'bird-hoops', 'a new id, not the one it came from');
+  assert.deepEqual([m.id, m.version, m.blurb, m.by, m.tags], [copy.id, '0.1', 'Hoops at night', undefined, ['Flying']]);
   assert.equal(m.icon.cols[0], '#111111', 'it keeps the look');
   assert.equal(copy.files['game.js'], game);
   assert.match(copy.files['CLAUDE.md'], /starts as a copy of Bird Hoops/);

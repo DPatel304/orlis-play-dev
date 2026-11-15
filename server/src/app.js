@@ -29,7 +29,7 @@ const BACKUP_LOOK = 60 * 60 * 1000, QUIET = 2 * 60 * 1000;
 /* restart(): how to start this server again (to finish a restore) - given
    when something's there to do it. status.update: what the updater last
    found, for the owner's page. */
-export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } } } = {}){
+export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true } = {}){
   mkdirSync(dataDir, { recursive: true });
   const safe = backups(dataDir, { version: VERSION });
   /* a restore the owner asked for, done before anything is opened */
@@ -40,7 +40,11 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const keyFile = join(dataDir, 'manage.key');
   if (!existsSync(keyFile)) writeFileSync(keyFile, randomBytes(24).toString('hex'));
   const manageKey = readFileSync(keyFile, 'utf8').trim();
-  const info = { name: name || `${hostname()}'s Orlis`, version: VERSION };
+  /* this server's own id, for good: the apps that know it find it again on
+     the Wi-Fi when its address changes (a router gives the laptop a new one) */
+  const idFile = join(dataDir, 'server.id');
+  if (!existsSync(idFile)) writeFileSync(idFile, randomBytes(9).toString('hex'));
+  const info = { id: readFileSync(idFile, 'utf8').trim(), name: name || `${hostname()}'s Orlis`, version: VERSION, everyoneCreates };
   const shop = store(dataDir, starters);
   const log = history(db);
   const sent = submissions(db, dataDir, shop, log);
@@ -72,7 +76,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   await new Promise((ok, no) => { web.once('error', no); web.listen(port, host, ok); });
   const at = web.address().port;
   const udp = discoveryPort === false ? null
-    : await listenForApps({ port: discoveryPort, answer: () => ({ name: info.name, port: at, version: VERSION }) });
+    : await listenForApps({ port: discoveryPort, answer: () => ({ id: info.id, name: info.name, port: at, version: VERSION }) });
   /* the daily backup, at a quiet moment */
   const look = () => { if (Date.now() - activity.last > QUIET) try { safe.daily(db); } catch (e){ console.error(`(backup didn't work: ${e.message})`); } };
   const first = setTimeout(look, 60 * 1000), every = setInterval(look, BACKUP_LOOK);

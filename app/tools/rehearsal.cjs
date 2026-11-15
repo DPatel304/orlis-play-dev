@@ -209,11 +209,9 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   log('\n11. Another family downloads it and plays it');
   const inv2 = await api('POST', '/api/invites', { household: 'new' }, owner.token);
   const cousin = await api('POST', '/api/signup', { email: 'cousin@example.com', password: 'correct horse', name: 'Aunt Mo', adult: true, invite: inv2.code });
-  check(cousin.account && cousin.account.role === 'player', 'a player family (no Create)');
+  check(cousin.account && cousin.account.role === 'creator', 'they join as creators too (everyone does, for now)');
   const cz = await page(b, stateOf(cousin), 'cousin');
   await cz.waitForSelector('.tvtop', { timeout: 20000 }); await cz.waitForTimeout(1000);
-  await cz.click('.tvtab >> text=Create'); await cz.waitForTimeout(1200);
-  check(/grown-ups the server.s owner has made creators/.test(await txt(cz, 'body')) && !(await cz.$('.sbtn >> text=New game')), 'their Create tab only explains it (no making games)');
   await cz.click('.tvtab >> text=Store'); await cz.waitForTimeout(2500);
   check(!(await txt(cz, 'body')).includes('Waiting for your OK'), 'they never see games waiting for approval');
   await cz.screenshot({ path: out + '-11-store.png', fullPage: true });

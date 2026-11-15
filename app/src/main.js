@@ -461,7 +461,7 @@ const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : nul
   requestAnimationFrame(tick);
   pose.setVideo(video, { forceMouse: debug });
   window.__pose = pose; window.__cursor = cursor; window.__music = music;   /* handles for tests; harmless in play */
-  window.__round = () => inst;
+  window.__round = () => inst; window.__library = library; window.__outbox = outbox;
   holdScreen();
   show.camReady = true;
   await new Promise(res => {

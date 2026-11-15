@@ -19,6 +19,7 @@ import { badWords } from './words.js';
 import { Fail, Raw } from './http.js';
 import { now } from './db.js';
 import { newId } from './secure.js';
+import { newer } from './store.js';
 
 export const KIT = 2;
 export const LIMITS = { waiting: 5, code: 4 * 1024 * 1024 };
@@ -96,6 +97,9 @@ export function submissions(db, dataDir, shop, log = { add(){} }){
         if (inStore && inStore.by === 'Orlis Play' && a.role !== 'owner') throw new Fail(409, 'taken', `"${m.id}" is one of Orlis Play's own games. Give your game an id of its own.`);
         const other = q("SELECT 1 FROM submissions WHERE game_id = ? AND account_id != ? AND status IN ('waiting', 'approved')").get(m.id, a.id);
         if (other) throw new Fail(409, 'taken', `Another family already has a game called "${m.id}". Give yours an id of its own.`);
+        /* a change to a game in the Store comes as a newer version - or the
+           families who have it would never be offered it */
+        if (inStore && !newer(m.version, inStore.version)) throw new Fail(409, 'old_version', `The Store already has version ${inStore.version} of ${m.name}. In Create, press Check and send again: it gives this one a newer number.`);
         if (q("SELECT COUNT(*) AS n FROM submissions WHERE account_id = ? AND status = 'waiting'").get(a.id).n >= LIMITS.waiting) throw new Fail(400, 'too_many', `You have ${LIMITS.waiting} games waiting already. Wait for the owner to look at them first.`);
         const sha = sha256(raw);
         const same = q("SELECT * FROM submissions WHERE account_id = ? AND sha256 = ? AND status = 'waiting'").get(a.id, sha);
