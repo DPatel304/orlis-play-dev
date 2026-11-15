@@ -1,0 +1,200 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Team controller - concept</title>
+<style>
+  body{ margin:0; background:#e9ebf2; }
+  .frame{ width:1600px; height:900px; position:relative; overflow:hidden; margin:0 0 24px; }
+  .frame canvas{ position:absolute; inset:0; }
+</style></head>
+<body>
+<div class="frame" id="top"><canvas width="1600" height="900"></canvas></div>
+<div class="frame" id="front"><canvas width="1600" height="900"></canvas></div>
+<div class="frame" id="room"><canvas width="1600" height="900"></canvas></div>
+<script type="module">
+/* A concept for the shared team controller: a long, low four-player arcade
+   panel on the floor at toddler height. Classic stick and buttons at each
+   end; in the middle, ten fun inputs for the game's hands-on moments; a
+   light strip along the front that lights the input to use next. Drawn
+   in the house style: flat, one shadow tone, calm colours. */
+import { body, portrait, PARTS } from '/src/ui/avatar-art.js';
+
+const W = 1600, H = 900, PI = Math.PI;
+const INK = '#33322e', MUTE = '#8a8478', PAPER = '#eee9db', TOP = '#f6f1e6', LIP = '#d9cfbd', END = '#5d6b80', END_D = '#4a566a';
+const KIDS = [
+  { skin: PARTS.skin[1], hair: 'ponytail', hairColor: PARTS.hairColor[1], eyes: 'sparkle', mouth: 'grin', color: '#ff5d8f', outfit: 'stars', extra: 'bow' },
+  { skin: PARTS.skin[3], hair: 'curly', hairColor: PARTS.hairColor[0], eyes: 'dots', mouth: 'smile', color: '#3da9ff', outfit: 'stripes', extra: 'cap' }
+];
+const ctx = (id) => document.querySelector(`#${id} canvas`).getContext('2d');
+const circle = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, PI * 2); };
+const rr = (c, x, y, w, h, r) => { c.beginPath(); c.roundRect(x, y, w, h, r); };
+const fill = (c, col) => { c.fillStyle = col; c.fill(); };
+function mix(a, b, k){ const p = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const x = p(a), y = p(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * k).toString(16).padStart(2, '0')).join(''); }
+const shade = (col) => mix(col, '#2c2850', 0.22);
+function text(c, s, x, y, { size = 20, weight = 600, col = INK, align = 'center' } = {}){ c.font = `${weight} ${size}px Inter, Segoe UI, sans-serif`; c.fillStyle = col; c.textAlign = align; c.textBaseline = 'middle'; c.fillText(s, x, y); }
+/* a round thing, cel-shaded: lit, one shadow tone on the lower right */
+function knob(c, x, y, r, col){
+  circle(c, x + r * 0.12, y + r * 0.16, r); fill(c, 'rgba(40,35,60,.18)');
+  circle(c, x, y, r); fill(c, col);
+  c.save(); circle(c, x, y, r); c.clip(); circle(c, x + r * 0.55, y + r * 0.55, r * 0.95); fill(c, shade(col)); c.restore();
+  circle(c, x - r * 0.35, y - r * 0.35, r * 0.22); fill(c, 'rgba(255,255,255,.55)');
+}
+function glow(c, x, y, r, col){ const g = c.createRadialGradient(x, y, r * 0.6, x, y, r * 1.6); g.addColorStop(0, col); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; circle(c, x, y, r * 1.6); c.fill(); }
+
+/* ---- the classic end: a stick and six buttons ---- */
+function classic(c, x0, w, y0, h, flip, label){
+  rr(c, x0, y0, w, h, 26); fill(c, END);
+  rr(c, x0 + 14, y0 + 14, w - 28, h - 28, 18); fill(c, mix(END, '#ffffff', 0.08));
+  const sx = flip ? x0 + w - 95 : x0 + 95, by = y0 + h / 2;
+  circle(c, sx, by, 52); fill(c, END_D);
+  knob(c, sx, by - 6, 34, '#e8513d');
+  const cols = ['#ffd25a', '#5fc0b8', '#a98bff', '#ff7aa8', '#9fd38a', '#f2a65a'];
+  const bx = flip ? x0 + 40 : x0 + w - 190;
+  for (let k = 0; k < 6; k++){ const col = k % 3, row = Math.floor(k / 3); knob(c, bx + col * 58 + (row ? 0 : 12), by - 34 + row * 66, 22, cols[k]); }
+  text(c, label, x0 + w / 2, y0 + h + 34, { size: 19, col: MUTE });
+}
+
+/* ---- the ten in the middle, each drawn in its cell (cx, cy) ---- */
+const INPUTS = [
+  ['Big red button', (c, x, y) => { circle(c, x, y, 58); fill(c, '#c9c0ae'); knob(c, x, y - 4, 48, '#e8413d'); }],
+  ['Trackball', (c, x, y) => { circle(c, x, y, 54); fill(c, '#3b3a36'); circle(c, x, y, 46); fill(c, '#2b2a27'); knob(c, x, y, 40, '#79b3aa'); }],
+  ['Stick shift', (c, x, y) => {
+    c.strokeStyle = '#3b3a36'; c.lineWidth = 12; c.lineCap = 'round';
+    c.beginPath(); for (const gx of [-36, 0, 36]){ c.moveTo(x + gx, y - 42); c.lineTo(x + gx, y + 42); } c.moveTo(x - 36, y); c.lineTo(x + 36, y); c.stroke();
+    knob(c, x - 36, y - 42, 24, '#3b3a36'); text(c, '1', x - 36, y - 42, { size: 16, weight: 800, col: '#fff' });
+  }],
+  ['Covered switch', (c, x, y) => {
+    rr(c, x - 34, y - 52, 68, 104, 10); fill(c, '#3b3a36');
+    rr(c, x - 9, y - 30, 18, 46, 9); fill(c, '#d9d0c0'); circle(c, x, y - 30, 11); fill(c, '#f4efe4');
+    /* the hinged cover, lifted */
+    c.save(); c.globalAlpha = 0.55; rr(c, x - 40, y - 96, 80, 70, 10); fill(c, '#e8413d'); c.restore();
+    c.strokeStyle = '#b8352e'; c.lineWidth = 3; rr(c, x - 40, y - 96, 80, 70, 10); c.stroke();
+  }],
+  ['Turn key', (c, x, y) => {
+    circle(c, x, y, 46); fill(c, '#c9c0ae'); circle(c, x, y, 34); fill(c, '#e6c96a');
+    c.save(); c.translate(x, y); c.rotate(-0.5);
+    rr(c, -8, -40, 16, 50, 6); fill(c, '#d9a83a'); circle(c, 0, -52, 22); fill(c, '#d9a83a'); circle(c, 0, -52, 8); fill(c, '#e6c96a');
+    c.restore();
+  }],
+  ['Hand crank', (c, x, y) => {
+    circle(c, x, y, 48); fill(c, '#c9c0ae'); knob(c, x, y, 30, '#9db7c2');
+    c.strokeStyle = '#7a8a94'; c.lineWidth = 14; c.lineCap = 'round'; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 42, y - 34); c.stroke();
+    knob(c, x + 44, y - 36, 15, '#e8513d');
+  }],
+  ['Plunger', (c, x, y) => {
+    y -= 22;
+    rr(c, x - 14, y - 56, 28, 104, 14); fill(c, '#3b3a36');
+    c.strokeStyle = '#c9c0ae'; c.lineWidth = 8; c.beginPath(); c.moveTo(x, y - 40); c.lineTo(x, y + 50); c.stroke();
+    knob(c, x, y + 62, 24, '#f2a65a');
+  }],
+  ['Big dial', (c, x, y) => {
+    circle(c, x, y, 56); fill(c, '#c9c0ae');
+    c.strokeStyle = '#8a8478'; c.lineWidth = 3; for (let k = 0; k < 12; k++){ const a = k / 12 * PI * 2; c.beginPath(); c.moveTo(x + Math.cos(a) * 46, y + Math.sin(a) * 46); c.lineTo(x + Math.cos(a) * 54, y + Math.sin(a) * 54); c.stroke(); }
+    knob(c, x, y, 36, '#a98bff'); c.strokeStyle = '#fff'; c.lineWidth = 5; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 18, y - 26); c.stroke();
+  }],
+  ['Throttle', (c, x, y) => {
+    rr(c, x - 12, y - 58, 24, 116, 12); fill(c, '#3b3a36');
+    for (let k = 0; k < 5; k++){ c.fillStyle = '#8a8478'; c.fillRect(x + 20, y - 50 + k * 25, 14, 3); }
+    rr(c, x - 36, y - 6, 72, 26, 13); fill(c, '#5fc0b8'); rr(c, x - 36, y + 8, 72, 12, 6); fill(c, shade('#5fc0b8'));
+  }],
+  ['Colour keys', (c, x, y) => {
+    ['#ff7aa8', '#ffd25a', '#9fd38a', '#79b3aa'].forEach((col, k) => { rr(c, x - 64 + k * 33, y - 46, 30, 92, 8); fill(c, col); rr(c, x - 64 + k * 33, y + 26, 30, 20, 8); fill(c, shade(col)); });
+  }]
+];
+
+function topView(c){
+  c.fillStyle = PAPER; c.fillRect(0, 0, W, H);
+  text(c, 'The team controller - from above', 60, 60, { size: 34, weight: 800, align: 'left' });
+  text(c, 'Long and low, for the floor. Classic arcade play at each end; ten fun inputs in the middle.', 60, 102, { size: 21, col: MUTE, align: 'left' });
+  const x0 = 70, x1 = 1530, y0 = 190, h = 560;
+  /* the panel's shadow, its top, its front lip with the light strip */
+  rr(c, x0 + 14, y0 + 20, x1 - x0, h, 40); fill(c, 'rgba(40,35,60,.16)');
+  rr(c, x0, y0, x1 - x0, h, 40); fill(c, TOP);
+  rr(c, x0, y0 + h - 56, x1 - x0, 56, [0, 0, 40, 40]); fill(c, LIP);
+  const strip = ['#ff7aa8', '#ffd25a', '#9fd38a', '#79b3aa', '#a98bff'];
+  for (let k = 0; k < 44; k++){ const x = x0 + 50 + k * ((x1 - x0 - 100) / 43); circle(c, x, y0 + h - 28, 6); fill(c, strip[k % 5]); }
+  /* the ends */
+  classic(c, x0 + 26, 330, y0 + 70, 300, false, 'Player 1 - stick + 6 buttons');
+  classic(c, x1 - 356, 330, y0 + 70, 300, true, 'Player 4 - stick + 6 buttons');
+  /* the middle: two rows of five */
+  const mx0 = x0 + 390, mw = (x1 - 390) - mx0, cw = mw / 5;
+  INPUTS.forEach(([name, draw], k) => {
+    const col = k % 5, row = Math.floor(k / 5);
+    const cx = mx0 + cw * (col + 0.5), cy = y0 + 150 + row * 210;
+    if (k === 5) glow(c, cx, cy, 70, 'rgba(255,214,90,.75)');   /* lit: "the crank - your moment!" */
+    draw(c, cx, cy);
+    text(c, name, cx, cy + 92, { size: 18, col: INK });
+  });
+  /* notes */
+  text(c, 'Lit up = use me now (here, the crank)', W / 2 - 330, y0 + h + 48, { size: 20, weight: 700, col: '#b98a1f' });
+  text(c, '·   The light strip along the front shows whose turn it is and glows with the game', W / 2 + 290, y0 + h + 48, { size: 19, col: MUTE });
+}
+
+function frontView(c){
+  c.fillStyle = PAPER; c.fillRect(0, 0, W, H);
+  text(c, 'From the front - toddler height', 60, 60, { size: 34, weight: 800, align: 'left' });
+  text(c, 'About 50 cm tall and 140 cm long: a toddler stands at it; a big kid kneels or sits.', 60, 102, { size: 21, col: MUTE, align: 'left' });
+  const floor = 780, M = 520;          /* pixels per metre */
+  c.fillStyle = '#ddd5c4'; c.fillRect(0, floor, W, H - floor);
+  const x0 = 250, len = 1.4 * M, ht = 0.5 * M;
+  /* the body: a long box with a sloped top, the front lip, the light strip, feet */
+  c.fillStyle = 'rgba(40,35,60,.16)'; c.beginPath(); c.ellipse(x0 + len / 2 + 30, floor, len / 2 + 30, 18, 0, 0, PI * 2); c.fill();
+  rr(c, x0, floor - ht, len, ht - 12, 24); fill(c, '#e9e1d1');
+  rr(c, x0 + len * 0.55, floor - ht, len * 0.45, ht - 12, [0, 24, 24, 0]); fill(c, mix('#e9e1d1', '#2c2850', 0.1));
+  rr(c, x0 - 6, floor - ht - 18, len + 12, 34, 14); fill(c, TOP);
+  for (const fx of [x0 + 40, x0 + len - 40]){ rr(c, fx - 30, floor - 16, 60, 16, 6); fill(c, '#3b3a36'); }
+  /* the ends, in slate */
+  rr(c, x0, floor - ht + 14, 150, ht - 26, [0, 0, 0, 24]); fill(c, END);
+  rr(c, x0 + len - 150, floor - ht + 14, 150, ht - 26, [0, 0, 24, 0]); fill(c, END_D);
+  const strip = ['#ff7aa8', '#ffd25a', '#9fd38a', '#79b3aa', '#a98bff'];
+  for (let k = 0; k < 30; k++){ const x = x0 + 170 + k * ((len - 340) / 29); glow(c, x, floor - 60, 9, strip[k % 5] + 'aa'); circle(c, x, floor - 60, 7); fill(c, strip[k % 5]); }
+  /* what sticks up: the two sticks, the shift knob, the crank handle, the plunger knob */
+  const top = floor - ht - 18;
+  for (const sx of [x0 + 75, x0 + len - 75]){ c.fillStyle = '#7a8a94'; c.fillRect(sx - 6, top - 56, 12, 56); knob(c, sx, top - 66, 26, '#e8513d'); }
+  c.fillStyle = '#3b3a36'; c.fillRect(x0 + 330, top - 70, 12, 70); knob(c, x0 + 336, top - 80, 22, '#3b3a36');
+  c.fillStyle = '#7a8a94'; c.fillRect(x0 + 470, top - 40, 12, 40); knob(c, x0 + 476, top - 48, 16, '#e8513d');
+  knob(c, x0 + 250, top - 14, 30, '#e8413d');
+  /* a toddler at the crank, an older kid for scale */
+  body(c, x0 + len + 110, floor + 4, 0.95 * M / 1.24, KIDS[0], 1.3, 'wave');
+  body(c, 1400, floor + 4, 1.25 * M / 1.24, KIDS[1], 2.1, 'stand');
+  /* the height marker */
+  c.strokeStyle = MUTE; c.lineWidth = 2; c.setLineDash([8, 6]);
+  c.beginPath(); c.moveTo(x0 - 70, floor - ht - 18); c.lineTo(x0 - 70, floor); c.stroke(); c.setLineDash([]);
+  for (const y of [floor - ht - 18, floor]){ c.beginPath(); c.moveTo(x0 - 86, y); c.lineTo(x0 - 54, y); c.stroke(); }
+  text(c, '~50 cm', x0 - 130, floor - ht / 2, { size: 22, weight: 700, col: INK });
+  text(c, '~140 cm', x0 + len / 2, floor + 60, { size: 22, weight: 700, col: INK });
+  text(c, 'a toddler (~95 cm)', x0 + len + 110, floor - 0.95 * M - 30, { size: 18, col: MUTE });
+  text(c, 'a 5-year-old (~1.25 m)', 1400, floor - 1.25 * M + 40, { size: 18, col: MUTE });
+}
+
+function roomView(c){
+  c.fillStyle = PAPER; c.fillRect(0, 0, W, H);
+  text(c, 'Where it goes - the living room from above', 60, 60, { size: 34, weight: 800, align: 'left' });
+  text(c, 'To the side of the play space: a station you run to, not a wall between you and the camera.', 60, 102, { size: 21, col: MUTE, align: 'left' });
+  /* the wall and TV, the camera on top */
+  c.fillStyle = '#d9cfbd'; c.fillRect(200, 150, 1200, 24);
+  rr(c, 560, 170, 480, 30, 8); fill(c, '#3b3a36'); text(c, 'TV', 800, 186, { size: 16, weight: 700, col: '#fff' });
+  circle(c, 800, 214, 12); fill(c, '#5fc0b8'); text(c, 'camera', 860, 222, { size: 17, col: MUTE, align: 'left' });
+  /* what the camera sees: the play space */
+  c.fillStyle = 'rgba(95,192,184,.14)'; c.beginPath(); c.moveTo(800, 214); c.lineTo(380, 720); c.lineTo(1220, 720); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(95,192,184,.5)'; c.lineWidth = 2; c.setLineDash([10, 8]); c.stroke(); c.setLineDash([]);
+  rr(c, 560, 470, 480, 220, 30); c.strokeStyle = 'rgba(59,58,54,.35)'; c.lineWidth = 3; c.setLineDash([12, 10]); c.stroke(); c.setLineDash([]);
+  text(c, 'play space', 800, 660, { size: 20, weight: 700, col: MUTE });
+  /* the two kids, seen from above as their faces */
+  portrait(c, 720, 560, 90, KIDS[0], 1.3); portrait(c, 880, 560, 90, KIDS[1], 2.1);
+  /* the controller, along the side, angled toward the TV */
+  c.save(); c.translate(250, 520); c.rotate(-0.35);
+  rr(c, -60, -180, 120, 360, 24); fill(c, TOP);
+  rr(c, -60, -180, 120, 70, [24, 24, 0, 0]); fill(c, END); rr(c, -60, 110, 120, 70, [0, 0, 24, 24]); fill(c, END);
+  for (let k = 0; k < 5; k++){ knob(c, -22, -80 + k * 40, 12, ['#e8413d', '#79b3aa', '#ffd25a', '#a98bff', '#9db7c2'][k]); knob(c, 22, -80 + k * 40, 12, ['#5fc0b8', '#f2a65a', '#ff7aa8', '#9fd38a', '#e8513d'][k]); }
+  c.restore();
+  text(c, 'the controller', 250, 760, { size: 20, weight: 700, col: INK });
+  text(c, 'a few steps away - run over, crank, run back', 250, 790, { size: 17, col: MUTE });
+  /* the dash: a kid's path to it and back */
+  c.strokeStyle = '#ff5d8f'; c.lineWidth = 4; c.setLineDash([4, 10]); c.lineCap = 'round';
+  c.beginPath(); c.moveTo(670, 590); c.quadraticCurveTo(480, 660, 330, 560); c.stroke(); c.setLineDash([]);
+  text(c, 'Not in front: it would hide legs from the camera and be something to trip on mid-dance.', 800, 850, { size: 19, col: MUTE });
+}
+
+topView(ctx('top')); frontView(ctx('front')); roomView(ctx('room'));
+document.body.dataset.ready = '1';
+</script>
+</body></html>
