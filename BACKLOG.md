@@ -50,6 +50,20 @@ The plan for creating (decided):
 - **Make the privacy promise visible.** In words a parent sees, on the
   Store page and in Settings: games get body points only, never camera
   pictures, and can't reach the internet. The sandbox already enforces it.
+- **A launcher for Steam games.** Installed Steam games as tiles on Home,
+  with their box art, on a shelf of their own. All of it comes from
+  Steam's own files on the laptop (its library folders and app manifests,
+  and the cover pictures it keeps), so there's no Steam login or API key.
+  Play hands the game to Steam (`steam://rungameid/<id>`), so Steam's
+  updates, cloud saves and controller settings all work. The camera is off
+  while a game runs, since tracking already stops when Orlis isn't in front.
+  - Who sees them: the shelf is for grown-up profiles by default, and the
+    owner picks any games kids can see.
+  - Coming back: Steam doesn't say when a game closes, so Orlis waits
+    behind it and goes to Home when it's back in front.
+  - Later: Epic, Xbox and other launchers the same way.
+  - To test: on the real laptop with Steam (about 5 minutes); built here
+    against sample Steam files.
 
 ## Store
 
