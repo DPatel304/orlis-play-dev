@@ -92,6 +92,17 @@ var TRY = ${TRY_SECS};
         var done = r.submissions.filter(function(x){ return x.state !== 'waiting'; });
         var c = card('Waiting for your OK');
         if (!waiting.length) note(c, 'Nothing waiting. Games your creators send in show up here.');
+        /* a game someone emailed you: in through the same checks, into this queue */
+        var pick = document.createElement('input'); pick.type = 'file'; pick.accept = '.orlis'; pick.style.display = 'none';
+        pick.onchange = function(){
+          var f = pick.files && pick.files[0]; if (!f) return;
+          f.arrayBuffer().then(function(buf){
+            return fetch('/api/submissions', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-Orlis-Manage': key, 'X-Orlis-From': f.name }, body: buf })
+              .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw new Error(d.message || 'That game couldn\u2019t be added.'); return d; }); });
+          }).then(show, fail(c));
+        };
+        c.appendChild(pick);
+        row(c, 'A game someone sent you<small>A .orlis file - by email, say. It\u2019s checked just like one sent from Orlis Play, and waits here for you to play it.</small>', [btn('Add a game from a file\u2026', '', function(){ pick.value = ''; pick.click(); })]);
         waiting.forEach(function(x){
           var r2 = row(c, '<b>' + esc(x.name) + '</b> <span class="tag">version ' + esc(x.version) + '</span>' + (x.tried ? ' <span class="tag ok">played \u2713</span>' : ' <span class="tag">not played yet</span>') + '<small>From ' + esc(x.family) + ' (' + esc(x.by) + ') \u00b7 sent ' + esc(when(x.createdAt)) + ' \u00b7 ' + size(x.bytes) + '</small>', [
             btn('Decline\u2026', '', function(){
@@ -170,7 +181,7 @@ var TRY = ${TRY_SECS};
         /* (each game's latest approval: who made it, and who said OK when) */
         both[1].history.forEach(function(x){ if (x.what === 'approved' && !ok[x.gameId]) ok[x.gameId] = x; });
         var c = card('The Store\\u2019s games');
-        if (!st.games || !st.games.length) note(c, 'Nothing in the Store. Put a game\\u2019s .orlis file in the server\\u2019s "games" folder to add one.');
+        if (!st.games || !st.games.length) note(c, 'Nothing in the Store. A game someone sent you goes in through Approvals: Add a game from a file.');
         (st.games || []).forEach(function(g){
           var cols = (g.icon && g.icon.cols) || ['#6d5efc', '#6d5efc'];
           var glyph = g.icon && g.icon.glyph && !/<\\s*script|on\\w+\\s*=|javascript:|href/i.test(g.icon.glyph) ? g.icon.glyph : '';

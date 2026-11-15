@@ -86,8 +86,12 @@ export function submissions(db, dataDir, shop, log = { add(){} }){
     dir,
     routes: (who, owner, asker) => [
       /* send a game in (the body is the .orlis file itself) */
-      ['POST', '/api/submissions', ({ headers, raw }) => {
-        const a = who(headers);
+      ['POST', '/api/submissions', ({ headers, raw, ip }) => {
+        /* a creator's app sends it; or the owner adds a file by hand on the
+           management page (a game a creator emailed them) - either way it's
+           checked the same and waits for the owner to play it and say yes */
+        const byHand = headers['x-orlis-manage'] !== undefined;
+        const a = asker(headers, ip);
         if (a.role !== 'creator' && a.role !== 'owner') throw new Fail(403, 'not_creator', 'Only creators can send games in. The owner can make you one.');
         if (!raw || !raw.length) throw new Fail(400, 'no_file', 'Send the game\'s .orlis file.');
         const { manifest: m } = checkGame(raw);
@@ -108,7 +112,8 @@ export function submissions(db, dataDir, shop, log = { add(){} }){
         const id = newId();
         writeFileSync(fileOf(id), raw);
         q("INSERT INTO submissions (id, game_id, name, version, account_id, bytes, sha256, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'waiting', ?)").run(id, m.id, m.name, m.version, a.id, raw.length, sha, now());
-        log.add(a, 'sent', { gameId: m.id, name: m.name, version: m.version, note: `from ${familyName(a.id)} · fingerprint ${sha.slice(0, 12)}` });
+        const from = byHand ? `added from a file${headers['x-orlis-from'] ? ` (${String(headers['x-orlis-from']).slice(0, 60)})` : ''}` : `from ${familyName(a.id)}`;
+        log.add(a, 'sent', { gameId: m.id, name: m.name, version: m.version, note: `${from} · fingerprint ${sha.slice(0, 12)}` });
         return [201, out(q('SELECT * FROM submissions WHERE id = ?').get(id))];
       }],
       /* a creator's own, with how each went; the owner (or the management
