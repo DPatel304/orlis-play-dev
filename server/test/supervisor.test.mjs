@@ -24,6 +24,7 @@ function world({ running = false } = {}){
   w.opts = {
     exe: 'C:\\Orlis\\Orlis Server.exe', dataDir: mkdtempSync(join(tmpdir(), 'orlis-tray-')), version: '0.1.30',
     spawn: w.spawn, exit: (c) => { w.exited = c; }, crashWait: 10, finishWait: 5,
+    startup: { on: async () => w.boot, settle: async () => (w.boot = true), set: async (on) => { w.boot = on; return true; } },
     fetchImpl: async () => { if (!running) throw new Error('nothing there'); return { json: async () => ({ app: 'orlis' }) }; }
   };
   return w;
@@ -96,4 +97,15 @@ test('it starts quietly: no note as it starts, or after an update', async () => 
   const w = world(); supervise(w.opts); await wait(30);
   const u = world(); supervise({ ...u.opts, afterUpdate: true }); await wait(30);
   assert.ok(!w.toTray.some(l => l.startsWith('say ')) && !u.toTray.some(l => l.startsWith('say ')));
+});
+
+test('the icon\'s menu shows it starts with Windows, and switches it off and on', async () => {
+  const w = world(); const s = supervise(w.opts); await wait(30);
+  assert.equal(w.boot, true);
+  assert.ok(w.toTray.includes('startup on'));
+  s.picked('startup'); await wait(10);
+  assert.equal(w.boot, false); assert.equal(w.toTray.at(-1), 'startup off');
+  s.picked('startup'); await wait(10);
+  assert.equal(w.boot, true); assert.equal(w.toTray.at(-1), 'startup on');
+  assert.match(trayScript(), /Start with Windows/);
 });

@@ -12,12 +12,13 @@
    closes; when it's asked to finish a restore, it starts the server again.
 
    The icon is drawn by Windows' own PowerShell (it comes with Windows), so
-   there's nothing extra to install. It doesn't start with Windows: it runs
-   when it's double-clicked, until it's told to quit. */
+   there's nothing extra to install. It starts with Windows (startup.js) -
+   on by default, and switched off or on again from the icon's menu. */
 import { spawn as spawnChild } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, renameSync, statSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AFTER_UPDATE, UPDATED } from './update.js';
+import { startup as startupOf } from './startup.js';
 
 export const WORKER = '--worker';
 export const RESTART = 76;                    /* the server's "start me again" (a restore) */
@@ -56,6 +57,9 @@ $menu.Items.Add('Show the log').add_Click({ Send 'log' })
 $menu.Items.Add('Open the data folder').add_Click({ Send 'folder' })
 $menu.Items.Add('Restart').add_Click({ Send 'restart' })
 [void]$menu.Items.Add('-')
+$boot = $menu.Items.Add('Start with Windows')
+$boot.add_Click({ Send 'startup' })
+[void]$menu.Items.Add('-')
 $menu.Items.Add('Quit Orlis Server').add_Click({ Send 'quit' })
 $ni.ContextMenuStrip = $menu
 $ni.add_DoubleClick({ Send 'manage' })
@@ -70,6 +74,7 @@ $timer.add_Tick({
     $line = $script:next.Result
     if ($line -eq $null -or $line -eq 'exit') { $timer.Stop(); $ni.Visible = $false; [System.Windows.Forms.Application]::Exit(); return }
     if ($line.StartsWith('status ')) { $t = $line.Substring(7); $title.Text = $t; $ni.Text = $t.Substring(0, [Math]::Min(63, $t.Length)) }
+    elseif ($line.StartsWith('startup ')) { $boot.Checked = ($line.Substring(8) -eq 'on') }
     elseif ($line.StartsWith('say ')) { $p = $line.Substring(4).Split('|', 2); $ni.ShowBalloonTip(6000, $p[0], $p[1], 'Info') }
     $script:next = $stdin.ReadLineAsync()
   }
@@ -83,7 +88,7 @@ const encoded = (script) => Buffer.from(script, 'utf16le').toString('base64');
 
 /* supervise({ exe, dataDir, version, afterUpdate }) */
 export function supervise({ exe, dataDir, version, afterUpdate = false, spawn = spawnChild, exit = (c) => process.exit(c),
-  port = 47871, fetchImpl = fetch, now = () => Date.now(), crashWait = CRASH_WAIT, finishWait = 400 }){
+  port = 47871, fetchImpl = fetch, now = () => Date.now(), crashWait = CRASH_WAIT, finishWait = 400, startup = null }){
   mkdirSync(dataDir, { recursive: true });
   const logFile = join(dataDir, 'server.log');
   function log(text){
@@ -111,8 +116,28 @@ export function supervise({ exe, dataDir, version, afterUpdate = false, spawn = 
     if (what === 'manage') manage();
     else if (what === 'log') open('notepad.exe', [logFile]);
     else if (what === 'folder') open('explorer.exe', [dataDir]);
+    else if (what === 'startup') toggleStartup();
     else if (what === 'restart'){ log('-- restarting (asked from the icon) --'); restarting = true; stopWorker(); }
     else if (what === 'quit'){ log('-- quitting (asked from the icon) --'); quitting = true; stopWorker(); if (!worker) finish(0); }
+  }
+
+  /* Starting with Windows: on the first run it's switched on; the menu
+     item shows it, ticked, and switches it. */
+  const boot = startup || startupOf({ exe, dataDir });
+  let booting = false;
+  async function settleStartup(){
+    try { booting = await boot.settle(); } catch (e){ log(`(couldn't set it to start with Windows: ${e.message})`); booting = false; }
+    tell('startup ' + (booting ? 'on' : 'off'));
+  }
+  async function toggleStartup(){
+    const want = !booting;
+    try {
+      const ok = await boot.set(want);
+      booting = want && ok;
+      log(`-- start with Windows: ${booting ? 'on' : 'off'} --`);
+      tell('startup ' + (booting ? 'on' : 'off'));
+      if (want && !ok) tell("say Couldn't set that|Windows didn't let Orlis Server add itself to the startup list.");
+    } catch (e){ log(`(couldn't change starting with Windows: ${e.message})`); }
   }
 
   /* the management page, in the browser, with its key (it's only ever
@@ -186,6 +211,7 @@ export function supervise({ exe, dataDir, version, afterUpdate = false, spawn = 
     log(`-- Orlis Server ${version} starting --`);
     startTray();
     tell('status Orlis Server ' + version + ' - running');
+    settleStartup();
     /* (quietly: no note as it starts, or after an update - only when
        something needs saying: already running, or it keeps stopping) */
     startWorker();

@@ -14,8 +14,10 @@ home Wi-Fi** - it is not on the internet.
    (the system tray - it may be under the ^ arrow). **Double-click the cube
    to manage the server** (every family, who's a creator, the Store's
    games, backups - in the browser, on this laptop only). Right-click it for
-   the log, the data folder, Restart and Quit. It doesn't start
-   with Windows; double-click it again after the laptop restarts.
+   the log, the data folder, Restart and Quit. **It starts with Windows**
+   from then on, by itself, whenever you sign in: no need to remember it.
+   To stop that, right-click the cube and untick **Start with Windows**
+   (or switch it off in Task Manager > Startup apps).
 4. If Windows Firewall asks, tick **Private networks** only (not Public).
    Your home Wi-Fi should be set to Private: Settings > Network & internet >
    Wi-Fi > your network > Private network.
