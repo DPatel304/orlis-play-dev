@@ -1,0 +1,283 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Four new games - mockups</title>
+<style>
+  body{ margin:0; background:#e9ebf2; }
+  .frame{ width:1600px; height:900px; position:relative; overflow:hidden; margin:0 0 24px; }
+  .frame canvas{ position:absolute; inset:0; }
+</style></head>
+<body>
+<div class="frame" id="paint"><canvas width="1600" height="900"></canvas></div>
+<div class="frame" id="bear"><canvas width="1600" height="900"></canvas></div>
+<div class="frame" id="leaves"><canvas width="1600" height="900"></canvas></div>
+<div class="frame" id="stack"><canvas width="1600" height="900"></canvas></div>
+<script type="module">
+/* The four new games, as they'd look: first person (the two players are
+   their glowing hands - blue and orange), two at once, in the painted
+   house style. */
+import { body, setStyle, PARTS } from '/src/ui/avatar-art.js';
+const W = 1600, H = 900, T = 1.3, PI = Math.PI;
+const KIDS = [
+  { skin: PARTS.skin[1], hair: 'ponytail', hairColor: PARTS.hairColor[1], eyes: 'sparkle', mouth: 'grin', color: '#ff5d8f', outfit: 'stars', extra: 'bow' },
+  { skin: PARTS.skin[3], hair: 'curly', hairColor: PARTS.hairColor[0], eyes: 'dots', mouth: 'smile', color: '#3da9ff', outfit: 'stripes', extra: 'cap' },
+  { skin: PARTS.skin[5], hair: 'spiky', hairColor: PARTS.hairColor[0], eyes: 'wink', mouth: 'grin', color: '#a855f7', outfit: 'hoodie', extra: 'headphones' }
+];
+const SKY_TOP = '#9ec9e0', SKY_LOW = '#f3ead6', INK = '#33322e';
+const ctx = (id) => document.querySelector(`#${id} canvas`).getContext('2d');
+let seed = 9; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function mix(a, b, k){ const p = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const x = p(a), y = p(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * k).toString(16).padStart(2, '0')).join(''); }
+const circle = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, PI * 2); };
+const oval = (c, x, y, rx, ry, rot = 0) => { c.beginPath(); c.ellipse(x, y, rx, ry, rot, 0, PI * 2); };
+const poly = (c, pts) => { c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); };
+const fill = (c, col) => { c.fillStyle = col; c.fill(); };
+const layer = () => { const o = document.createElement('canvas'); o.width = W; o.height = H; return o; };
+
+/* ---- the painted sky ---- */
+function sky(c, horizon){
+  const g = c.createLinearGradient(0, 0, 0, horizon); g.addColorStop(0, SKY_TOP); g.addColorStop(1, SKY_LOW);
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const sun = c.createRadialGradient(260, 120, 10, 260, 120, 620); sun.addColorStop(0, 'rgba(255,244,214,.85)'); sun.addColorStop(1, 'rgba(255,244,214,0)'); c.fillStyle = sun; c.fillRect(0, 0, W, H);
+  /* soft painted clouds: long, wind-stretched */
+  c.save(); c.filter = 'blur(10px)';
+  for (const [x, y, w, h] of [[520, 120, 300, 34], [700, 150, 220, 24], [1180, 90, 360, 40], [1360, 130, 200, 22], [200, 230, 240, 22]]){ oval(c, x, y, w, h); fill(c, 'rgba(255,255,255,.75)'); oval(c, x + 30, y + h * .6, w * .8, h * .5); fill(c, 'rgba(214,222,232,.5)'); }
+  c.restore();
+}
+/* a range of hills at a distance d (0 near .. 1 far): faded into the sky,
+   lit on the left slopes, one shadow tone on the right */
+function range(c, y, amp, col, d, step = 260, phase = 0){
+  const base = mix(col, SKY_LOW, d * .78), shade = mix(base, '#5a6a7a', .14);
+  const pts = []; for (let x = -step; x <= W + step; x += step / 2) pts.push([x, y - amp * (.5 + .5 * Math.sin(x / step * 2.1 + phase)) - (R() * amp * .25)]);
+  c.beginPath(); c.moveTo(-step, H); pts.forEach(([x, py]) => c.lineTo(x, py)); c.lineTo(W + step, H); c.closePath(); fill(c, base);
+  /* the shadow side of each hump */
+  for (let i = 1; i < pts.length - 1; i++) if (pts[i][1] < pts[i - 1][1] && pts[i][1] < pts[i + 1][1]){
+    poly(c, [pts[i], pts[i + 1], [pts[i + 1][0] + step * .3, y + 40], [pts[i][0] + step * .15, y + 40]]); fill(c, shade);
+  }
+}
+/* the ground: lighter toward the horizon, wind-leaning brush grass */
+function ground(c, y0, col){
+  const g = c.createLinearGradient(0, y0, 0, H); g.addColorStop(0, mix(col, SKY_LOW, .35)); g.addColorStop(1, col);
+  c.fillStyle = g; c.fillRect(0, y0, W, H - y0);
+  for (let i = 0; i < 900; i++){
+    const y = y0 + Math.pow(R(), .7) * (H - y0), x = R() * W, s = .4 + (y - y0) / (H - y0) * 1.6, lean = 6 * s + R() * 4;
+    c.strokeStyle = R() < .6 ? mix(col, '#2f4a2a', .25 + R() * .2) : mix(col, '#f4f0c8', .3); c.lineWidth = 2 * s; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + lean * .3, y - 9 * s, x + lean, y - 16 * s); c.stroke();
+  }
+  for (let i = 0; i < 60; i++){ const y = y0 + 40 + R() * (H - y0 - 40), x = R() * W, s = .5 + (y - y0) / (H - y0); circle(c, x, y - 6 * s, 3.5 * s); fill(c, ['#fff6d8', '#ffd2e0', '#d8e6ff'][i % 3]); }
+}
+/* a cel-shaded tree: canopy in clumps, lit left, one shadow tone right */
+function tree(c, x, y, r, col = '#6f9a5e', d = 0){
+  const lit = mix(mix(col, '#f6ebb0', .28), SKY_LOW, d * .7), base = mix(col, SKY_LOW, d * .7), shade = mix(mix(col, '#2c3f3a', .35), SKY_LOW, d * .7);
+  oval(c, x + r * .7, y + r * .12, r * 1.2, r * .3); fill(c, 'rgba(40,60,50,.22)');
+  c.fillStyle = mix(mix('#7a6550', SKY_LOW, d * .7), '#000000', .05); c.fillRect(x - r * .09, y - r * 1.1, r * .18, r * 1.1);
+  const clumps = [[0, -1.6, 1], [-.55, -1.3, .7], [.55, -1.25, .72], [0, -2.15, .62]];
+  for (const [dx, dy, k] of clumps){ circle(c, x + dx * r, y + dy * r, r * k * .75); fill(c, base); }
+  for (const [dx, dy, k] of clumps){ c.save(); circle(c, x + dx * r, y + dy * r, r * k * .75); c.clip(); circle(c, x + dx * r - r * k * .25, y + dy * r - r * k * .22, r * k * .62); fill(c, lit); circle(c, x + dx * r + r * k * .55, y + dy * r + r * k * .35, r * k * .6); fill(c, shade); c.restore(); }
+}
+/* wind: drifting petals and leaves */
+function drift(c, n, cols){ for (let i = 0; i < n; i++){ c.save(); c.translate(R() * W, R() * H * .8); c.rotate(-.6 + R() * .5); oval(c, 0, 0, 7, 3.5); fill(c, cols[i % cols.length]); c.restore(); } }
+/* a faint paper grain over everything */
+function grain(c){
+  const t = document.createElement('canvas'); t.width = t.height = 256; const g = t.getContext('2d'); let s = 3; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 9000; i++){ g.fillStyle = r() < .5 ? 'rgba(255,255,255,.05)' : 'rgba(60,40,20,.035)'; g.fillRect(r() * 256, r() * 256, 1.4, 1.4); }
+  c.fillStyle = c.createPattern(t, 'repeat'); c.fillRect(0, 0, W, H);
+}
+/* the kids: full colour, cel-shaded (one shadow tone on their right), a
+   soft rim of sunlight on their left */
+function kids(c, draw, centres, h){
+  setStyle({ outline: null, shade: 'flat', feature: '#2d2a26' });
+  const o = layer(), oc = o.getContext('2d'); draw(oc);
+  /* the shadow side: a hard-edged tone, clipped to the kids */
+  oc.save(); oc.globalCompositeOperation = 'source-atop'; oc.fillStyle = 'rgba(52,40,96,.2)';
+  for (const x of centres){ oc.beginPath(); oc.moveTo(x + h * .11, 0); oc.lineTo(x + h * .7, 0); oc.lineTo(x + h * .7, H); oc.lineTo(x + h * .14, H); oc.closePath(); oc.fill(); }
+  oc.restore();
+  /* the rim: the kids' shape in warm light, peeking out on the sun side */
+  const rim = layer(), rc = rim.getContext('2d'); rc.drawImage(o, 0, 0); rc.globalCompositeOperation = 'source-in'; rc.fillStyle = 'rgba(255,240,200,.95)'; rc.fillRect(0, 0, W, H);
+  c.drawImage(rim, -4, -3);
+  c.drawImage(o, 0, 0);
+}
+function card(c, x, y, who, text){
+  c.save(); c.font = '600 28px Inter, Segoe UI, sans-serif'; const w = c.measureText(text).width + 130;
+  c.shadowColor = 'rgba(40,40,60,.12)'; c.shadowBlur = 20; c.shadowOffsetY = 6;
+  c.beginPath(); c.roundRect(x, y, w, 84, 42); fill(c, 'rgba(250,247,238,.94)'); c.shadowColor = 'transparent';
+  circle(c, x + 42, y + 42, 28); fill(c, '#9db7c2'); circle(c, x + 42, y + 36, 11); fill(c, '#f6f3ec'); c.beginPath(); c.arc(x + 42, y + 64, 18, PI, 0); fill(c, '#f6f3ec');
+  c.fillStyle = '#8a8478'; c.font = '600 18px Inter, Segoe UI, sans-serif'; c.fillText(who.toUpperCase(), x + 84, y + 34);
+  c.fillStyle = INK; c.font = '600 28px Inter, Segoe UI, sans-serif'; c.fillText(text, x + 84, y + 66); c.restore();
+}
+function label(c, text){ c.save(); c.font = '600 24px Inter, sans-serif'; const w = c.measureText(text).width + 40; c.beginPath(); c.roundRect(28, H - 72, w, 46, 23); fill(c, 'rgba(51,50,46,.75)'); c.fillStyle = '#fff'; c.fillText(text, 48, H - 41); c.restore(); }
+function smoke(c, x, y){ c.save(); c.filter = 'blur(3px)'; for (let i = 0; i < 7; i++){ circle(c, x + i * i * 4, y - i * 46, 16 + i * 6); fill(c, `rgba(214,208,198,${.85 - i * .09})`); } c.restore(); }
+function ship(c, x, y, s, rot){
+  c.save(); c.translate(x, y); c.rotate(rot); c.scale(s, s);
+  c.beginPath(); c.roundRect(-250, -75, 470, 150, 75); fill(c, '#f4efe4');
+  c.save(); c.clip(); c.fillStyle = '#d9d0c0'; c.fillRect(-260, 18, 500, 70); c.restore();
+  c.fillStyle = '#d98a5b'; c.fillRect(-140, -75, 40, 150); c.fillStyle = '#b86f45'; c.fillRect(-140, 18, 40, 57);
+  circle(c, 40, -5, 28); fill(c, '#8fb3c4'); circle(c, 32, -13, 8); fill(c, 'rgba(255,255,255,.7)');
+  c.restore();
+}
+/* the far landmark: something enormous, asleep in the haze */
+function giant(c, x, y, s){
+  const col = mix('#7d8a8f', SKY_LOW, .62);
+  c.beginPath(); c.ellipse(x, y, 260 * s, 120 * s, 0, PI, 0); fill(c, col);
+  circle(c, x - 230 * s, y - 40 * s, 70 * s); fill(c, col);
+  for (const k of [-.5, -.1, .3]){ poly(c, [[x + k * 300 * s - 22 * s, y - 100 * s], [x + k * 300 * s, y - 150 * s], [x + k * 300 * s + 22 * s, y - 104 * s]]); fill(c, col); }
+}
+
+/* LKP: running the trail, from behind */
+const BLUE = '#3da9ff', ORANGE = '#ff8a3d';
+/* a player's hand: a glowing mitt in their colour */
+function mitt(c, x, y, col, r = 30){
+  const g = c.createRadialGradient(x, y, r * 0.4, x, y, r * 2.4); g.addColorStop(0, col + 'aa'); g.addColorStop(1, col + '00');
+  c.fillStyle = g; circle(c, x, y, r * 2.4); c.fill();
+  circle(c, x, y, r); fill(c, '#ffffff'); c.lineWidth = r * 0.28; c.strokeStyle = col; circle(c, x, y, r); c.stroke();
+  c.fillStyle = col; c.beginPath(); for (let i = 0; i < 8; i++){ const a = i * PI / 4, d = i % 2 ? r * 0.22 : r * 0.55; c.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d); } c.closePath(); c.fill();
+}
+function pill(c, text, x, y, size = 34){
+  c.save(); c.font = `800 ${size}px Inter, Segoe UI, sans-serif`; const w = c.measureText(text).width + size * 1.6;
+  c.shadowColor = 'rgba(40,40,60,.14)'; c.shadowBlur = 20; c.shadowOffsetY = 6;
+  c.beginPath(); c.roundRect(x - w / 2, y - size * 0.95, w, size * 1.9, size * 0.95); fill(c, 'rgba(250,247,238,.95)'); c.shadowColor = 'transparent';
+  c.fillStyle = INK; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, x, y + 2); c.restore();
+}
+function shadeClip(c, path, col, dx, dy, rx, ry){ c.save(); path(); c.clip(); oval(c, dx, dy, rx, ry); fill(c, col); c.restore(); }
+
+/* 1. Sky Painter: sweeping arms paint the sky, and a hidden picture shows through */
+function whale(c, x, y, s, outline = false){
+  const bodyPath = () => { c.beginPath(); c.ellipse(x, y, 260 * s, 120 * s, -0.08, 0, PI * 2); };
+  if (outline){
+    c.save(); c.setLineDash([14, 12]); c.lineWidth = 4; c.strokeStyle = 'rgba(120,110,95,.35)'; bodyPath(); c.stroke();
+    c.beginPath(); c.moveTo(x - 240 * s, y - 10 * s); c.lineTo(x - 380 * s, y - 110 * s); c.lineTo(x - 350 * s, y + 20 * s); c.lineTo(x - 390 * s, y + 110 * s); c.closePath(); c.stroke(); c.restore(); return;
+  }
+  poly(c, [[x - 240 * s, y - 10 * s], [x - 380 * s, y - 110 * s], [x - 350 * s, y + 20 * s], [x - 390 * s, y + 110 * s]]); fill(c, '#5f84b0');
+  bodyPath(); fill(c, '#7398c4');
+  shadeClip(c, bodyPath, '#5f84b0', x + 80 * s, y + 70 * s, 260 * s, 110 * s);
+  c.save(); bodyPath(); c.clip(); oval(c, x + 20 * s, y + 95 * s, 230 * s, 60 * s); fill(c, '#efe6d4'); c.restore();
+  oval(c, x + 40 * s, y + 70 * s, 70 * s, 26 * s, 0.5); fill(c, '#5f84b0');
+  circle(c, x + 170 * s, y - 20 * s, 14 * s); fill(c, INK); circle(c, x + 166 * s, y - 25 * s, 5 * s); fill(c, '#fff');
+  c.strokeStyle = INK; c.lineWidth = 6 * s; c.lineCap = 'round'; c.beginPath(); c.arc(x + 200 * s, y + 20 * s, 34 * s, 0.2, 1.3); c.stroke();
+  oval(c, x + 120 * s, y + 10 * s, 22 * s, 13 * s); fill(c, 'rgba(255,140,150,.45)');
+  /* its spout, a little fountain */
+  for (const [dx, dy, r] of [[0, -150, 16], [-30, -185, 12], [30, -185, 12], [-50, -215, 9], [50, -215, 9]]){ circle(c, x + 60 * s + dx * s, y + dy * s, r * s); fill(c, '#d9ecf5'); }
+}
+function paint(c){
+  /* the blank canvas: paper */
+  c.fillStyle = '#f2ebdc'; c.fillRect(0, 0, W, H);
+  whale(c, 860, 400, 1, true);
+  /* the picture, waiting underneath */
+  const P = layer(), pc = P.getContext('2d');
+  sky(pc, 900); range(pc, 760, 70, '#7d9a8a', 0.8, 300, 1); range(pc, 830, 50, '#6f9670', 0.5, 220, 3);
+  whale(pc, 860, 400, 1);
+  for (const [x, y, w] of [[300, 220, 160], [1350, 180, 200], [1180, 640, 140]]){ pc.globalAlpha = 0.85; oval(pc, x, y, w, w * 0.18); fill(pc, '#ffffff'); oval(pc, x + 30, y - 12, w * 0.6, w * 0.14); fill(pc, '#ffffff'); pc.globalAlpha = 1; }
+  /* where they've painted so far: big brushy sweeps */
+  const M = layer(), mc = M.getContext('2d');
+  mc.lineCap = 'round'; mc.lineJoin = 'round'; mc.strokeStyle = '#000';
+  const sweeps = [[[120, 640], [380, 520], [640, 560], [880, 430], [1040, 300]], [[1500, 160], [1260, 260], [1100, 420], [860, 520], [620, 330], [420, 260]], [[200, 820], [600, 760], [1000, 800], [1450, 720]], [[1450, 520], [1250, 600], [1000, 640]]];
+  for (const sw of sweeps) for (let k = 0; k < 3; k++){ mc.globalAlpha = 1 - k * 0.25; mc.lineWidth = 170 - k * 38; mc.beginPath(); sw.forEach(([x, y], i) => { const j = (k - 1) * 14; i ? mc.lineTo(x + j, y - j) : mc.moveTo(x + j, y - j); }); mc.stroke(); }
+  mc.globalAlpha = 1; mc.globalCompositeOperation = 'source-in'; mc.drawImage(P, 0, 0);
+  c.drawImage(M, 0, 0);
+  /* paint flecks off the brushes */
+  for (let i = 0; i < 40; i++){ const a = R() * PI * 2, d = 40 + R() * 90, [x, y] = i % 2 ? [1040, 300] : [420, 260]; circle(c, x + Math.cos(a) * d, y + Math.sin(a) * d, 3 + R() * 5); fill(c, i % 2 ? '#9fc8e6cc' : '#7398c4cc'); }
+  grain(c);
+  mitt(c, 1040, 300, ORANGE); mitt(c, 420, 260, BLUE);
+  pill(c, 'What’s hiding in the sky? Keep painting!', W / 2, 70, 30);
+  label(c, 'Sky Painter');
+}
+
+/* 2. Sleepy Bear: dance while the music plays; freeze when it stops */
+function bearHead(c, x, y, s){
+  const fur = '#8a5a3b', dark = '#6e452c', muzzle = '#d9b48c';
+  for (const d of [-1, 1]){ circle(c, x + d * 95 * s, y - 85 * s, 42 * s); fill(c, fur); circle(c, x + d * 95 * s, y - 85 * s, 22 * s); fill(c, '#c99a72'); }
+  const head = () => { c.beginPath(); c.ellipse(x, y, 140 * s, 120 * s, 0, 0, PI * 2); };
+  head(); fill(c, fur); shadeClip(c, head, dark, x + 90 * s, y + 60 * s, 130 * s, 120 * s);
+  oval(c, x, y + 45 * s, 62 * s, 46 * s); fill(c, muzzle); oval(c, x, y + 22 * s, 24 * s, 16 * s); fill(c, '#3b2a20');
+  /* one eye peeking open, one still asleep */
+  circle(c, x - 52 * s, y - 18 * s, 15 * s); fill(c, '#fff'); circle(c, x - 48 * s, y - 16 * s, 9 * s); fill(c, INK);
+  c.strokeStyle = INK; c.lineWidth = 6 * s; c.lineCap = 'round'; c.beginPath(); c.arc(x + 52 * s, y - 22 * s, 14 * s, 0.2, PI - 0.2); c.stroke();
+  c.beginPath(); c.moveTo(x - 72 * s, y - 44 * s); c.lineTo(x - 34 * s, y - 40 * s); c.stroke();
+}
+function bear(c){
+  sky(c, 520); range(c, 470, 80, '#7d9a8a', 1, 300, 2); range(c, 520, 60, '#6f9670', 0.6, 220, 4);
+  ground(c, 540, '#8fbf6a');
+  /* the bear's hill and cave, on the right */
+  c.beginPath(); c.ellipse(1260, 640, 420, 300, 0, PI, 0); fill(c, '#7fa868');
+  c.save(); c.beginPath(); c.ellipse(1260, 640, 420, 300, 0, PI, 0); c.clip(); oval(c, 1500, 560, 260, 300); fill(c, '#6a9058'); c.restore();
+  c.beginPath(); c.ellipse(1250, 640, 190, 170, 0, PI, 0); fill(c, '#3b3a36');
+  bearHead(c, 1250, 560, 0.85);
+  c.fillStyle = '#8a5a3b'; for (const d of [-1, 1]){ oval(c, 1250 + d * 120, 638, 46, 22); c.fill(); }
+  /* Zzz drifting up */
+  c.fillStyle = 'rgba(60,60,90,.5)'; c.font = '800 44px Inter, sans-serif'; c.fillText('z', 1400, 380); c.font = '800 30px Inter, sans-serif'; c.fillText('z', 1440, 340);
+  tree(c, 140, 700, 80); tree(c, 420, 600, 46, '#6f9a5e', 0.3);
+  /* the music's notes, stopped mid-air */
+  c.fillStyle = 'rgba(90,80,140,.55)';
+  for (const [x, y] of [[520, 240], [640, 180], [760, 260], [880, 200]]){ oval(c, x, y, 18, 13, -0.4); c.fill(); c.fillRect(x + 14, y - 64, 6, 64); }
+  grain(c);
+  /* both frozen: frost round their hands */
+  for (const [x, y, col] of [[430, 420, BLUE], [820, 380, ORANGE]]){
+    mitt(c, x, y, col);
+    c.strokeStyle = 'rgba(190,230,255,.9)'; c.lineWidth = 4;
+    for (let k = 0; k < 6; k++){ const a = k * PI / 3, r0 = 52, r1 = 78; c.beginPath(); c.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); c.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1); c.stroke(); }
+  }
+  pill(c, '❄ Freeze! The bear is peeking…', W / 2 - 160, 80, 34);
+  label(c, 'Sleepy Bear');
+}
+
+/* 3. Leaf Pile: sweep the falling leaves into a pile - then jump in */
+function leaf(c, x, y, s, rot, col){
+  c.save(); c.translate(x, y); c.rotate(rot);
+  c.beginPath(); c.moveTo(-20 * s, 0); c.quadraticCurveTo(0, -14 * s, 22 * s, 0); c.quadraticCurveTo(0, 14 * s, -20 * s, 0); fill(c, col);
+  c.beginPath(); c.moveTo(-20 * s, 0); c.quadraticCurveTo(0, 14 * s, 22 * s, 0); c.lineTo(-20 * s, 0); fill(c, mix(col, '#3a3360', 0.18));
+  c.strokeStyle = mix(col, '#5a3a20', 0.4); c.lineWidth = 2 * s; c.beginPath(); c.moveTo(-24 * s, 0); c.lineTo(20 * s, 0); c.stroke();
+  c.restore();
+}
+function leaves(c){
+  const COLS = ['#e0893b', '#d4643a', '#e8b44a', '#c9503a', '#d99a3b'];
+  /* an autumn afternoon */
+  const g = c.createLinearGradient(0, 0, 0, 560); g.addColorStop(0, '#a9c3dc'); g.addColorStop(1, '#f5dfbf'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  range(c, 470, 80, '#b0957a', 0.9, 300, 2); range(c, 520, 60, '#a38a64', 0.5, 220, 4);
+  ground(c, 540, '#b8b06a');
+  tree(c, 160, 640, 96, '#d9853b'); tree(c, 1440, 650, 104, '#c9603a'); tree(c, 420, 560, 48, '#e0b44a', 0.3); tree(c, 1180, 560, 52, '#d9853b', 0.3);
+  /* the pile, in the middle */
+  for (let i = 0; i < 380; i++){ const a = R() * PI, rr = Math.sqrt(R()), x = 800 + Math.cos(a) * 300 * rr, y = 830 - Math.sin(a) * 190 * rr; leaf(c, x, y, 1.1 + R() * 0.5, R() * PI * 2, COLS[i % 5]); }
+  /* leaves falling, and leaves being swept along by the hands */
+  for (let i = 0; i < 30; i++) leaf(c, R() * W, R() * 450, 1 + R() * 0.5, R() * PI * 2, COLS[i % 5]);
+  c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 6; c.lineCap = 'round';
+  c.beginPath(); c.arc(520, 820, 260, PI * 1.25, PI * 1.55); c.stroke(); c.beginPath(); c.arc(1080, 820, 250, PI * 1.45, PI * 1.75); c.stroke();
+  for (let i = 0; i < 9; i++){ leaf(c, 330 + i * 26, 640 + i * 6, 1.3, -0.4 + i * 0.2, COLS[i % 5]); leaf(c, 1270 - i * 26, 620 + i * 7, 1.3, 0.4 - i * 0.2, COLS[(i + 2) % 5]); }
+  grain(c);
+  mitt(c, 330, 610, BLUE); mitt(c, 1290, 590, ORANGE);
+  pill(c, 'Sweep the leaves into the pile!', W / 2, 80, 32);
+  /* how big the pile is: nearly ready to jump in */
+  c.beginPath(); c.roundRect(W / 2 - 160, 128, 320, 22, 11); fill(c, 'rgba(250,247,238,.9)');
+  c.beginPath(); c.roundRect(W / 2 - 156, 132, 312 * 0.8, 14, 7); fill(c, '#e0893b');
+  label(c, 'Leaf Pile');
+}
+
+/* 4. Stack It High: catch the soft blocks and build a tower together */
+function block(c, x, y, s, rot, col, mark){
+  c.save(); c.translate(x, y); c.rotate(rot);
+  c.beginPath(); c.roundRect(-55 * s, -55 * s, 110 * s, 110 * s, 22 * s); fill(c, col);
+  c.save(); c.beginPath(); c.roundRect(-55 * s, -55 * s, 110 * s, 110 * s, 22 * s); c.clip(); c.fillStyle = mix(col, '#3a3360', 0.18); c.fillRect(20 * s, -60 * s, 40 * s, 120 * s); c.fillRect(-60 * s, 22 * s, 120 * s, 40 * s); c.restore();
+  c.fillStyle = 'rgba(255,255,255,.85)';
+  if (mark === 'star'){ c.beginPath(); for (let k = 0; k < 10; k++){ const a = -PI / 2 + k * PI / 5, r = k % 2 ? 11 * s : 26 * s; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); c.fill(); }
+  if (mark === 'heart'){ c.beginPath(); c.moveTo(0, 18 * s); c.bezierCurveTo(-34 * s, -6 * s, -16 * s, -32 * s, 0, -14 * s); c.bezierCurveTo(16 * s, -32 * s, 34 * s, -6 * s, 0, 18 * s); c.fill(); }
+  if (mark === 'dot'){ circle(c, 0, 0, 20 * s); c.fill(); }
+  c.restore();
+}
+function stack(c){
+  sky(c, 560); range(c, 500, 80, '#7d9a8a', 1, 300, 1); range(c, 550, 60, '#6f9670', 0.6, 220, 5);
+  ground(c, 600, '#8fbf6a');
+  tree(c, 150, 720, 84); tree(c, 1450, 730, 92); tree(c, 1250, 620, 44, '#6f9a5e', 0.35);
+  const cols = ['#ff7aa8', '#ffd25a', '#79b3aa', '#a98bff', '#f2a65a', '#9fd38a', '#7fb0e0'], marks = ['star', 'heart', 'dot'];
+  oval(c, 830, 860, 150, 22); fill(c, 'rgba(58,51,96,.18)');
+  for (let k = 0; k < 7; k++) block(c, 800 + Math.sin(k * 1.7) * 14, 800 - k * 104, 0.95, Math.sin(k * 2.3) * 0.06, cols[k], marks[k % 3]);
+  /* one coming down, one being carried over */
+  block(c, 1000, 110, 0.85, 0.3, '#e88b8b', 'star');
+  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 5; for (const dx of [-20, 0, 20]){ c.beginPath(); c.moveTo(1000 + dx, 30); c.lineTo(1000 + dx, 50); c.stroke(); }
+  block(c, 1150, 300, 0.85, -0.15, '#ffd25a', 'heart'); mitt(c, 1150, 372, ORANGE, 26);
+  grain(c);
+  mitt(c, 560, 260, BLUE);
+  pill(c, '7 blocks high!', 380, 80, 34);
+  label(c, 'Stack It High');
+}
+
+paint(ctx('paint')); bear(ctx('bear')); leaves(ctx('leaves')); stack(ctx('stack'));
+document.body.dataset.ready = '1';
+
+</script>
+</body></html>
