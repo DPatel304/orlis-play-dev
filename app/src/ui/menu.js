@@ -30,7 +30,8 @@ const BLURB = {
   'castle-defense': 'Build towers together and keep the castle safe',
   'sleepy-bear': 'Dance to the music - then freeze before the bear peeks!',
   'leaf-pile': 'Sweep the autumn leaves into a big pile - then jump in!',
-  'stack-it-high': 'Catch the falling blocks and build a tower to the sky'
+  'stack-it-high': 'Catch the falling blocks and build a tower to the sky',
+  'sky-painter': 'Paint the sky with your arms - what’s hiding there?'
 };
 /* Each game's icon, in the cube's style: a rounded square in two colours,
    a simple white picture on it. */
@@ -42,7 +43,8 @@ export const ICONS = {
   'castle-defense': { cols: ['#10b981', '#a3e635'], glyph: 'tower' },
   'sleepy-bear': { cols: ['#b07a4f', '#f2c48a'], glyph: 'bear' },
   'leaf-pile': { cols: ['#e07b39', '#f2c14e'], glyph: 'leaf' },
-  'stack-it-high': { cols: ['#4fb3a8', '#a98bff'], glyph: 'blocks' }
+  'stack-it-high': { cols: ['#4fb3a8', '#a98bff'], glyph: 'blocks' },
+  'sky-painter': { cols: ['#5b8fd6', '#9fd8e6'], glyph: 'brush' }
 };
 const GLYPHS = {
   balloon: '<path d="M50 14c15 0 25 11 25 26 0 17-14 30-25 33-11-3-25-16-25-33 0-15 10-26 25-26z" fill="#fff"/><path d="M46 73h8l-4 6z" fill="#fff"/><path d="M50 79c-5 6 5 9 0 16" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="41" cy="31" rx="5" ry="8" transform="rotate(-25 41 31)" fill="#000" opacity=".12"/>',
@@ -52,6 +54,7 @@ const GLYPHS = {
   bear: '<circle cx="30" cy="30" r="11" fill="#fff"/><circle cx="70" cy="30" r="11" fill="#fff"/><ellipse cx="50" cy="55" rx="30" ry="27" fill="#fff"/><ellipse cx="50" cy="66" rx="12" ry="9" fill="#000" opacity=".14"/><path d="M36 50q4-4 8 0M56 50q4-4 8 0" stroke="#000" stroke-opacity=".35" stroke-width="3" fill="none" stroke-linecap="round"/>',
   leaf: '<path d="M22 74C22 40 46 20 80 20c0 34-20 58-54 58z" fill="#fff"/><path d="M24 76L66 34" stroke="#000" stroke-opacity=".18" stroke-width="4" stroke-linecap="round"/>',
   blocks: '<rect x="30" y="58" width="40" height="24" rx="6" fill="#fff"/><rect x="34" y="36" width="32" height="22" rx="6" fill="#fff" opacity=".9"/><rect x="38" y="16" width="24" height="20" rx="5" fill="#fff" opacity=".8"/>',
+  brush: '<path d="M70 14l16 16-30 30-16-16z" fill="#fff"/><path d="M38 46l16 16c-4 12-14 20-30 22 2-16 8-30 14-38z" fill="#fff" opacity=".85"/>',
   tower: '<path d="M30 30h8v-8h8v8h8v-8h8v8h8v14H30z" fill="#fff"/><path d="M34 44h32v36H34z" fill="#fff"/><path d="M45 80V64a5 5 0 0 1 10 0v16z" fill="#000" opacity=".15"/>'
 };
 /* A game's icon: its own, or the one its Store entry gave it (a picture
