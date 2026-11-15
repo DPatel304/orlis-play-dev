@@ -1080,3 +1080,35 @@ canvas.avface{ display:block; border-radius:50%; }
 .avsay{ flex:1; color:#5b5f6e; }
 .btn.setbtn.avbig{ font-size:1em; padding:.6em 1.3em; }
 .fpop > .btn.setbtn.fsmall{ margin-top:1.4vh; }
+
+/* ---------- the line-up: who's who, once a session ---------- */
+.screen.lineup{ display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:5vh 4vw 4vh; pointer-events:none; color:#33322e; }
+.screen.lineup .btn{ pointer-events:auto; }
+.luhead{ text-align:center; }
+.luhead h1{ margin:0; font-size:5.4vh; letter-spacing:-.02em; }
+.lusay{ margin:.6vh 0 0; font-size:4vh; font-weight:700; color:#6d5efc; min-height:1.3em; }
+.lurow{ display:flex; gap:2vh; flex-wrap:wrap; justify-content:center; }
+.lucard{ position:relative; display:flex; flex-direction:column; align-items:center; gap:.8vh; padding:1.6vh 1.6vh 1.2vh; border-radius:2.6vh; background:rgba(250,247,238,.94);
+  box-shadow:0 .8vh 2.4vh rgba(40,40,60,.1); transition:transform .25s, box-shadow .25s, opacity .25s; }
+.lucard canvas.avface, .lucard .av{ width:11vh; height:11vh; font-size:8vh; line-height:11vh; text-align:center; }
+.lunm{ font-size:2.4vh; font-weight:700; }
+.lucard.on{ transform:translateY(-1.6vh) scale(1.12); box-shadow:0 0 0 .6vh #6d5efc, 0 1.6vh 3vh rgba(40,40,60,.18); }
+.lucard.got{ box-shadow:0 0 0 .6vh var(--who, #3fcf7f); }
+.lucard.got::after{ content:'✓'; position:absolute; top:-1vh; right:-1vh; width:3.6vh; height:3.6vh; border-radius:50%; background:var(--who, #3fcf7f); color:#fff; font-weight:800; display:grid; place-items:center; font-size:2.2vh; }
+.lufoot{ display:flex; gap:1.6vh; }
+.btn.setbtn.lubtn{ font-size:2.4vh; padding:.6em 1.4em; }
+
+/* the pause screen's who's who */
+.whorow{ margin-top:3vh; }
+.whorowlbl{ font-size:2vh; opacity:.8; margin-bottom:1vh; }
+.whochips{ display:flex; gap:1.2vh; flex-wrap:wrap; }
+.btn.whochip2{ padding:.5vh 1.6vh .5vh .6vh; border-radius:999px; font-size:2.2vh; font-weight:700; box-shadow:0 0 0 .4vh var(--who); }
+.btn.whochip2 .lbl{ display:flex; align-items:center; gap:1vh; }
+.btn.whochip2 canvas.avface, .btn.whochip2 .av{ width:5.4vh; height:5.4vh; border-radius:50%; display:grid; place-items:center; background:#eee9db; color:#8a8478; }
+
+/* "Ellie's back!" */
+.screen.namepop{ display:flex; justify-content:center; align-items:flex-start; padding-top:12vh; pointer-events:none; z-index:8; }
+.namecard{ display:flex; align-items:center; gap:1.4vh; padding:1vh 2.6vh 1vh 1vh; border-radius:999px; background:rgba(250,247,238,.96); color:#33322e;
+  font-size:3.2vh; font-weight:800; box-shadow:0 1.4vh 3vh rgba(20,20,40,.22); animation:popin .3s cubic-bezier(.2,.8,.25,1) both; }
+.namecard canvas.avface{ width:7.2vh; height:7.2vh; }
+.screen.namepop.out{ transition:opacity .45s; opacity:0; }

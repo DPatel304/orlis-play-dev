@@ -18,6 +18,8 @@ import { voice } from './audio/voice.js';
 import { scores } from './games/common.js';
 import { byId } from './games/index.js';
 import { PLAYER_COLORS, MAX_PLAYERS } from './tracking/pose.js';
+import { crew, clothesOf } from './ui/crew.js';
+import { lineUp, whoRow, namePop } from './ui/lineup.js';
 
 const stage = document.getElementById('stage');
 const c = stage.getContext('2d');
@@ -44,7 +46,7 @@ let paused = null, lost = null, handsUp = 0, empty = 0, joined = new Set();
 /* The camera's on only where it's used: a game, its scores (a wave picks
    "again"), and the camera check. Everywhere else - the intro, signing in,
    the home screen - it's off: no light, and no work for the laptop. */
-const CAMERA = new Set(['starting', 'play', 'outro', 'results', 'calibrate']);
+const CAMERA = new Set(['starting', 'lineup', 'play', 'outro', 'results', 'calibrate']);
 /* The pages that are the mouse's and the keyboard's: Home, the Store,
    Create, and signing in. */
 const HOMEY = new Set(['menu', 'store', 'create', 'family', 'who']);
@@ -114,7 +116,7 @@ function toGame(g){
   players = MAX_PLAYERS;
   /* The camera first, if it's off: a moment's "Starting the camera" (the
      first time, a few, while the body tracker loads). */
-  if (pose.on || pose.mouse.active && pose.reason === 'debug'){ music.start(game.music); startRound(); return; }
+  if (pose.on || pose.mouse.active && pose.reason === 'debug'){ music.start(game.music); lineUpThenPlay(); return; }
   go('starting', () => {
     const s = screen('dim lost');
     s.append(h('p', 'lede', `${g.name} \u2014 starting the camera\u2026`));
@@ -123,8 +125,31 @@ function toGame(g){
   pose.wake().finally(() => {
     if (mode !== 'starting' || game !== g) return;      /* (went somewhere else meanwhile) */
     music.start(game.music);
-    startRound();
+    lineUpThenPlay();
   });
+}
+
+/* Who's who, once a session, before the first game: a family of two or
+   more lines up (the one playing first); one on their own is simply them. */
+function family(){
+  const list = (account.signedIn && account.state.profiles) || [];
+  const me = account.current;
+  return me ? [me, ...list.filter(p => p.id !== me.id)] : list;
+}
+function lineUpThenPlay(){
+  crew.profiles = family();
+  if (crew.lined || crew.profiles.length < 2){ startRound(); return; }
+  go('lineup', () => lineUp({ profiles: crew.profiles, onDone: () => { if (mode === 'lineup') startRound(); } }));
+}
+/* Each frame of a game: the tracking keeps each child on their player, and
+   someone coming back gets their name for a moment. */
+function crewTick(dt){
+  crew.step(dt, pose.players.map(p => !!p.present), (i) => clothesOf(pose.video, pose.players[i].lm));
+  if (!crew.lined && crew.profiles.length === 1){
+    const i = pose.players.findIndex(p => p.present);
+    if (i >= 0){ crew.set(i, crew.profiles[0].id); crew.lined = true; }
+  }
+  for (const { i } of crew.popped()){ const p = crew.profileOf(i); if (p) namePop(p); }
 }
 
 function startRound(){
@@ -188,6 +213,8 @@ function openPause(){
     () => { paused.remove(); paused = null; cursor.reset(); },
     () => { paused.remove(); paused = null; roundDone(); (game.back || toMenu)(); },
     game.back ? 'Back to Create' : 'Home');
+  /* who's who, to put right a mix-up */
+  if (crew.profiles.length >= 2) paused.querySelector('.gbtext').appendChild(whoRow(crew.profiles));
   sfx.whoosh();
 }
 
@@ -290,6 +317,7 @@ function tick(now){
   c.fillRect(0, 0, W, H);
 
   if (mode === 'play' && inst && !paused && !lost){
+    crewTick(dt);
     inst.step(dt, W, H);
     roundLeft -= dt; played += dt;
     /* the owner trying a game that's waiting for their OK: once they've
