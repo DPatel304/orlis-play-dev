@@ -189,7 +189,7 @@ export class Ride {
     for (let k = -8; k <= 8; k++){
       const x = p.x + k / 8 * s * 0.4, yy = y + s * 0.035 + Math.abs(k) * s * 0.003, l = s * (0.03 + 0.01 * ((k * 7 + 24) % 3));
       c.strokeStyle = ZUBU.moss[(k + 8) % 3]; c.lineWidth = Math.max(1, s * 0.01); c.beginPath(); c.moveTo(x, yy + l * 0.3); c.quadraticCurveTo(x + l * 0.2, yy - l * 0.4, x + Math.sin(this.t * 1.5 + k) * l * 0.2, yy - l * 0.7); c.stroke();
-      if ((k + 8) % 4 === 0){ c.fillStyle = ['#ffc4d8', '#fff3d6', '#ffe39a', '#d8c8ff'][((k + 8) / 4) % 4]; c.beginPath(); c.arc(x, yy - l * 0.5, s * 0.012, 0, Math.PI * 2); c.fill(); }
+      if ((k + 8) % 4 === 0){ c.fillStyle = ['#f3d2db', '#f7efdd', '#ecdcb2', '#dfd5f1'][((k + 8) / 4) % 4]; c.beginPath(); c.arc(x, yy - l * 0.5, s * 0.012, 0, Math.PI * 2); c.fill(); }
     }
     c.restore();
   }
@@ -197,17 +197,17 @@ export class Ride {
   /* The words: catch up (and how close), climb on, sit and relax. */
   marks(c, W, H){
     if (this.phase === 'chase'){
-      banner(c, W, H, this.pt > WAIT && this.walk < 0.3 ? 'ZUBU\'S WAITING - RUN!' : 'RUN TO CATCH UP!', '#ffd24a', 1 + 0.03 * Math.sin(this.t * 6));
+      banner(c, W, H, this.pt > WAIT && this.walk < 0.3 ? 'ZUBU\'S WAITING - RUN!' : 'RUN TO CATCH UP!', '#dec478', 1 + 0.03 * Math.sin(this.t * 6));
       /* how close: a bar filling as they gain on it */
       const w = W * 0.3, x = (W - w) / 2, y = H * 0.28, h = H * 0.024, u = Math.max(0, Math.min(1, 1 - this.gap / START_GAP));
       c.save();
       c.fillStyle = 'rgba(5,6,15,.7)'; c.beginPath(); c.roundRect(x - 4, y - 4, w + 8, h + 8, h); c.fill();
-      c.fillStyle = '#7ff3ff'; c.beginPath(); c.roundRect(x, y, Math.max(h, w * u), h, h / 2); c.fill();
+      c.fillStyle = '#a2dfe3'; c.beginPath(); c.roundRect(x, y, Math.max(h, w * u), h, h / 2); c.fill();
       c.restore();
       return;
     }
-    if (this.phase === 'board' && this.pt > 0.5) banner(c, W, H, 'CLIMB ON!', '#7ff3ff', 1.1);
-    if (this.phase === 'relax' && this.pt < 6) banner(c, W, H, 'SIT DOWN AND RELAX', '#bdf7ff', 1 + 0.02 * Math.sin(this.t * 2));
+    if (this.phase === 'board' && this.pt > 0.5) banner(c, W, H, 'CLIMB ON!', '#a2dfe3', 1.1);
+    if (this.phase === 'relax' && this.pt < 6) banner(c, W, H, 'SIT DOWN AND RELAX', '#cfedef', 1 + 0.02 * Math.sin(this.t * 2));
     if (this.phase === 'relax') for (const i of this.riders){
       /* (a little heart over each, now and then: comfy) */
       const f = ((this.t * 0.35 + i * 0.27) % 1);

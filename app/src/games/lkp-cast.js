@@ -9,9 +9,12 @@
      robots   gunmetal, on one wheel, a dark visor with one red eye
      Nova     the Commander, on her comms feed */
 import { glow, mix, rgba } from './lkp-world.js';
+import { head } from '../ui/avatar-art.js';
 
 const circ = (c, x, y, r) => { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, 6.2832); c.fill(); };
-const INK = '#1a1830';
+const INK = '#1a1830', INK2 = '#2d2a3e';
+/* (the house style's one shadow tone, its rim of sun, and the suits' packs) */
+const SHADE = '#3a3360', RIM = 'rgba(255,240,200,.85)', PACK = '#efe8da', PACK_SHADE = '#cfc6b8', RIM_SOFT = 'rgba(255,240,200,.45)';
 /* mix, as #rrggbb (for glow, which wants hex) */
 const hexMix = (a, b, k) => '#' + mix(a, b, k).slice(4, -1).split(',').map(v => (+v).toString(16).padStart(2, '0')).join('');
 
@@ -65,9 +68,12 @@ export function mirrorBody(lm){
 export function worldCrew(c, x, base, h, t, col, st, face, pose = null){
   const u = h / 330, f = 1 - (st.duck || 0) * 0.4;
   const run = st.run || 0, ph = st.runPh || 0;
-  const lite = mix(col, '#ffffff', 0.28), dark = mix(col, '#0a0f2a', 0.38), deep = mix(col, '#05081a', 0.55), line = mix(col, '#05081a', 0.62);
-  const gl = hexMix(col, '#ffffff', 0.62);
-  if (!st.flying){ c.fillStyle = 'rgba(20,15,45,.4)'; c.beginPath(); c.ellipse(x, base, 70 * u, 15 * u, 0, 0, 6.2832); c.fill(); }
+  /* The painted house style: flat colour, one shadow tone (the shade side,
+     away from the sun on the left), a soft rim of sunlight - no outlines,
+     nothing glowing. */
+  const lite = mix(col, '#fff3dc', 0.3), dark = mix(col, SHADE, 0.32), deep = mix(col, SHADE, 0.5), line = mix(col, SHADE, 0.22);
+  const gl = hexMix(col, '#fff3dc', 0.55);
+  if (!st.flying){ c.fillStyle = 'rgba(58,51,96,.22)'; c.beginPath(); c.ellipse(x, base, 70 * u, 15 * u, 0, 0, 6.2832); c.fill(); }
   /* a puff of dust kicked up behind each foot as it pushes off */
   if (run > 0.2 && !st.air) for (const d of [-1, 1]){
     const k = (((ph + (d < 0 ? Math.PI : 0)) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / Math.PI;
@@ -97,12 +103,14 @@ export function worldCrew(c, x, base, h, t, col, st, face, pose = null){
   const sway = st.body ? (st.body.sway || 0) * u : 0;
   const fromHips = () => { if (!st.body) return; c.translate(sway, -128 * u); c.rotate(st.body.tilt); c.translate(0, 128 * u); };
   /* a limb: a dark edge, its colour, lit down one side */
+  /* a limb: its colour, the shade side darker, a rim of sun on the lit side */
   const limb = (pts, w, side = -1) => {
-    for (const [lw, sc] of [[w + 6 * u, line], [w, col]]){ c.strokeStyle = sc; c.lineWidth = lw; c.beginPath(); pts.forEach(([a, b], k) => (k ? c.lineTo(a, b) : c.moveTo(a, b))); c.stroke(); }
-    c.strokeStyle = 'rgba(255,255,255,.16)'; c.lineWidth = w * 0.35;
-    c.beginPath(); pts.forEach(([a, b], k) => (k ? c.lineTo(a + side * w * 0.22, b) : c.moveTo(a + side * w * 0.22, b))); c.stroke();
+    w *= 1.3;   /* (chunky, like a toy) */
+    const along = (dx, lw, sc) => { c.strokeStyle = sc; c.lineWidth = lw; c.beginPath(); pts.forEach(([a, b], k) => (k ? c.lineTo(a + dx, b) : c.moveTo(a + dx, b))); c.stroke(); };
+    along(0, w, col); along(w * 0.2, w * 0.55, dark); along(-w * 0.3, w * 0.12, RIM_SOFT);
   };
-  const trim = (x0, y0, w) => { glow(c, x0, y0, w * 1.4, gl, 0.5); c.strokeStyle = gl; c.lineWidth = 4 * u; c.beginPath(); c.ellipse(x0, y0, w * 0.55, w * 0.18, 0, 0, Math.PI); c.stroke(); };
+  /* (the suit's cuffs at the joints: a lighter band) */
+  const trim = (x0, y0, w) => { c.strokeStyle = gl; c.lineWidth = 5 * u; c.beginPath(); c.ellipse(x0, y0, w * 0.5, w * 0.16, 0, 0, Math.PI); c.stroke(); };
   /* legs: running, one planted, the other's heel kicking up behind -
      its sole towards us */
   if (gk > 0.5) for (const d of [-1, 1]){
@@ -139,11 +147,12 @@ export function worldCrew(c, x, base, h, t, col, st, face, pose = null){
   }
   fromHips();
   /* the body: a V from the shoulders to the waist, panel lines down it */
-  const tg = c.createLinearGradient(-52 * u, 0, 52 * u, 0); tg.addColorStop(0, lite); tg.addColorStop(0.45, col); tg.addColorStop(1, dark);
-  c.fillStyle = tg;
+  c.fillStyle = col;
   c.beginPath(); c.moveTo(-50 * u, -232 * u); c.quadraticCurveTo(0, -242 * u, 50 * u, -232 * u); c.lineTo(36 * u, -170 * u); c.lineTo(32 * u, -122 * u); c.quadraticCurveTo(0, -112 * u, -32 * u, -122 * u); c.lineTo(-36 * u, -170 * u); c.closePath(); c.fill();
-  c.strokeStyle = line; c.lineWidth = 3 * u; c.stroke();
-  c.lineWidth = 2.5 * u; c.beginPath();
+  /* its shade side, and the sun along its lit edge */
+  c.save(); c.clip(); c.fillStyle = dark; c.fillRect(14 * u, -250 * u, 60 * u, 140 * u);
+  c.strokeStyle = RIM; c.lineWidth = 5 * u; c.beginPath(); c.moveTo(-50 * u, -230 * u); c.lineTo(-36 * u, -170 * u); c.lineTo(-32 * u, -122 * u); c.stroke(); c.restore();
+  c.strokeStyle = line; c.lineWidth = 2.5 * u; c.beginPath();
   c.moveTo(0, -165 * u); c.lineTo(0, -120 * u);
   c.moveTo(-32 * u, -150 * u); c.lineTo(-10 * u, -160 * u); c.moveTo(32 * u, -150 * u); c.lineTo(10 * u, -160 * u);
   c.moveTo(-28 * u, -128 * u); c.quadraticCurveTo(0, -140 * u, 28 * u, -128 * u);
@@ -180,11 +189,10 @@ export function worldCrew(c, x, base, h, t, col, st, face, pose = null){
     c.fillStyle = col; circ(c, fist[0] - d * 2.5 * u, fist[1] - 2.5 * u, 7 * u);
   }
   /* the pack, outlined in light, straps over the shoulders */
-  c.strokeStyle = line; c.lineWidth = 7 * u; c.beginPath(); c.moveTo(-26 * u, -226 * u); c.lineTo(-40 * u, -232 * u); c.moveTo(26 * u, -226 * u); c.lineTo(40 * u, -232 * u); c.stroke();
-  glow(c, 0, -200 * u, 56 * u, gl, 0.35);
-  c.fillStyle = dark; c.beginPath(); c.roundRect(-24 * u, -228 * u, 48 * u, 54 * u, 12 * u); c.fill();
-  c.fillStyle = col; c.beginPath(); c.roundRect(-19 * u, -223 * u, 38 * u, 44 * u, 9 * u); c.fill();
-  c.strokeStyle = gl; c.lineWidth = 3 * u; c.beginPath(); c.roundRect(-21.5 * u, -225.5 * u, 43 * u, 49 * u, 10 * u); c.stroke();
+  c.strokeStyle = deep; c.lineWidth = 7 * u; c.beginPath(); c.moveTo(-26 * u, -226 * u); c.lineTo(-40 * u, -232 * u); c.moveTo(26 * u, -226 * u); c.lineTo(40 * u, -232 * u); c.stroke();
+  c.fillStyle = PACK; c.beginPath(); c.roundRect(-24 * u, -228 * u, 48 * u, 54 * u, 12 * u); c.fill();
+  c.fillStyle = PACK_SHADE; c.beginPath(); c.roundRect(4 * u, -228 * u, 20 * u, 54 * u, [0, 12 * u, 12 * u, 0]); c.fill();
+  c.fillStyle = col; c.beginPath(); c.roundRect(-14 * u, -218 * u, 28 * u, 18 * u, 6 * u); c.fill();
   c.strokeStyle = line; c.lineWidth = 2.5 * u; c.beginPath();
   for (const k of [-7, 0, 7]){ c.moveTo((k - 2.5) * u, -186 * u); c.lineTo((k + 2.5) * u, -186 * u); }
   c.moveTo(-11 * u, -214 * u); c.lineTo(0, -208 * u); c.lineTo(11 * u, -214 * u);
@@ -205,18 +213,21 @@ export function worldCrew(c, x, base, h, t, col, st, face, pose = null){
   /* (st.nod: looking down at their feet, 0..1) */
   const turn = (st.look || 0) * 0.3 + (pose === 'check' ? -0.28 : 0) + (st.body ? st.body.head * 0.25 : 0), nod = (pose === 'dust' ? 10 * u : pose === 'check' ? 4 * u : 0) + (st.nod || 0) * 12 * u;
   if (turn || nod){ c.translate((st.look || 0) * 8 * u, nod); c.translate(0, -238 * u * f); c.rotate(turn); c.translate(0, 238 * u * f); }
-  const hy = -238 * u * f - 40 * u, r = 44 * u;
-  c.fillStyle = deep; c.beginPath(); c.ellipse(0, -238 * u * f, 26 * u, 10 * u, 0, 0, 6.2832); c.fill();
-  const hg = c.createRadialGradient(-16 * u, hy - 18 * u, 4 * u, 0, hy, r); hg.addColorStop(0, lite); hg.addColorStop(0.6, col); hg.addColorStop(1, dark);
-  c.fillStyle = hg; circ(c, 0, hy, r);
-  c.strokeStyle = line; c.lineWidth = 3 * u; c.beginPath(); c.arc(0, hy, r, 0, 6.2832); c.stroke();
-  /* the back panel and its seams */
-  c.fillStyle = dark; c.beginPath(); c.moveTo(-26 * u, hy + 30 * u); c.quadraticCurveTo(-30 * u, hy + 4 * u, -14 * u, hy - 4 * u); c.lineTo(14 * u, hy - 4 * u); c.quadraticCurveTo(30 * u, hy + 4 * u, 26 * u, hy + 30 * u); c.quadraticCurveTo(0, hy + 40 * u, -26 * u, hy + 30 * u); c.fill();
-  c.strokeStyle = line; c.lineWidth = 2.5 * u; c.beginPath(); c.moveTo(-r * 0.6, hy - r * 0.55); c.quadraticCurveTo(0, hy - r * 0.8, r * 0.6, hy - r * 0.55); c.moveTo(0, hy - r); c.lineTo(0, hy - r * 0.62); c.stroke();
-  c.fillStyle = line; for (const k of [-6, 0, 6]) c.fillRect((k - 2) * u, hy + 16 * u, 4 * u, 8 * u);
-  /* the antenna */
-  c.strokeStyle = dark; c.lineWidth = 4 * u; c.beginPath(); c.moveTo(r * 0.72, hy - r * 0.5); c.lineTo(r * 0.82, hy - r * 1.45); c.stroke();
-  glow(c, r * 0.82, hy - r * 1.48, 14 * u, gl, 0.9); c.fillStyle = gl; circ(c, r * 0.82, hy - r * 1.48, 3.5 * u);
+  const hy = -238 * u * f - 50 * u, r = 56 * u;
+  /* the collar ring */
+  c.fillStyle = deep; c.beginPath(); c.ellipse(0, -238 * u * f, 30 * u, 11 * u, 0, 0, 6.2832); c.fill();
+  /* inside the glass: the back of their head (their avatar's hair) */
+  const look = st.avatar || null;
+  if (look) head(c, 0, hy + 4 * u, r * 0.74, look, t, { back: true });
+  else { c.fillStyle = dark; circ(c, 0, hy + 4 * u, r * 0.72); }
+  /* the glass bubble: a faint tint, its edge catching the light, a shine
+     top left */
+  c.fillStyle = 'rgba(220,240,250,.22)'; circ(c, 0, hy, r);
+  c.strokeStyle = 'rgba(255,250,235,.75)'; c.lineWidth = 3 * u; c.beginPath(); c.arc(0, hy, r, 0, 6.2832); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 6 * u; c.lineCap = 'round'; c.beginPath(); c.arc(0, hy, r * 0.8, Math.PI * 1.08, Math.PI * 1.38); c.stroke();
+  /* the antenna, its tip in their colour */
+  c.strokeStyle = INK2; c.lineWidth = 4 * u; c.beginPath(); c.moveTo(r * 0.72, hy - r * 0.62); c.lineTo(r * 0.86, hy - r * 1.45); c.stroke();
+  c.fillStyle = col; circ(c, r * 0.86, hy - r * 1.5, 8 * u);
   if (st.lost){ c.setLineDash?.([6, 6]); c.strokeStyle = '#ffffff'; c.lineWidth = 3; circ0(c, 0, hy, r * 1.3); c.stroke(); c.setLineDash?.([]); }
   /* hit: a red flash over them; in healing water: a soft blue glow */
   if (st.hit > 0) glow(c, 0, -170 * u, 190 * u, '#ff3b3b', st.hit * 0.8);
@@ -231,21 +242,22 @@ export function worldCrew(c, x, base, h, t, col, st, face, pose = null){
 export function worldCrewFront(c, x, base, h, t, col, st, face){
   const pose = st.pose || null;
   const u = h / 330, run = st.run || 0, ph = st.runPh || 0;
-  const lite = mix(col, '#ffffff', 0.28), dark = mix(col, '#0a0f2a', 0.38), deep = mix(col, '#05081a', 0.55), line = mix(col, '#05081a', 0.62);
-  const gl = hexMix(col, '#ffffff', 0.62);
-  if (!st.flying){ c.fillStyle = 'rgba(20,15,45,.4)'; c.beginPath(); c.ellipse(x, base, 70 * u, 15 * u, 0, 0, 6.2832); c.fill(); }
+  const lite = mix(col, '#fff3dc', 0.3), dark = mix(col, SHADE, 0.32), deep = mix(col, SHADE, 0.5), line = mix(col, SHADE, 0.22);
+  const gl = hexMix(col, '#fff3dc', 0.55);
+  if (!st.flying){ c.fillStyle = 'rgba(58,51,96,.22)'; c.beginPath(); c.ellipse(x, base, 70 * u, 15 * u, 0, 0, 6.2832); c.fill(); }
   const bounce = run * Math.abs(Math.sin(ph)) * 10 * u;
   c.save();
   c.translate(x, base - (st.air || 0) - bounce); c.rotate((st.lean || 0) * 0.2 + run * Math.sin(ph) * 0.03);
   if (st.lost) c.globalAlpha = 0.35;
   else if (st.blink && Math.floor(t * 12) % 2) c.globalAlpha = 0.5;
   c.lineCap = 'round'; c.lineJoin = 'round';
-  const limb = (pts, w, side = -1) => {
-    for (const [lw, sc] of [[w + 6 * u, line], [w, col]]){ c.strokeStyle = sc; c.lineWidth = lw; c.beginPath(); pts.forEach(([a, b], k) => (k ? c.lineTo(a, b) : c.moveTo(a, b))); c.stroke(); }
-    c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = w * 0.35;
-    c.beginPath(); pts.forEach(([a, b], k) => (k ? c.lineTo(a + side * w * 0.22, b) : c.moveTo(a + side * w * 0.22, b))); c.stroke();
+  /* (as from behind: flat, the shade side on the right, a rim of sun on the left) */
+  const limb = (pts, w) => {
+    w *= 1.3;
+    const along = (dx, lw, sc) => { c.strokeStyle = sc; c.lineWidth = lw; c.beginPath(); pts.forEach(([a, b], k) => (k ? c.lineTo(a + dx, b) : c.moveTo(a + dx, b))); c.stroke(); };
+    along(0, w, col); along(w * 0.2, w * 0.55, dark); along(-w * 0.3, w * 0.12, RIM_SOFT);
   };
-  const trim = (x0, y0, w) => { glow(c, x0, y0, w * 1.4, gl, 0.5); c.strokeStyle = gl; c.lineWidth = 4 * u; c.beginPath(); c.ellipse(x0, y0, w * 0.55, w * 0.18, 0, 0, Math.PI); c.stroke(); };
+  const trim = (x0, y0, w) => { c.strokeStyle = gl; c.lineWidth = 5 * u; c.beginPath(); c.ellipse(x0, y0, w * 0.5, w * 0.16, 0, 0, Math.PI); c.stroke(); };
   /* legs: the knee coming up at us, the boot under it, its toe towards us
      (the lifted one bigger: nearer) */
   for (const d of [-1, 1]){
@@ -255,20 +267,17 @@ export function worldCrewFront(c, x, base, h, t, col, st, face){
     trim(knee[0], knee[1] + 4 * u, (30 + 4 * lift) * u);
     c.fillStyle = dark; c.beginPath(); c.ellipse(foot[0], foot[1] + 2 * u, (20 + 5 * lift) * u, (13 + 5 * lift) * u, 0, 0, 6.2832); c.fill();
     c.fillStyle = deep; c.beginPath(); c.ellipse(foot[0], foot[1] + 8 * u, (18 + 5 * lift) * u, (6 + 3 * lift) * u, 0, 0, Math.PI); c.fill();
-    c.strokeStyle = gl; c.lineWidth = 3 * u; c.beginPath(); c.arc(foot[0], foot[1], (12 + 3 * lift) * u, Math.PI * 1.15, Math.PI * 1.85); c.stroke();
   }
   /* the body, and on it the chest plate, the badge, the belt */
-  const tg = c.createLinearGradient(-52 * u, 0, 52 * u, 0); tg.addColorStop(0, lite); tg.addColorStop(0.45, col); tg.addColorStop(1, dark);
-  c.fillStyle = tg;
+  c.fillStyle = col;
   c.beginPath(); c.moveTo(-50 * u, -232 * u); c.quadraticCurveTo(0, -244 * u, 50 * u, -232 * u); c.lineTo(36 * u, -170 * u); c.lineTo(32 * u, -122 * u); c.quadraticCurveTo(0, -112 * u, -32 * u, -122 * u); c.lineTo(-36 * u, -170 * u); c.closePath(); c.fill();
-  c.strokeStyle = line; c.lineWidth = 3 * u; c.stroke();
-  c.fillStyle = lite; c.beginPath(); c.moveTo(-30 * u, -224 * u); c.quadraticCurveTo(0, -232 * u, 30 * u, -224 * u); c.lineTo(24 * u, -176 * u); c.quadraticCurveTo(0, -168 * u, -24 * u, -176 * u); c.closePath(); c.fill();
-  c.strokeStyle = line; c.lineWidth = 2.5 * u; c.stroke();
-  glow(c, 0, -200 * u, 26 * u, gl, 0.6);
-  c.fillStyle = gl; c.beginPath(); c.arc(0, -200 * u, 9 * u, 0, 6.2832); c.fill();
-  c.fillStyle = '#ffffff'; c.beginPath(); c.arc(-2.5 * u, -203 * u, 3 * u, 0, 6.2832); c.fill();
+  c.save(); c.clip(); c.fillStyle = dark; c.fillRect(14 * u, -250 * u, 60 * u, 140 * u);
+  c.strokeStyle = RIM; c.lineWidth = 5 * u; c.beginPath(); c.moveTo(-50 * u, -230 * u); c.lineTo(-36 * u, -170 * u); c.lineTo(-32 * u, -122 * u); c.stroke(); c.restore();
+  /* the chest plate (cream, like the pack), a badge in their colour, the belt */
+  c.fillStyle = PACK; c.beginPath(); c.moveTo(-30 * u, -224 * u); c.quadraticCurveTo(0, -232 * u, 30 * u, -224 * u); c.lineTo(24 * u, -176 * u); c.quadraticCurveTo(0, -168 * u, -24 * u, -176 * u); c.closePath(); c.fill();
+  c.fillStyle = col; c.beginPath(); c.arc(0, -200 * u, 9 * u, 0, 6.2832); c.fill();
   c.fillStyle = deep; c.fillRect(-33 * u, -138 * u, 66 * u, 12 * u);
-  c.fillStyle = gl; c.fillRect(-7 * u, -136 * u, 14 * u, 8 * u);
+  c.fillStyle = PACK; c.fillRect(-7 * u, -136 * u, 14 * u, 8 * u);
   /* arms, pumping: the fist coming forward gets bigger */
   for (const d of [-1, 1]){
     const sh = [d * 46 * u, -222 * u];
@@ -292,22 +301,19 @@ export function worldCrewFront(c, x, base, h, t, col, st, face){
   /* the helmet: the visor with their face in it */
   const turn = (st.look || 0) * 0.2;
   c.translate((st.look || 0) * 6 * u, 0);
-  const hy = -238 * u - 40 * u, r = 44 * u;
-  c.fillStyle = deep; c.beginPath(); c.ellipse(0, -238 * u, 26 * u, 10 * u, 0, 0, 6.2832); c.fill();
-  const hg = c.createRadialGradient(-16 * u, hy - 18 * u, 4 * u, 0, hy, r); hg.addColorStop(0, lite); hg.addColorStop(0.6, col); hg.addColorStop(1, dark);
-  c.fillStyle = hg; circ(c, 0, hy, r);
-  c.strokeStyle = line; c.lineWidth = 3 * u; c.beginPath(); c.arc(0, hy, r, 0, 6.2832); c.stroke();
-  const vx = turn * r * 0.4, vw = r * 0.74, vh = r * 0.62;
-  c.fillStyle = '#121a33'; c.beginPath(); c.ellipse(vx, hy + 4 * u, vw, vh, 0, 0, 6.2832); c.fill();
-  c.save(); c.beginPath(); c.ellipse(vx, hy + 4 * u, vw * 0.94, vh * 0.92, 0, 0, 6.2832); c.clip();
-  if (face) face(vx, hy + 6 * u, vh * 0.95);
-  const sg = c.createLinearGradient(vx - vw, hy - vh, vx + vw, hy + vh); sg.addColorStop(0, 'rgba(190,240,255,.35)'); sg.addColorStop(0.4, 'rgba(190,240,255,.05)'); sg.addColorStop(1, 'rgba(60,90,160,.25)');
-  c.fillStyle = sg; c.fillRect(vx - vw, hy - vh, vw * 2, vh * 2 + 8 * u);
-  c.fillStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.ellipse(vx - vw * 0.5, hy - vh * 0.45, vw * 0.22, vh * 0.12, -0.5, 0, 6.2832); c.fill();
+  /* the helmet: a clear glass bubble, their face in it (their avatar, or
+     their picture) */
+  const hy = -238 * u - 50 * u, r = 56 * u, vx = turn * r * 0.3;
+  c.fillStyle = deep; c.beginPath(); c.ellipse(0, -238 * u, 30 * u, 11 * u, 0, 0, 6.2832); c.fill();
+  c.save(); c.beginPath(); c.arc(0, hy, r * 0.97, 0, 6.2832); c.clip();
+  c.fillStyle = 'rgba(220,240,250,.25)'; circ(c, 0, hy, r);
+  if (face) face(vx, hy + 4 * u, r * 0.78);
   c.restore();
-  c.strokeStyle = gl; c.lineWidth = 4 * u; c.beginPath(); c.ellipse(vx, hy + 4 * u, vw, vh, 0, 0, 6.2832); c.stroke();
-  c.strokeStyle = dark; c.lineWidth = 4 * u; c.beginPath(); c.moveTo(r * 0.72, hy - r * 0.5); c.lineTo(r * 0.82, hy - r * 1.45); c.stroke();
-  glow(c, r * 0.82, hy - r * 1.48, 14 * u, gl, 0.9); c.fillStyle = gl; circ(c, r * 0.82, hy - r * 1.48, 3.5 * u);
+  c.fillStyle = 'rgba(220,240,250,.16)'; circ(c, 0, hy, r);
+  c.strokeStyle = 'rgba(255,250,235,.75)'; c.lineWidth = 3 * u; c.beginPath(); c.arc(0, hy, r, 0, 6.2832); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 6 * u; c.beginPath(); c.arc(0, hy, r * 0.82, Math.PI * 1.08, Math.PI * 1.38); c.stroke();
+  c.strokeStyle = INK2; c.lineWidth = 4 * u; c.beginPath(); c.moveTo(r * 0.72, hy - r * 0.62); c.lineTo(r * 0.86, hy - r * 1.45); c.stroke();
+  c.fillStyle = col; circ(c, r * 0.86, hy - r * 1.5, 8 * u);
   if (st.heal > 0) glow(c, 0, -170 * u, 160 * u, '#8ff0ff', 0.35 * st.heal);
   c.restore();
 }

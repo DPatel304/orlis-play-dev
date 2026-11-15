@@ -1,0 +1,32 @@
+<!doctype html><meta charset="utf-8"><title>LKP shots</title>
+<style>body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script type="module">
+/* Runs Last Known Position with one or two pretend players, faster than
+   real time, and hands back frames at the times asked for (tools/lkp-shots.cjs). */
+import game from '../src/games/lkp-game.js';
+import { pose } from '../src/tracking/pose.js';
+const W = 1920, H = 1080, DT = 1 / 30, c = document.getElementById('c').getContext('2d');
+let inst = null, t = 0;
+window.__start = (n = 2) => {
+  pose.mouse.active = true; pose.update = () => {};
+  pose.players.forEach((p, i) => { p.present = i < n; p.hands.right = { x: 0.5, y: 0.5, vx: 0, vy: 0, speed: 0 }; p.hands.left = { ...p.hands.right }; p.centre = { x: 0.35 + i * 0.3, y: 0.6 }; p.scale = 0.3; p.lm = null; });
+  inst = game.create(n); t = 0; window.__inst = inst;
+  /* (the pretend players jump the gorges, and never run out of health:
+     the point is to see every scene) */
+  const real = inst.jumps.step.bind(inst.jumps);
+  inst.jumps.step = (dt, ps, k) => { const j = real(dt, ps, k); return inst.leap ? [...Array(n).keys()] : j; };
+};
+/* on to time `to` (seconds), leaning gently side to side; then draw */
+window.__to = (to) => {
+  while (t < to && !inst.over){
+    const x = Math.sin(t * 0.7) * 0.25;
+    pose.players.forEach(p => { if (p.present) p.hands.right = { x: 0.5 + x / 2.5, y: 0.5, vx: 0, vy: 0, speed: 0 }; });
+    inst.step(DT, W, H); t += DT;
+    inst.crew.forEach(r => { r.hp = r.max; });
+  }
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, H); inst.draw(c, W, H);
+  return { t, phase: inst.phase, scene: inst.scene && inst.scene.constructor.name, over: inst.over };
+};
+window.__ready = true;
+</script>

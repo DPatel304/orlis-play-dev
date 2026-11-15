@@ -16,7 +16,8 @@
 import { PLAYER_COLORS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { glow, mix, rgba } from './lkp-world.js';
-import { drawKid, KID_SKINS } from '../ui/kids.js';
+import { head } from '../ui/avatar-art.js';
+import { crew } from '../ui/crew.js';
 
 export const READY = 3.5, HERO = 3.6, LAND = 0.7, FALL = 1.6;
 /* Waiting to jump: how often a good picture is tried for. */
@@ -134,7 +135,7 @@ export class TeamJump {
       const h = H * (0.36 + 0.12 * u) * (n > 2 ? 0.86 : 1), x = W / 2 + spread * W * (n > 2 ? 0.62 : 0.4) + Math.sin(t * 0.8 + k) * W * 0.008;
       const y = H * (0.62 + 0.06 * Math.sin(k * 2.1) - 0.04 * u) + Math.sin(t * 1.1 + k * 1.7) * H * 0.012;
       crewFront(c, x, y, h, PLAYER_COLORS[i], t + k, -spread * 0.25 + Math.sin(t * 0.7 + k) * 0.04,
-        (fx, fy, r) => g.faces && g.faces.drawMoment && g.faces.has(i) ? g.faces.drawMoment(c, i, fx, fy, r, PLAYER_COLORS[i]) : drawKid(c, fx, fy + r * 0.1, r, t + i, KID_SKINS[i]));
+        (fx, fy, r) => g.faces && g.faces.drawMoment && g.faces.has(i) ? g.faces.drawMoment(c, i, fx, fy, r, PLAYER_COLORS[i]) : head(c, fx, fy + r * 0.08, r * 0.86, crew.lookOf(i), t + i));
     });
     /* letterbox bars: it's a moment */
     c.fillStyle = '#000'; c.fillRect(0, 0, W, H * 0.07); c.fillRect(0, H * 0.93, W, H * 0.07);

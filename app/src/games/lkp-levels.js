@@ -34,15 +34,18 @@ export const LEVELS = [
       wall: '#22402a', hall: '#14261b', hallFloor: '#2d4b2b', hallRed: '#45282a',
       /* The real look (lkp-world.js): a fresh morning on an alien planet. */
       world: {
-        /* (an alien morning: lavender in the sky and the air) */
-        key: 'verdant-morning-2',
-        sky: ['#5a74d6', '#9a8ce6', '#dcc4f2', '#ffd4e2'], sun: '#fff0dc', haze: '#ddd0f0',
-        cloud: '#fbf2ff', cloudShade: '#bcaee0', planet: ['#c9b6d9', '#8fa2c9'], planetAlpha: 0.6, smoke: '#6e6e82', ship: '#3a3f66',
-        hillLit: '#a7bfe2', hillDark: '#6d84b6', rim: '#fff0d7',
-        ground: ['#5aa391', '#3f8f78', '#2f7c66'], grass: ['#78c8a0', '#328c73'], path: ['#857a98', '#6c6083'],
-        rock: ['#a9a3cf', '#6d6894'], crystal: ['#c7b6ef', '#8f7cc4', '#5d4e8f'], trunk: ['#3f2f55', '#8a6aa0'], wood: '#c9a77a',
-        tree: ['#58c2b0', '#1f5a6c'], bulb: '#ff8cd8', glow: '#86f2dc', water: '#5fe0f0', flowers: ['#fff4c2', '#ffc2e6', '#c9f7ff'],
-        warm: '#ffbe8c', cool: '#1e3278'
+        /* The painted house style (as Pop Party): a calm morning - a soft
+           blue sky going to cream at the horizon, sage hills fading into
+           the haze, muted greens, a sandy path. Still a strange planet:
+           its trees and crystals keep their odd shapes and soft lilacs. */
+        key: 'verdant-painted-1',
+        sky: ['#8fbde0', '#b9d6e6', '#e4e6dc', '#f6ead2'], sun: '#fff3cf', haze: '#e6e4d6',
+        cloud: '#fbf8f0', cloudShade: '#ced8e4', planet: ['#e7dccb', '#b9b2c9'], planetAlpha: 0.45, smoke: '#8a8478', ship: '#7d7a8a',
+        hillLit: '#b4c79a', hillDark: '#8ea383', rim: '#fff3dc',
+        ground: ['#b2cc8e', '#93bb72', '#7eaa60'], grass: ['#a3c98a', '#5f8a4c'], path: ['#dcc8a2', '#c8b28a'],
+        rock: ['#b8b2c4', '#8a8399'], crystal: ['#d9cdf0', '#a99ad0', '#7a6aa6'], trunk: ['#6a5848', '#9a8268'], wood: '#c9a77a',
+        tree: ['#8fb873', '#4f7350'], bulb: '#f2b6c6', glow: '#c9ecd9', water: '#8fd0dc', flowers: ['#fff6d8', '#ffd2e0', '#e3f0cf'],
+        warm: '#ffe0b0', cool: '#3a3360', stars: false
       }
     },
     /* The way through: the tutorial run (and the healing pond); a first,

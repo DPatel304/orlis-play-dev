@@ -3,7 +3,8 @@ import { clamp, scores } from './common.js';
 import { pose, L, PLAYER_COLORS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { FaceCam } from '../ui/faces.js';
-import { drawKid, KID_SKINS } from '../ui/kids.js';
+import { head } from '../ui/avatar-art.js';
+import { crew } from '../ui/crew.js';
 import { JumpWatch } from '../tracking/jump.js';
 import { farStir, footprint, creek, SIGHT, FAR_STEP, worldFarWoods, worldStraightOn, worldTrail, worldFallen, worldFarRidge, turn, resetView, tree, worldLog, glow, CLEAR as CLEARINGS, ROAD, roadHalf, PATH_HALF, SKY } from './lkp-world.js';
 import { Zip, worldZipStart, hangY, ZIP_SPEED, RIDE, LAND, DROP, COUNT, CABLE } from './lkp-zip.js';
@@ -1999,12 +2000,12 @@ class LastKnownPosition {
     const bub = !at && rn.bubble && (!this.zip || this.zip.bubbled(i));
     if (bub) p = { ...p, y: p.y - H * (0.1 + 0.015 * Math.sin(this.t * 2 + i)) - (this.zip ? this.zip.drop * H * 0.38 : 0) };
     (at && at.front ? worldCrewFront : drawCrew)(c, p.x, p.y, h, this.t + i * 0.37, PLAYER_COLORS[i],
-      { air: rn.air * h * 0.55 + (at ? at.bob : 0), flying: rn.air > 0.6 || !!rn.bubble || (!at && !!this.ride && this.ride.on(i)) || !!(this.zip && (this.zip.holding(i) || this.zip.phase === 'fall')), duck: rn.duck, lean: rn.lean + (rn.wobble || 0), hit: rn.hit, heal: rn.heal || 0, run: rn.run || 0, runPh: rn.runPh || 0, pose: (at && at.pose) || (!at && this.ride && this.ride.sitting(i) ? 'sit' : rn.pose), look: (at && at.look) || rn.look || 0, nod: (at && at.nod) || rn.nod || 0, sq: (at && at.sq) || 1, ground: (at && at.ground) || rn.ground || 0, body: (at && at.body) || null, blink: rn.safe > 0, lost: !here, photo: here && this.faces.has(i), down: at && at.down != null ? at.down : this.lying ? this.lying[i] : rn.down },
+      { air: rn.air * h * 0.55 + (at ? at.bob : 0), flying: rn.air > 0.6 || !!rn.bubble || (!at && !!this.ride && this.ride.on(i)) || !!(this.zip && (this.zip.holding(i) || this.zip.phase === 'fall')), duck: rn.duck, lean: rn.lean + (rn.wobble || 0), hit: rn.hit, heal: rn.heal || 0, run: rn.run || 0, runPh: rn.runPh || 0, pose: (at && at.pose) || (!at && this.ride && this.ride.sitting(i) ? 'sit' : rn.pose), look: (at && at.look) || rn.look || 0, nod: (at && at.nod) || rn.nod || 0, sq: (at && at.sq) || 1, avatar: crew.lookOf(i), ground: (at && at.ground) || rn.ground || 0, body: (at && at.body) || null, blink: rn.safe > 0, lost: !here, photo: here && this.faces.has(i), down: at && at.down != null ? at.down : this.lying ? this.lying[i] : rn.down },
       /* (noFace: the visor just dark glass - the opening's shot, before anyone's face is in it) */
       at && at.noFace ? null : (x, y, r) => {
         /* (the sleepy roll: the face they pulled sneaking past her, frozen on red) */
         if (here && this.faces.has(i)) (at && at.moment ? this.faces.drawMoment(c, i, x, y, r, PLAYER_COLORS[i]) : this.faces.draw(c, i, x, y, r, PLAYER_COLORS[i]));
-        else drawKid(c, x, y + r * 0.1, r, this.t + i, KID_SKINS[i]);
+        else head(c, x, y + r * 0.08, r * 0.86, crew.lookOf(i), this.t + i);
       });
     /* The rescue bubble round them, and how many claps it's had. */
     if (bub){
@@ -2033,7 +2034,7 @@ class LastKnownPosition {
        pulsing orange, and now and then a spark fizzing off the suit - so
        it's seen, not read. Healed, it stops. */
     const frac = rn.hp / rn.max, sore = frac < 0.6 && !this.fight && !this.inIntro && !this.over;
-    if (at && at.noBar != null ? !at.noBar : !this.inIntro) drawHealth(c, p.x, top - H * 0.03, h * 0.53, frac, PLAYER_COLORS[i], frac < 0.2);
+    if (at && at.noBar != null ? !at.noBar : !this.inIntro) drawHealth(c, p.x, top - H * 0.06, h * 0.53, frac, PLAYER_COLORS[i], frac < 0.2);
     /* (startled: ??? over their head, bobbing) */
     if (rn.huh > 0){
       c.save(); c.globalAlpha = rn.huh; c.font = `800 ${Math.round(h * 0.22)}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'bottom';

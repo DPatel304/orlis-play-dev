@@ -613,9 +613,10 @@ export function drawSweep(c, W, H, rel, t){
    HEALTH_RED (col and low are kept for callers; the colour's its own). */
 export const HEALTH_RED = 0.2;
 export function drawHealth(c, x, y, w, frac, col, low){
-  const h = w * 0.16;
-  c.fillStyle = 'rgba(0,0,0,.7)'; c.fillRect(x - w / 2 - 2, y - 2, w + 4, h + 4);
-  c.fillStyle = frac < HEALTH_RED ? '#ef4444' : '#3fd07a'; c.fillRect(x - w / 2, y, Math.max(2, w * frac), h);
+  /* a soft cream pill, filled in sage green (a warm red when low) */
+  const h = w * 0.16, p = Math.max(2, h * 0.28);
+  c.fillStyle = 'rgba(250,247,238,.92)'; c.beginPath(); c.roundRect(x - w / 2 - p, y - p, w + p * 2, h + p * 2, (h + p * 2) / 2); c.fill();
+  c.fillStyle = frac < HEALTH_RED ? '#e0705a' : '#6fb070'; c.beginPath(); c.roundRect(x - w / 2, y, Math.max(h, w * frac), h, h / 2); c.fill();
 }
 
 function box(c, x, y, w, h, col){

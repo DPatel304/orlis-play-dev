@@ -16,7 +16,8 @@ import { HugWatch } from '../tracking/gestures.js';
 import { PAL, drawCrystal } from './lkp-art.js';
 import { worldVault, stretchArm, worldPool } from './lkp-places.js';
 import { worldCrew } from './lkp-cast.js';
-import { drawKid, KID_SKINS } from '../ui/kids.js';
+import { head } from '../ui/avatar-art.js';
+import { crew } from '../ui/crew.js';
 
 export const TREASURE_TIME = 20;
 /* Empty at first, this long; then crystals coming down, RAIN a second
@@ -129,9 +130,9 @@ export class Treasure {
           stretchArm(c, x + side * 70 * u, base - 160 * u, hd.x * W, hd.y * H, u, col, side);
         });
         const photo = !!(gm.faces && gm.faces.has(i));
-        worldCrew(c, x, base, h, this.t + i, col, { air: 0, duck: 0, lean: 0, hit: 0, heal: this.wet > 0 && !this.done ? 0.5 : 0, photo }, (fx, fy, r) => {
+        worldCrew(c, x, base, h, this.t + i, col, { air: 0, duck: 0, lean: 0, hit: 0, heal: this.wet > 0 && !this.done ? 0.5 : 0, photo, avatar: crew.lookOf(i) }, (fx, fy, r) => {
           if (photo) gm.faces.draw(c, i, fx, fy, r, col);
-          else drawKid(c, fx, fy + r * 0.1, r, this.t + i, KID_SKINS[i]);
+          else head(c, fx, fy + r * 0.08, r * 0.86, crew.lookOf(i), this.t + i);
         }, 'stretch');
       }
     } else {

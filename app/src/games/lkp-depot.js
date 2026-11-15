@@ -101,7 +101,7 @@ export class Depot {
         const x = W * (0.06 + 0.88 * ((j * 7) % 12) / 11), r = H * 0.006, on = Math.sin(this.t * 6 + j) > -0.6;
         if (!on) continue;
         c.fillStyle = 'rgba(255,60,60,.35)'; c.beginPath(); c.arc(x, y - H * 0.01, r * 3, 0, 6.2832); c.fill();
-        c.fillStyle = '#ff5b5b'; c.beginPath(); c.arc(x, y - H * 0.01, r, 0, 6.2832); c.fill();
+        c.fillStyle = '#e18784'; c.beginPath(); c.arc(x, y - H * 0.01, r, 0, 6.2832); c.fill();
       }
       c.restore();
     }
@@ -110,15 +110,15 @@ export class Depot {
       const p = P(0, PIECE, W, H), r = (this.st / SURGE) * W * 1.2;
       c.save();
       c.globalAlpha = Math.max(0, 1 - this.st / SURGE);
-      c.strokeStyle = '#7ff3ff'; c.lineWidth = H * 0.03; c.shadowColor = '#7ff3ff'; c.shadowBlur = 30;
+      c.strokeStyle = '#a2dfe3'; c.lineWidth = H * 0.03; c.shadowColor = '#a2dfe3'; c.shadowBlur = 30;
       c.beginPath(); c.ellipse(p.x, p.y, r, r * 0.35, 0, 0, 6.2832); c.stroke();
       c.fillStyle = `rgba(127,243,255,${0.3 * Math.max(0, 1 - this.st)})`; c.fillRect(0, 0, W, H);
       c.restore();
     }
     c.save();
     c.font = `700 ${Math.round(H * 0.075)}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.lineWidth = H * 0.012; c.strokeStyle = '#05060f'; c.strokeText(this.banner, W / 2, H * 0.22);
-    c.fillStyle = this.state === 'surge' ? '#ff5b5b' : '#7ff3ff'; c.fillText(this.banner, W / 2, H * 0.22);
+    c.lineWidth = H * 0.012; c.strokeStyle = '#2c2c39'; c.strokeText(this.banner, W / 2, H * 0.22);
+    c.fillStyle = this.state === 'surge' ? '#e18784' : '#a2dfe3'; c.fillText(this.banner, W / 2, H * 0.22);
     c.restore();
   }
 }

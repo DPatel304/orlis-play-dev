@@ -18,7 +18,7 @@ import { glow } from './lkp-world.js';
 
 const TAU = Math.PI * 2;
 const hash = (n) => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
-const COLS = [['#ffc6e8', '#ff8fcf'], ['#c9f2ff', '#7fd8ff'], ['#e3d4ff', '#b49cff'], ['#fff1c4', '#ffd27a']];
+const COLS = [['#f4d4e4', '#eaaccc'], ['#d7ecf1', '#a2d1e3'], ['#e7def3', '#c4b6e9'], ['#f3ebd0', '#e6cd9b']];
 
 /* One sky jelly: its bell at (x, y), s wide, pulsing; ribbons trailing
    down and behind (dir: the way it's drifting). */
@@ -73,7 +73,7 @@ export function skyJellies(c, W, H, t, k, u = 0, size = 1){
 function fin(c, x, y, s, t, dir, col, a){
   /* (under the water: its colours softened into the water's, flat - dark
      back, lighter belly - no glow; a soft ripple over it now and then) */
-  const wag = Math.sin(t * 7) * 0.3, water = '#5fc8d8';
+  const wag = Math.sin(t * 7) * 0.3, water = '#84bbc2';
   const back = mixHex(col[1], water, 0.55), belly = mixHex(col[0], water, 0.45);
   c.save(); c.globalAlpha = a * 0.75;
   c.translate(x, y); c.scale(dir, 1);
@@ -81,7 +81,7 @@ function fin(c, x, y, s, t, dir, col, a){
   c.beginPath(); c.moveTo(-s * 0.32, 0); c.lineTo(-s * 0.62, -s * 0.18 + wag * s * 0.16); c.lineTo(-s * 0.62, s * 0.18 + wag * s * 0.16); c.closePath(); c.fill();
   c.beginPath(); c.ellipse(0, 0, s * 0.4, s * 0.17, 0, 0, TAU); c.fill();
   c.fillStyle = belly; c.beginPath(); c.ellipse(s * 0.04, s * 0.05, s * 0.28, s * 0.08, 0, 0, TAU); c.fill();
-  c.fillStyle = mixHex('#1a2a40', water, 0.3); c.beginPath(); c.arc(s * 0.24, -s * 0.03, s * 0.03, 0, TAU); c.fill();
+  c.fillStyle = mixHex('#373e48', water, 0.3); c.beginPath(); c.arc(s * 0.24, -s * 0.03, s * 0.03, 0, TAU); c.fill();
   c.restore();
 }
 
@@ -111,29 +111,29 @@ export function puffhen(c, x, y, s, t, side = 0){
   c.save();
   c.fillStyle = 'rgba(20,15,45,.3)'; c.beginPath(); c.ellipse(x, y, s * 0.4, s * 0.08, 0, 0, TAU); c.fill();
   /* legs, quick */
-  c.strokeStyle = '#f0a040'; c.lineWidth = Math.max(1, s * 0.06); c.lineCap = 'round';
+  c.strokeStyle = '#d1a56e'; c.lineWidth = Math.max(1, s * 0.06); c.lineCap = 'round';
   for (const d of [-1, 1]){ const k = Math.sin(run + (d < 0 ? 0 : Math.PI)); c.beginPath(); c.moveTo(x + d * s * 0.12, by + s * 0.25); c.lineTo(x + d * s * 0.14 + k * s * 0.04 * side, y - s * 0.02 - Math.max(0, k) * s * 0.1); c.stroke(); }
   /* the wool: a cloud of puffs, shaded */
   for (let k = 0; k < 9; k++){
     const a = k / 9 * TAU, px = x + Math.cos(a) * s * 0.28, py = by + Math.sin(a) * s * 0.22;
-    c.fillStyle = Math.sin(a) > 0.3 ? '#d8d2e6' : Math.cos(a) < -0.3 ? '#ffffff' : '#f2eef8'; c.beginPath(); c.arc(px, py, s * 0.17, 0, TAU); c.fill();
+    c.fillStyle = Math.sin(a) > 0.3 ? '#dcd8e0' : Math.cos(a) < -0.3 ? '#fefdfb' : '#f3eff2'; c.beginPath(); c.arc(px, py, s * 0.17, 0, TAU); c.fill();
   }
-  const g = c.createRadialGradient(x - s * 0.1, by - s * 0.1, s * 0.05, x, by, s * 0.35); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#e4def0');
+  const g = c.createRadialGradient(x - s * 0.1, by - s * 0.1, s * 0.05, x, by, s * 0.35); g.addColorStop(0, '#fefdfb'); g.addColorStop(1, '#e7e2ea');
   c.fillStyle = g; c.beginPath(); c.ellipse(x, by, s * 0.3, s * 0.25, 0, 0, TAU); c.fill();
   /* little wings, flapping */
   const flap = Math.sin(t * 22) * 0.5;
-  c.fillStyle = '#ece6f4';
+  c.fillStyle = '#ede9ee';
   for (const d of [-1, 1]){ c.save(); c.translate(x + d * s * 0.3, by - s * 0.02); c.rotate(d * (0.4 + flap)); c.beginPath(); c.ellipse(d * s * 0.08, 0, s * 0.13, s * 0.06, 0, 0, TAU); c.fill(); c.restore(); }
   /* a tuft of tail feathers */
-  c.fillStyle = '#ffd27a'; for (const d of [-1, 0, 1]){ c.beginPath(); c.ellipse(x + d * s * 0.05, by + s * 0.05, s * 0.03, s * 0.08, d * 0.4, 0, TAU); c.fill(); }
+  c.fillStyle = '#e6cd9b'; for (const d of [-1, 0, 1]){ c.beginPath(); c.ellipse(x + d * s * 0.05, by + s * 0.05, s * 0.03, s * 0.08, d * 0.4, 0, TAU); c.fill(); }
   /* the head on top, a little to the side it's turning */
   const hx = x + side * s * 0.18, hy = by - s * 0.3;
-  c.fillStyle = '#fff8f0'; c.beginPath(); c.arc(hx, hy, s * 0.13, 0, TAU); c.fill();
-  c.fillStyle = '#e8434e'; for (let k = 0; k < 3; k++){ c.beginPath(); c.arc(hx + (k - 1) * s * 0.05, hy - s * 0.13 - (k === 1 ? s * 0.02 : 0), s * 0.045, 0, TAU); c.fill(); }
+  c.fillStyle = '#fbf6f0'; c.beginPath(); c.arc(hx, hy, s * 0.13, 0, TAU); c.fill();
+  c.fillStyle = '#cc7175'; for (let k = 0; k < 3; k++){ c.beginPath(); c.arc(hx + (k - 1) * s * 0.05, hy - s * 0.13 - (k === 1 ? s * 0.02 : 0), s * 0.045, 0, TAU); c.fill(); }
   if (Math.abs(side) > 0.2){
     const d = Math.sign(side);
-    c.fillStyle = '#f5a623'; c.beginPath(); c.moveTo(hx + d * s * 0.11, hy - s * 0.02); c.lineTo(hx + d * s * 0.2, hy + s * 0.01); c.lineTo(hx + d * s * 0.11, hy + s * 0.04); c.fill();
-    c.fillStyle = '#2b2440'; c.beginPath(); c.arc(hx + d * s * 0.05, hy - s * 0.03, s * 0.025, 0, TAU); c.fill();
+    c.fillStyle = '#cfa35a'; c.beginPath(); c.moveTo(hx + d * s * 0.11, hy - s * 0.02); c.lineTo(hx + d * s * 0.2, hy + s * 0.01); c.lineTo(hx + d * s * 0.11, hy + s * 0.04); c.fill();
+    c.fillStyle = '#423d4a'; c.beginPath(); c.arc(hx + d * s * 0.05, hy - s * 0.03, s * 0.025, 0, TAU); c.fill();
   }
   c.restore();
 }
@@ -147,20 +147,20 @@ function hopshell(c, x, y, s, hop, dir, t){
   c.fillStyle = 'rgba(20,15,45,.25)'; c.beginPath(); c.ellipse(x, y, s * 0.42 * (1 - up / s * 0.6), s * 0.07, 0, 0, TAU); c.fill();
   c.translate(x, by); c.scale(dir, 1);
   /* feet, tucked in mid-hop */
-  c.fillStyle = '#e9dccb'; for (const d of [-0.18, 0.16]){ c.beginPath(); c.ellipse(d * s, s * 0.26 - up * 0.2, s * 0.1, s * 0.05, 0, 0, TAU); c.fill(); }
+  c.fillStyle = '#e5ddd1'; for (const d of [-0.18, 0.16]){ c.beginPath(); c.ellipse(d * s, s * 0.26 - up * 0.2, s * 0.1, s * 0.05, 0, 0, TAU); c.fill(); }
   /* the bobtail */
-  c.fillStyle = '#ffffff'; c.beginPath(); c.arc(-s * 0.34, s * 0.02, s * 0.08, 0, TAU); c.fill();
+  c.fillStyle = '#fefdfb'; c.beginPath(); c.arc(-s * 0.34, s * 0.02, s * 0.08, 0, TAU); c.fill();
   /* its shell: a dome, plates on it, a rim */
-  c.fillStyle = '#4f9a6e'; c.beginPath(); c.ellipse(0, 0, s * 0.33, s * 0.26, 0, Math.PI, 0); c.lineTo(s * 0.33, s * 0.08); c.quadraticCurveTo(0, s * 0.14, -s * 0.33, s * 0.08); c.fill();
-  c.fillStyle = '#7cc58f'; for (const [px, py] of [[-0.14, -0.1], [0.06, -0.14], [0.2, -0.04], [-0.02, -0.02]]){ c.beginPath(); c.ellipse(px * s, py * s, s * 0.07, s * 0.05, 0, 0, TAU); c.fill(); }
-  c.strokeStyle = '#d9c79a'; c.lineWidth = Math.max(1, s * 0.035); c.beginPath(); c.moveTo(-s * 0.34, s * 0.07); c.quadraticCurveTo(0, s * 0.15, s * 0.34, s * 0.07); c.stroke();
+  c.fillStyle = '#6d957a'; c.beginPath(); c.ellipse(0, 0, s * 0.33, s * 0.26, 0, Math.PI, 0); c.lineTo(s * 0.33, s * 0.08); c.quadraticCurveTo(0, s * 0.14, -s * 0.33, s * 0.08); c.fill();
+  c.fillStyle = '#95bc9c'; for (const [px, py] of [[-0.14, -0.1], [0.06, -0.14], [0.2, -0.04], [-0.02, -0.02]]){ c.beginPath(); c.ellipse(px * s, py * s, s * 0.07, s * 0.05, 0, 0, TAU); c.fill(); }
+  c.strokeStyle = '#d1c6ab'; c.lineWidth = Math.max(1, s * 0.035); c.beginPath(); c.moveTo(-s * 0.34, s * 0.07); c.quadraticCurveTo(0, s * 0.15, s * 0.34, s * 0.07); c.stroke();
   /* its head, a bunny's: round, two long ears */
   const hx = s * 0.36, hy = -s * 0.04;
-  c.fillStyle = '#f2e6d6';
-  for (const [ex, a] of [[-0.02, -0.25], [0.06, 0.05]]){ c.save(); c.translate(hx + ex * s, hy - s * 0.1); c.rotate(a + Math.sin(t * 3) * 0.06); c.beginPath(); c.ellipse(0, -s * 0.16, s * 0.05, s * 0.17, 0, 0, TAU); c.fill(); c.fillStyle = '#ffb3c6'; c.beginPath(); c.ellipse(0, -s * 0.16, s * 0.022, s * 0.12, 0, 0, TAU); c.fill(); c.fillStyle = '#f2e6d6'; c.restore(); }
+  c.fillStyle = '#ede6db';
+  for (const [ex, a] of [[-0.02, -0.25], [0.06, 0.05]]){ c.save(); c.translate(hx + ex * s, hy - s * 0.1); c.rotate(a + Math.sin(t * 3) * 0.06); c.beginPath(); c.ellipse(0, -s * 0.16, s * 0.05, s * 0.17, 0, 0, TAU); c.fill(); c.fillStyle = '#f0c6ce'; c.beginPath(); c.ellipse(0, -s * 0.16, s * 0.022, s * 0.12, 0, 0, TAU); c.fill(); c.fillStyle = '#ede6db'; c.restore(); }
   c.beginPath(); c.arc(hx, hy, s * 0.13, 0, TAU); c.fill();
-  c.fillStyle = '#2b2440'; c.beginPath(); c.arc(hx + s * 0.05, hy - s * 0.02, s * 0.025, 0, TAU); c.fill();
-  c.fillStyle = '#ff9fb4'; c.beginPath(); c.arc(hx + s * 0.12, hy + s * 0.02, s * 0.02, 0, TAU); c.fill();
+  c.fillStyle = '#423d4a'; c.beginPath(); c.arc(hx + s * 0.05, hy - s * 0.02, s * 0.025, 0, TAU); c.fill();
+  c.fillStyle = '#edb8c1'; c.beginPath(); c.arc(hx + s * 0.12, hy + s * 0.02, s * 0.02, 0, TAU); c.fill();
   c.restore();
 }
 /* A few hopshells out on the meadow (round lane, rel): hopping about,
@@ -182,16 +182,16 @@ export function hopshells(c, W, H, lane, rel, t, one = false){
    little shimmer of light off each bell as it rings. */
 export function chimeblooms(c, W, H, lane, rel, t){
   const p = P(lane, rel, W, H), s = H * 0.9 * p.k, x = p.x, y = p.y;
-  const BELLS = ['#ffd0f0', '#cfe0ff', '#e6d0ff', '#fff0c8', '#c8fff0'];
+  const BELLS = ['#f6dbea', '#dce4f2', '#e8dbf2', '#f4ebd3', '#d7f3e9'];
   c.save();
   /* leaves at the foot */
-  c.fillStyle = '#4f9a7e';
+  c.fillStyle = '#6d9583';
   for (let k = 0; k < 7; k++){ const a = -Math.PI / 2 + (k - 3) * 0.32; c.beginPath(); c.ellipse(x + Math.cos(a) * s * 0.06, y - s * 0.03, s * 0.025, s * 0.09, a + Math.PI / 2, 0, TAU); c.fill(); }
   for (let k = 0; k < 7; k++){
     const off = (k - 3) / 3, h = s * (0.42 + 0.22 * hash(k + 90)), sway = Math.sin(t * (0.9 + 0.2 * hash(k + 91)) + k * 1.3) * s * 0.04;
     const bx = x + off * s * 0.16 + sway + off * s * 0.08, by = y - h;
     /* the stem, arching over */
-    c.strokeStyle = '#5fae8c'; c.lineWidth = Math.max(1, s * 0.012); c.lineCap = 'round';
+    c.strokeStyle = '#7ca691'; c.lineWidth = Math.max(1, s * 0.012); c.lineCap = 'round';
     c.beginPath(); c.moveTo(x + off * s * 0.05, y); c.quadraticCurveTo(x + off * s * 0.12, y - h * 0.7, bx, by); c.stroke();
     /* the bell, hanging, glowing - brighter as it rings */
     const ring = Math.max(0, Math.sin(t * 1.7 + k * 2.1)), col = BELLS[k % BELLS.length];
@@ -236,13 +236,13 @@ export function jellycrawl(c, x, y, s, t, walk = 1, fly = 0){
   /* its core: a soft warm light inside, pulsing */
   const pulse = 1 + 0.15 * Math.sin(t * 3);
   c.fillStyle = 'rgba(255,236,190,.55)'; c.beginPath(); c.arc(x, by - 110 * u, 24 * u * pulse, 0, TAU); c.fill();
-  c.fillStyle = '#fff1c8'; c.beginPath(); c.arc(x, by - 110 * u, 12 * u * pulse, 0, TAU); c.fill();
+  c.fillStyle = '#f4ebd3'; c.beginPath(); c.arc(x, by - 110 * u, 12 * u * pulse, 0, TAU); c.fill();
   /* eyes, big, looking where it's going (right) */
   for (const d of [-1, 1]){
     const ex = x + d * 30 * u + 6 * u, ey = by - 140 * u, r = 12 * u;
     const blink = (t % 4) < 0.12 ? 0.2 : 1;
-    c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(ex, ey, r, r * blink, 0, 0, TAU); c.fill();
-    if (blink > 0.5){ c.fillStyle = '#231a30'; c.beginPath(); c.arc(ex + r * 0.3, ey + r * 0.1, r * 0.62, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(ex + r * 0.1, ey - r * 0.2, r * 0.22, 0, TAU); c.fill(); }
+    c.fillStyle = '#fefdfb'; c.beginPath(); c.ellipse(ex, ey, r, r * blink, 0, 0, TAU); c.fill();
+    if (blink > 0.5){ c.fillStyle = '#39333c'; c.beginPath(); c.arc(ex + r * 0.3, ey + r * 0.1, r * 0.62, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(ex + r * 0.1, ey - r * 0.2, r * 0.22, 0, TAU); c.fill(); }
   }
   /* a shine on the dome */
   c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.ellipse(x - 40 * u, by - 160 * u, 22 * u, 9 * u, -0.4, 0, TAU); c.fill();
@@ -285,12 +285,12 @@ export function glimmerback(c, x, y, s, t, side = 0, deep = 0, hop = 0){
   /* (hop: bouncing along happily - bigger, springier bounces) */
   const run = t * (14 - 5 * hop), bob = Math.abs(Math.sin(run)) * s * (0.05 + 0.14 * hop), by = y - s * 0.3 - bob;
   /* (deeper in: softer and paler, into the herd's own haze - one mass) */
-  const body = mixHex('#5b4fc0', '#8d86c8', deep * 0.75), belly = mixHex('#3fd0c4', '#9fb0d8', deep * 0.8), top = mixHex('#a99bff', '#b7b0e0', deep * 0.7);
+  const body = mixHex('#7b73ad', '#a19cbd', deep * 0.75), belly = mixHex('#6bb9b0', '#b2bacd', deep * 0.8), top = mixHex('#beb5e9', '#c3bed6', deep * 0.7);
   c.save();
   if (deep < 0.5){ c.fillStyle = 'rgba(20,15,45,.25)'; c.beginPath(); c.ellipse(x, y, s * 0.42, s * 0.08, 0, 0, TAU); c.fill(); }
   /* little stubby feet, pattering (only the near ones' showing) */
   if (deep < 0.55){
-    c.fillStyle = mixHex('#3a3088', '#6a62a8', deep);
+    c.fillStyle = mixHex('#595280', '#827ca0', deep);
     for (let k = 0; k < 6; k++){
       const d = k < 3 ? -1 : 1, j = k % 3, ph = Math.sin(run + j * 2.1 + (d < 0 ? 0 : Math.PI));
       c.beginPath(); c.ellipse(x + d * s * (0.1 + 0.1 * j), y - Math.max(0, ph) * s * 0.07 - s * 0.03, s * 0.055, s * 0.04, 0, 0, TAU); c.fill();
@@ -307,7 +307,7 @@ export function glimmerback(c, x, y, s, t, side = 0, deep = 0, hop = 0){
     /* a ridge of glowing fronds along its back, swaying */
     for (let k = 0; k < 4; k++){
       const fx = (k - 1.5) * s * 0.1, sw = Math.sin(t * 5 + k) * s * 0.03;
-      c.strokeStyle = mixHex('#7ff3ff', '#b8d8f0', deep); c.lineWidth = s * 0.05; c.lineCap = 'round';
+      c.strokeStyle = mixHex('#a2dfe3', '#c8d8e3', deep); c.lineWidth = s * 0.05; c.lineCap = 'round';
       c.beginPath(); c.moveTo(fx, -s * 0.25); c.quadraticCurveTo(fx + sw, -s * 0.37, fx + sw * 2 - s * 0.02, -s * 0.43); c.stroke();
     }
     /* glowing spots */
@@ -318,7 +318,7 @@ export function glimmerback(c, x, y, s, t, side = 0, deep = 0, hop = 0){
       const wv = Math.sin(t * 4 + d) * s * 0.05, tx = d * s * 0.2 + wv, ty = -s * 0.62;
       c.strokeStyle = body; c.lineWidth = s * 0.035;
       c.beginPath(); c.moveTo(d * s * 0.08, -s * 0.22); c.quadraticCurveTo(d * s * 0.12, -s * 0.45, tx, ty); c.stroke();
-      c.fillStyle = '#ffe27a'; circ0(c, tx, ty, s * 0.045);
+      c.fillStyle = '#e6d59b'; circ0(c, tx, ty, s * 0.045);
     }
   }
   c.restore();
@@ -351,10 +351,10 @@ export function herdMass(c, W, H, t, edge, dx, a = 1, scatter = 0, avoid = null)
       if (p.x < -60 || p.x > W + 80) continue;
       const s = H * 0.11 * p.k * (0.95 + 0.55 * hash(id + 1)), bob = Math.abs(Math.sin(t * 14 + id)) * s * 0.05;
       const x = p.x, y = p.y - s * 0.3 - bob;
-      c.fillStyle = mixHex('#4d42a8', '#b9b2e2', far * 0.85); circ0(c, x, y, s * 0.38);
-      c.fillStyle = mixHex('#8f80f0', '#d6d0f2', far * 0.85); circ0(c, x - s * 0.1, y - s * 0.12, s * 0.2);
+      c.fillStyle = mixHex('#6c659a', '#c5c0d8', far * 0.85); circ0(c, x, y, s * 0.38);
+      c.fillStyle = mixHex('#a89fd9', '#ddd9e9', far * 0.85); circ0(c, x - s * 0.1, y - s * 0.12, s * 0.2);
       /* (now and then, a frond's glow or a feeler's light) */
-      if (hash(id + 3) < 0.18){ c.fillStyle = far < 0.5 ? '#ffe27a' : '#f4ecc8'; circ0(c, x + (hash(id + 4) - 0.5) * s * 0.4, y - s * 0.55, s * 0.05); }
+      if (hash(id + 3) < 0.18){ c.fillStyle = far < 0.5 ? '#e6d59b' : '#ece7d1'; circ0(c, x + (hash(id + 4) - 0.5) * s * 0.4, y - s * 0.55, s * 0.05); }
       if (hash(id + 5) < 0.25){ c.fillStyle = `rgba(160,255,235,${0.7 * (1 - far)})`; circ0(c, x + s * 0.05, y - s * 0.02, s * 0.04); }
     }
   }
@@ -372,7 +372,7 @@ export function herdMass(c, W, H, t, edge, dx, a = 1, scatter = 0, avoid = null)
 export function trumbler(c, x, y, s, t, call = 0, run = 1, haze = 0, L = null){
   const u = s / 300, ph = t * 9, bob = Math.abs(Math.sin(ph)) * 10 * u * run, cl = Math.sin(Math.min(1, call) * Math.PI);
   const H_ = (a) => L ? mixHex(a, L.haze, haze) : a;
-  const shellD = H_('#2f6b62'), shellL = H_('#4f9a7e'), plate = H_('#79c49a'), skin = H_('#d9734a'), skinL = H_('#f0a060'), dark = H_('#7a3a2a'), crest = H_('#ffb04a');
+  const shellD = H_('#4e6d66'), shellL = H_('#6d9583'), plate = H_('#93baa1'), skin = H_('#c28a71'), skinL = H_('#d7aa85'), dark = H_('#785449'), crest = H_('#deb278');
   c.save();
   c.fillStyle = 'rgba(20,15,45,.35)'; c.beginPath(); c.ellipse(x - 20 * u, y, 190 * u, 30 * u, 0, 0, TAU); c.fill();
   c.translate(x, y - bob);
@@ -381,7 +381,7 @@ export function trumbler(c, x, y, s, t, call = 0, run = 1, haze = 0, L = null){
     const sw = Math.sin(ph + k * 1.05) * run, lift = Math.max(0, sw) * 26 * u;
     c.fillStyle = far ? dark : skin;
     c.beginPath(); c.roundRect((lx - 20 + sw * 16) * u, (-120) * u, 40 * u, (120 - lift / u) * u, 14 * u); c.fill();
-    c.fillStyle = far ? H_('#4a2418') : dark; c.beginPath(); c.ellipse((lx + sw * 16) * u, -lift - 4 * u, 24 * u, 10 * u, 0, 0, TAU); c.fill();
+    c.fillStyle = far ? H_('#523c34') : dark; c.beginPath(); c.ellipse((lx + sw * 16) * u, -lift - 4 * u, 24 * u, 10 * u, 0, 0, TAU); c.fill();
   }
   /* the shell: a great dome, dark under, lit on top, big plates over it */
   c.fillStyle = shellD; c.beginPath(); c.ellipse(-10 * u, -190 * u, 175 * u, 110 * u, 0, 0, TAU); c.fill();
@@ -395,23 +395,23 @@ export function trumbler(c, x, y, s, t, call = 0, run = 1, haze = 0, L = null){
   const hx = 175 * u, hy = -150 * u;
   /* the crest: a great fan behind the head - flaring and glowing as it bellows */
   c.save(); c.translate(hx - 30 * u, hy - 30 * u); c.rotate(-0.5 - 0.35 * cl);
-  if (cl > 0.05) glow(c, 0, -40 * u, 150 * u, '#ffd27a', 0.5 * cl);
+  if (cl > 0.05) glow(c, 0, -40 * u, 150 * u, '#e6cd9b', 0.5 * cl);
   for (let k = 0; k < 7; k++){
     const a = -Math.PI * 0.85 + k * 0.28, r = (95 + 25 * cl) * u;
-    c.fillStyle = k % 2 ? crest : H_('#ff8a3a');
+    c.fillStyle = k % 2 ? crest : H_('#db9a6d');
     c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a - 0.13) * r, Math.sin(a - 0.13) * r); c.lineTo(Math.cos(a + 0.13) * r, Math.sin(a + 0.13) * r); c.closePath(); c.fill();
   }
   c.restore();
   c.fillStyle = skin; c.beginPath(); c.ellipse(hx, hy, 72 * u, 58 * u, 0.2, 0, TAU); c.fill();
   c.fillStyle = skinL; c.beginPath(); c.ellipse(hx - 12 * u, hy - 18 * u, 50 * u, 32 * u, 0.2, 0, TAU); c.fill();
   /* two horns, curling forward */
-  c.strokeStyle = H_('#fff1d6'); c.lineWidth = 14 * u; c.lineCap = 'round';
+  c.strokeStyle = H_('#f7eedd'); c.lineWidth = 14 * u; c.lineCap = 'round';
   for (const d of [-1, 1]){ c.beginPath(); c.moveTo(hx + 20 * u, hy - 30 * u + d * 8 * u); c.quadraticCurveTo(hx + 80 * u, hy - 60 * u + d * 12 * u, hx + 95 * u, hy - 20 * u + d * 10 * u); c.stroke(); }
   /* the mouth: a line - wide open when it bellows */
-  c.fillStyle = H_('#5a2418');
+  c.fillStyle = H_('#5e3f36');
   c.beginPath(); c.ellipse(hx + 48 * u, hy + 22 * u, 22 * u, (4 + 18 * cl) * u, 0.15, 0, TAU); c.fill();
   /* its eye: small and fierce-ish - kind, really */
-  c.fillStyle = '#1a1020'; circ0(c, hx + 22 * u, hy - 8 * u, 7 * u); c.fillStyle = '#ffffff'; circ0(c, hx + 20 * u, hy - 10 * u, 2.5 * u);
+  c.fillStyle = '#3c323e'; circ0(c, hx + 22 * u, hy - 8 * u, 7 * u); c.fillStyle = '#fefdfb'; circ0(c, hx + 20 * u, hy - 10 * u, 2.5 * u);
   /* rings of sound */
   if (call > 0 && call < 1.6) for (let k = 0; k < 4; k++){
     const r = call * 1.3 - k * 0.2; if (r <= 0) continue;
@@ -432,7 +432,7 @@ export function skyJelly(c, W, H, th, t, L){
   const haze = Math.min(0.75 * FOG, Math.max(0, th.rel) * 0.85 * FOG), a = Math.max(0, Math.min(1, (1.2 - th.rel) / 0.35));
   if (a <= 0.01) return;
   const bob = Math.sin(t * 0.5 + th.n * 1.7) * s * 0.12, x = p.x, y = p.y - H * th.alt * p.k + bob;
-  const base = ['#d7a6d8', '#a9c4e8', '#c4b4ea'][th.n % 3], col = (k, m = 0) => mixHex(mixHex(base, k > 0 ? '#ffffff' : '#3a3466', Math.abs(k)), L.haze, Math.min(1, haze + m));
+  const base = ['#d1b6ce', '#bcc9da', '#cdc3de'][th.n % 3], col = (k, m = 0) => mixHex(mixHex(base, k > 0 ? '#fefdfb' : '#544f68', Math.abs(k)), L.haze, Math.min(1, haze + m));
   const pulse = Math.sin(t * 1.1 + th.n), w = s * (1 + 0.05 * pulse), h = s * (0.6 - 0.04 * pulse);
   c.save(); c.globalAlpha = a * 0.85;
   /* ribbons: thin, trailing, swaying slowly */
@@ -465,28 +465,28 @@ const rgbaHex = (h, a) => `rgba(${[1, 3, 5].map(i => parseInt(h.slice(i, i + 2),
 export function trumblerBack(c, x, y, s, t, call = 0, run = 1, haze = 0, L = null, turn = 0){
   const u = s / 300, ph = t * 8.5, bob = Math.abs(Math.sin(ph)) * 12 * u * run, cl = Math.sin(Math.min(1, call) * Math.PI);
   const H_ = (a) => L ? mixHex(a, L.haze, haze) : a;
-  const shellD = H_('#2f6b62'), shellL = H_('#4f9a7e'), plate = H_('#79c49a'), skin = H_('#d9734a'), dark = H_('#7a3a2a'), crest = H_('#ffb04a');
+  const shellD = H_('#4e6d66'), shellL = H_('#6d9583'), plate = H_('#93baa1'), skin = H_('#c28a71'), dark = H_('#785449'), crest = H_('#deb278');
   c.save();
   c.fillStyle = 'rgba(20,15,45,.35)'; c.beginPath(); c.ellipse(x, y, 175 * u, 34 * u, 0, 0, TAU); c.fill();
   c.translate(x, y - bob); c.rotate(turn * 0.12);
   /* the crest and horns, beyond the shell (further up the screen) */
   c.save(); c.translate(0, -290 * u);
-  if (cl > 0.05) glow(c, 0, -30 * u, 170 * u, '#ffd27a', 0.45 * cl);
+  if (cl > 0.05) glow(c, 0, -30 * u, 170 * u, '#e6cd9b', 0.45 * cl);
   for (let k = 0; k < 9; k++){
     const a = -Math.PI * 0.92 + k * (Math.PI * 0.84 / 8), r = (90 + 40 * cl) * u;
-    c.fillStyle = k % 2 ? crest : H_('#ff8a3a');
+    c.fillStyle = k % 2 ? crest : H_('#db9a6d');
     c.beginPath(); c.moveTo(0, 30 * u); c.lineTo(Math.cos(a - 0.1) * r, 30 * u + Math.sin(a - 0.1) * r); c.lineTo(Math.cos(a + 0.1) * r, 30 * u + Math.sin(a + 0.1) * r); c.closePath(); c.fill();
   }
-  c.strokeStyle = H_('#fff1d6'); c.lineWidth = 14 * u; c.lineCap = 'round';
+  c.strokeStyle = H_('#f7eedd'); c.lineWidth = 14 * u; c.lineCap = 'round';
   for (const d of [-1, 1]){ c.beginPath(); c.moveTo(d * 60 * u, 40 * u); c.quadraticCurveTo(d * 120 * u, 10 * u, d * 115 * u, -40 * u); c.stroke(); }
   c.restore();
   /* six legs, pounding: far pair small and dark, near pair big */
   for (const [lx, w, h, far, k] of [[-70, 34, 60, 2, 0], [70, 34, 60, 2, 3], [-120, 44, 80, 1, 1], [120, 44, 80, 1, 4], [-95, 58, 90, 0, 2], [95, 58, 90, 0, 5]]){
     const sw = Math.sin(ph + k * 1.05) * run, lift = Math.max(0, sw) * 30 * u;
-    c.fillStyle = far ? (far > 1 ? H_('#4a2418') : dark) : skin;
+    c.fillStyle = far ? (far > 1 ? H_('#523c34') : dark) : skin;
     const top = -(far === 2 ? 110 : far === 1 ? 100 : 90);
     c.beginPath(); c.roundRect((lx - w / 2) * u, top * u - lift, w * u, (h + 0) * u, 14 * u); c.fill();
-    c.fillStyle = H_('#4a2418'); c.beginPath(); c.ellipse(lx * u, (top + h) * u - lift, w * 0.6 * u, 10 * u, 0, 0, TAU); c.fill();
+    c.fillStyle = H_('#523c34'); c.beginPath(); c.ellipse(lx * u, (top + h) * u - lift, w * 0.6 * u, 10 * u, 0, 0, TAU); c.fill();
   }
   /* the shell, from behind: a great dome, dark under, lit on top, plates */
   c.fillStyle = shellD; c.beginPath(); c.ellipse(0, -190 * u, 195 * u, 140 * u, 0, 0, TAU); c.fill();
@@ -516,14 +516,14 @@ export function trumblerBack(c, x, y, s, t, call = 0, run = 1, haze = 0, L = nul
    World-drawn: flat tones, lit on top, the sun's rim, hazing with distance. */
 export function trumbler2(c, x, y, s, t, step, haze, L, turn = 0){
   const u = s / 300, sway = Math.sin(step) * 0.03, bob = Math.abs(Math.sin(step)) * 6 * u;
-  const H_ = (a) => mixHex(a, L.haze, haze), dark = H_('#4f5f86'), body = H_('#6d84b6'), lit = H_('#a7bfe2'), moss = H_('#5a9a6a'), mossL = H_('#7fbf7a');
+  const H_ = (a) => mixHex(a, L.haze, haze), dark = H_('#6a7184'), body = H_('#8893ac'), lit = H_('#bac5d6'), moss = H_('#75967a'), mossL = H_('#96b78f');
   c.save();
   c.fillStyle = 'rgba(20,15,45,.32)'; c.beginPath(); c.ellipse(x, y, 190 * u, 32 * u, 0, 0, TAU); c.fill();
   c.translate(x, y - bob); c.rotate(turn * 0.08 + sway);
   /* legs, slow: far pair small and dark, near pair big, lifting in turn */
   for (const [lx, w, h, far, k] of [[-80, 40, 60, 1, 0], [80, 40, 60, 1, 1], [-115, 62, 90, 0, 1], [115, 62, 90, 0, 0]]){
     const lift = Math.max(0, Math.sin(step + k * Math.PI)) * 14 * u;
-    c.fillStyle = far ? H_('#3d4a6c') : dark;
+    c.fillStyle = far ? H_('#585e6e') : dark;
     c.beginPath(); c.roundRect((lx - w / 2) * u, -(far ? 100 : 92) * u - lift, w * u, h * u, 18 * u); c.fill();
   }
   /* the feelers, up ahead of it, beyond its back: long, drooping, lights at their tips */
@@ -531,7 +531,7 @@ export function trumbler2(c, x, y, s, t, step, haze, L, turn = 0){
     const tx = d * (90 + 10 * Math.sin(t * 0.8 + d)) * u, ty = -330 * u;
     c.strokeStyle = dark; c.lineWidth = 12 * u; c.lineCap = 'round';
     c.beginPath(); c.moveTo(d * 30 * u, -250 * u); c.quadraticCurveTo(d * 60 * u, -340 * u, tx, ty); c.stroke();
-    c.fillStyle = H_('#fff1c4'); circ0(c, tx, ty, 11 * u);
+    c.fillStyle = H_('#f3ebd0'); circ0(c, tx, ty, 11 * u);
   }
   /* its back: a great soft hill - shaded under, lit on top, the low sun's rim */
   c.fillStyle = dark; c.beginPath(); c.ellipse(0, -170 * u, 200 * u, 125 * u, 0, 0, TAU); c.fill();
@@ -557,8 +557,8 @@ export function trumbler2(c, x, y, s, t, step, haze, L, turn = 0){
    left by the low sun, hazing with distance. */
 export function giantLeg(c, W, H, x, y, k, lift, t, L, haze = 0, n = 0){
   const H_ = (a) => mixHex(a, L.haze, haze), w = H * 0.56 * k, fy = y - lift * H * 0.9 * k;
-  const dark = H_('#3b4762'), hide = H_('#56678c'), lit = H_('#8396bd'), crease = H_('#2c3550');
-  const cr = L.crystal || ['#c7b6ef', '#8f7cc4', '#5d4e8f'];
+  const dark = H_('#555a66'), hide = H_('#707889'), lit = H_('#99a2b5'), crease = H_('#474a57');
+  const cr = L.crystal || ['#d0c5e2', '#9f94b8', '#73698a'];
   c.save();
   const top = -H * 0.35, rise = fy - top;
   /* its outline: lumpy and heavy, flaring wider as it goes up - a living
@@ -581,11 +581,11 @@ export function giantLeg(c, W, H, x, y, k, lift, t, L, haze = 0, n = 0){
   /* the hide: heavy creases round the ankle, uneven patches higher up */
   c.strokeStyle = crease; c.lineWidth = Math.max(1, w * 0.018); c.lineCap = 'round';
   for (let j = 0; j < 7; j++){ const yy = fy - w * (0.3 + j * 0.09), sp = w * (0.25 + 0.05 * hash(j + n * 5)); c.beginPath(); c.moveTo(x - sp + hash(j + n) * w * 0.1, yy); c.quadraticCurveTo(x, yy + w * 0.05, x + sp, yy - w * 0.01); c.stroke(); }
-  for (let j = 0; j < 10; j++){ const a = 0.15 + 0.85 * hash(j + n * 11 + 500), yy = fy - w * 0.25 - a * rise, xx = x + (hash(j + n * 11 + 501) - 0.5) * w * (0.8 + a); c.fillStyle = rgbaHex('#2c3550', 0.25); c.beginPath(); c.ellipse(xx, yy, w * (0.08 + 0.08 * hash(j + 502)), w * 0.05, hash(j + 503) - 0.5, 0, TAU); c.fill(); }
+  for (let j = 0; j < 10; j++){ const a = 0.15 + 0.85 * hash(j + n * 11 + 500), yy = fy - w * 0.25 - a * rise, xx = x + (hash(j + n * 11 + 501) - 0.5) * w * (0.8 + a); c.fillStyle = rgbaHex('#474a57', 0.25); c.beginPath(); c.ellipse(xx, yy, w * (0.08 + 0.08 * hash(j + 502)), w * 0.05, hash(j + 503) - 0.5, 0, TAU); c.fill(); }
   /* glowing lichen, in soft patches */
   for (let j = 0; j < 8; j++){
     const a = 0.04 + 0.35 * hash(j + n * 7 + 520), yy = fy - w * 0.3 - a * rise, xx = x + (hash(j + n * 7 + 521) - 0.6) * w * (0.7 + a * 0.6);
-    for (let q = 0; q < 6; q++){ c.fillStyle = rgbaHex('#86f2dc', (0.6 + 0.3 * Math.sin(t * 1.3 + j + q)) * (1 - haze)); c.beginPath(); c.arc(xx + (hash(q + j * 6 + 530) - 0.5) * w * 0.14, yy + (hash(q + j * 6 + 531) - 0.5) * w * 0.08, w * 0.022, 0, TAU); c.fill(); }
+    for (let q = 0; q < 6; q++){ c.fillStyle = rgbaHex('#a5decf', (0.6 + 0.3 * Math.sin(t * 1.3 + j + q)) * (1 - haze)); c.beginPath(); c.arc(xx + (hash(q + j * 6 + 530) - 0.5) * w * 0.14, yy + (hash(q + j * 6 + 531) - 0.5) * w * 0.08, w * 0.022, 0, TAU); c.fill(); }
   }
   c.restore();
   /* the sun's rim down its left side */
@@ -604,19 +604,19 @@ export function giantLeg(c, W, H, x, y, k, lift, t, L, haze = 0, n = 0){
   /* soft frond-gills down the back of the leg, swaying */
   for (let j = 0; j < 6; j++){
     const a = 0.05 + j * 0.06, gx = edge(1, a), gy = fy - w * 0.25 - a * rise, sw = Math.sin(t * 1.1 + j + n) * w * 0.04;
-    c.fillStyle = H_(j % 2 ? '#9b8fd6' : '#b9aee6'); c.beginPath(); c.moveTo(gx - w * 0.02, gy - w * 0.06); c.quadraticCurveTo(gx + w * 0.2 + sw, gy, gx + w * 0.1 + sw, gy + w * 0.2); c.quadraticCurveTo(gx + w * 0.02, gy + w * 0.08, gx - w * 0.02, gy - w * 0.06); c.fill();
+    c.fillStyle = H_(j % 2 ? '#ada5c9' : '#c5beda'); c.beginPath(); c.moveTo(gx - w * 0.02, gy - w * 0.06); c.quadraticCurveTo(gx + w * 0.2 + sw, gy, gx + w * 0.1 + sw, gy + w * 0.2); c.quadraticCurveTo(gx + w * 0.02, gy + w * 0.08, gx - w * 0.02, gy - w * 0.06); c.fill();
   }
   /* the foot: wide and heavy, three great toes, pale claws */
   c.fillStyle = dark; c.beginPath(); c.ellipse(x, fy - w * 0.12, w * 0.66, w * 0.19, 0, 0, TAU); c.fill();
   for (const d of [-1, 0, 1]){
     const tx = x + d * w * 0.42, ty = fy - w * 0.03;
     c.fillStyle = d < 0 ? lit : d > 0 ? dark : hide; c.beginPath(); c.ellipse(tx, ty, w * 0.22, w * 0.12, d * 0.2, 0, TAU); c.fill();
-    c.fillStyle = H_('#f2ead8'); c.beginPath(); c.moveTo(tx - w * 0.08 + d * w * 0.05, ty + w * 0.04); c.quadraticCurveTo(tx + d * w * 0.12, ty + w * 0.17, tx + w * 0.08 + d * w * 0.05, ty + w * 0.04); c.closePath(); c.fill();
+    c.fillStyle = H_('#eee8dc'); c.beginPath(); c.moveTo(tx - w * 0.08 + d * w * 0.05, ty + w * 0.04); c.quadraticCurveTo(tx + d * w * 0.12, ty + w * 0.17, tx + w * 0.08 + d * w * 0.05, ty + w * 0.04); c.closePath(); c.fill();
   }
   /* spores shaken loose, drifting off it as it walks */
   for (let j = 0; j < 10; j++){
     const u = (t * 0.2 + hash(j + n * 13 + 560)) % 1, sx = x + (hash(j + n * 13 + 561) - 0.5) * w * 1.6 + Math.sin(u * 6 + j) * w * 0.1, sy = fy - w * 0.4 - (1 - u) * rise * 0.6;
-    c.fillStyle = rgbaHex('#e8fff4', 0.6 * Math.sin(u * Math.PI) * (1 - haze)); c.beginPath(); c.arc(sx, sy, w * 0.012, 0, TAU); c.fill();
+    c.fillStyle = rgbaHex('#eef9f0', 0.6 * Math.sin(u * Math.PI) * (1 - haze)); c.beginPath(); c.arc(sx, sy, w * 0.012, 0, TAU); c.fill();
   }
   c.restore();
 }
@@ -636,20 +636,20 @@ export function giantShadow(c, W, H, x, y, k){
 export function burrowPuff(c, x, y, s, t, pop, haze, L, n = 0){
   const col = (k) => mixHex(k, L.haze, haze);
   /* the mound, and the hole in its top */
-  c.fillStyle = col(mixHex(L.ground[1], '#6b5a46', 0.45)); c.beginPath(); c.ellipse(x, y, s * 0.9, s * 0.32, 0, Math.PI, TAU); c.fill();
-  c.fillStyle = col(mixHex(L.ground[0], '#8a7458', 0.35)); c.beginPath(); c.ellipse(x - s * 0.15, y - s * 0.12, s * 0.55, s * 0.14, 0, Math.PI, TAU); c.fill();
-  c.fillStyle = col('#2a2040'); c.beginPath(); c.ellipse(x, y - s * 0.22, s * 0.36, s * 0.1, 0, 0, TAU); c.fill();
+  c.fillStyle = col(mixHex(L.ground[1], '#72685b', 0.45)); c.beginPath(); c.ellipse(x, y, s * 0.9, s * 0.32, 0, Math.PI, TAU); c.fill();
+  c.fillStyle = col(mixHex(L.ground[0], '#8c7f6d', 0.35)); c.beginPath(); c.ellipse(x - s * 0.15, y - s * 0.12, s * 0.55, s * 0.14, 0, Math.PI, TAU); c.fill();
+  c.fillStyle = col('#413a49'); c.beginPath(); c.ellipse(x, y - s * 0.22, s * 0.36, s * 0.1, 0, 0, TAU); c.fill();
   if (pop <= 0.01) return;
   /* it, coming up out of the hole: round, fluffy, two little ears, big eyes */
   c.save(); c.beginPath(); c.rect(x - s, y - s * 2.2, s * 2, s * 2.2 - s * 0.22); c.clip();
   const up = pop * s * 0.85, cy = y - s * 0.22 - up + s * 0.35, r = s * 0.36, bob = Math.sin(t * 9 + n) * s * 0.02 * pop;
-  const body = ['#f3b8d8', '#c9b8f3', '#f6cf9a'][n % 3];
-  c.fillStyle = col(mixHex(body, '#5a3a6a', 0.25)); circ0(c, x, cy + bob, r);
+  const body = ['#e9c8d7', '#d2c8e5', '#e5cfb0'][n % 3];
+  c.fillStyle = col(mixHex(body, '#67546c', 0.25)); circ0(c, x, cy + bob, r);
   c.fillStyle = col(body); circ0(c, x - r * 0.18, cy - r * 0.15 + bob, r * 0.82);
-  for (const d of [-1, 1]){ c.fillStyle = col(mixHex(body, '#5a3a6a', 0.2)); c.beginPath(); c.ellipse(x + d * r * 0.55, cy - r * 0.85 + bob, r * 0.2, r * 0.38, d * 0.4, 0, TAU); c.fill(); }
-  c.fillStyle = col('#2a1a30'); for (const d of [-1, 1]) circ0(c, x + d * r * 0.32, cy - r * 0.1 + bob, r * 0.13);
+  for (const d of [-1, 1]){ c.fillStyle = col(mixHex(body, '#67546c', 0.2)); c.beginPath(); c.ellipse(x + d * r * 0.55, cy - r * 0.85 + bob, r * 0.2, r * 0.38, d * 0.4, 0, TAU); c.fill(); }
+  c.fillStyle = col('#3d333c'); for (const d of [-1, 1]) circ0(c, x + d * r * 0.32, cy - r * 0.1 + bob, r * 0.13);
   c.fillStyle = 'rgba(255,255,255,.9)'; for (const d of [-1, 1]) circ0(c, x + d * r * 0.32 - r * 0.04, cy - r * 0.15 + bob, r * 0.05);
-  c.fillStyle = col('#ff9ab8'); circ0(c, x, cy + r * 0.12 + bob, r * 0.07);
+  c.fillStyle = col('#ecb4c2'); circ0(c, x, cy + r * 0.12 + bob, r * 0.07);
   c.restore();
 }
 
@@ -661,10 +661,10 @@ export function flutterSwarm(c, x, y, s, t, haze, away = 0){
     const a = k * 2.399, ph = t * (2.2 + 0.3 * (k % 4)) + k, rx = s * (0.5 + 0.6 * ((k * 37) % 10) / 10);
     const fx = x + Math.cos(a + t * 0.6) * rx + Math.sin(ph) * s * 0.12, fy = y - s * 0.3 + Math.sin(a * 1.7 + t * 0.8) * s * 0.35 + Math.cos(ph * 1.3) * s * 0.08 - away * s * 3 * (0.6 + 0.4 * (k % 3));
     const w = s * 0.11 * (0.8 + 0.3 * (k % 2)), flap = Math.abs(Math.sin(t * 14 + k));
-    const col = k % 3 ? '#ffe27a' : '#9ff0ff';
+    const col = k % 3 ? '#e6d59b' : '#b9e4e9';
     c.globalAlpha = (1 - haze * 0.7) * (1 - away);
     c.fillStyle = 'rgba(255,240,170,.12)'; circ0(c, fx, fy, w * 1.1);
-    c.fillStyle = mixHex(col, '#7a5ab0', 0.35);
+    c.fillStyle = mixHex(col, '#8a78a4', 0.35);
     for (const d of [-1, 1]){ c.beginPath(); c.ellipse(fx + d * w * 0.55, fy, w * 0.6, w * 0.4 * (0.3 + 0.7 * flap), d * 0.5, 0, TAU); c.fill(); }
     c.fillStyle = col; circ0(c, fx, fy, w * 0.22);
   }
@@ -679,20 +679,20 @@ export function longNeck(c, legs, hgt, t, haze, L, dir = -1){
   const col = (k) => mixHex(k, L.haze, haze);
   const xs = legs.map(l => l[0]), x0 = Math.min(...xs), x1 = Math.max(...xs), yb = Math.min(...legs.map(l => l[1])) - hgt;
   const bw = (x1 - x0) * 0.75 + hgt * 0.15, bx = (x0 + x1) / 2, bh = hgt * 0.26;
-  const dark = '#6f86b0', lit = '#a9c0e2';
+  const dark = '#8893a8', lit = '#bbc6d6';
   /* its legs: long and slender, a knee in each, far ones darker */
   legs.forEach(([lx, ly, lift], k) => {
     const far = k >= 2, top = [bx + (lx - bx) * 0.55, yb + bh * 0.3], footY = ly - lift * hgt * 0.06, w = hgt * (far ? 0.03 : 0.036);
     const knee = [lx + (top[0] - lx) * 0.35 - dir * w * 0.6, footY - (footY - top[1]) * 0.45];
-    c.strokeStyle = col(far ? mixHex(dark, '#3a3466', 0.3) : dark); c.lineWidth = w * 2; c.lineCap = 'round';
+    c.strokeStyle = col(far ? mixHex(dark, '#544f68', 0.3) : dark); c.lineWidth = w * 2; c.lineCap = 'round';
     c.beginPath(); c.moveTo(top[0], top[1]); c.lineTo(knee[0], knee[1]); c.lineTo(lx, footY); c.stroke();
     if (!far){ c.strokeStyle = col(lit); c.lineWidth = w * 0.6; c.beginPath(); c.moveTo(top[0] - w * 0.5, top[1]); c.lineTo(knee[0] - w * 0.5, knee[1]); c.lineTo(lx - w * 0.5, footY); c.stroke(); }
-    c.fillStyle = col('#3a3466'); c.beginPath(); c.ellipse(lx, footY, w * 1.3, w * 0.5, 0, 0, TAU); c.fill();
+    c.fillStyle = col('#544f68'); c.beginPath(); c.ellipse(lx, footY, w * 1.3, w * 0.5, 0, 0, TAU); c.fill();
   });
   /* its body: a long soft barrel, lit on top, spotted */
   c.fillStyle = col(dark); c.beginPath(); c.ellipse(bx, yb, bw * 0.5, bh, 0, 0, TAU); c.fill();
   c.fillStyle = col(lit); c.beginPath(); c.ellipse(bx - bw * 0.04, yb - bh * 0.3, bw * 0.44, bh * 0.62, 0, Math.PI, TAU); c.fill();
-  c.fillStyle = col('#c8d8f0'); for (let k = 0; k < 6; k++) circ0(c, bx + (k / 5 - 0.5) * bw * 0.7, yb - bh * (0.35 + 0.25 * Math.sin(k * 2.1)), bh * 0.12);
+  c.fillStyle = col('#d4dbe6'); for (let k = 0; k < 6; k++) circ0(c, bx + (k / 5 - 0.5) * bw * 0.7, yb - bh * (0.35 + 0.25 * Math.sin(k * 2.1)), bh * 0.12);
   /* its tail, swishing */
   const tx = bx - dir * bw * 0.5; c.strokeStyle = col(dark); c.lineWidth = bh * 0.12; c.beginPath(); c.moveTo(tx, yb); c.quadraticCurveTo(tx - dir * bh * 0.6, yb + bh * 0.3, tx - dir * bh * (0.7 + 0.2 * Math.sin(t * 2)), yb + bh * 1.1); c.stroke();
   /* its long neck, up and forward, and its small head, chewing */
@@ -701,6 +701,6 @@ export function longNeck(c, legs, hgt, t, haze, L, dir = -1){
   c.strokeStyle = col(lit); c.lineWidth = bh * 0.18; c.beginPath(); c.moveTo(nx - bh * 0.1, ny - bh * 0.15); c.quadraticCurveTo(nx + dir * hgt * 0.05 - bh * 0.1, hy + hgt * 0.25, hx - bh * 0.1, hy - bh * 0.1); c.stroke();
   c.fillStyle = col(dark); c.beginPath(); c.ellipse(hx + dir * bh * 0.3, hy, bh * 0.62, bh * 0.36, dir * 0.3, 0, TAU); c.fill();
   c.fillStyle = col(lit); c.beginPath(); c.ellipse(hx + dir * bh * 0.2, hy - bh * 0.08, bh * 0.38, bh * 0.16, dir * 0.3, Math.PI, TAU); c.fill();
-  c.fillStyle = col('#2a1a30'); circ0(c, hx + dir * bh * 0.2, hy - bh * 0.05, bh * 0.06);
+  c.fillStyle = col('#3d333c'); circ0(c, hx + dir * bh * 0.2, hy - bh * 0.05, bh * 0.06);
   for (const d of [0, 1]){ c.strokeStyle = col(dark); c.lineWidth = bh * 0.06; c.beginPath(); c.moveTo(hx - dir * bh * 0.05, hy - bh * 0.2); c.lineTo(hx - dir * bh * (0.1 + d * 0.15), hy - bh * 0.6); c.stroke(); }
 }

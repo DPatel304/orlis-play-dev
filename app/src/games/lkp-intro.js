@@ -336,7 +336,8 @@ export class Intro {
     const hud = this.stage === 'dark' ? 0 : this.stage === 'wake' ? Math.min(1, Math.max(0, (this.st - WAKE * 0.7) / (WAKE * 0.3))) : 1;
     /* the helmet's rim: dark, rounded, round the whole view */
     const rim = c.createRadialGradient(W / 2, H / 2, H * 0.62, W / 2, H / 2, W * 0.6);
-    rim.addColorStop(0, 'rgba(8,10,22,0)'); rim.addColorStop(0.7, 'rgba(8,10,22,.55)'); rim.addColorStop(1, 'rgba(8,10,22,.95)');
+    /* (the house style's shade tone, not black: soft, like the inside of a toy helmet) */
+    rim.addColorStop(0, 'rgba(58,51,96,0)'); rim.addColorStop(0.7, 'rgba(58,51,96,.35)'); rim.addColorStop(1, 'rgba(48,42,80,.8)');
     c.fillStyle = rim; c.fillRect(0, 0, W, H);
     c.strokeStyle = 'rgba(230,240,255,.18)'; c.lineWidth = H * 0.008;
     c.beginPath(); c.ellipse(W / 2, H / 2, W * 0.52, H * 0.6, 0, 0, Math.PI * 2); c.stroke();
@@ -347,7 +348,7 @@ export class Intro {
     const away = this.detach || 0;
     if (hud > 0 && away < 1){
       c.globalAlpha = hud * (0.75 + 0.05 * Math.sin(this.t * 3)) * (1 - away);
-      c.strokeStyle = '#7ff3ff'; c.lineWidth = Math.max(2, H * 0.003); c.lineCap = 'square';
+      c.strokeStyle = '#a2dfe3'; c.lineWidth = Math.max(2, H * 0.003); c.lineCap = 'square';
       /* corner brackets */
       const m = H * 0.09, L = H * 0.05;
       for (const [x0, y0, dx, dy] of [[W * 0.12, m, 1, 1], [W * 0.88, m, -1, 1], [W * 0.12, H - m, 1, -1], [W * 0.88, H - m, -1, -1]]){
@@ -359,7 +360,7 @@ export class Intro {
       c.lineWidth = Math.max(1.5, H * 0.002);
       c.beginPath(); c.moveTo(W * 0.4, y0); c.lineTo(W * 0.6, y0); c.stroke();
       for (let k = -12; k <= 12; k++){ const x = W / 2 + k * W * 0.015 + (off % (W * 0.015)); if (x < W * 0.4 || x > W * 0.6) continue; c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y0 - H * (k % 4 === 0 ? 0.014 : 0.007)); c.stroke(); }
-      c.fillStyle = '#7ff3ff'; c.beginPath(); c.moveTo(W / 2, y0 + H * 0.006); c.lineTo(W / 2 - H * 0.008, y0 + H * 0.018); c.lineTo(W / 2 + H * 0.008, y0 + H * 0.018); c.fill();
+      c.fillStyle = '#a2dfe3'; c.beginPath(); c.moveTo(W / 2, y0 + H * 0.006); c.lineTo(W / 2 - H * 0.008, y0 + H * 0.018); c.lineTo(W / 2 + H * 0.008, y0 + H * 0.018); c.fill();
       c.globalAlpha = 1;
     }
     /* your health bar, bottom left, once she asks: popping up, filling -
@@ -381,7 +382,7 @@ export class Intro {
     c.save(); c.globalAlpha = 0.95;
     c.translate(x, y + h / 2); c.scale(pop, pop); c.translate(-x, -(y + h / 2));
     c.fillStyle = 'rgba(0,0,0,.7)'; c.fillRect(x - 4, y - 4, w + 8, h + 8);
-    c.fillStyle = '#3fd07a'; c.fillRect(x, y, w * fill, h);
+    c.fillStyle = '#6bb988'; c.fillRect(x, y, w * fill, h);
     c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(x, y, w * fill, h * 0.35);
     c.restore();
   }
@@ -431,14 +432,14 @@ export class Intro {
     const ph = this.t % 1.6, buzz = ph < 0.25 || (ph > 0.35 && ph < 0.6);
     const b = novaBox(W, H), x = b.x + (buzz ? Math.sin(this.t * 70) * H * 0.005 : 0), y = b.y;
     c.save();
-    c.fillStyle = '#0b1220'; c.beginPath(); c.roundRect(x, y, b.w, b.h, b.h * 0.08); c.fill();
+    c.fillStyle = '#30353f'; c.beginPath(); c.roundRect(x, y, b.w, b.h, b.h * 0.08); c.fill();
     c.save(); c.clip();
     if (!novaFeed(c, x, y, b.w, b.h, this.t, false)) commanderFace(c, x + b.w / 2, y + b.h * 0.5, b.h * 0.3, this.t, false);
     /* INCOMING CALL, across it */
     c.fillStyle = 'rgba(5,12,30,.72)'; c.fillRect(x, y + b.h * 0.36, b.w, b.h * 0.28);
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.globalAlpha = buzz ? 1 : 0.6 + 0.3 * ring;
-    c.font = `700 ${Math.round(b.h * 0.13)}px Fredoka, sans-serif`; c.fillStyle = '#7ff3ff'; c.fillText('INCOMING CALL', x + b.w / 2, y + b.h * 0.5);
+    c.font = `700 ${Math.round(b.h * 0.13)}px Fredoka, sans-serif`; c.fillStyle = '#a2dfe3'; c.fillText('INCOMING CALL', x + b.w / 2, y + b.h * 0.5);
     c.restore();
     c.strokeStyle = `rgba(127,243,255,${buzz ? 0.95 : 0.5 + 0.2 * ring})`; c.lineWidth = H * (buzz ? 0.006 : 0.003);
     c.beginPath(); c.roundRect(x, y, b.w, b.h, b.h * 0.08); c.stroke();
@@ -539,7 +540,7 @@ export class Intro {
     const L = (a, b) => a + (b - a) * k, r = { x: L(from.x, to.x), y: L(from.y, to.y) - arc, w: L(from.w, to.w), h: L(from.h, to.h) };
     c.save();
     c.fillStyle = 'rgba(0,0,0,.7)'; c.fillRect(r.x - 3, r.y - 3, r.w + 6, r.h + 6);
-    c.fillStyle = '#3fd07a'; c.fillRect(r.x, r.y, r.w * START, r.h);
+    c.fillStyle = '#6bb988'; c.fillRect(r.x, r.y, r.w * START, r.h);
     if (k < 1){ c.globalAlpha = 1 - k; c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(r.x, r.y, r.w * START, r.h * 0.35); }
     c.restore();
   }

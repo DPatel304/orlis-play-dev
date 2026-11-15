@@ -62,13 +62,13 @@ export function worldMeadow(c, W, H, rel0, L){
 export function shipFire(c, W, H, rel, lane, t, s = 1){
   const p = P(lane, rel, W, H), u = H * 0.0011 * p.k * s;
   if (p.x < -1400 * u - W * 2 || p.x > W + 1400 * u) return;
-  glow(c, p.x + 100 * u, p.y - 40 * u, 900 * u, '#ff7a2e', 0.28 + 0.06 * Math.sin(t * 9));
+  glow(c, p.x + 100 * u, p.y - 40 * u, 900 * u, '#d88f64', 0.28 + 0.06 * Math.sin(t * 9));
   /* (the hull's tilted: -0.12 rad, its middle 150 up) */
   const at = (x, y) => [p.x + x * u * Math.cos(-0.12) - y * u * Math.sin(-0.12), p.y - 150 * u + x * u * Math.sin(-0.12) + y * u * Math.cos(-0.12)];
   for (const [x, y, size, seed] of [[560, -60, 1.3, 1], [430, -150, 1, 2], [-120, -150, 0.8, 3], [180, -165, 0.65, 4], [600, 60, 0.9, 5]]){
     const [fx, fy] = at(x, y), h = 230 * u * size * (0.85 + 0.15 * Math.sin(t * 11 + seed) + 0.1 * Math.sin(t * 17 + seed * 2)), w = 95 * u * size;
-    glow(c, fx, fy - h * 0.4, w * 2.4, '#ff8a3b', 0.55);
-    for (const [col, k] of [['#e8452c', 1], ['#ff9a2e', 0.72], ['#ffe27a', 0.45], ['#fff8e0', 0.22]]){
+    glow(c, fx, fy - h * 0.4, w * 2.4, '#db9a6d', 0.55);
+    for (const [col, k] of [['#c86e5e', 1], ['#d8a164', 0.72], ['#e6d59b', 0.45], ['#f9f4e4', 0.22]]){
       const sway = Math.sin(t * 6 + seed + k * 3) * w * 0.25 * k;
       c.fillStyle = col; c.beginPath(); c.moveTo(fx - w * k, fy);
       c.quadraticCurveTo(fx - w * k * 0.9, fy - h * k * 0.55, fx + sway, fy - h * k);
@@ -97,16 +97,16 @@ export function worldPond(c, W, H, lane, rel, t, L, r = 0.6){
   const shape = (out, f = 1) => { c.beginPath(); for (let k = 0; k <= n; k++){ const q = edge(k / n * 6.2832, out, f); k ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y); } c.closePath(); };
   const at = (dl, dr) => ({ x: ctr.x + dl * per, y: ctr.y + dr / (r * 0.26) * ry, k: ctr.k });
   /* the damp bank */
-  c.fillStyle = mix(L.ground[2], '#3b3326', 0.45); shape(0.14); c.fill();
-  c.fillStyle = mix(L.ground[2], '#2f2a20', 0.6); shape(0.06); c.fill();
+  c.fillStyle = mix(L.ground[2], '#4a443b', 0.45); shape(0.14); c.fill();
+  c.fillStyle = mix(L.ground[2], '#403c35', 0.6); shape(0.06); c.fill();
   /* the water: lit by the sky at the far edge, deep in the middle */
   const g = c.createLinearGradient(0, far.y, 0, near.y);
-  g.addColorStop(0, mix(L.sky[2], L.water, 0.45)); g.addColorStop(0.35, mix(L.water, '#1f7489', 0.35)); g.addColorStop(1, '#17566a');
+  g.addColorStop(0, mix(L.sky[2], L.water, 0.45)); g.addColorStop(0.35, mix(L.water, '#48747d', 0.35)); g.addColorStop(1, '#3c5d65');
   c.fillStyle = g; shape(0); c.fill();
   c.save(); shape(0); c.clip();
   /* deeper in the middle; the healing light under the surface */
   c.fillStyle = 'rgba(10,50,70,.28)'; shape(0, 0.55); c.fill();
-  glow(c, ctr.x, ctr.y, (near.y - far.y) * 1.6, '#7ff3e0', 0.32 + 0.06 * Math.sin(t * 1.5));
+  glow(c, ctr.x, ctr.y, (near.y - far.y) * 1.6, '#a0ddd1', 0.32 + 0.06 * Math.sin(t * 1.5));
   /* the sky on the water, a few long glints */
   for (let k = 0; k < 4; k++){
     const q = at((hash(k + 1520) - 0.5) * r * 1.2, (0.35 - k * 0.18) * r * 0.26), w = rx * 0.35 * (0.5 + hash(k + 1521) * 0.6);
@@ -143,9 +143,9 @@ export function worldPond(c, W, H, lane, rel, t, L, r = 0.6){
   /* lily pads */
   for (const [a, f, flower] of [[0.6, 0.62, 1], [2.3, 0.7, 0], [3.9, 0.5, 0], [5.3, 0.66, 1], [1.4, 0.3, 0]]){
     const q = edge(a, 0, f), rr = H * 0.016 * q.k;
-    c.fillStyle = '#3f9a55'; c.beginPath(); c.ellipse(q.x, q.y, rr * 1.6, rr * 0.55, 0, 0.35, 6.2832 - 0.35); c.lineTo(q.x, q.y); c.closePath(); c.fill();
-    c.fillStyle = '#5cb96c'; c.beginPath(); c.ellipse(q.x - rr * 0.3, q.y - rr * 0.1, rr * 0.7, rr * 0.22, 0, 0, 6.2832); c.fill();
-    if (flower){ c.fillStyle = '#ffb6d9'; for (let j = 0; j < 5; j++){ const b = j / 5 * 6.2832; circ(c, q.x + Math.cos(b) * rr * 0.3, q.y - rr * 0.35 + Math.sin(b) * rr * 0.12, rr * 0.22); } c.fillStyle = '#ffe28a'; circ(c, q.x, q.y - rr * 0.35, rr * 0.14); }
+    c.fillStyle = '#62926a'; c.beginPath(); c.ellipse(q.x, q.y, rr * 1.6, rr * 0.55, 0, 0.35, 6.2832 - 0.35); c.lineTo(q.x, q.y); c.closePath(); c.fill();
+    c.fillStyle = '#7cad81'; c.beginPath(); c.ellipse(q.x - rr * 0.3, q.y - rr * 0.1, rr * 0.7, rr * 0.22, 0, 0, 6.2832); c.fill();
+    if (flower){ c.fillStyle = '#f1c8d9'; for (let j = 0; j < 5; j++){ const b = j / 5 * 6.2832; circ(c, q.x + Math.cos(b) * rr * 0.3, q.y - rr * 0.35 + Math.sin(b) * rr * 0.12, rr * 0.22); } c.fillStyle = '#e9d8a6'; circ(c, q.x, q.y - rr * 0.35, rr * 0.14); }
   }
   /* a few rocks on the bank, near side */
   for (const [a, sz] of [[1.25, 1.2], [1.5, 0.8], [1.05, 0.6], [4.6, 0.7]]){
@@ -157,9 +157,9 @@ export function worldPond(c, W, H, lane, rel, t, L, r = 0.6){
   /* reeds and bulrushes at the far side and the ends */
   for (let k = 0; k < 26; k++){
     const a = 3.3 + hash(k + 1540) * 2.9, q = edge(a, 0.04), h = H * (0.035 + hash(k + 1541) * 0.035) * q.k, sway = Math.sin(t * 1.2 + k) * h * 0.06;
-    c.strokeStyle = k % 3 ? '#4f8f4a' : '#6aa95a'; c.lineWidth = Math.max(1, H * 0.0028 * q.k);
+    c.strokeStyle = k % 3 ? '#6a8c64' : '#80a174'; c.lineWidth = Math.max(1, H * 0.0028 * q.k);
     c.beginPath(); c.moveTo(q.x, q.y); c.quadraticCurveTo(q.x + sway * 0.5, q.y - h * 0.6, q.x + sway, q.y - h); c.stroke();
-    if (k % 4 === 0){ c.fillStyle = '#6b4a2e'; c.beginPath(); c.ellipse(q.x + sway, q.y - h * 0.9, h * 0.05, h * 0.14, 0, 0, 6.2832); c.fill(); }
+    if (k % 4 === 0){ c.fillStyle = '#6e5b49'; c.beginPath(); c.ellipse(q.x + sway, q.y - h * 0.9, h * 0.05, h * 0.14, 0, 0, 6.2832); c.fill(); }
   }
   /* the healing: little lights rising */
   c.fillStyle = 'rgba(210,255,245,.85)';
@@ -179,7 +179,7 @@ export function pondBeauty(c, W, H, lane, rel, t, L, r = 0.6, k = 1){
     g.addColorStop(0, 'rgba(255,250,220,0)'); g.addColorStop(0.6, `rgba(220,255,250,${0.12 * k})`); g.addColorStop(1, 'rgba(220,255,250,0)');
     c.fillStyle = g; c.beginPath(); c.moveTo(x - w * 0.12, ctr.y - H * 0.6); c.lineTo(x + w * 0.12, ctr.y - H * 0.6); c.lineTo(x + w * 0.3, ctr.y); c.lineTo(x - w * 0.3, ctr.y); c.closePath(); c.fill();
   }
-  for (let j = 0; j < 6; j++){ const u = (t * 0.15 + j / 6) % 1; glow(c, ctr.x + (hash(j + 1600) - 0.5) * w * 1.6, ctr.y - u * H * 0.18 * ctr.k, w * (0.25 + u * 0.3), '#e8fbff', 0.12 * k * (1 - u)); }
+  for (let j = 0; j < 6; j++){ const u = (t * 0.15 + j / 6) % 1; glow(c, ctr.x + (hash(j + 1600) - 0.5) * w * 1.6, ctr.y - u * H * 0.18 * ctr.k, w * (0.25 + u * 0.3), '#eef7f6', 0.12 * k * (1 - u)); }
   c.fillStyle = `rgba(200,255,250,${0.9 * k})`;
   for (let j = 0; j < 16; j++){ const u = (t * 0.3 + hash(j + 1700)) % 1; circ(c, ctr.x + (hash(j + 1701) - 0.5) * w * 1.8 + Math.sin(u * 6 + j) * w * 0.05, ctr.y - u * H * 0.3 * ctr.k, H * 0.003 * (1 - u) + 0.6); }
   c.restore();
@@ -209,10 +209,10 @@ export function worldLake(c, W, H, rel, t, L, len = LAKE){
   const far = P(0, farAt(0), W, H), near = P(0, nearAt(0), W, H);
   /* the damp bank, then the water: the sky in it at the far side, deeper near */
   /* (a soft, pale margin - wet sand and moss - not a hard dark edge) */
-  c.fillStyle = mix(L.ground[0], '#cfe8d0', 0.35); band(0.022); c.fill();
-  c.fillStyle = mix(L.water, '#bfeee8', 0.55); band(0.008); c.fill();
+  c.fillStyle = mix(L.ground[0], '#d7e4d4', 0.35); band(0.022); c.fill();
+  c.fillStyle = mix(L.water, '#cde5e0', 0.55); band(0.008); c.fill();
   const g = c.createLinearGradient(0, far.y, 0, Math.max(far.y + 1, Math.min(near.y, H)));
-  g.addColorStop(0, mix(L.sky[2], L.water, 0.4)); g.addColorStop(0.35, mix(L.water, '#1f7489', 0.45)); g.addColorStop(1, '#174f63');
+  g.addColorStop(0, mix(L.sky[2], L.water, 0.4)); g.addColorStop(0.35, mix(L.water, '#48747d', 0.45)); g.addColorStop(1, '#3b5860');
   c.fillStyle = g; band(0); c.fill();
   c.save(); band(0); c.clip();
   /* looking into it: the bed, down through the water - pale sand in the
@@ -239,7 +239,7 @@ export function worldLake(c, W, H, rel, t, L, len = LAKE){
     c.stroke();
   }
   /* the healing light under the surface, round the path */
-  glow(c, far.x, (far.y + near.y) / 2, Math.min(W * 0.35, (near.y - far.y) * 1.4 + W * 0.08), '#7ff3e0', 0.16 + 0.04 * Math.sin(t * 1.5));
+  glow(c, far.x, (far.y + near.y) / 2, Math.min(W * 0.35, (near.y - far.y) * 1.4 + W * 0.08), '#a0ddd1', 0.16 + 0.04 * Math.sin(t * 1.5));
   /* long glints of sky, drifting */
   for (let k = 0; k < 14; k++){
     const q = P((hash(k + 1520) - 0.5) * 7, n0 + len * (0.15 + 0.7 * hash(k + 1522)), W, H), w = W * 0.05 * q.k * (0.5 + hash(k + 1521));
@@ -273,9 +273,9 @@ export function worldLake(c, W, H, rel, t, L, len = LAKE){
   for (let k = 0; k < 16; k++){
     const ln = (hash(k + 1550) - 0.5) * 12; if (Math.abs(ln) < 1.4) continue;
     const q = P(ln, n0 + len * (0.2 + 0.6 * hash(k + 1551)), W, H), rr = H * 0.02 * q.k;
-    c.fillStyle = '#3f9a55'; c.beginPath(); c.ellipse(q.x, q.y, rr * 1.6, rr * 0.55, 0, 0.35, 6.2832 - 0.35); c.lineTo(q.x, q.y); c.closePath(); c.fill();
-    c.fillStyle = '#5cb96c'; c.beginPath(); c.ellipse(q.x - rr * 0.3, q.y - rr * 0.1, rr * 0.7, rr * 0.22, 0, 0, 6.2832); c.fill();
-    if (k % 3 === 0){ glow(c, q.x, q.y - rr * 0.35, rr * 2.4, '#ffb6f0', 0.55 + 0.25 * Math.sin(t * 2 + k)); c.fillStyle = '#ffb6d9'; for (let j = 0; j < 5; j++){ const b = j / 5 * 6.2832; circ(c, q.x + Math.cos(b) * rr * 0.3, q.y - rr * 0.35 + Math.sin(b) * rr * 0.12, rr * 0.22); } c.fillStyle = '#ffe28a'; circ(c, q.x, q.y - rr * 0.35, rr * 0.14); }
+    c.fillStyle = '#62926a'; c.beginPath(); c.ellipse(q.x, q.y, rr * 1.6, rr * 0.55, 0, 0.35, 6.2832 - 0.35); c.lineTo(q.x, q.y); c.closePath(); c.fill();
+    c.fillStyle = '#7cad81'; c.beginPath(); c.ellipse(q.x - rr * 0.3, q.y - rr * 0.1, rr * 0.7, rr * 0.22, 0, 0, 6.2832); c.fill();
+    if (k % 3 === 0){ glow(c, q.x, q.y - rr * 0.35, rr * 2.4, '#f1c8e5', 0.55 + 0.25 * Math.sin(t * 2 + k)); c.fillStyle = '#f1c8d9'; for (let j = 0; j < 5; j++){ const b = j / 5 * 6.2832; circ(c, q.x + Math.cos(b) * rr * 0.3, q.y - rr * 0.35 + Math.sin(b) * rr * 0.12, rr * 0.22); } c.fillStyle = '#e9d8a6'; circ(c, q.x, q.y - rr * 0.35, rr * 0.14); }
   }
   /* reeds and bulrushes along both shores, leaving the path's way in and out */
   for (let k = 0; k < 70; k++){
@@ -284,10 +284,10 @@ export function worldLake(c, W, H, rel, t, L, len = LAKE){
     if (q.x < -50 || q.x > W + 50) continue;
     const h = H * (0.04 + hash(k + 1561) * 0.04) * q.k, sway = Math.sin(t * 1.2 + k) * h * 0.06;
     for (let j = -1; j <= 1; j++){
-      c.strokeStyle = (k + j) % 3 ? '#4f8f4a' : '#6aa95a'; c.lineWidth = Math.max(1, H * 0.003 * q.k);
+      c.strokeStyle = (k + j) % 3 ? '#6a8c64' : '#80a174'; c.lineWidth = Math.max(1, H * 0.003 * q.k);
       c.beginPath(); c.moveTo(q.x + j * h * 0.12, q.y); c.quadraticCurveTo(q.x + j * h * 0.15 + sway * 0.5, q.y - h * 0.6, q.x + j * h * 0.25 + sway, q.y - h * (1 - Math.abs(j) * 0.2)); c.stroke();
     }
-    if (k % 4 === 0){ c.fillStyle = '#6b4a2e'; c.beginPath(); c.ellipse(q.x + sway, q.y - h * 0.9, h * 0.05, h * 0.14, 0, 0, 6.2832); c.fill(); }
+    if (k % 4 === 0){ c.fillStyle = '#6e5b49'; c.beginPath(); c.ellipse(q.x + sway, q.y - h * 0.9, h * 0.05, h * 0.14, 0, 0, 6.2832); c.fill(); }
   }
 }
 
@@ -298,7 +298,7 @@ export function worldLakeAhead(c, W, H, n0, t){
   const k = Math.max(0, Math.min(1, (3.2 - n0) / 2.2)); if (k <= 0) return;
   const q = P(0, 1, W, H), w = W * 0.6;
   c.save();
-  glow(c, q.x, q.y, w * 0.55, '#bff8ff', 0.7 * k * (0.85 + 0.15 * Math.sin(t * 2)));
+  glow(c, q.x, q.y, w * 0.55, '#d0eeef', 0.7 * k * (0.85 + 0.15 * Math.sin(t * 2)));
   /* a bright line of water, right along the land's edge */
   c.fillStyle = `rgba(190,250,255,${0.75 * k})`; c.beginPath(); c.ellipse(q.x, q.y + H * 0.004, w * 0.5, H * 0.006, 0, 0, 6.2832); c.fill();
   c.fillStyle = `rgba(220,255,255,${0.55 * k})`;
@@ -311,20 +311,20 @@ export function worldLakeAhead(c, W, H, n0, t){
 export function wading(c, x, y, size, t, k = 1){
   for (let j = 0; j < 2; j++) healRipple(c, x, y, size * 0.9, (t * 0.6 + j * 0.5) % 1);
   c.save();
-  for (let j = 0; j < 7; j++){ const u = (t * 0.35 + j / 7) % 1; glow(c, x + Math.sin(u * 7 + j * 2) * size * 0.25, y - u * size * 1.2, size * 0.06, '#9ff6ff', 0.8 * k * (1 - u)); }
+  for (let j = 0; j < 7; j++){ const u = (t * 0.35 + j / 7) % 1; glow(c, x + Math.sin(u * 7 + j * 2) * size * 0.25, y - u * size * 1.2, size * 0.06, '#b9e7e9', 0.8 * k * (1 - u)); }
   c.restore();
 }
 
 /* Healing, shown: a ripple ring spreading from where someone stands in the
    water (age 0..1), and a "+n" floating up off them. Reusable for the
    springs. */
-export function healRipple(c, x, y, size, age, col = '#9ff6ff'){
+export function healRipple(c, x, y, size, age, col = '#b9e7e9'){
   c.save(); c.globalAlpha = Math.max(0, 1 - age); c.strokeStyle = col; c.lineWidth = Math.max(1.5, size * 0.03);
   c.beginPath(); c.ellipse(x, y, size * (0.3 + age), size * (0.08 + age * 0.25), 0, 0, 6.2832); c.stroke(); c.restore();
 }
 export function healNumber(c, x, y, size, age, text){
   c.save(); c.globalAlpha = Math.max(0, 1 - age); c.font = `700 ${Math.round(size)}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.lineWidth = size * 0.18; c.strokeStyle = '#05303a'; c.strokeText(text, x, y - age * size * 2); c.fillStyle = '#7dffb0'; c.fillText(text, x, y - age * size * 2);
+  c.lineWidth = size * 0.18; c.strokeStyle = '#273d40'; c.strokeText(text, x, y - age * size * 2); c.fillStyle = '#a1e6b8'; c.fillText(text, x, y - age * size * 2);
   c.restore();
 }
 
@@ -341,8 +341,8 @@ export function worldPatch(c, W, H, lane, rel, t, L){
     const [x, y] = at((hash(n + 40) - 0.5) * 560, (hash(n + 41) - 0.5) * 280), r = (5 + hash(n + 42) * 5) * sx;
     for (let j = 0; j < 6; j++){
       const bx = x + (hash(n * 9 + j) - 0.5) * r * 4, by = y + (hash(n * 9 + j + 3) - 0.5) * r * 1.6;
-      c.fillStyle = mix(L.grass[0], '#0c2a22', 0.25); circ(c, bx, by, r);
-      c.fillStyle = mix(L.grass[1], '#e8ffd8', 0.25); circ(c, bx - r * 0.25, by - r * 0.3, r * 0.45);
+      c.fillStyle = mix(L.grass[0], '#30463e', 0.25); circ(c, bx, by, r);
+      c.fillStyle = mix(L.grass[1], '#ebf6de', 0.25); circ(c, bx - r * 0.25, by - r * 0.3, r * 0.45);
     }
   }
   /* grass tufts, a few blades each */
@@ -357,18 +357,18 @@ export function worldPatch(c, W, H, lane, rel, t, L){
   for (let n = 0; n < 7; n++){
     const [x, y] = at((hash(n + 60) - 0.5) * 600, (hash(n + 61) - 0.5) * 300), r = (7 + hash(n + 62) * 12) * sx;
     c.fillStyle = 'rgba(20,15,45,.3)'; c.beginPath(); c.ellipse(x + r * 0.2, y + r * 0.45, r * 1.2, r * 0.45, 0, 0, 6.2832); c.fill();
-    c.fillStyle = '#8f88a8'; c.beginPath(); c.ellipse(x, y, r * 1.15, r * 0.72, hash(n) - 0.5, 0, 6.2832); c.fill();
+    c.fillStyle = '#9d98a6'; c.beginPath(); c.ellipse(x, y, r * 1.15, r * 0.72, hash(n) - 0.5, 0, 6.2832); c.fill();
     c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(x - r * 0.3, y - r * 0.25, r * 0.4, r * 0.2, -0.3, 0, 6.2832); c.fill();
   }
   /* clover: three round leaves */
   for (let n = 0; n < 6; n++){
     const [x, y] = at((hash(n + 80) - 0.5) * 520, (hash(n + 81) - 0.5) * 260), r = (6 + hash(n + 82) * 4) * sx;
-    c.fillStyle = mix(L.grass[1], '#2a6a4a', 0.3);
+    c.fillStyle = mix(L.grass[1], '#4a6b58', 0.3);
     for (let j = 0; j < 3; j++){ const a = j * 2.094 + n; circ(c, x + Math.cos(a) * r, y + Math.sin(a) * r * 0.6, r); }
   }
   /* a fiddlehead, uncurling */
   { const [x, y] = at(150, 40), r = 14 * sx;
-    c.strokeStyle = '#4fa36e'; c.lineWidth = 4 * sx; c.lineCap = 'round';
+    c.strokeStyle = '#6f9b7c'; c.lineWidth = 4 * sx; c.lineCap = 'round';
     c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x - r * 0.4, y - r * 2.5, x + r * 0.6, y - r * 3.2); c.stroke();
     c.beginPath(); c.arc(x + r * 0.6 - r * 0.5, y - r * 3.2, r * 0.5, 0, Math.PI * 1.6); c.stroke(); }
   /* star-flowers */
@@ -376,29 +376,29 @@ export function worldPatch(c, W, H, lane, rel, t, L){
     const [x, y] = at((hash(n + 100) - 0.5) * 580, (hash(n + 101) - 0.5) * 290), r = (5 + hash(n + 102) * 3) * sx;
     c.fillStyle = L.flowers[n % L.flowers.length];
     for (let j = 0; j < 5; j++){ const a = j * 1.2566 + t * 0.2; circ(c, x + Math.cos(a) * r, y + Math.sin(a) * r * 0.7, r * 0.6); }
-    c.fillStyle = '#fff3a8'; circ(c, x, y, r * 0.45);
+    c.fillStyle = '#eee7bc'; circ(c, x, y, r * 0.45);
   }
   /* a scrap of the ship: a bent bit of white panelling, its stripe */
   { const [x, y] = at(-60, 70), w = 46 * sx, h = 20 * sy;
     c.save(); c.translate(x, y); c.rotate(-0.25);
     c.fillStyle = 'rgba(20,15,45,.3)'; c.beginPath(); c.ellipse(4 * sx, h * 0.7, w * 0.6, h * 0.4, 0, 0, 6.2832); c.fill();
-    c.fillStyle = '#e8eaf2'; c.beginPath(); c.moveTo(-w / 2, -h / 2); c.lineTo(w / 2, -h * 0.7); c.lineTo(w * 0.45, h / 2); c.lineTo(-w * 0.55, h * 0.4); c.closePath(); c.fill();
-    c.fillStyle = '#f3c23a'; c.fillRect(-w * 0.52, -h * 0.05, w, h * 0.22);
-    c.fillStyle = '#4aa8f0'; c.fillRect(-w * 0.52, h * 0.17, w, h * 0.1);
+    c.fillStyle = '#ebebed'; c.beginPath(); c.moveTo(-w / 2, -h / 2); c.lineTo(w / 2, -h * 0.7); c.lineTo(w * 0.45, h / 2); c.lineTo(-w * 0.55, h * 0.4); c.closePath(); c.fill();
+    c.fillStyle = '#d2b66b'; c.fillRect(-w * 0.52, -h * 0.05, w, h * 0.22);
+    c.fillStyle = '#79abcf'; c.fillRect(-w * 0.52, h * 0.17, w, h * 0.1);
     c.restore(); }
   /* glowing mushrooms, tiny */
   for (let n = 0; n < 5; n++){
     const [x, y] = at((hash(n + 120) - 0.5) * 480, (hash(n + 121) - 0.5) * 240), r = (6 + hash(n + 122) * 4) * sx;
-    glow(c, x, y - r, r * 4, '#7ff3ff', 0.25 + 0.1 * Math.sin(t * 2 + n));
-    c.fillStyle = '#d8fbff'; c.fillRect(x - r * 0.18, y - r, r * 0.36, r);
-    c.fillStyle = '#7ff3ff'; c.beginPath(); c.arc(x, y - r, r, Math.PI, 0); c.fill();
+    glow(c, x, y - r, r * 4, '#a2dfe3', 0.25 + 0.1 * Math.sin(t * 2 + n));
+    c.fillStyle = '#e2f4f3'; c.fillRect(x - r * 0.18, y - r, r * 0.36, r);
+    c.fillStyle = '#a2dfe3'; c.beginPath(); c.arc(x, y - r, r, Math.PI, 0); c.fill();
   }
   /* a dotbug: a little round red beetle, ambling in a lazy loop */
   { const a = t * 0.35, [x, y] = at(40 + Math.cos(a) * 90, -10 + Math.sin(a) * 40), r = 8 * sx, dir = a + Math.PI / 2;
     c.save(); c.translate(x, y); c.rotate(dir);
-    c.fillStyle = '#2a1a2a'; circ(c, r * 0.95, 0, r * 0.45);
-    c.fillStyle = '#ff5a5a'; c.beginPath(); c.ellipse(0, 0, r, r * 0.8, 0, 0, 6.2832); c.fill();
-    c.fillStyle = '#2a1a2a'; circ(c, -r * 0.3, -r * 0.35, r * 0.18); circ(c, -r * 0.3, r * 0.35, r * 0.18); circ(c, r * 0.3, 0, r * 0.16);
+    c.fillStyle = '#3c3238'; circ(c, r * 0.95, 0, r * 0.45);
+    c.fillStyle = '#e08684'; c.beginPath(); c.ellipse(0, 0, r, r * 0.8, 0, 0, 6.2832); c.fill();
+    c.fillStyle = '#3c3238'; circ(c, -r * 0.3, -r * 0.35, r * 0.18); circ(c, -r * 0.3, r * 0.35, r * 0.18); circ(c, r * 0.3, 0, r * 0.16);
     c.restore(); }
   c.restore();
 }

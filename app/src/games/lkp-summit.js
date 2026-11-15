@@ -43,7 +43,7 @@ export const PLACE = {
   edge: 34,                                               /* the cliff edge, beyond the rocks */
   trees: [[9.5, 27.5, 'pine', 1.1], [11, 31.5, 'round', 1], [19.5, 28, 'pine', 1.2], [20.5, 31, 'round', 0.9], [8.5, 24, 'round', 0.8], [21.5, 25, 'pine', 1],
           [-4, 14, 'round', 1], [-7, 22, 'pine', 1.2], [1, 24, 'round', 0.9], [26, 18, 'pine', 1.3], [28, 24, 'round', 1.1], [30, 14, 'pine', 1], [-10, 6, 'pine', 1.1], [24, 9, 'round', 1]],
-  meadows: [[-3, 5, 4, 2.2, ['#ffc2e6', '#fff4c2']], [11, 22, 3, 1.6, ['#c9f7ff', '#fff4c2']], [22, 12, 3.4, 1.8, ['#ffc2e6', '#ffe39a']]],
+  meadows: [[-3, 5, 4, 2.2, ['#f3d1e2', '#f3eccf']], [11, 22, 3, 1.6, ['#d7eff1', '#f3eccf']], [22, 12, 3.4, 1.8, ['#f3d1e2', '#ecdcb2']]],
   stream: [[12, 28], [10, 23], [6, 19], [2, 14], [-1, 8], [-5, 2], [-9, -6]],
   pond: [-6, 8, 2.6, 1.6],
   furrow: [[-6, 0], [2, 7], [8, 11], [12, 13]]
@@ -167,7 +167,7 @@ export class Summit {
     const edge = []; for (let x = -80; x <= 100; x += 4){ const p = S(x, 0, PLACE.edge); if (p){ p[1] = lerp(HZ, p[1], reveal); edge.push(p); } }
     if (edge.length > 1){
       const top = Math.min(...edge.map(p => p[1])), gg = c.createLinearGradient(0, top, 0, H);
-      gg.addColorStop(0, '#8ccf98'); gg.addColorStop(0.25, L.grass[0]); gg.addColorStop(1, L.ground[2]);
+      gg.addColorStop(0, '#a3c6a6'); gg.addColorStop(0.25, L.grass[0]); gg.addColorStop(1, L.ground[2]);
       c.fillStyle = gg; c.beginPath(); c.moveTo(-10, H + 10); edge.forEach(([x, y]) => c.lineTo(x, y)); c.lineTo(W + 10, H + 10); c.closePath(); c.fill();
       c.strokeStyle = 'rgba(255,245,215,.55)'; c.lineWidth = 3; c.beginPath(); edge.forEach(([x, y], k) => k ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke();
     }
@@ -177,11 +177,11 @@ export class Summit {
     const ribbon = (line, w, fill) => { const Lf = [], Rt = []; line.forEach(([x, z], k) => { const [a, b] = line[Math.min(line.length - 1, k + 1)], [p0, q0] = line[Math.max(0, k - 1)]; const dx = a - p0, dz = b - q0, d = Math.hypot(dx, dz) || 1; Lf.push([x - dz / d * w, z + dx / d * w]); Rt.push([x + dz / d * w, z - dx / d * w]); }); poly([...Lf, ...Rt.reverse()], fill); };
     ribbon(PLACE.furrow, 1.6, 'rgba(110,90,80,.55)');
     for (const [x, z, rx, rz, cols] of PLACE.meadows){
-      ellipse(x, z, rx, rz, '#8ccf8a');
+      ellipse(x, z, rx, rz, '#a2c59e');
       for (let k = 0; k < 40; k++){ const a = hash(k + x) * 6.28, r = Math.sqrt(hash(k + z)), p = S(x + Math.cos(a) * rx * r * 0.9, 0, z + Math.sin(a) * rz * r * 0.9); if (p){ c.fillStyle = cols[k % 2]; c.beginPath(); c.arc(p[0], p[1], Math.max(1, p[2] * 0.06), 0, 6.2832); c.fill(); } }
     }
-    ribbon(PLACE.stream, 0.75, '#e6d6a8'); ribbon(PLACE.stream, 0.45, '#5fe0f0');
-    ellipse(PLACE.pond[0], PLACE.pond[1], PLACE.pond[2] * 1.15, PLACE.pond[3] * 1.15, '#e6d6a8'); ellipse(...PLACE.pond, '#5fe0f0');
+    ribbon(PLACE.stream, 0.75, '#dcd3b7'); ribbon(PLACE.stream, 0.45, '#88cdd3');
+    ellipse(PLACE.pond[0], PLACE.pond[1], PLACE.pond[2] * 1.15, PLACE.pond[3] * 1.15, '#dcd3b7'); ellipse(...PLACE.pond, '#88cdd3');
     /* grass tufts here and there, fixed */
     c.strokeStyle = L.grass[1]; c.lineCap = 'round';
     for (let k = 0; k < 220; k++){ const p = S(-20 + 50 * hash(k + 3), 0, -6 + 40 * hash(k + 4)); if (!p || p[3] > 40) continue; const l = p[2] * 0.25; c.lineWidth = Math.max(1, p[2] * 0.03); c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(p[0] - l * 0.3, p[1] - l); c.moveTo(p[0], p[1]); c.lineTo(p[0] + l * 0.35, p[1] - l * 0.9); c.stroke(); }
@@ -203,7 +203,7 @@ export class Summit {
     c.restore();
     /* the climb's words */
     if (this.phase === 'climb' && this.pt < CLIMB - 1){
-      banner(c, W, H, 'CLIMB!', '#ffd24a', 1.15 + 0.04 * Math.sin(t * 8), H * 0.16);
+      banner(c, W, H, 'CLIMB!', '#dec478', 1.15 + 0.04 * Math.sin(t * 8), H * 0.16);
       c.font = `600 ${H * 0.03}px Fredoka, sans-serif`; c.textAlign = 'center'; c.lineWidth = H * 0.006; c.strokeStyle = 'rgba(20,15,45,.8)';
       c.strokeText('REACH UP - HAND OVER HAND', W / 2, H * 0.25); c.fillStyle = '#fff'; c.fillText('REACH UP - HAND OVER HAND', W / 2, H * 0.25);
     }
@@ -211,7 +211,7 @@ export class Summit {
     if (this.phase === 'look'){ const a = Math.min(1, Math.max(0, (this.pt - TITLE_AT) / 2.5)) * Math.min(1, Math.max(0, (TITLE_END - this.pt) / 1.2)); this._title(c, W, H, a); }
     /* a cut-scene's frame: bars top and bottom, till the climb */
     const bars = this.phase === 'ship' || this.phase === 'core' ? 1 : this.phase === 'walk' ? 1 - smooth(Math.max(0, (this.pt - WALK + 1.2) / 1.2)) : this.phase === 'crest' || this.phase === 'look' ? Math.min(1, this.phase === 'look' ? 1 : this.pt / CREST) : 0;
-    if (bars > 0){ c.fillStyle = '#05060a'; c.fillRect(0, 0, W, H * 0.09 * bars); c.fillRect(0, H * (1 - 0.09 * bars), W, H * 0.09 * bars); }
+    if (bars > 0){ c.fillStyle = '#2e2f35'; c.fillRect(0, 0, W, H * 0.09 * bars); c.fillRect(0, H * (1 - 0.09 * bars), W, H * 0.09 * bars); }
     /* down, onto the trail */
     const slide = this.phase === 'slide' ? smooth(this.pt / SLIDE) : 0;
     if (slide > 0.5){ c.fillStyle = `rgba(255,250,240,${(slide - 0.5) * 2 * 0.9})`; c.fillRect(0, 0, W, H); }
@@ -232,11 +232,11 @@ export class Summit {
       pts.unshift([cx - rw * 0.98, cy]); pts.push([cx + rw * 0.98, cy]);
       const path = () => { c.beginPath(); pts.forEach(([px, py], q) => q ? c.lineTo(px, py) : c.moveTo(px, py)); c.closePath(); };
       /* shadowed: the whole rock */
-      c.fillStyle = '#56507a'; path(); c.fill();
+      c.fillStyle = '#6b677b'; path(); c.fill();
       /* the mid face, and the lit face toward the low sun on the left */
       c.save(); path(); c.clip();
-      c.fillStyle = '#7d76a2'; c.beginPath(); c.moveTo(cx - rw * 1.1, cy); c.lineTo(cx - rw * 1.1, cy - rh * 1.3); c.lineTo(cx + rw * (0.25 + 0.2 * hash(seed + 30)), cy - rh * 1.3); c.lineTo(cx + rw * (0.05 + 0.15 * hash(seed + 31)), cy - rh * 0.35); c.lineTo(cx - rw * 0.2, cy); c.closePath(); c.fill();
-      c.fillStyle = '#a49cc8'; c.beginPath(); c.moveTo(cx - rw * 1.1, cy - rh * 0.25); c.lineTo(cx - rw * 1.1, cy - rh * 1.3); c.lineTo(cx - rw * (0.05 - 0.15 * hash(seed + 32)), cy - rh * 1.3); c.lineTo(cx - rw * 0.35, cy - rh * 0.55); c.closePath(); c.fill();
+      c.fillStyle = '#8f8a9f'; c.beginPath(); c.moveTo(cx - rw * 1.1, cy); c.lineTo(cx - rw * 1.1, cy - rh * 1.3); c.lineTo(cx + rw * (0.25 + 0.2 * hash(seed + 30)), cy - rh * 1.3); c.lineTo(cx + rw * (0.05 + 0.15 * hash(seed + 31)), cy - rh * 0.35); c.lineTo(cx - rw * 0.2, cy); c.closePath(); c.fill();
+      c.fillStyle = '#b1acc1'; c.beginPath(); c.moveTo(cx - rw * 1.1, cy - rh * 0.25); c.lineTo(cx - rw * 1.1, cy - rh * 1.3); c.lineTo(cx - rw * (0.05 - 0.15 * hash(seed + 32)), cy - rh * 1.3); c.lineTo(cx - rw * 0.35, cy - rh * 0.55); c.closePath(); c.fill();
       /* lichen, pale and soft, and a few cracks */
       c.fillStyle = 'rgba(200,220,170,.18)'; for (let q = 0; q < 3; q++){ c.beginPath(); c.ellipse(cx + (hash(seed + q + 40) - 0.5) * rw * 1.2, cy - rh * (0.3 + 0.5 * hash(seed + q + 41)), rw * 0.08, rh * 0.05, 0, 0, 6.2832); c.fill(); }
       c.strokeStyle = 'rgba(30,25,55,.4)'; c.lineWidth = Math.max(1.5, rw * 0.012);
@@ -249,13 +249,13 @@ export class Summit {
     c.fillStyle = 'rgba(20,40,30,.28)'; c.beginPath(); c.ellipse(x + w * 0.08, y, w * 0.62, h * 0.08, 0, 0, 6.2832); c.fill();
     const top = rock(x, y, w * 0.5, h, n * 13);
     /* moss over its top, uneven */
-    c.fillStyle = '#5fa25a'; const tp = top.slice(5, 11);
+    c.fillStyle = '#799c73'; const tp = top.slice(5, 11);
     c.beginPath(); tp.forEach(([px, py], q) => q ? c.lineTo(px, py) : c.moveTo(px, py)); for (let q = tp.length - 1; q >= 0; q--) c.lineTo(tp[q][0], tp[q][1] + h * (0.06 + 0.05 * hash(n + q))); c.closePath(); c.fill();
-    c.fillStyle = '#8fd08a'; c.beginPath(); c.ellipse(x - w * 0.08, y - h * 0.96, w * 0.14, h * 0.025, -0.1, 0, 6.2832); c.fill();
+    c.fillStyle = '#a4c69e'; c.beginPath(); c.ellipse(x - w * 0.08, y - h * 0.96, w * 0.14, h * 0.025, -0.1, 0, 6.2832); c.fill();
     /* a smaller stone leaning on it */
     rock(x + w * (n % 2 ? -0.46 : 0.44), y + h * 0.01, w * 0.2, h * 0.3, n * 13 + 99);
     /* grass tufts round its foot */
-    c.strokeStyle = '#4f9a6a'; c.lineWidth = Math.max(1.5, w * 0.01); c.lineCap = 'round';
+    c.strokeStyle = '#6d9578'; c.lineWidth = Math.max(1.5, w * 0.01); c.lineCap = 'round';
     for (let q = 0; q < 9; q++){ const gx = x - w * 0.6 + w * 1.2 * hash(n * 7 + q), gl = h * (0.05 + 0.06 * hash(q + n)); c.beginPath(); c.moveTo(gx, y + 1); c.lineTo(gx - gl * 0.3, y - gl); c.moveTo(gx, y + 1); c.lineTo(gx + gl * 0.35, y - gl * 0.9); c.stroke(); }
   }
   /* the game's title, over the world: spaced capitals, the level under it */

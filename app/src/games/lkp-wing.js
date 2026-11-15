@@ -168,7 +168,7 @@ export class Wing {
     }
     if (rn.air > 0.25 || rn.safe > 0) return;
     rn.safe = 1; this.bonks++; this.along = Math.max(START - 0.05, this.along - SLIP);
-    g.bits.push({ kind: 'num', x: p.x / W, y: p.y / H - 0.2, vy: -0.08, age: 0, life: 0.9, text: 'BOING!', col: '#ffffff' });
+    g.bits.push({ kind: 'num', x: p.x / W, y: p.y / H - 0.2, vy: -0.08, age: 0, life: 0.9, text: 'BOING!', col: '#fefdfb' });
     g._sparkle(p.x / W, p.y / H - 0.1, 6, 140);
     sfx.boing(1 + i * 0.2);
   }
@@ -212,8 +212,8 @@ export class Wing {
   /* ---------- bits ---------- */
 
   _birds(){ for (let k = 0; k < 14; k++){ const a = START + 0.1 + 0.4 * hash(k); const p = this._surf(a, 0.25); this.birds.push({ x: p.x, y: p.y, vx: 0.15 + 0.25 * hash(k + 3), vy: -0.3 - 0.3 * hash(k + 7), age: 0, ph: hash(k) * 6 }); } }
-  _clods(n){ for (let k = 0; k < n; k++){ const a = 0.2 + 0.75 * Math.random(), p = this._surf(a, 0); const u = p.y + thick(a) * 1.6; this.bits.push({ x: p.x, y: u, vx: (Math.random() - 0.5) * 0.05, vy: 0, fall: 1.2, age: 0, life: 1.5, col: ['#6b5a46', ZUBU.moss[1], '#8a7258'][k % 3], r: 0.006 + Math.random() * 0.01 }); } }
-  _puff(){ const p = this._surf(TIP, 0, MAX); for (let k = 0; k < 24; k++){ const a = Math.random() * Math.PI; this.bits.push({ x: p.x + 0.85, y: -0.02, vx: Math.cos(a) * 0.3, vy: -Math.sin(a) * 0.25, fall: 0.3, age: 0, life: 1.4, col: [ZUBU.bloom, '#fff3d6', ZUBU.moss[0], ZUBU.moss[2]][k % 4], r: 0.008 + Math.random() * 0.008 }); } }
+  _clods(n){ for (let k = 0; k < n; k++){ const a = 0.2 + 0.75 * Math.random(), p = this._surf(a, 0); const u = p.y + thick(a) * 1.6; this.bits.push({ x: p.x, y: u, vx: (Math.random() - 0.5) * 0.05, vy: 0, fall: 1.2, age: 0, life: 1.5, col: ['#72685b', ZUBU.moss[1], '#8c7e6d'][k % 3], r: 0.006 + Math.random() * 0.01 }); } }
+  _puff(){ const p = this._surf(TIP, 0, MAX); for (let k = 0; k < 24; k++){ const a = Math.random() * Math.PI; this.bits.push({ x: p.x + 0.85, y: -0.02, vx: Math.cos(a) * 0.3, vy: -Math.sin(a) * 0.25, fall: 0.3, age: 0, life: 1.4, col: [ZUBU.bloom, '#f7efdd', ZUBU.moss[0], ZUBU.moss[2]][k % 4], r: 0.008 + Math.random() * 0.008 }); } }
   _dust(){ for (let k = 0; k < 40; k++){ const a = 0.1 + 0.9 * Math.random(), p = this._surf(a, 0); this.bits.push({ x: p.x, y: -0.02, vx: (Math.random() - 0.5) * 0.4, vy: -0.05 - Math.random() * 0.2, fall: 0.05, age: 0, life: 2.5, col: 'rgba(230,220,240,.7)', r: 0.03 + Math.random() * 0.04 }); } }
 
   /* ---------- drawing ---------- */
@@ -244,7 +244,7 @@ export class Wing {
       const p = S(this._surf(TIP, 0, MAX).x + 0.85, 0);
       c.fillStyle = ZUBU.moss[1]; c.beginPath(); c.ellipse(p.x, p.y, z * 0.32, z * 0.07, 0, Math.PI, TAU); c.fill();
       c.fillStyle = ZUBU.moss[0]; c.beginPath(); c.ellipse(p.x - z * 0.03, p.y - z * 0.01, z * 0.26, z * 0.055, 0, Math.PI, TAU); c.fill();
-      for (let k = 0; k < 7; k++){ c.fillStyle = [ZUBU.bloom, '#fff3d6', '#ffe39a'][k % 3]; c.beginPath(); c.arc(p.x + (k - 3) * z * 0.07, p.y - z * 0.03 - (k % 2) * z * 0.015, z * 0.008, 0, TAU); c.fill(); }
+      for (let k = 0; k < 7; k++){ c.fillStyle = [ZUBU.bloom, '#f7efdd', '#ecdcb2'][k % 3]; c.beginPath(); c.arc(p.x + (k - 3) * z * 0.07, p.y - z * 0.03 - (k % 2) * z * 0.015, z * 0.008, 0, TAU); c.fill(); }
     }
     /* the crew */
     const order = g.here.slice();
@@ -263,7 +263,7 @@ export class Wing {
       const fs = Math.round(H * (0.04 + 0.015 * ph));
       c.font = `700 ${fs}px Fredoka, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
       c.lineWidth = fs * 0.18; c.strokeStyle = 'rgba(40,40,80,.55)'; c.strokeText(word, at.x, at.y - ph * H * 0.06);
-      c.fillStyle = '#ffffff'; c.fillText(word, at.x, at.y - ph * H * 0.06); c.restore();
+      c.fillStyle = '#fefdfb'; c.fillText(word, at.x, at.y - ph * H * 0.06); c.restore();
     }
     c.restore();
     if (this.fade < 1){ c.fillStyle = `rgba(0,0,0,${1 - this.fade})`; c.fillRect(0, 0, W, H); }
@@ -304,7 +304,7 @@ export class Wing {
     c.beginPath(); c.moveTo(pts[0].x, pts[0].y);
     for (let k = 1; k < pts.length; k++){ const a = pts[k - 1], b = pts[k]; c.quadraticCurveTo(a.x, a.y, (a.x + b.x) / 2, (a.y + b.y) / 2); }
     c.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y); c.closePath();
-    const bg = c.createLinearGradient(0, S(0, -1.9).y, 0, S(0, 0).y); bg.addColorStop(0, '#f5b79a'); bg.addColorStop(1, ZUBU.deep);
+    const bg = c.createLinearGradient(0, S(0, -1.9).y, 0, S(0, 0).y); bg.addColorStop(0, '#e5c2b0'); bg.addColorStop(1, ZUBU.deep);
     c.fillStyle = bg; c.fill(); c.strokeStyle = ZUBU.line; c.lineWidth = Math.max(2, z * 0.01); c.stroke();
     const top = S(-2.6, -1.86); garden(c, top.x, top.y, z * 1.3, z * 0.16, z * 0.9, this.t, 0.3);
   }
@@ -326,7 +326,7 @@ export class Wing {
     c.fillStyle = ZUBU.fin;
     for (let k = 0; k < 4; k++){ const y = -thick(1) * z + k * z * 0.03; c.beginPath(); c.ellipse(LW * z + z * 0.03, y, z * 0.06, z * 0.016, 0.2, 0, TAU); c.fill(); }
     /* the hill over it: earth and moss, grown thick on her - dark down its side, lit along its crest */
-    const mg = c.createLinearGradient(0, -0.45 * z, 0, 0); mg.addColorStop(0, '#8fd08a'); mg.addColorStop(0.35, L.ground[0]); mg.addColorStop(1, L.ground[2]);
+    const mg = c.createLinearGradient(0, -0.45 * z, 0, 0); mg.addColorStop(0, '#a4c69e'); mg.addColorStop(0.35, L.ground[0]); mg.addColorStop(1, L.ground[2]);
     c.fillStyle = mg; c.beginPath(); c.moveTo(0, -0.02 * z);
     for (const [x, y] of top) c.lineTo(x, y);
     c.lineTo(LW * z * 1.01, -0.02 * z); c.closePath(); c.fill();
@@ -335,13 +335,13 @@ export class Wing {
     for (let k = 0; k < 36; k++){ const x = (k + 0.5) / 36 * LW * z; c.beginPath(); c.ellipse(x, -0.02 * z, z * 0.05, z * (0.015 + 0.012 * hash(k + 60)), 0, 0, Math.PI); c.fill(); }
     c.strokeStyle = 'rgba(255,240,215,.55)'; c.lineWidth = Math.max(1, z * 0.004); c.beginPath(); top.forEach(([x, y], k) => k ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke();
     /* roots and moss hanging off its edge, swaying as it lifts */
-    c.strokeStyle = '#5c7a4a'; c.lineWidth = Math.max(1, z * 0.003);
+    c.strokeStyle = '#6e7d60'; c.lineWidth = Math.max(1, z * 0.003);
     for (let k = 0; k < 30; k++){ const a = 0.1 + 0.85 * hash(k + 40), x = a * LW * z, y = bot[Math.round(a * N)][1], l = z * (0.03 + 0.06 * hash(k)) * Math.min(1, (this.angle - REST) * 8 + 0.2); c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + Math.sin(this.t * 2 + k) * z * 0.01, y + l * 0.5, x + Math.sin(this.t * 1.5 + k) * z * 0.02, y + l); c.stroke(); }
     /* boulders and trees growing on it (leaning with it as it tips) */
     for (let k = 0; k < 22; k++){
       const a = 0.04 + 0.92 * (k / 21) + (hash(k + 5) - 0.5) * 0.03, x = a * LW * z, y = -thick(a) * z + z * 0.012;
       /* (a gap along the path, where they are) */
-      if (k % 3 === 2){ c.fillStyle = '#8f88a8'; c.beginPath(); c.ellipse(x, y - z * 0.02, z * 0.04, z * 0.028, 0, 0, TAU); c.fill(); c.fillStyle = ZUBU.moss[0]; c.beginPath(); c.ellipse(x - z * 0.005, y - z * 0.042, z * 0.028, z * 0.01, 0, 0, TAU); c.fill(); continue; }
+      if (k % 3 === 2){ c.fillStyle = '#9d98a6'; c.beginPath(); c.ellipse(x, y - z * 0.02, z * 0.04, z * 0.028, 0, 0, TAU); c.fill(); c.fillStyle = ZUBU.moss[0]; c.beginPath(); c.ellipse(x - z * 0.005, y - z * 0.042, z * 0.028, z * 0.01, 0, 0, TAU); c.fill(); continue; }
       c.save(); c.translate(x, y); c.rotate(Math.sin(this.t * 3 + k) * 0.03 * (this.shake + this.lurch));
       treeKind(c, 0, 0, z * 0.0003 * (0.8 + 0.5 * hash(k + 11)), ['pine', 'round', 'blossom', 'umbrella'][k % 4], L, 0.15, 200 + k);
       c.restore();
@@ -357,22 +357,22 @@ export class Wing {
     c.save(); c.translate(x, y);
     if (th.kind === 'log'){
       const r = z * 0.035; c.rotate(-th.spin);
-      c.fillStyle = '#e6c48e'; c.beginPath(); c.arc(0, -r, r, 0, TAU); c.fill();
-      c.strokeStyle = '#7a5236'; c.lineWidth = Math.max(2, r * 0.25); c.stroke();
-      c.strokeStyle = '#a07a4e'; c.lineWidth = Math.max(1, r * 0.08); c.beginPath(); c.arc(0, -r, r * 0.55, 0, TAU); c.stroke(); c.beginPath(); c.moveTo(0, -r); c.lineTo(r * 0.8, -r); c.stroke();
+      c.fillStyle = '#d8c4a5'; c.beginPath(); c.arc(0, -r, r, 0, TAU); c.fill();
+      c.strokeStyle = '#7a6352'; c.lineWidth = Math.max(2, r * 0.25); c.stroke();
+      c.strokeStyle = '#9a846a'; c.lineWidth = Math.max(1, r * 0.08); c.beginPath(); c.arc(0, -r, r * 0.55, 0, TAU); c.stroke(); c.beginPath(); c.moveTo(0, -r); c.lineTo(r * 0.8, -r); c.stroke();
     } else if (th.kind === 'rock'){
       const r = z * 0.04; c.rotate(-th.spin * 0.5);
-      c.fillStyle = '#8f8ab8'; c.beginPath(); c.ellipse(0, -r, r * 1.1, r, 0, 0, TAU); c.fill();
-      c.fillStyle = '#b3aed8'; c.beginPath(); c.ellipse(-r * 0.3, -r * 1.3, r * 0.5, r * 0.35, -0.4, 0, TAU); c.fill();
+      c.fillStyle = '#a09cb2'; c.beginPath(); c.ellipse(0, -r, r * 1.1, r, 0, 0, TAU); c.fill();
+      c.fillStyle = '#bfbcd0'; c.beginPath(); c.ellipse(-r * 0.3, -r * 1.3, r * 0.5, r * 0.35, -0.4, 0, TAU); c.fill();
       c.fillStyle = ZUBU.moss[1]; c.beginPath(); c.ellipse(r * 0.2, -r * 1.8, r * 0.6, r * 0.28, 0.3, 0, TAU); c.fill();
     } else if (th.kind === 'fruit'){
       const r = z * 0.03; c.rotate(-th.spin * 0.4);
-      c.fillStyle = '#ff9a6a'; c.beginPath(); c.arc(0, -r, r, 0, TAU); c.fill();
-      c.fillStyle = '#d0506a'; c.beginPath(); c.arc(r * 0.2, -r * 0.8, r * 0.75, 0, TAU); c.fill();
+      c.fillStyle = '#e3ac8f'; c.beginPath(); c.arc(0, -r, r, 0, TAU); c.fill();
+      c.fillStyle = '#bd7682'; c.beginPath(); c.arc(r * 0.2, -r * 0.8, r * 0.75, 0, TAU); c.fill();
       c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.arc(-r * 0.35, -r * 1.4, r * 0.18, 0, TAU); c.fill();
       c.fillStyle = ZUBU.moss[0]; c.beginPath(); c.ellipse(r * 0.25, -r * 2.05, r * 0.4, r * 0.18, 0.5, 0, TAU); c.fill();
     } else {
-      glow(c, 0, -z * 0.04, z * 0.06, '#bff4ff', 0.7);
+      glow(c, 0, -z * 0.04, z * 0.06, '#d0ebef', 0.7);
       drawCrystal(c, 0, -z * 0.025, z * 0.035, this.t + th.n);
     }
     c.restore();
@@ -380,9 +380,9 @@ export class Wing {
 
   /* The words. */
   marks(c, W, H){
-    if (this.phase === 'in' && this.pt > 4.2) banner(c, W, H, 'WHOA...!', '#ffe39a', 1 + 0.03 * Math.sin(this.t * 5));
-    if (this.phase === 'climb' && this.pt < 4) banner(c, W, H, 'RUN UP!', '#ffd24a', 1.1 + 0.05 * Math.sin(this.t * 8));
-    if (this.phase === 'edge') banner(c, W, H, 'JUMP!', '#ffd24a', 1.1 + 0.06 * Math.sin(this.t * 10));
-    if (this.phase === 'leap' && this.landed) banner(c, W, H, 'FLUMP!', '#ffffff', 1);
+    if (this.phase === 'in' && this.pt > 4.2) banner(c, W, H, 'WHOA...!', '#ecdcb2', 1 + 0.03 * Math.sin(this.t * 5));
+    if (this.phase === 'climb' && this.pt < 4) banner(c, W, H, 'RUN UP!', '#dec478', 1.1 + 0.05 * Math.sin(this.t * 8));
+    if (this.phase === 'edge') banner(c, W, H, 'JUMP!', '#dec478', 1.1 + 0.06 * Math.sin(this.t * 10));
+    if (this.phase === 'leap' && this.landed) banner(c, W, H, 'FLUMP!', '#fefdfb', 1);
   }
 }

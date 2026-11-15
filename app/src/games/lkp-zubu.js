@@ -12,7 +12,7 @@
      behind, hovering over the path at (x, y), size s; riders sit in its
      garden at y - s * 0.93. */
 
-export const ZUBU = { body: '#f0a98a', fin: '#e8907a', deep: '#d77a68', belly: '#fff2e2', line: '#5a2c30', moss: ['#7ec06e', '#5fa25a', '#9bd486'], bloom: '#f2a6bf', bloomD: '#c8708e', trunk: '#7a5236' };
+export const ZUBU = { body: '#deb7a4', fin: '#d6a597', deep: '#c69387', belly: '#f9f1e6', line: '#614747', moss: ['#93b587', '#799c73', '#abc89c'], bloom: '#e5bac6', bloomD: '#bd8c9a', trunk: '#7a6352' };
 const TAU = Math.PI * 2;
 
 /* A smooth closed (or open) curve through points. */
@@ -47,12 +47,12 @@ function freckles(c, pts, r){
   }
 }
 function blush(c, x, y, r){ const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, 'rgba(255,120,130,.45)'); g.addColorStop(1, 'rgba(255,120,130,0)'); c.fillStyle = g; c.beginPath(); c.ellipse(x, y, r, r * 0.65, 0, 0, TAU); c.fill(); }
-function flower(c, x, y, r, col){ c.fillStyle = col; for (let j = 0; j < 5; j++){ const a = j / 5 * TAU - 1.57; c.beginPath(); c.ellipse(x + Math.cos(a) * r * 0.6, y + Math.sin(a) * r * 0.6, r * 0.55, r * 0.38, a, 0, TAU); c.fill(); } c.fillStyle = '#ffd75a'; c.beginPath(); c.arc(x, y, r * 0.35, 0, TAU); c.fill(); }
+function flower(c, x, y, r, col){ c.fillStyle = col; for (let j = 0; j < 5; j++){ const a = j / 5 * TAU - 1.57; c.beginPath(); c.ellipse(x + Math.cos(a) * r * 0.6, y + Math.sin(a) * r * 0.6, r * 0.55, r * 0.38, a, 0, TAU); c.fill(); } c.fillStyle = '#e0ca84'; c.beginPath(); c.arc(x, y, r * 0.35, 0, TAU); c.fill(); }
 /* An open eye: dark and glossy, two highlights. */
 function eye(c, x, y, r, look = 0){
-  c.fillStyle = '#fffaf2'; c.beginPath(); c.ellipse(x, y, r * 1.08, r * 1.12, 0, 0, TAU); c.fill();
-  c.fillStyle = '#3a1a20'; c.beginPath(); c.arc(x + look * r * 0.15, y + r * 0.1, r * 0.85, 0, TAU); c.fill();
-  c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(x - r * 0.3, y - r * 0.3, r * 0.28, r * 0.22, -0.5, 0, TAU); c.fill();
+  c.fillStyle = '#fcf8f1'; c.beginPath(); c.ellipse(x, y, r * 1.08, r * 1.12, 0, 0, TAU); c.fill();
+  c.fillStyle = '#473535'; c.beginPath(); c.arc(x + look * r * 0.15, y + r * 0.1, r * 0.85, 0, TAU); c.fill();
+  c.fillStyle = '#fefdfb'; c.beginPath(); c.ellipse(x - r * 0.3, y - r * 0.3, r * 0.28, r * 0.22, -0.5, 0, TAU); c.fill();
   c.beginPath(); c.arc(x + r * 0.3, y + r * 0.35, r * 0.11, 0, TAU); c.fill();
   c.strokeStyle = ZUBU.line; c.lineWidth = Math.max(1.5, r * 0.14); c.lineCap = 'round'; c.beginPath(); c.ellipse(x, y, r * 1.08, r * 1.12, 0, 1.1 * Math.PI, 1.9 * Math.PI); c.stroke();
 }
@@ -65,12 +65,12 @@ export function garden(c, cx, cy, rx, ry, s, t = 0, tree = 0.3){
   const pts = []; for (let k = 0; k < 18; k++){ const a = k / 18 * TAU; pts.push([cx + Math.cos(a) * rx * (1 + 0.05 * Math.sin(k * 3)), cy + Math.sin(a) * ry * (1 + 0.1 * Math.sin(k * 2))]); }
   path(c, pts); c.fillStyle = ZUBU.moss[0]; c.fill();
   c.save(); path(c, pts); c.clip(); const g = c.createLinearGradient(0, cy - ry, 0, cy + ry); g.addColorStop(0, 'rgba(220,255,200,.45)'); g.addColorStop(1, 'rgba(30,70,30,.35)'); c.fillStyle = g; c.fillRect(cx - rx, cy - ry, rx * 2, ry * 2); c.restore();
-  path(c, pts); c.strokeStyle = '#2f5a32'; c.lineWidth = Math.max(1, s * 0.008); c.stroke();
+  path(c, pts); c.strokeStyle = '#4b6149'; c.lineWidth = Math.max(1, s * 0.008); c.stroke();
   /* tufts round the top edge */
   c.lineCap = 'round';
   for (let k = 0; k < 22; k++){ const a = Math.PI + k / 21 * Math.PI, x = cx + Math.cos(a) * rx * 0.97, y = cy + Math.sin(a) * ry * 0.97, l = s * (0.025 + 0.012 * ((k * 7) % 3)); c.strokeStyle = ZUBU.moss[k % 3]; c.lineWidth = Math.max(1, s * 0.008); c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + l * 0.3, y - l * 0.6, x + l * 0.15 + Math.sin(t * 1.5 + k) * l * 0.15, y - l); c.stroke(); }
   /* flowers */
-  for (let k = 0; k < 14; k++){ const a = (k * 2.4) % TAU, d = 0.25 + ((k * 37) % 10) / 14; flower(c, cx + Math.cos(a) * rx * d * 0.85, cy + Math.sin(a) * ry * d * 0.6 - ry * 0.15, s * (0.012 + ((k * 13) % 5) * 0.002), ['#ffc4d8', '#fff3d6', '#ffe39a', '#d8c8ff'][k % 4]); }
+  for (let k = 0; k < 14; k++){ const a = (k * 2.4) % TAU, d = 0.25 + ((k * 37) % 10) / 14; flower(c, cx + Math.cos(a) * rx * d * 0.85, cy + Math.sin(a) * ry * d * 0.6 - ry * 0.15, s * (0.012 + ((k * 13) % 5) * 0.002), ['#f3d2db', '#f7efdd', '#ecdcb2', '#dfd5f1'][k % 4]); }
   /* the blossom tree */
   if (tree != null){
     const tx = cx + rx * tree, ty = cy - ry * 0.3, sway = Math.sin(t * 0.9) * s * 0.006;
@@ -104,7 +104,7 @@ export function drawZubuWall(c, W, H, light, t){
   const side = [[-0.05 * W, 0.55 * H], [0.25 * W, 0.04 * H - breathe], [0.62 * W, 0.12 * H - breathe], [0.9 * W, 0.26 * H - breathe], [1.05 * W, 0.36 * H], [1.05 * W, 0.8 * H], [-0.05 * W, 0.8 * H]];
   /* her side is further back and in her own shade - a deeper tone - so her head stands out in front of it;
      and the low sun catches her back's top edge, so her shape reads against the sky */
-  form(c, side, '#cf8670', H, 0.25);
+  form(c, side, '#c2998b', H, 0.25);
   rim(c, side.slice(0, 5), H);
   freckles(c, [[0.45, 0.14], [0.58, 0.16], [0.7, 0.2], [0.82, 0.27], [0.52, 0.28], [0.66, 0.32], [0.88, 0.38]].map(([u, v]) => [u * W, v * H]), H * 0.007);
   const at = { ...WALL, x: (W * EYE[0] + H * WALL.size * 0.4) / W, y: EYE[1] + WALL.size * 0.2, rim: true };
@@ -168,7 +168,7 @@ export function drawZubuAsleep(c, W, H, light, t, at = { x: 0.28, y: 0.6, size: 
   blush(c, x0 - S * 0.3, y0 - S * 0.06, S * 0.08);
   /* its smile - a little open 'o' on red, surprised */
   c.strokeStyle = ZUBU.line; c.lineWidth = S * 0.01; c.lineCap = 'round';
-  if (light === 'red'){ c.fillStyle = '#7a2a3a'; c.beginPath(); c.ellipse(x0 - S * 0.12, y0 + S * 0.05, S * 0.025, S * 0.03, 0, 0, TAU); c.fill(); }
+  if (light === 'red'){ c.fillStyle = '#784c52'; c.beginPath(); c.ellipse(x0 - S * 0.12, y0 + S * 0.05, S * 0.025, S * 0.03, 0, 0, TAU); c.fill(); }
   else { c.beginPath(); c.arc(x0 - S * 0.12, y0 + S * 0.02, S * 0.06, 0.25 * Math.PI, 0.7 * Math.PI); c.stroke(); }
   c.restore();
   /* the snore, drifting up from it: ZZZUUUU... BBBUUUU... (unless it's
@@ -186,7 +186,7 @@ export function zubuSnore(c, H, light, t, x0, y0, S){
     c.font = `700 ${fs}px Fredoka, sans-serif`;
     const tx = x0 + S * (0.12 + ph * 0.1), ty = y0 - S * (0.32 + ph * 0.28);
     c.lineWidth = fs * 0.18; c.strokeStyle = 'rgba(40,40,80,.55)'; c.strokeText(word, tx, ty);
-    c.fillStyle = '#ffffff'; c.fillText(word, tx, ty);
+    c.fillStyle = '#fefdfb'; c.fillText(word, tx, ty);
     c.restore();
   }
 }
@@ -209,12 +209,12 @@ export function drawZubuFar(c, x, y, s, t, haze = 0.55){
   c.fillStyle = col(L.body); path(c, [[x + s * 0.62, y], [x + s * 0.45, y - s * 0.16], [x, y - s * 0.2], [x - s * 0.42, y - s * 0.1], [x - s * 0.58, y + s * 0.02], [x - s * 0.3, y + s * 0.12], [x + s * 0.2, y + s * 0.14], [x + s * 0.55, y + s * 0.08]]); c.fill();
   c.fillStyle = col(L.belly, 0.05); path(c, [[x + s * 0.6, y + s * 0.03], [x + s * 0.2, y + s * 0.13], [x - s * 0.3, y + s * 0.11], [x - s * 0.1, y + s * 0.06], [x + s * 0.3, y + s * 0.05]]); c.fill();
   /* her garden, on her head */
-  c.fillStyle = col('#7ec06e'); c.beginPath(); c.ellipse(x + s * 0.32, y - s * 0.17, s * 0.14, s * 0.045, -0.15, 0, TAU); c.fill();
-  c.fillStyle = col('#f2a6bf'); c.beginPath(); c.arc(x + s * 0.3, y - s * 0.24, s * 0.04, 0, TAU); c.fill();
+  c.fillStyle = col('#93b587'); c.beginPath(); c.ellipse(x + s * 0.32, y - s * 0.17, s * 0.14, s * 0.045, -0.15, 0, TAU); c.fill();
+  c.fillStyle = col('#e5bac6'); c.beginPath(); c.arc(x + s * 0.3, y - s * 0.24, s * 0.04, 0, TAU); c.fill();
   /* the near wing, beating */
   c.fillStyle = col(L.fin); path(c, [[x - s * 0.15, y + s * 0.02], [x - s * 0.05, y + s * (0.15 - 0.55 * flap)], [x + s * 0.22, y + s * (0.12 - 0.5 * flap)], [x + s * 0.25, y + s * 0.03]]); c.fill();
   /* a little eye */
-  c.fillStyle = col('#3a1a20', -0.2); c.beginPath(); c.arc(x + s * 0.5, y - s * 0.04, s * 0.015, 0, TAU); c.fill();
+  c.fillStyle = col('#473535', -0.2); c.beginPath(); c.arc(x + s * 0.5, y - s * 0.04, s * 0.015, 0, TAU); c.fill();
   c.restore();
 }
 /* (a colour, faded toward the sky's haze by k) */
@@ -286,7 +286,7 @@ export function drawOnZubu(c, W, H, t, u, L){
   /* sky jellies, floating by at their height */
   for (let k = 0; k < 4; k++){
     const a = (t * 0.03 + k * 0.27) % 1, x = W * (k % 2 ? 1.1 - 1.3 * a : -0.1 + 1.3 * a), y = H * (0.18 + 0.08 * k) + Math.sin(t * 0.6 + k) * H * 0.01, sz = H * (0.035 + 0.015 * (k % 2));
-    c.fillStyle = mixH(['#d7a6d8', '#a9c4e8', '#c4b4ea'][k % 3], L.haze, 0.3); c.beginPath(); c.ellipse(x, y, sz, sz * 0.62, 0, Math.PI, TAU); c.fill();
+    c.fillStyle = mixH(['#d1b6ce', '#bcc9da', '#cdc3de'][k % 3], L.haze, 0.3); c.beginPath(); c.ellipse(x, y, sz, sz * 0.62, 0, Math.PI, TAU); c.fill();
     c.strokeStyle = c.fillStyle; c.lineWidth = Math.max(1, sz * 0.06);
     for (let j = 0; j < 4; j++){ c.beginPath(); c.moveTo(x + (j / 3 - 0.5) * sz, y); c.quadraticCurveTo(x + (j / 3 - 0.5) * sz + Math.sin(t * 1.2 + j) * sz * 0.2, y + sz * 0.6, x + (j / 3 - 0.5) * sz, y + sz * 1.1); c.stroke(); }
   }
@@ -308,7 +308,7 @@ export function drawOnZubu(c, W, H, t, u, L){
   c.save(); back(); c.clip();
   c.fillStyle = ZUBU.moss[1]; c.beginPath(); c.ellipse(W / 2, H * 1.25, W * 0.75, H * 0.55 - sway, 0, Math.PI, TAU); c.fill();
   c.fillStyle = ZUBU.moss[0]; c.beginPath(); c.ellipse(W * 0.46, H * 1.25, W * 0.6, H * 0.5 - sway, 0, Math.PI, TAU); c.fill();
-  for (let k = 0; k < 70; k++){ const x = W * (0.02 + 0.96 * ((k * 0.618) % 1)), y = ry + sway + H * (0.03 + 0.3 * ((k * 0.382) % 1)), sz = 0.5 + (y - ry) / H * 2; c.strokeStyle = ZUBU.moss[2]; c.lineWidth = H * 0.002 * sz; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.sin(t * 1.5 + k) * H * 0.003 * sz, y - H * 0.012 * sz); c.stroke(); if (k % 5 === 0){ c.fillStyle = ['#ffc4d8', '#fff3d6', '#ffe39a', '#d8c8ff'][(k / 5) % 4]; c.beginPath(); c.arc(x, y - H * 0.012 * sz, H * 0.004 * sz, 0, TAU); c.fill(); } }
+  for (let k = 0; k < 70; k++){ const x = W * (0.02 + 0.96 * ((k * 0.618) % 1)), y = ry + sway + H * (0.03 + 0.3 * ((k * 0.382) % 1)), sz = 0.5 + (y - ry) / H * 2; c.strokeStyle = ZUBU.moss[2]; c.lineWidth = H * 0.002 * sz; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.sin(t * 1.5 + k) * H * 0.003 * sz, y - H * 0.012 * sz); c.stroke(); if (k % 5 === 0){ c.fillStyle = ['#f3d2db', '#f7efdd', '#ecdcb2', '#dfd5f1'][(k / 5) % 4]; c.beginPath(); c.arc(x, y - H * 0.012 * sz, H * 0.004 * sz, 0, TAU); c.fill(); } }
   c.restore();
   /* the wind, streaming past */
   c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = Math.max(1, H * 0.002);
@@ -338,7 +338,7 @@ function landBelow(c, W, H, t, u, L, hz){
     if (a <= 0) continue;
     /* the hill: lit on top, darker below */
     const g = c.createLinearGradient(0, rowY(a) - H * 0.03 * sc, 0, rowY(a) + H * 0.08 * sc);
-    g.addColorStop(0, mixH(j % 2 ? L.grass[0] : '#8fd0a0', L.haze, fog)); g.addColorStop(1, mixH(L.ground[2], L.haze, fog));
+    g.addColorStop(0, mixH(j % 2 ? L.grass[0] : '#a5c7ab', L.haze, fog)); g.addColorStop(1, mixH(L.ground[2], L.haze, fog));
     c.fillStyle = g; c.beginPath(); c.moveTo(0, H);
     for (let x = 0; x <= 32; x++) c.lineTo(W * x / 32, crest(id, a, W * x / 32)); c.lineTo(W, H); c.closePath(); c.fill();
     /* the creek, winding down this hill to the next one */
@@ -355,7 +355,7 @@ function landBelow(c, W, H, t, u, L, hz){
       const mx = W * (0.15 + 0.7 * hashZ(id + 5)), my = rowY(a) + H * 0.02 * sc;
       for (let k = 0; k < 28; k++){
         const dx = (hashZ(id * 7 + k) - 0.5) * W * 0.07 * sc, dy = (hashZ(id * 11 + k) - 0.5) * H * 0.012 * sc, bob = Math.sin(t * 2 + k) * H * 0.001 * sc;
-        c.fillStyle = mixH(k % 3 ? '#6a5fc8' : '#8f84e0', L.haze, fog * 0.8); c.beginPath(); c.ellipse(mx + dx, my + dy + bob, H * 0.005 * sc, H * 0.0035 * sc, 0, 0, TAU); c.fill();
+        c.fillStyle = mixH(k % 3 ? '#8780b6' : '#a69fce', L.haze, fog * 0.8); c.beginPath(); c.ellipse(mx + dx, my + dy + bob, H * 0.005 * sc, H * 0.0035 * sc, 0, 0, TAU); c.fill();
       }
     }
     /* woods: groves packed along the crest - a dark mass, lit round tops - and a few lone trees between */
@@ -378,7 +378,7 @@ function landBelow(c, W, H, t, u, L, hz){
   /* the great legs, far off by the mountains, striding slowly: a long hazy hump of a body over thick legs */
   const gx = W * (0.84 - 0.05 * u), gy = hz + H * 0.006, fogG = 0.62;
   c.fillStyle = 'rgba(40,40,70,.18)'; c.beginPath(); c.ellipse(gx, gy + H * 0.004, H * 0.06, H * 0.006, 0, 0, TAU); c.fill();
-  c.fillStyle = mixH('#3d4a66', L.haze, fogG);
+  c.fillStyle = mixH('#575d69', L.haze, fogG);
   for (const [dx, ph] of [[-0.04, 0], [-0.016, 0.5], [0.014, 0.25], [0.036, 0.75]]){
     const lift = Math.max(0, Math.sin((t / 2.8 + ph) * TAU)) * H * 0.006, lx = gx + dx * H;
     c.beginPath(); c.roundRect(lx - H * 0.006, gy - H * 0.07 - lift, H * 0.012, H * 0.07, H * 0.004); c.fill();
