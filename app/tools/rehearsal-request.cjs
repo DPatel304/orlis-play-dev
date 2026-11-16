@@ -53,7 +53,8 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(35
   const page = await txt(pg, '.createpage');
   check(page.includes('Make a game'), 'Make a game is there');
   check(!page.includes('Dev Kit') && !page.includes('Send a game'), 'no Dev Kit, nothing to send');
-  check(page.includes('None yet'), 'Your requests: none yet');
+  check(page.includes('None yet'), 'Your games: none yet');
+  check(page.includes('3 of 3 left'), 'game slots shown: 3 of 3 left');
   await shot(pg, '01-create');
 
   log('\n2. The wizard, by tapping');

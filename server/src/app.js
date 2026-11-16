@@ -58,6 +58,11 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   /* a note for the owner, by the clock (the cube shows it - supervisor.js) */
   const tell = notify || ((title, text) => console.log(`@@say ${String(title).replace(/[|\n]/g, ' ')}|${String(text).replace(/\n/g, ' ')}`));
   const asked = requests(db, keep, shop, sent, log, tell);
+  /* who sees which game in the Store (db.js, step 9) */
+  const reach = {
+    of: (id) => db.prepare('SELECT 1 FROM reach WHERE game_id = ?').get(id) ? 'family' : 'everyone',
+    canSee: (a, id) => { const r = db.prepare('SELECT household_id FROM reach WHERE game_id = ?').get(id); return !r || r.household_id === a.household_id; }
+  };
   const owners = (who, owner) => [
     ...sent.routes(who, owner, (h, ip) => h['x-orlis-manage'] !== undefined ? owner(h, ip) : who(h)),
     ...asked.routes(who, owner, (h, ip) => h['x-orlis-manage'] !== undefined ? owner(h, ip) : who(h)),
@@ -66,7 +71,23 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
       if (!isLocal(ip)) throw new Fail(404, 'not_found', 'Nothing here.');
       return new Page(managePage());
     }],
-    ...shop.routes(who, owner, log),
+    ...shop.routes(who, owner, log, reach),
+    /* the owner shares a family's game with everyone - or keeps it in the family */
+    ['POST', '/api/store/:id/reach', async ({ headers, params, body, ip }) => {
+      const me = owner(headers, ip);
+      const g = (await shop.games()).find(x => x.id === params.id);
+      if (!g) throw new Fail(404, 'no_game', 'That game isn\'t in the Store.');
+      if (body.everyone === true){
+        db.prepare('DELETE FROM reach WHERE game_id = ?').run(g.id);
+        log.add(me, 'shared', { gameId: g.id, name: g.name, version: g.version, note: g.by ? `by ${g.by}` : null });
+        return { id: g.id, reach: 'everyone' };
+      }
+      const fam = db.prepare("SELECT a.household_id AS h FROM submissions s JOIN accounts a ON a.id = s.account_id WHERE s.game_id = ? AND s.status = 'approved' ORDER BY s.decided_at DESC LIMIT 1").get(g.id);
+      if (!fam || !fam.h) throw new Fail(400, 'not_a_familys', 'Only a game a family made can be kept to that family.');
+      db.prepare('INSERT OR REPLACE INTO reach (game_id, household_id) VALUES (?, ?)').run(g.id, fam.h);
+      log.add(me, 'family-only', { gameId: g.id, name: g.name, version: g.version, note: g.by ? `by ${g.by}` : null });
+      return { id: g.id, reach: 'family' };
+    }],
     /* what happened to the family's games, for the management page */
     ['GET', '/api/history', ({ headers, ip }) => { owner(headers, ip); return { history: log.list(300) }; }],
     /* the owner's page in the app: this server, its backups */

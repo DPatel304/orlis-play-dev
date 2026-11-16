@@ -176,12 +176,16 @@ export function submissions(db, files, shop, log = { add(){} }){
         const maker = q('SELECT role FROM accounts WHERE id = ?').get(r.account_id);
         raw.starter = !!maker && maker.role === 'owner';
         const file = writeOrlis({ 'manifest.json': JSON.stringify(raw, null, 2), 'game.js': parts['game.js'] });
+        /* who it reaches: the owner's games, everyone; anyone else's, their
+           own family - unless it's a new version of one already shared */
+        const shared = (await shop.games()).some(g => g.id === manifest.id) && !q('SELECT 1 FROM reach WHERE game_id = ?').get(manifest.id);
         await shop.add(manifest.id, file);
+        if (!raw.starter && !shared) q('INSERT OR REPLACE INTO reach (game_id, household_id) VALUES (?, (SELECT household_id FROM accounts WHERE id = ?))').run(manifest.id, r.account_id);
         q("UPDATE submissions SET status = 'approved', decided_at = ? WHERE id = ?").run(now(), r.id);
         const sender = q('SELECT email FROM accounts WHERE id = ?').get(r.account_id);
         log.add(me, 'approved', { gameId: r.game_id, name: r.name, version: r.version, note: `made by ${sender ? sender.email : 'someone'}, ${raw.by} · fingerprint ${r.sha256.slice(0, 12)}${raw.starter ? ' · a starter game' : ''}` });
         try { await files.del(fileOf(r.id)); } catch {}
-        return { ok: true, game: { id: manifest.id, name: manifest.name, version: manifest.version, by: raw.by } };
+        return { ok: true, game: { id: manifest.id, name: manifest.name, version: manifest.version, by: raw.by, reach: q('SELECT 1 FROM reach WHERE game_id = ?').get(manifest.id) ? 'family' : 'everyone' } };
       }],
       ['POST', '/api/submissions/:id/decline', async ({ headers, ip, params, body }) => {
         const me = owner(headers, ip);

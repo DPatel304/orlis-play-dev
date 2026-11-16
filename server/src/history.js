@@ -6,7 +6,7 @@
    history(db).add(who, what, { gameId, name, version, note })
      who: the account that did it (or null: the server itself)
    history(db).list(n)  the newest n, newest first */
-export const WHAT = ['sent', 'played', 'approved', 'declined', 'withdrawn', 'removed', 'creator', 'not-creator', 'joined', 'requested', 'making', 'made', 'request-declined', 'devkit-on', 'devkit-off'];
+export const WHAT = ['sent', 'played', 'approved', 'declined', 'withdrawn', 'removed', 'creator', 'not-creator', 'joined', 'requested', 'making', 'made', 'request-declined', 'devkit-on', 'devkit-off', 'shared', 'family-only', 'slots'];
 
 export function history(db){
   const add = (who, what, { gameId = null, name = null, version = null, note = null } = {}) => {

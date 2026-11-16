@@ -231,6 +231,9 @@ function claude(files, prompt){
   await ownerTries();
   const ok1 = await api('POST', `/api/submissions/${subs[0].id}/approve`, null, null, M);
   check(ok1.ok, 'approved: ' + JSON.stringify(ok1.game || ok1.message));
+  check(ok1.game && ok1.game.reach === 'family', 'approved: for his own family, to start with');
+  /* you share it with everyone (the management page's Share with everyone) */
+  check((await api('POST', `/api/store/${ok1.game.id}/reach`, { everyone: true }, null, M)).reach === 'everyone', 'you share it with everyone');
   await restart(bro); await tab(bro, 'Create');
   check(/Approved|In the Store/i.test(await txt(bro, 'body')), 'his Create tab says approved, while he\'s still here');
 
@@ -252,7 +255,8 @@ function claude(files, prompt){
   check(dSub && dSub.state === 'waiting', 'his is waiting for you: ' + JSON.stringify(dSub && [dSub.name, dSub.version, dSub.family]));
   check(!(await outboxOf(dad)).length, 'nothing left on his PC');
   await api('POST', `/api/submissions/${dSub.id}/tried`, { secs: 30 }, owner.token);
-  await api('POST', `/api/submissions/${dSub.id}/approve`, null, null, M);
+  const okD = await api('POST', `/api/submissions/${dSub.id}/approve`, null, null, M);
+  await api('POST', `/api/store/${okD.game.id}/reach`, { everyone: true }, null, M);
   const store = (await api('GET', '/api/store', null, owner.token)).games.filter(g => g.name === 'Firefly Jar');
   check(store.length === 2 && new Set(store.map(g => g.by)).size === 2, 'two Firefly Jars in the Store, one from each family: ' + JSON.stringify(store.map(g => [g.id, g.by])));
 

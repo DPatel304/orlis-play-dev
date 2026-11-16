@@ -349,7 +349,16 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   /* Request a game: the wizard, then back here to see it listed */
   const sendAsk = (recipe) => account.call('POST', '/api/requests', recipe).then((r) => { said = 'Sent!'; return r; });
   const store_ = async () => { try { return (await account.call('GET', '/api/store')).games || []; } catch { return []; } };
-  function askPop(){ sfx.select(); closePop(); requestWizard({ store: store_, send: sendAsk, onDone: () => draw() }); }
+  let slots = null;              /* { used, total } game slots (none for the owner) */
+  function askPop(){
+    sfx.select(); closePop();
+    if (slots && slots.used >= slots.total){
+      const card = popup(h('h2', '', 'No slots left'), h('p', '', `All ${slots.total} game slots are used. Ask the owner for more.`), h('div', 'fbtns'));
+      card.lastChild.append(btn('OK', () => { sfx.select(); closePop(); }, 'go'));
+      return;
+    }
+    requestWizard({ store: store_, send: sendAsk, onDone: () => draw() });
+  }
 
   /* a row, the Store's way: its name, then what's in it */
   const row = (name, sub) => {
@@ -365,12 +374,13 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
        leave it to that one - so overlapping draws never double anything */
     const me = ++drawing;
     const [waiting, sent, asked, ok] = await Promise.all([kit ? outbox.list() : [], kit ? outbox.sent() : [],
-      account.call('GET', '/api/requests').then(r => r.requests || [], () => null),
+      account.call('GET', '/api/requests').then(r => { slots = r.slots || null; return r.requests || []; }, () => null),
       kit && making.available && claudeOk === null ? setup.status().then(claudeConnected) : claudeOk]);
     if (me !== drawing) return;
     if (ok !== null) claudeOk = ok;
     btns.innerHTML = '';
     btns.append(sbtn('<span class="plus">+</span>Make a game', askPop, 'get'));
+    if (slots) btns.append(h('span', 'cslots', `${Math.max(0, slots.total - slots.used)} of ${slots.total} left`));
     if (kit) btns.append(sbtn('Dev Kit', kitPop, 'ghost'));
     if (waiting.length) btns.append(sbtn('Send now', () => { sfx.select(); send(); }, 'ghost'));
     said_.textContent = said;

@@ -266,7 +266,7 @@ export function api(db, info, extra = () => [], manageKey = null){
       owner(headers, ip);
       const hs = q('SELECT id, name, created_at AS createdAt FROM households ORDER BY created_at').all().map(h => ({ ...h }));
       for (const h of hs){
-        h.accounts = q('SELECT id, email, role, devkit, created_at AS createdAt FROM accounts WHERE household_id = ? ORDER BY created_at').all(h.id).map(r => ({ ...r, devkit: r.role === 'owner' || !!r.devkit }));
+        h.accounts = q('SELECT id, email, role, devkit, slots, created_at AS createdAt FROM accounts WHERE household_id = ? ORDER BY created_at').all(h.id).map(r => ({ ...r, devkit: r.role === 'owner' || !!r.devkit }));
         h.profiles = q('SELECT COUNT(*) AS n FROM profiles p JOIN accounts x ON x.id = p.account_id WHERE x.household_id = ?').get(h.id).n;
       }
       return { households: hs.filter(h => h.accounts.length) };
@@ -284,6 +284,17 @@ export function api(db, info, extra = () => [], manageKey = null){
       if (!r.changes) throw new Fail(404, 'no_account', 'No such account.');
       if (before.role !== body.role) history(db).add(me, body.role === 'creator' ? 'creator' : 'not-creator', { note: before.email });
       return { id: params.id, role: body.role };
+    }],
+    /* game slots: how many made-for-them games someone can keep (3 to start) */
+    ['POST', '/api/accounts/:id/slots', ({ headers, params, body, ip }) => {
+      const me = owner(headers, ip);
+      const n = Number(body.slots);
+      if (!Number.isInteger(n) || n < 0 || n > 99) throw new Fail(400, 'bad_slots', 'Slots are a number from 0 to 99.');
+      const before = q('SELECT email, slots FROM accounts WHERE id = ?').get(params.id);
+      if (!before) throw new Fail(404, 'no_account', 'No such account.');
+      q('UPDATE accounts SET slots = ? WHERE id = ?').run(n, params.id);
+      if (before.slots !== n) history(db).add(me, 'slots', { note: `${before.email}: ${before.slots} to ${n}` });
+      return { id: params.id, slots: n };
     }],
     /* the Dev Kit: building games yourself with Claude Code - the owner
        switches it on or off for someone (it's theirs to give) */

@@ -140,6 +140,17 @@ export const STEPS = [
      the owner switches it on for someone (the owner always has it). */
   `
   ALTER TABLE accounts ADD COLUMN devkit INTEGER NOT NULL DEFAULT 0;
+  `,
+  /* 9: making is private; reaching everyone is earned. A game in the Store
+     with a row here is for that one family; with none, for everyone (the
+     owner's games, starter games, and anything shared). And each grown-up's
+     game slots - how many made-for-them games they can keep. */
+  `
+  CREATE TABLE reach (
+    game_id      TEXT PRIMARY KEY,
+    household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE
+  );
+  ALTER TABLE accounts ADD COLUMN slots INTEGER NOT NULL DEFAULT 3;
   `
 ];
 

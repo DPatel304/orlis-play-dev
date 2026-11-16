@@ -85,6 +85,30 @@ What's been decided, so it isn't only in chat. Newest last within each part.
 - **Also:** every page should be less wordy - one short line at most,
   two-or-three-word buttons, explanations behind a "?".
 
+**Paying, and keeping it free of spam** (Nov 16, 2026)
+- **The Dev Kit** (Claude Code) is a one-time unlock. Dev Kit builds don't use
+  slots (their own Claude). Free Dev Kit games are shared free (reviewed).
+- **Premium games** (sold): a submission fee, paid upfront and refunded once
+  the game is played by enough different families for real (not raw play
+  counts, which can be faked). Amount to be decided ($25-50 to start, rather
+  than Steam's $100); creators get a share of each sale.
+- **Making games:** 3 slots to start (a slot is a game you keep; each comes
+  with a few changes); more slots bought by parents, or earned with Creator
+  ranks. Prices once we've measured what a made game really costs in AI.
+- **Making is easy and private; reaching everyone is earned.** A new
+  creator's games are for their own family; the Store for everyone comes with
+  rank (Creator III+: the play-test shelf; Creator V+: the Store, after
+  play-testing and the owner's OK).
+- **The play-test shelf:** new public games are tried by Senior and Super
+  Play-testers first; good reports move a game on to the Store.
+- **Limits that loosen with trust:** a daily pace for Make a game and Change
+  it, a duplicate catcher, and the owner's OK before any AI runs.
+- **Quality decides what's seen:** the Store sorts by how many families played
+  a game through; a creator's best few are shown first; a Report button.
+- **AI misuse:** the word filter, the prompt guard, their words quoted as a
+  description, a check for well-known game and character names, and no
+  recreations of existing games.
+
 ## Creator mode
 
 From the VibeBox concept (worked out together with a friend, who is doing

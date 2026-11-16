@@ -219,6 +219,10 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   const hist = await api('GET', '/api/history', null, null, { 'X-Orlis-Manage': key });
   check(['sent', 'played', 'approved'].every(k => (hist.history || []).some(e => e.what === k || e.action === k || JSON.stringify(e).includes(`"${k}"`))), 'the history shows it sent, played and approved');
 
+  /* you share it with everyone (the management page's Share with everyone) */
+  check(inStore && inStore.reach === 'family', 'approved: for his own family, to start with');
+  check((await api('POST', `/api/store/${inStore.id}/reach`, { everyone: true }, null, { 'X-Orlis-Manage': key })).reach === 'everyone', 'you share it with everyone');
+
   log('\n11. Another family downloads it and plays it');
   const inv2 = await api('POST', '/api/invites', { household: 'new' }, owner.token);
   const cousin = await api('POST', '/api/signup', { email: 'cousin@example.com', password: 'correct horse', name: 'Aunt Mo', adult: true, invite: inv2.code });

@@ -68,11 +68,17 @@ export async function store(files, starters = []){
 
   return {
     dir: files.where(DIR), games, add,
-    routes: (who, owner, log = { add(){} }) => [
-      ['GET', '/api/store', async ({ headers, ip }) => { headers['x-orlis-manage'] !== undefined ? owner(headers, ip) : who(headers); return { games: (await games()).map(pub) }; }],
+    /* reach: { of(gameId) -> 'everyone' | 'family', canSee(account, gameId) }
+       - a family's own games are for that family until the owner shares them */
+    routes: (who, owner, log = { add(){} }, reach = { of: () => 'everyone', canSee: () => true }) => [
+      ['GET', '/api/store', async ({ headers, ip }) => {
+        const a = headers['x-orlis-manage'] !== undefined ? owner(headers, ip) : who(headers);
+        const all = a.role === 'owner';
+        return { games: (await games()).filter(g => all || reach.canSee(a, g.id)).map(g => ({ ...pub(g), reach: reach.of(g.id) })) };
+      }],
       ['GET', '/api/store/:id/file', async ({ headers, params }) => {
-        who(headers);
-        const g = (await games()).find(x => x.id === params.id);
+        const a = who(headers);
+        const g = (await games()).find(x => x.id === params.id && (a.role === 'owner' || reach.canSee(a, x.id)));
         const data = g && await files.get(g.file);
         if (!data) throw new Fail(404, 'no_game', 'That game isn\'t in the Store.');
         return new Raw(data, `${g.id}-${g.version}.orlis`);

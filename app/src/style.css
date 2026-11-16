@@ -1180,3 +1180,4 @@ canvas.avface{ display:block; border-radius:50%; }
 .fpop .claudecheck .setupsteps{ width:100%; font-size:1em; }
 .fpop .claudecheck .setupstep{ box-shadow:none; border:1px solid #ecebf3; }
 .fpop .claudecheck .setupnote{ margin:1.2vh 0 0; }
+.sbtns .cslots{ color:#fff; opacity:.8; font-size:2.2vh; font-weight:600; margin-left:.6vh; }

@@ -43,7 +43,7 @@ export const CHIPS = {
   easier: 'make it easier', harder: 'make it harder', slower: 'make it slower', faster: 'make it faster', sillier: 'make it sillier',
   longer: 'make it last longer', two: 'add a second player', colours: 'use different colours'
 };
-export const LIMITS = { words: 500, chars: 4000, waiting: 5, thing: 60, place: 60, name: 40 };
+export const LIMITS = { words: 500, chars: 4000, waiting: 5, thing: 60, place: 60, name: 40, perDay: 3 };
 
 const text = (v, max) => (typeof v === 'string' ? v : '').replace(/\s+/g, ' ').trim().slice(0, max);
 const wordsOf = (v) => (typeof v === 'string' ? v : '').trim().slice(0, LIMITS.chars);
@@ -129,6 +129,14 @@ Keep it simple and fun for the ages given, in Orlis Play's house style, with not
 
 export function requests(db, files, shop, sent, log = { add(){} }, notify = () => {}){
   const q = (sql) => db.prepare(sql);
+  /* game slots: made-for-them games they keep (asked for, being made, made
+     - not taken back or turned down), out of their slots */
+  const slotsOf = (id) => {
+    const used = q(`SELECT COUNT(*) AS n FROM requests r LEFT JOIN submissions s ON s.id = r.submission_id
+      WHERE r.account_id = ? AND r.kind = 'new' AND (r.status IN ('waiting', 'making') OR (r.status = 'made' AND (s.status IS NULL OR s.status != 'declined')))`).get(id).n;
+    const total = (q('SELECT slots FROM accounts WHERE id = ?').get(id) || { slots: 3 }).slots;
+    return { used, total };
+  };
   const accountOf = (id) => q('SELECT a.id, a.email, a.role, h.name AS family FROM accounts a JOIN households h ON h.id = a.household_id WHERE a.id = ?').get(id);
   const nameOf = async (gameId) => { const g = (await shop.games()).find(x => x.id === gameId); return g ? g.name : null; };
 
@@ -173,8 +181,22 @@ export function requests(db, files, shop, sent, log = { add(){} }, notify = () =
         const wrong = problems(r, { likeName });
         if (wrong.length) throw new Fail(400, 'request', wrong.join(' '));
         if (q("SELECT COUNT(*) AS n FROM requests WHERE account_id = ? AND status IN ('waiting', 'making')").get(a.id).n >= LIMITS.waiting)
-          throw new Fail(400, 'too_many', `You have ${LIMITS.waiting} requests waiting already. Wait for the owner to get to them first.`);
+          throw new Fail(400, 'too_many', `You have ${LIMITS.waiting} waiting already.`);
+        /* (the owner makes as many as they like) */
+        if (a.role !== 'owner'){
+          /* a new game takes a slot (one they keep); a change doesn't */
+          if (r.change === undefined){
+            const s = slotsOf(a.id);
+            if (s.used >= s.total) throw new Fail(409, 'no_slots', `All ${s.total} of your game slots are used.`);
+          }
+          /* a daily pace, so making stays something you think about */
+          if (q('SELECT COUNT(*) AS n FROM requests WHERE account_id = ? AND created_at > ?').get(a.id, new Date(Date.now() - 864e5).toISOString()).n >= LIMITS.perDay)
+            throw new Fail(429, 'slow_down', `That’s ${LIMITS.perDay} today - more tomorrow.`);
+        }
         const id = newId(), sum = sentence(r, { likeName, gameName });
+        /* the same thing, asked again, isn't made again */
+        if (q("SELECT 1 FROM requests WHERE account_id = ? AND sentence = ? AND COALESCE(words, '') = ? AND status NOT IN ('withdrawn', 'declined')").get(a.id, sum, r.words || ''))
+          throw new Fail(409, 'asked_already', 'You’ve asked for that one already.');
         q("INSERT INTO requests (id, account_id, kind, game_id, recipe, sentence, words, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'waiting', ?)")
           .run(id, a.id, r.change !== undefined ? 'change' : 'new', r.change || r.like || null, JSON.stringify(r), sum, r.words, now());
         const acct = accountOf(a.id);
@@ -191,7 +213,8 @@ export function requests(db, files, shop, sent, log = { add(){} }, notify = () =
             .all(new Date(Date.now() - 30 * 864e5).toISOString());
           return { requests: await Promise.all(rows.map(async r => ({ ...out(r, true), prompt: await compiled(r) }))) };
         }
-        return { requests: q("SELECT * FROM requests WHERE account_id = ? AND status != 'withdrawn' ORDER BY created_at DESC LIMIT 50").all(a.id).map(r => out(r)) };
+        return { requests: q("SELECT * FROM requests WHERE account_id = ? AND status != 'withdrawn' ORDER BY created_at DESC LIMIT 50").all(a.id).map(r => out(r)),
+          slots: a.role === 'owner' ? null : slotsOf(a.id) };
       }],
       /* the asker takes one back, before it's being made */
       ['DELETE', '/api/requests/:id', ({ headers, params }) => {

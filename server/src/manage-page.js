@@ -44,6 +44,8 @@ button.danger{ color:var(--bad); }
 .seg button.on{ background:#fff; color:var(--ink); box-shadow:0 1px 4px rgba(20,24,50,.12); }
 .kit{ border:1px solid var(--line, #e3e5ec); background:#fff; font:inherit; font-size:14px; font-weight:600; padding:5px 13px; border-radius:999px; cursor:pointer; color:var(--dim); margin-left:8px; }
 .kit.on{ background:#6d5efc; border-color:#6d5efc; color:#fff; }
+.slots{ margin-left:8px; font-size:14px; color:var(--dim); white-space:nowrap; }
+.slots button{ border:1px solid #e3e5ec; background:#fff; border-radius:999px; width:26px; height:26px; font:inherit; cursor:pointer; }
 .fam{ font-weight:700; }
 .code{ font-size:26px; font-weight:800; letter-spacing:.14em; color:var(--violet); }
 .icon{ width:40px; height:40px; border-radius:23%; display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:12px; }
@@ -203,6 +205,14 @@ var TRY = ${TRY_SECS};
               kit.onclick = function(){ call('POST', '/api/accounts/' + encodeURIComponent(a.id) + '/devkit', { on: !a.devkit }).then(function(r){ a.devkit = r.devkit; label(); }, fail(c)); };
               label();
               right.push(kit);
+              /* game slots: how many made-for-them games they can keep */
+              var sl = h('<span class="slots"></span>');
+              var showSlots = function(){ sl.innerHTML = ''; var minus = document.createElement('button'); minus.textContent = '\\u2212'; var plus = document.createElement('button'); plus.textContent = '+';
+                var set = function(n){ call('POST', '/api/accounts/' + encodeURIComponent(a.id) + '/slots', { slots: n }).then(function(r){ a.slots = r.slots; showSlots(); }, fail(c)); };
+                minus.onclick = function(){ if (a.slots > 0) set(a.slots - 1); }; plus.onclick = function(){ set(a.slots + 1); };
+                sl.append(minus, document.createTextNode(' ' + a.slots + ' slots '), plus); };
+              showSlots();
+              right.push(sl);
             }
             row(c, '&nbsp;&nbsp;' + esc(a.email), right);
           });
@@ -219,7 +229,7 @@ var TRY = ${TRY_SECS};
       return call('GET', '/api/history').then(function(r){
         var c = card('What happened to the family\\u2019s games');
         if (!r.history.length) note(c, 'Nothing yet. Every game sent, played, approved, declined or taken out is kept here, and every grown-up made a creator or not.');
-        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away' };
+        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed' };
         r.history.forEach(function(x){
           row(c, '<span class="tag ' + (x.what === 'approved' ? 'ok' : x.what === 'declined' || x.what === 'removed' ? 'declined' : '') + '">' + esc(SAY[x.what] || x.what) + '</span> ' +
             (x.name ? '<b>' + esc(x.name) + '</b>' + (x.version ? ' <span class="tag">version ' + esc(x.version) + '</span>' : '') : '') +
@@ -238,8 +248,11 @@ var TRY = ${TRY_SECS};
         (st.games || []).forEach(function(g){
           var cols = (g.icon && g.icon.cols) || ['#6d5efc', '#6d5efc'];
           var glyph = g.icon && g.icon.glyph && !/<\\s*script|on\\w+\\s*=|javascript:|href/i.test(g.icon.glyph) ? g.icon.glyph : '';
-          row(c, '<span class="who"><span class="icon" style="background:linear-gradient(135deg,' + esc(cols[0]) + ',' + esc(cols[1] || cols[0]) + ')"><svg viewBox="0 0 100 100">' + glyph + '</svg></span><span><b>' + esc(g.name) + '</b><small>Version ' + esc(g.version) + (g.by ? ' \\u00b7 ' + esc(g.by) : '') + ' \\u00b7 ' + size(g.bytes) + (ok[g.id] ? '<br>' + esc(ok[g.id].note.split(' \\u00b7 ')[0]) + ' \\u00b7 approved ' + esc(when(ok[g.id].at)) + ' by ' + esc(ok[g.id].who) : '') + '</small></span></span>',
-            [sure('Take out', 'Take it out? Click again', 'danger', function(){ call('DELETE', '/api/store/' + encodeURIComponent(g.id)).then(show, fail(c)); })]);
+          row(c, '<span class="who"><span class="icon" style="background:linear-gradient(135deg,' + esc(cols[0]) + ',' + esc(cols[1] || cols[0]) + ')"><svg viewBox="0 0 100 100">' + glyph + '</svg></span><span><b>' + esc(g.name) + '</b><small>' + (g.reach === 'family' ? '<b>Their family only</b> \\u00b7 ' : '') + 'Version ' + esc(g.version) + (g.by ? ' \\u00b7 ' + esc(g.by) : '') + ' \\u00b7 ' + size(g.bytes) + (ok[g.id] ? '<br>' + esc(ok[g.id].note.split(' \\u00b7 ')[0]) + ' \\u00b7 approved ' + esc(when(ok[g.id].at)) + ' by ' + esc(ok[g.id].who) : '') + '</small></span></span>',
+            [g.reach === 'family'
+              ? btn('Share with everyone', '', function(){ call('POST', '/api/store/' + encodeURIComponent(g.id) + '/reach', { everyone: true }).then(show, fail(c)); })
+              : (g.by && !g.starter ? btn('Family only', '', function(){ call('POST', '/api/store/' + encodeURIComponent(g.id) + '/reach', { everyone: false }).then(show, fail(c)); }) : h('<span></span>')),
+             sure('Take out', 'Take it out? Click again', 'danger', function(){ call('DELETE', '/api/store/' + encodeURIComponent(g.id)).then(show, fail(c)); })]);
         });
         note(c, 'Taking a game out of the Store leaves it on any PC that already downloaded it.');
       });
