@@ -248,6 +248,15 @@ var TRY = ${TRY_SECS};
               showSlots();
               right.push(sl);
             }
+            /* a forgotten password: set a new one, and tell them it */
+            var pw = document.createElement('button'); pw.className = 'kit'; pw.textContent = 'New password';
+            pw.title = 'For a forgotten password: set a new one, then tell them it';
+            pw.onclick = function(){
+              var p = prompt('A new password for ' + a.email + ' (8+ characters). Every device signed in as them will need it.');
+              if (p == null) return;
+              call('POST', '/api/accounts/' + encodeURIComponent(a.id) + '/password', { password: p }).then(function(){ pw.textContent = 'Password set \u2713'; }, fail(c));
+            };
+            right.push(pw);
             row(c, '&nbsp;&nbsp;' + esc(a.email), right);
           });
         });
@@ -263,7 +272,7 @@ var TRY = ${TRY_SECS};
       return call('GET', '/api/history').then(function(r){
         var c = card('What happened to the family\\u2019s games');
         if (!r.history.length) note(c, 'Nothing yet. Every game sent, played, approved, declined or taken out is kept here, and every grown-up made a creator or not.');
-        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed', 'asked-to-join': 'Asked to join', 'join-approved': 'Let in', 'join-declined': 'Not let in', 'beta-requested': 'Asked for the beta', 'beta-approved': 'Approved for the beta', 'beta-declined': 'Beta request declined' };
+        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed', 'asked-to-join': 'Asked to join', 'join-approved': 'Let in', 'join-declined': 'Not let in', 'beta-requested': 'Asked for the beta', 'beta-approved': 'Approved for the beta', 'beta-declined': 'Beta request declined', 'password-set': 'Given a new password' };
         r.history.forEach(function(x){
           row(c, '<span class="tag ' + (x.what === 'approved' ? 'ok' : x.what === 'declined' || x.what === 'removed' ? 'declined' : '') + '">' + esc(SAY[x.what] || x.what) + '</span> ' +
             (x.name ? '<b>' + esc(x.name) + '</b>' + (x.version ? ' <span class="tag">version ' + esc(x.version) + '</span>' : '') : '') +

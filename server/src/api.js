@@ -364,6 +364,20 @@ export function api(db, info, extra = () => [], manageKey = null){
       q('UPDATE accounts SET devkit = ? WHERE id = ?').run(on ? 1 : 0, params.id);
       if (!!before.devkit !== on) history(db).add(me, on ? 'devkit-on' : 'devkit-off', { note: before.email });
       return { id: params.id, devkit: on };
+    }],
+    /* a forgotten password: the owner sets a new one, from the server's
+       laptop (theirs too). Every device signed in with the old one is
+       signed out, and any pause from wrong tries is lifted. */
+    ['POST', '/api/accounts/:id/password', ({ headers, params, body, ip }) => {
+      const me = owner(headers, ip);
+      const a = q('SELECT id, email FROM accounts WHERE id = ?').get(params.id);
+      if (!a) throw new Fail(404, 'no_account', 'No such account.');
+      const p = password(body.password);
+      q('UPDATE accounts SET password_hash = ? WHERE id = ?').run(hashPassword(p), a.id);
+      q('DELETE FROM sessions WHERE account_id = ?').run(a.id);
+      tries.delete(a.email);
+      history(db).add(me, 'password-set', { note: a.email });
+      return { id: a.id, ok: true };
     }]
   ];
 }
