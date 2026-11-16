@@ -163,6 +163,8 @@ export function welcome(done, { auto = true } = {}){
   /* a form: labelled boxes, one button that sends, Enter sends too */
   function form(fields, label, send){
     const f = h('form', 'acctform');
+    /* (no browser bubbles - every problem shows the same way, under the card) */
+    f.noValidate = true;
     const boxes = {};
     for (const [key, text, type, extra, opts = {}] of fields){
       if (type === 'check'){
@@ -186,9 +188,21 @@ export function welcome(done, { auto = true } = {}){
       e?.preventDefault?.();
       if (busy) return;
       busy = true; go.classList.add('busy'); say('');
-      try { await send(Object.fromEntries(Object.entries(boxes).map(([k, b]) => [k, b.type === 'checkbox' ? b.checked : b.value]))); }
+      try {
+        problem();
+        await send(Object.fromEntries(Object.entries(boxes).map(([k, b]) => [k, b.type === 'checkbox' ? b.checked : b.value]))); }
       catch (err){ sfx.boing?.(0.6); say(err.message, true); }
       busy = false; go.classList.remove('busy');
+    };
+    /* the quick checks, before asking the server: an email that looks like
+       one, and a password typed in */
+    const problem = () => {
+      for (const b of Object.values(boxes)){
+        const v = b.value.trim(), stop = (t) => { b.focus(); throw new Error(t); };
+        if (b.type === 'email' && !v) stop('Type your email first.');
+        if (b.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) stop('That email needs an @ and a dot.');
+        if (b.type === 'password' && !b.value) stop('Type your password first.');
+      }
     };
     f.addEventListener('submit', submit);
     go.addEventListener('pick', submit);
