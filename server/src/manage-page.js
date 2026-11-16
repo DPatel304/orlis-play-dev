@@ -44,6 +44,9 @@ button.danger{ color:var(--bad); }
 .seg button.on{ background:#fff; color:var(--ink); box-shadow:0 1px 4px rgba(20,24,50,.12); }
 .kit{ border:1px solid var(--line, #e3e5ec); background:#fff; font:inherit; font-size:14px; font-weight:600; padding:5px 13px; border-radius:999px; cursor:pointer; color:var(--dim); margin-left:8px; }
 .kit.on{ background:#6d5efc; border-color:#6d5efc; color:#fff; }
+.addbeta, .mailset{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.addbeta input, .mailset input{ flex:1 1 200px; font:inherit; font-size:14px; padding:8px 14px; border:1px solid #e3e5ec; border-radius:999px; }
+.warn{ color:#9a5b00; font-weight:600; }
 .slots{ margin-left:8px; font-size:14px; color:var(--dim); white-space:nowrap; }
 .slots button{ border:1px solid #e3e5ec; background:#fff; border-radius:999px; width:26px; height:26px; font:inherit; cursor:pointer; }
 .fam{ font-weight:700; }
@@ -132,8 +135,25 @@ var TRY = ${TRY_SECS};
 
   var views = {
     approvals: function(){
-      /* people asking to join: let them in, or not (only shown when someone's waiting) */
-      return call('GET', '/api/joins').then(function(r){
+      /* the closed beta: people who asked on the beta page */
+      return call('GET', '/api/beta').then(function(r){
+        var c = card('Closed beta');
+        var asked = r.beta.filter(function(x){ return x.status === 'requested'; });
+        var link = function(res){ if (res && !res.sent && res.link){ var n = note(c, (res.why ? res.why + ' ' : '') + 'Their download link: ' + res.link); n.className = 'warn'; } };
+        if (!r.mail) note(c, 'Email isn\\u2019t set up yet (Overview \\u203a Email), so approving shows the download link for you to send.');
+        if (!asked.length) note(c, 'Nobody waiting. People ask on your beta page: ' + location.origin.replace('127.0.0.1', 'your address') + '/');
+        asked.forEach(function(x){
+          row(c, '<b>' + esc(x.email) + '</b><small>asked ' + esc(when(x.createdAt)) + '</small>',
+            [btn('Approve', 'go', function(b){ b.textContent = 'Sending\\u2026'; call('POST', '/api/beta/approve', { email: x.email }).then(function(res){ link(res); if (res.sent) show(); else b.textContent = 'Approved'; }, fail(c)); }),
+             sure('Decline', 'Decline? Click again', 'danger', function(){ call('POST', '/api/beta/decline', { email: x.email }).then(show, fail(c)); })]);
+        });
+        /* someone you'd like in already (your family): approve their email straight away */
+        var add = h('<form class="addbeta"><input type="email" placeholder="Add someone\\u2019s email" required><button class="b go">Approve</button></form>');
+        add.onsubmit = function(ev){ ev.preventDefault(); var v = add.querySelector('input').value; call('POST', '/api/beta/approve', { email: v }).then(function(res){ add.querySelector('input').value = ''; if (res.sent) note(c, 'Sent ' + res.email + ' the download link.'); link(res); }, fail(c)); };
+        c.appendChild(add);
+        var inn = r.beta.filter(function(x){ return x.status === 'approved' || x.status === 'joined'; });
+        if (inn.length) note(c, 'In the beta: ' + inn.map(function(x){ return x.email + (x.status === 'joined' ? ' (joined)' : x.sentAt ? ' (emailed)' : ''); }).join(', '));
+      }).then(function(){ return call('GET', '/api/joins'); }).then(function(r){
         if (!r.joins || !r.joins.length) return;
         var c = card('Waiting to join');
         r.joins.forEach(function(j){
@@ -168,7 +188,18 @@ var TRY = ${TRY_SECS};
       });
     },
     overview: function(){
-      return call('GET', '/api/server').then(function(s){
+      return call('GET', '/api/mail').then(function(m){
+        var c = card('Email');
+        if (m.ready) row(c, 'Sends from <b>' + esc(m.user) + '</b><small>The closed beta\\u2019s \\u201cyou\\u2019re in\\u201d emails, with the download link.</small>',
+          [btn('Send a test', '', function(b){ b.textContent = 'Sending\\u2026'; call('POST', '/api/mail/test').then(function(r){ b.textContent = 'Sent to ' + r.to; }, function(e){ b.textContent = 'Send a test'; fail(c)(e); }); }),
+           sure('Turn off', 'Turn off? Click again', 'danger', function(){ call('POST', '/api/mail', { user: '', pass: '' }).then(show, fail(c)); })]);
+        else {
+          note(c, 'To email people their download link: your Gmail address, and an app password (Google Account \\u203a Security \\u203a App passwords - make one called Orlis). It stays on this laptop.');
+          var f = h('<form class="mailset"><input type="email" placeholder="you@gmail.com" required><input type="password" placeholder="App password (16 letters)" required><button class="b go">Save</button></form>');
+          f.onsubmit = function(ev){ ev.preventDefault(); var i = f.querySelectorAll('input'); call('POST', '/api/mail', { user: i[0].value, pass: i[1].value }).then(show, fail(c)); };
+          c.appendChild(f);
+        }
+      }).catch(function(){}).then(function(){ return call('GET', '/api/server'); }).then(function(s){
         var c = card('This server');
         var u = UPDATE[s.update && s.update.state] || ['', ''];
         row(c, '<div class="big">' + esc(s.name) + '</div><small>Orlis Server ' + esc(s.version) + '</small>');
@@ -179,16 +210,9 @@ var TRY = ${TRY_SECS};
         if (s.restoring) note(c, 'A restore is waiting: it happens as the server next starts.', 'warn');
         /* people who live elsewhere: Tailscale */
         var t = card('Family who live elsewhere');
-        if (s.tailscale){
-          row(t, '<span class="ok">Tailscale is on</span><small>This laptop\u2019s Tailscale address: http://' + esc(s.tailscale) + ':47871</small>');
-          note(t, 'To let someone make and send games from their own home:');
-          var ol = h('<ol class="steps"><li>In Tailscale on this laptop, <b>share this laptop</b> with them (right-click Tailscale by the clock > Admin console > Machines > this laptop > Share). They get an email.</li><li>They install Tailscale, sign in, and accept your share.</li><li>They install Orlis Play. It finds this server by itself, and they make an account - <b>no invite code needed</b>. They\u2019re a creator straight away.</li></ol>');
-          t.appendChild(ol);
-          if (!s.awayJoins) note(t, 'Joining over Tailscale needs an invite code on this server.', 'warn');
-        } else {
-          row(t, '<span>Tailscale isn\u2019t on</span><small>To let family make and send games from their own homes, install Tailscale on this laptop (tailscale.com/download) and sign in - then this shows the next steps.</small>');
-        }
-        note(t, 'This laptop needs to be on for their games to send; until then they wait on their PC and go in by themselves later.');
+        note(t, 'They ask on your beta page (Approvals \\u203a Closed beta), or you add their email there. Once approved, they install Orlis Play and make an account with that email - straight in. Anyone else who signs up waits for you (Approvals \\u203a Waiting to join).');
+        note(t, 'Your page and the app reach this laptop through Tailscale Funnel - see the README for turning it on.');
+        note(t, 'This laptop needs to be on, with Funnel running, for them to join or reach the Store.');
       });
     },
     families: function(){
@@ -238,7 +262,7 @@ var TRY = ${TRY_SECS};
       return call('GET', '/api/history').then(function(r){
         var c = card('What happened to the family\\u2019s games');
         if (!r.history.length) note(c, 'Nothing yet. Every game sent, played, approved, declined or taken out is kept here, and every grown-up made a creator or not.');
-        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed', 'asked-to-join': 'Asked to join', 'join-approved': 'Let in', 'join-declined': 'Not let in' };
+        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed', 'asked-to-join': 'Asked to join', 'join-approved': 'Let in', 'join-declined': 'Not let in', 'beta-requested': 'Asked for the beta', 'beta-approved': 'Approved for the beta', 'beta-declined': 'Beta request declined' };
         r.history.forEach(function(x){
           row(c, '<span class="tag ' + (x.what === 'approved' ? 'ok' : x.what === 'declined' || x.what === 'removed' ? 'declined' : '') + '">' + esc(SAY[x.what] || x.what) + '</span> ' +
             (x.name ? '<b>' + esc(x.name) + '</b>' + (x.version ? ' <span class="tag">version ' + esc(x.version) + '</span>' : '') : '') +

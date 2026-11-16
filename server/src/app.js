@@ -1,5 +1,7 @@
 /* The Orlis server, started: its data file, the web side for the app, and
    the answer to "is there an Orlis server on this Wi-Fi?". */
+import { beta } from './beta.js';
+import { mailer } from './mail.js';
 import { join } from 'node:path';
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
@@ -34,7 +36,7 @@ const BACKUP_LOOK = 60 * 60 * 1000, QUIET = 2 * 60 * 1000;
 /* restart(): how to start this server again (to finish a restore) - given
    when something's there to do it. status.update: what the updater last
    found, for the owner's page. */
-export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, approveJoins = false, publicUrl = null, internetPort = null, files = null, notify = null } = {}){
+export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, approveJoins = false, downloadUrl = 'https://github.com/DPatel304/orlis-play-dev/releases/download/beta/Orlis-Play-Beta-Setup.exe', publicUrl = null, mail = null, internetPort = null, files = null, notify = null } = {}){
   mkdirSync(dataDir, { recursive: true });
   const safe = backups(dataDir, { version: VERSION });
   /* a restore the owner asked for, done before anything is opened */
@@ -59,6 +61,9 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const tell = notify || ((title, text) => console.log(`@@say ${String(title).replace(/[|\n]/g, ' ')}|${String(text).replace(/\n/g, ' ')}`));
   const asked = requests(db, keep, shop, sent, log, tell);
   info.tell = tell;              /* (someone asking to join: a note by the clock) */
+  /* the closed beta: its page, its requests, and the email that says you're in */
+  const club = beta(db, { mail: mail || mailer({ dataDir }), log, notify: tell, downloadUrl });
+  info.beta = club;
   /* who sees which game in the Store (db.js, step 9) */
   const reach = {
     of: (id) => db.prepare('SELECT 1 FROM reach WHERE game_id = ?').get(id) ? 'family' : 'everyone',
@@ -73,6 +78,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
       return new Page(managePage());
     }],
     ...shop.routes(who, owner, log, reach),
+    ...club.routes(owner),
     /* the owner shares a family's game with everyone - or keeps it in the family */
     ['POST', '/api/store/:id/reach', async ({ headers, params, body, ip }) => {
       const me = owner(headers, ip);

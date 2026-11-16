@@ -156,6 +156,17 @@ export const STEPS = [
      (pending) until the owner lets them in */
   `
   ALTER TABLE accounts ADD COLUMN pending INTEGER NOT NULL DEFAULT 0;
+  `,
+  /* 11: the closed beta - emails that asked to join, and what the owner said
+     (approved ones get the download link, and are straight in on signing up) */
+  `
+  CREATE TABLE beta (
+    email      TEXT PRIMARY KEY,
+    status     TEXT NOT NULL CHECK (status IN ('requested', 'approved', 'declined', 'joined')),
+    created_at TEXT NOT NULL,
+    decided_at TEXT,
+    sent_at    TEXT
+  );
   `
 ];
 

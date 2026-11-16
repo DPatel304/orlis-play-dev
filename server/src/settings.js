@@ -12,6 +12,8 @@
                      cloud, where there's no Wi-Fi)  ORLIS_DISCOVERY
      everyoneCreates every new account a creator   ORLIS_EVERYONE_CREATES
      tailscaleJoin   join over Tailscale with no invite  ORLIS_TAILSCALE_JOIN
+     downloadUrl     where the closed beta's email sends people to download
+                     Orlis Play                    ORLIS_DOWNLOAD_URL
      approveJoins    anyone can ask to join, and waits for the owner's OK
                      (no invite code needed) (true)  ORLIS_APPROVE_JOINS
      publicUrl       its address on the internet, if it has one (none on the
@@ -29,9 +31,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DISCOVERY_PORT } from './discovery.js';
 
-export const DEFAULTS = { name: null, port: 47871, host: '0.0.0.0', discovery: true, everyoneCreates: true, tailscaleJoin: true, approveJoins: true, publicUrl: null, internetPort: 47872, maker: true };
+export const DEFAULTS = { name: null, port: 47871, host: '0.0.0.0', discovery: true, everyoneCreates: true, tailscaleJoin: true, approveJoins: true, downloadUrl: 'https://github.com/DPatel304/orlis-play-dev/releases/download/beta/Orlis-Play-Beta-Setup.exe', publicUrl: null, internetPort: 47872, maker: true };
 const ENV = { dataDir: 'ORLIS_DATA', name: 'ORLIS_NAME', port: 'ORLIS_PORT', host: 'ORLIS_HOST', discovery: 'ORLIS_DISCOVERY',
-  everyoneCreates: 'ORLIS_EVERYONE_CREATES', tailscaleJoin: 'ORLIS_TAILSCALE_JOIN', approveJoins: 'ORLIS_APPROVE_JOINS', publicUrl: 'ORLIS_PUBLIC_URL', internetPort: 'ORLIS_INTERNET_PORT', maker: 'ORLIS_MAKER' };
+  everyoneCreates: 'ORLIS_EVERYONE_CREATES', tailscaleJoin: 'ORLIS_TAILSCALE_JOIN', approveJoins: 'ORLIS_APPROVE_JOINS', downloadUrl: 'ORLIS_DOWNLOAD_URL', publicUrl: 'ORLIS_PUBLIC_URL', internetPort: 'ORLIS_INTERNET_PORT', maker: 'ORLIS_MAKER' };
 
 const yes = (v) => /^(1|true|yes|on)$/i.test(String(v).trim());
 const as = (key, v) => {
@@ -39,6 +41,7 @@ const as = (key, v) => {
   if (key === 'internetPort' && (v === false || /^(false|off|no|0)$/i.test(String(v).trim()))) return false;
   if (key === 'port' || key === 'internetPort'){ const n = Number(v); if (!Number.isInteger(n) || n < 0 || n > 65535) throw new Error(`${key} must be a port number`); return n; }
   if (['discovery', 'everyoneCreates', 'tailscaleJoin', 'approveJoins', 'maker'].includes(key)) return typeof v === 'boolean' ? v : yes(v);
+  if (key === 'downloadUrl'){ const u = String(v).trim(); if (!/^https:\/\/[^\s"<>]+$/.test(u)) throw new Error('downloadUrl must start with https://'); return u; }
   if (key === 'publicUrl'){ const u = String(v).trim().replace(/\/$/, ''); if (!/^https:\/\/[^\s/]+/.test(u)) throw new Error('publicUrl must start with https://'); return u; }
   return String(v);
 };
@@ -58,4 +61,4 @@ export function settings({ env = {}, defaultDataDir }){
 
 /* what start() (app.js) takes, from the settings */
 export const startOptions = (s) => ({ dataDir: s.dataDir, name: s.name || undefined, port: s.port, host: s.host,
-  discoveryPort: s.discovery ? DISCOVERY_PORT : false, everyoneCreates: s.everyoneCreates, tailscaleJoin: s.tailscaleJoin, approveJoins: s.approveJoins, publicUrl: s.publicUrl, internetPort: s.internetPort });
+  discoveryPort: s.discovery ? DISCOVERY_PORT : false, everyoneCreates: s.everyoneCreates, tailscaleJoin: s.tailscaleJoin, approveJoins: s.approveJoins, downloadUrl: s.downloadUrl, publicUrl: s.publicUrl, internetPort: s.internetPort });

@@ -60,6 +60,31 @@ as of their last visit.
 On your own Wi-Fi, joining always needs an invite code, so a visitor on the
 Wi-Fi can't just make an account.
 
+## The closed beta
+
+With Funnel on (below), your address (`https://orlis.<your-tailnet>.ts.net/`)
+shows a small page: **Orlis Play - closed beta**, with one box for an email.
+
+1. Someone asks there. A note pops up by the clock, and they're under
+   **Approvals > Closed beta** on the management page.
+2. **Approve** emails them the download link. (Or type someone's email into
+   **Add someone's email** - your family, say - to approve them straight away.)
+3. They install Orlis Play and make an account **with that email**: they're
+   straight in, nothing to wait for.
+
+Anyone who signs up in the app without being approved waits for you under
+**Approvals > Waiting to join**, playing two starter games meanwhile.
+
+**Sending the emails** uses your Gmail: on the management page, **Overview >
+Email**, type your Gmail address and an **app password** - in your Google
+Account, **Security > App passwords** (it needs 2-Step Verification on), make
+one called Orlis, and paste the 16 letters. It's kept on this laptop only
+(`mail.json` in the data folder). **Send a test** checks it works. Without
+email set up, approving shows the download link for you to send yourself.
+
+The download link is `downloadUrl` in settings.json (or `ORLIS_DOWNLOAD_URL`);
+it starts as the Orlis Play Beta installer on GitHub.
+
 ## On the internet, with Tailscale Funnel (only this laptop needs Tailscale)
 
 Funnel gives this laptop a public `https://….ts.net` address, so family can

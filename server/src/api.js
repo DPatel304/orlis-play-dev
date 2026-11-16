@@ -140,10 +140,12 @@ export function api(db, info, extra = () => [], manageKey = null){
       let invite = null;
       const free = !first && joinsFree(ip) && !text(body.invite);
       /* no invite code: they ask to join, and wait for the owner's OK */
-      const asks = !first && !free && APPROVE && !text(body.invite);
+      /* the closed beta: an email the owner already approved is straight in */
+      const fromBeta = !first && !free && !text(body.invite) && !!(info.beta && info.beta.approved(e));
+      const asks = !first && !free && !fromBeta && APPROVE && !text(body.invite);
       if (asks && q('SELECT COUNT(*) AS n FROM accounts WHERE pending = 1').get().n >= LIMITS.askers)
         throw new Fail(429, 'busy', 'Lots of people are waiting to join right now. Try again tomorrow.');
-      if (!first && !free && !asks){
+      if (!first && !free && !asks && !fromBeta){
         invite = q('SELECT * FROM invites WHERE code = ? AND used_by IS NULL').get(tidyInvite(body.invite));
         if (!invite) throw new Fail(400, 'bad_invite', 'That invite code isn\'t right, or it\'s been used. Ask for a new one.');
       }
@@ -157,11 +159,12 @@ export function api(db, info, extra = () => [], manageKey = null){
           home = newId();
           q('INSERT INTO households (id, name, created_at) VALUES (?, ?, ?)').run(home, familyName(body.family, `${n}'s family`), t);
         }
-        q('INSERT INTO accounts (id, email, password_hash, role, created_at, household_id, pending) VALUES (?, ?, ?, ?, ?, ?, ?)').run(id, e, hashPassword(p), first ? 'owner' : EVERYONE_CREATES || free || asks ? 'creator' : invite.role, t, home, asks ? 1 : 0);
+        q('INSERT INTO accounts (id, email, password_hash, role, created_at, household_id, pending) VALUES (?, ?, ?, ?, ?, ?, ?)').run(id, e, hashPassword(p), first ? 'owner' : EVERYONE_CREATES || free || asks || fromBeta ? 'creator' : invite.role, t, home, asks ? 1 : 0);
         q('INSERT INTO profiles (id, account_id, name, avatar, created_at) VALUES (?, ?, ?, ?, ?)').run(newId(), id, n, avatar(body.avatar), t);
         if (invite) q('UPDATE invites SET used_by = ?, used_at = ? WHERE code = ?').run(id, t, invite.code);
         db.exec('COMMIT');
         if (free) history(db).add({ id, email: e }, 'joined', { note: e });
+        if (fromBeta){ info.beta.joined(e); history(db).add({ id, email: e }, 'joined', { note: `${e} · from the beta` }); }
         if (asks) history(db).add({ id, email: e }, 'asked-to-join', { note: `${e} · ${familyName(body.family, `${n}'s family`)}` });
       } catch (err){ db.exec('ROLLBACK'); throw err; }
       if (asks) info.tell?.(`${n} wants to join`, `${e} - open Manage Orlis Server to let them in`);
