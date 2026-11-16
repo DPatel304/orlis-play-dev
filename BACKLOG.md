@@ -54,6 +54,37 @@ What's been decided, so it isn't only in chat. Newest last within each part.
   therapy settings (no medical claims).
 - **Never:** ads to kids, selling data, loot boxes, or purchases by kids.
 
+**Ranks, the boot camp and the Dev Kit** (Nov 16, 2026)
+- **Why:** an AI game dev boot camp is part of the product. Kids learn what
+  working in the games industry is like, so ranks use real job words.
+- **Rank is earned; tools are bought.** A title says what you've done; the
+  paid Dev Kit says what you can use. Buying never changes a title.
+- **Play-testers** (kids start here): Play-tester, II, III, IV, V, then Super
+  Play-tester. **Each level-up needs a boot camp mission** ("learn, then do"),
+  plus some practice. Missions so far: What's a play-tester?, Good feedback,
+  Spot the bug, Fair testing, Graduation (test a new game first and write its
+  first review). Nova teaches each one aloud in a short scene, and missions
+  are played by moving, so kids who can't read can do them on their own.
+- **Creators** (grown-ups start here; kids too, by making a game with a
+  parent - the title, never the grown-up permissions): Creator, II, III, IV,
+  V, then Super Creator. **Creators level up by milestones** (games made,
+  games published, families playing them - the numbers are to be decided).
+- **Badges:** stars for little kids (Creator ★★★), numerals in text. The owner
+  can also give a rank.
+- **The Dev Kit** (name not final): building games yourself with Claude Code,
+  plus its boot camp lessons. A one-time unlock (no subscription); they bring
+  their own Claude subscription. Grown-ups only, a small link in Create; the
+  owner can give it free (to family). Claude Code stays out of sight without it.
+- **Industry features that make the titles real:** play-test reports after a
+  new game (too hard, too easy, loved it, found a bug) sent to its creator;
+  credits at the end of games ("Play-tested by ..."); patch notes for each
+  version; bug reports; families as studios ("Patel Studio"); a launch
+  moment when a game is published.
+- **Still open:** the Create tab's name and verb (ideas: a Studio tab, "Make a
+  game"), and the Dev Kit's name.
+- **Also:** every page should be less wordy - one short line at most,
+  two-or-three-word buttons, explanations behind a "?".
+
 ## Creator mode
 
 From the VibeBox concept (worked out together with a friend, who is doing
