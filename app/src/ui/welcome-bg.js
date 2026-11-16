@@ -11,10 +11,10 @@ export function brandGlow(){
   return d;
 }
 
-/* the cube and a cheerful hello, in place of a sentence */
+/* the cube and the name, in place of a sentence */
 export function logo(){
   const d = document.createElement('div');
   d.className = 'acctlogo';
-  d.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true">${CUBE}</svg><h2>Let’s play!</h2>`;
+  d.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true">${CUBE}</svg><h2>Orlis Play</h2>`;
   return d;
 }
