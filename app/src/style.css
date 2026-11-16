@@ -1126,3 +1126,51 @@ canvas.avface{ display:block; border-radius:50%; }
   font-size:3.2vh; font-weight:800; box-shadow:0 1.4vh 3vh rgba(20,20,40,.22); animation:popin .3s cubic-bezier(.2,.8,.25,1) both; }
 .namecard canvas.avface{ width:7.2vh; height:7.2vh; }
 .screen.namepop.out{ transition:opacity .45s; opacity:0; }
+
+/* Request a game (request.js): a big card, a sentence that writes itself, picture tiles */
+.reqwrap{ align-items:center; }
+.fpop.reqpop{ width:min(94vw, 58em); max-height:92vh; display:flex; flex-direction:column; padding:2.6vh 3.2vh 2.2vh; }
+.fpop.reqpop.small{ width:min(92vw, 36em); }
+.reqtop{ margin-bottom:1.6vh; }
+.reqsteps{ display:flex; gap:.6vh; margin-bottom:1.2vh; }
+.reqsteps span{ flex:1; height:.6vh; border-radius:1vh; background:#e9e8f4; }
+.reqsteps span.on{ background:#6d5efc; }
+.reqsum{ margin:0; padding:1.2vh 1.6vh; background:#f6f4ff; border-radius:1.6vh; color:#2d2a26; font-size:.95em; line-height:1.4; }
+.reqbody{ overflow:auto; flex:1; min-height:0; padding:.4vh .2vh; }
+.reqbody h2{ margin:0 0 1.4vh; }
+.reqlede{ margin:0 0 1.8vh; color:#5b5f6e; }
+.reqh3{ margin:2.4vh 0 1vh; font-size:1em; }
+.reqgrid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(13em, 1fr)); gap:1.4vh; }
+.reqgrid.two{ grid-template-columns:repeat(2, 1fr); }
+.reqgrid.three{ grid-template-columns:repeat(3, 1fr); }
+.reqgrid.five{ grid-template-columns:repeat(5, 1fr); }
+.btn.reqtile{ display:block; text-align:left; padding:1.6vh 1.6vh 1.4vh; border:2px solid #ecebf3; border-radius:2vh; background:#fff; box-shadow:none; font-size:.95em; min-height:100%; }
+.btn.reqtile .lbl{ display:flex; flex-direction:column; gap:.4vh; }
+.btn.reqtile .ri{ font-size:2.4em; line-height:1.1; }
+.btn.reqtile small{ color:#6b6f80; font-weight:400; font-size:.85em; line-height:1.3; }
+.btn.reqtile.on, .btn.reqtile.hot, .btn.reqtile:hover{ border-color:#6d5efc; background:#faf9ff; transform:none; }
+.reqgrid.five .btn.reqtile{ text-align:center; }
+.reqgrid.five .btn.reqtile .lbl{ align-items:center; }
+.reqchips{ display:flex; flex-wrap:wrap; gap:.8vh; margin-top:1vh; }
+.btn.reqchip{ padding:.4em .9em; font-size:.85em; font-weight:600; border:1px solid #e3e5ec; background:#fff; box-shadow:none; }
+.reqchips.big .btn.reqchip{ font-size:.95em; padding:.55em 1.1em; }
+.btn.reqchip.on{ background:#6d5efc; border-color:#6d5efc; color:#fff; }
+.btn.reqchip.hot, .btn.reqchip:hover{ transform:none; border-color:#6d5efc; }
+.reqrow{ display:flex; align-items:center; gap:2vh; margin-bottom:1.4vh; }
+.reqlab{ width:5.5em; font-weight:700; }
+.reqrow .reqchips{ margin:0; }
+.finput.reqwords{ border-radius:1.6vh; min-height:22vh; resize:vertical; line-height:1.45; }
+.finput.reqwords.short{ min-height:12vh; margin-top:1.6vh; }
+.reqbody .finput + .reqchips, .reqbody textarea + .reqcount{ margin-top:1vh; }
+.reqcount{ margin:.6vh 0 0; text-align:right; color:#8a8ea0; font-size:.85em; }
+.reqcount.over{ color:#be123c; font-weight:700; }
+.reqtip{ margin:.6vh 0 1.6vh; color:#6b6f80; font-size:.85em; }
+.reqquote{ margin:0 0 1vh; padding:1vh 1.6vh; border-left:.5vh solid #d9d4ff; color:#4a4d5c; white-space:pre-wrap; max-height:26vh; overflow:auto; }
+.reqfoot{ display:flex; justify-content:flex-end; align-items:center; gap:1.2vh; margin-top:1.8vh; }
+.reqfoot .btn.go{ background:#6d5efc; color:#fff; border:none; padding:.6em 1.8em; }
+.reqfoot .btn.go[disabled]{ opacity:.4; pointer-events:none; }
+.reqfoot .btn.go.busy{ opacity:.6; }
+.cask{ min-width:0; }
+.cask .csent{ color:#4a4d5c; }
+.cend{ display:flex; align-items:center; gap:1.4vh; flex-shrink:0; }
+@media (max-width: 800px){ .reqgrid.five{ grid-template-columns:repeat(2, 1fr); } .reqgrid.three{ grid-template-columns:1fr; } }

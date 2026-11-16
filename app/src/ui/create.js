@@ -26,8 +26,11 @@ import { unpack, check, build, pack, nextVersion } from './creator-kit.js';
 import { newer } from './store.js';
 import { library } from './library.js';
 import { PAPER } from './boot.js';
+import { requestWizard, changePop } from './request.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/* how a requested game is going, as whoever asked sees it */
+const ASKED = { waiting: ['Requested', ''], making: ['Being made', ''], made: ['Made - waiting for the owner’s OK', ''], ready: ['Made - waiting for the owner’s OK', ''], 'in-store': ['In the Store', 'ok'], declined: ['Not this time', 'no'] };
 const STATE = { waiting: ['Waiting for the owner’s OK', ''], approved: ['In the Store', 'ok'], declined: ['Not this time', 'no'] };
 
 /* Create's banner: the same banner as Home's and the Store's, with its own
@@ -59,19 +62,23 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   const scene = { tick(dt){ bar.tick(dt); }, draw(c, W, H){ c.fillStyle = PAPER; c.fillRect(0, 0, W, H); } };
   const creator = account.signedIn && (account.role === 'creator' || account.role === 'owner');
 
-  if (!creator){
+  /* grown-ups can ask for games (Request a game); creators can make them too */
+  const grown = account.signedIn && !account.isKid;
+  if (!grown){
     const m = CREATE_SOON;
     scroll.appendChild(banner('Coming soon', m.name, m.line).hero);
     const sec = h('section', 'srow');
     sec.append(h('p', 'cabout', esc(m.about)));
-    if (account.signedIn) sec.append(h('p', 'snote', 'Making games is for grown-ups the server’s owner has made creators.'));
+    if (account.signedIn) sec.append(h('p', 'snote', 'Making games is for grown-ups.'));
     scroll.appendChild(sec);
     return scene;
   }
 
-  const { hero, text } = banner('Create', 'Make a game', making.available
-    ? 'Make your own movement game with Claude, try it, then send it for the Store.'
-    : 'Making games is in Orlis Play for Windows. Here: send a game you’ve made, for the owner to OK for the Store.');
+  const { hero, text } = banner('Create', 'Make a game', !creator
+    ? 'Describe a game - tap a few pictures, say it in your words - and it’s made for you, for the Store.'
+    : making.available
+      ? 'Describe a game and it’s made for you - or make it yourself with Claude, try it, and send it for the Store.'
+      : 'Describe a game and it’s made for you. Or send a game you’ve made, for the owner to OK for the Store.');
   const btns = h('div', 'sbtns'), said_ = h('p', 'csaid', '');
   text.append(btns, said_);
   scroll.appendChild(hero);
@@ -85,6 +92,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   let said = '';
   let mine = [];                 /* the games being made on this PC */
   let pop = null;
+  let moving = false;            /* a request on its way: keep how it's going up to date */
 
   /* a small card in the middle, over the page (as on Family) */
   function popup(...parts){
@@ -311,11 +319,17 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   });
 
   async function send(){
+    if (!creator) return;
     const r = await outbox.sync();
     if (r.sent) { said = `Sent ${r.sent === 1 ? 'it' : r.sent + ' games'} for the owner’s OK.`; sfx.gold?.(); }
     else if (!r.reached) said = (said ? said + ' ' : '') + 'It’ll send by itself as soon as this PC can reach the Orlis server - on its Wi-Fi, or over Tailscale.';
     draw();
   }
+
+  /* Request a game: the wizard, then back here to see it listed */
+  const sendAsk = (recipe) => account.call('POST', '/api/requests', recipe).then((r) => { said = 'Sent! The owner will read it and make it.'; return r; });
+  const store_ = async () => { try { return (await account.call('GET', '/api/store')).games || []; } catch { return []; } };
+  function askPop(){ sfx.select(); closePop(); requestWizard({ store: store_, send: sendAsk, onDone: () => draw() }); }
 
   /* a row, the Store's way: its name, then what's in it */
   const row = (name, sub) => {
@@ -326,13 +340,39 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   };
 
   async function draw(){
-    const [waiting, sent] = await Promise.all([outbox.list(), outbox.sent()]);
+    const [waiting, sent, asked] = await Promise.all([creator ? outbox.list() : [], creator ? outbox.sent() : [], account.call('GET', '/api/requests').then(r => r.requests || [], () => null)]);
     btns.innerHTML = '';
-    if (making.available) btns.append(sbtn('<span class="plus">+</span>New game', newGamePop, 'get'));
-    btns.append(sbtn('Send a game…', () => { sfx.select(); pickFile.click(); }, making.available ? 'ghost' : 'get'));
+    btns.append(sbtn('<span class="plus">+</span>Request a game', askPop, 'get'));
+    if (creator && making.available) btns.append(sbtn('Make it myself', newGamePop, 'ghost'));
+    if (creator) btns.append(sbtn('Send a game…', () => { sfx.select(); pickFile.click(); }, 'ghost'));
     if (waiting.length) btns.append(sbtn('Send now', () => { sfx.select(); send(); }, 'ghost'));
     said_.textContent = said;
     body.innerHTML = '';
+
+    moving = !!(asked && asked.some(x => ['waiting', 'making', 'made', 'ready'].includes(x.state)));
+    /* the games they've asked for, and how each is going */
+    if (asked === null || asked.length || !creator){
+      const sec = row('Your requests', asked && asked.length ? 'The owner reads each one, then makes it' : '');
+      if (asked === null) sec.appendChild(h('p', 'cempty', 'Can’t reach the Orlis server right now to see how they’re going.'));
+      else if (!asked.length) sec.appendChild(h('p', 'cempty', 'None yet - press Request a game to describe your first.'));
+      else {
+        const list = h('div', 'clist');
+        for (const x of asked.filter(x => x.state !== 'withdrawn')){
+          const [label, cls] = ASKED[x.state] || [x.state, ''];
+          const r = h('div', 'citem');
+          const when = new Date(x.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
+          r.append(h('div', 'cask', `${x.game ? `<b>${esc(x.game.name)}</b> ` : ''}<span class="csent">${esc(x.sentence)}</span><small>${esc(when)}${x.note ? ` · the owner says: “${esc(x.note)}”` : ''}</small>`));
+          const end = h('div', 'cend');
+          if (x.state === 'waiting') end.appendChild(btn('Take back', async () => { try { await account.call('DELETE', `/api/requests/${x.id}`); said = 'Taken back.'; } catch (e){ said = e.message; } draw(); }, 'quiet'));
+          if (x.state === 'in-store' && x.gameId && x.game) end.appendChild(btn('Ask for a change', () => { sfx.select(); changePop({ game: { id: x.gameId, name: x.game.name }, send: sendAsk, onDone: () => draw() }); }, 'quiet'));
+          end.appendChild(h('span', `cstate ${cls}`, esc(label)));
+          r.appendChild(end);
+          list.appendChild(r);
+        }
+        sec.appendChild(list);
+      }
+    }
+    if (!creator) return;
 
     /* your games, as the Store's cards */
     if (making.available){
@@ -384,6 +424,11 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   draw();
   send();
   refreshMine();
+  /* while a request's on its way, how it's going keeps itself up to date */
+  const watch = setInterval(() => {
+    if (!s.isConnected) return clearInterval(watch);
+    if (!pop && !document.querySelector('.reqwrap') && moving) draw();
+  }, 15000);
 
   /* (leaving: no card left over the next page) */
   for (const k of Object.keys(nav)){ const go = nav[k]; nav[k] = () => { closePop(); go(); }; }
