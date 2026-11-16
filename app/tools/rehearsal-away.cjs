@@ -112,7 +112,7 @@ async function openGame(pg, name){ await tab(pg, 'Create'); await pg.click(`.slo
 async function sendIt(pg, name){
   await openGame(pg, name);
   await pg.click('.fpop .btn >> text=Check and send'); await pg.waitForTimeout(3000);
-  return txt(pg, '.csaid');
+  return txt(pg, '.toast');
 }
 async function tryIt(pg, name, secs){
   await openGame(pg, name);

@@ -181,7 +181,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await bro.click('.tvtab >> text=Create'); await bro.waitForTimeout(1500);
   await bro.click(`.slock >> text=${JSON.parse(manifest).name}`); await bro.waitForTimeout(600);
   await bro.click('.fpop .btn >> text=Check and send'); await bro.waitForTimeout(3000);
-  log('    app says: ' + (await txt(bro, '.csaid')).slice(0, 160));
+  log('    app says: ' + (await txt(bro, '.toast')).slice(0, 160));
   const subs = await api('GET', '/api/submissions?all=1', null, owner.token);
   const sub = (subs.submissions || []).find(x => /firefl/i.test(x.name));
   check(sub && sub.state === 'waiting', 'it is waiting for the owner: ' + JSON.stringify(sub && [sub.name, sub.version, sub.state, sub.family]));

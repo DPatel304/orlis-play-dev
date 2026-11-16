@@ -18,7 +18,8 @@
   --ui:"Fredoka",ui-rounded,"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
   --safe:clamp(12px,2.6vmin,40px);
   --sys:"Segoe UI Variable Display","Segoe UI","SF Pro Display",-apple-system,Inter,system-ui,Roboto,Helvetica,Arial,sans-serif;
-  color-scheme:dark;
+  /* light only: the browser's own controls (boxes, ticks, scroll bars) drawn light too */
+  color-scheme:light;
 }
 *{box-sizing:border-box;margin:0;}
 html,body{height:100%;overflow:hidden;background:var(--bg);}
@@ -962,8 +963,6 @@ body.titled #ui > .screen{ top:34px; }
 .createpage .cbody{ padding-bottom:8vh; }
 .createpage .srow + .srow{ margin-top:4vh; }
 .createpage .srow h3{ margin-bottom:2vh; }
-.shtext .csaid{ position:absolute; top:100%; left:0; width:48vw; margin:2vh 0 0; font-size:2.2vh; opacity:.9; }
-.shtext .csaid:empty{ display:none; }
 .cabout{ max-width:60vw; font-size:2.6vh; line-height:1.45; color:#3b3e4d; margin:0; }
 .cempty{ color:#8a8ea0; font-size:2.2vh; margin:0; }
 .clist{ display:flex; flex-direction:column; gap:1.2vh; max-width:60em; }
@@ -971,8 +970,10 @@ body.titled #ui > .screen{ top:34px; }
 .citem small{ display:block; color:#8a8ea0; font-size:.85em; margin-top:.3em; }
 .citem small.cbad{ color:#be123c; }
 .ctag{ font-size:.75em; font-weight:700; color:#5b5f6e; background:#f1f2f6; border-radius:999px; padding:.15em .7em; margin-left:.4em; }
-.cstate{ font-size:.85em; font-weight:700; color:#5b5f6e; white-space:nowrap; }
-.cstate.ok{ color:#15803d; } .cstate.no{ color:#be123c; }
+.cstate{ font-size:.8em; font-weight:700; white-space:nowrap; padding:.35em .9em; border-radius:999px; background:#eef0f5; color:#4b4f5e; }
+.cstate.wait{ background:#ede9fe; color:#5b4bd6; } .cstate.make{ background:#e0f2fe; color:#0369a1; }
+.cstate.check{ background:#fef3c7; color:#a16207; }
+.cstate.ok{ background:#dcfce7; color:#15803d; } .cstate.no{ background:#ffe4e6; color:#be123c; }
 .sbadge.wait{ background:#f59e0b; color:#fff; }
 
 /* ---------- Home (ui/menu.js): the Store's banner and cards ---------- */
@@ -1181,7 +1182,6 @@ canvas.avface{ display:block; border-radius:50%; }
 .fpop .claudecheck .setupstep{ box-shadow:none; border:1px solid #ecebf3; }
 .fpop .claudecheck .setupnote{ margin:1.2vh 0 0; }
 .sbtns .cslots{ color:#fff; opacity:.8; font-size:2.2vh; font-weight:600; margin-left:.6vh; }
-.letin{ position:fixed; left:50%; top:12vh; transform:translateX(-50%); z-index:50; background:#fff; color:#16161d; font-weight:700; font-size:2.6vh; padding:1.6vh 3.4vh; border-radius:999px; box-shadow:0 1vh 4vh rgba(20,24,50,.25); animation:fadein .3s ease both; }
 .keyhint{ display:inline-block; margin-left:1vh; padding:.2em .6em; border:1px solid currentColor; border-radius:.5em; font-size:.75em; font-weight:700; opacity:.55; }
 
 /* ---------- the welcome screens: the intro's cube resting on the left
@@ -1229,3 +1229,70 @@ canvas.avface{ display:block; border-radius:50%; }
 .acctcard .formmsg.bad{ background:#fff1f2; color:#be123c; box-shadow:0 0 0 1px #fecdd3, 0 1vh 3vh rgba(190,18,60,.12); }
 @keyframes msgin{ from{ opacity:0; transform:translate(-50%, -.8vh) } to{ opacity:1; transform:translate(-50%, 0) } }
 .acctcard:has(.formmsg.bad) .acctform input:is([type=email], [type=password], [type=text]){ border-color:#f43f5e; }
+
+/* ---------- sign-in polish ---------- */
+/* the grown-up tick: a rounded box that fills purple, with a white tick */
+.acctform label.check{ cursor:pointer; }
+.acctform label.check input{
+  -webkit-appearance:none; appearance:none; flex:none; width:1.35em; height:1.35em; margin:0;
+  border:2px solid rgba(20,24,50,.22); border-radius:.4em; background:#fff; display:grid; place-items:center;
+  transition:background .15s, border-color .15s; cursor:pointer;
+}
+.acctform label.check input::after{
+  content:''; width:.36em; height:.66em; border:solid #fff; border-width:0 .16em .16em 0;
+  transform:translateY(-.06em) rotate(45deg) scale(0); transition:transform .15s ease-out;
+}
+.acctform label.check input:checked{ background:#6d5efc; border-color:#6d5efc; }
+.acctform label.check input:checked::after{ transform:translateY(-.06em) rotate(45deg) scale(1); }
+.acctform label.check input:focus-visible{ outline:none; border-color:#6d5efc; }
+/* show / hide password: an eye at the right of the box */
+.acctform .pwwrap{ position:relative; display:flex; }
+.acctform .pwwrap input{ flex:1; min-width:0; padding-right:2.6em; }
+.acctform .pwwrap .eye{
+  position:absolute; right:.35em; top:50%; transform:translateY(-50%); width:2em; height:2em; padding:.35em;
+  border:none; border-radius:50%; background:transparent; color:#8a8ea0; cursor:pointer; display:grid; place-items:center;
+}
+.acctform .pwwrap .eye:hover{ background:rgba(20,24,50,.06); color:#4a3fe0; }
+.acctform .pwwrap .eye svg{ width:100%; height:100%; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; }
+.acctform input::-ms-reveal{ display:none; }
+/* finding the server: three dots that bounce */
+.finding{ font-size:clamp(16px, 2.8vh, 32px); font-weight:600; color:#24242e; margin:1.2vh 1vw; }
+.finding .dots{ display:inline-flex; gap:.18em; margin-left:.25em; }
+.finding .dots i{ width:.28em; height:.28em; border-radius:50%; background:#6d5efc; animation:dotbob 1s ease-in-out infinite; }
+.finding .dots i:nth-child(2){ animation-delay:.15s; } .finding .dots i:nth-child(3){ animation-delay:.3s; }
+@keyframes dotbob{ 0%,60%,100%{ transform:none; opacity:.4 } 30%{ transform:translateY(-.25em); opacity:1 } }
+/* a button that's sending: a spinner in place of its words */
+.btn.go.busy{ opacity:1 !important; pointer-events:none; position:relative; }
+.btn.go.busy .lbl{ visibility:hidden; }
+.btn.go.busy::after{
+  content:''; position:absolute; left:50%; top:50%; width:1.1em; height:1.1em; margin:-.55em 0 0 -.55em;
+  border:.16em solid rgba(255,255,255,.45); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg) } }
+@media (prefers-reduced-motion: reduce){ .finding .dots i, .btn.go.busy::after{ animation-duration:2.5s; } }
+/* (the eye's wrapper is a span inside the label - not the label's small words) */
+.acctform label.field span.pwwrap{ font-size:1em; color:inherit; font-weight:inherit; }
+.acctform .pwwrap .eye{ font-size:inherit; width:1.9em; height:1.9em; padding:.4em; }
+
+/* ---------- one way of saying things, everywhere ----------
+   The pop-up (toast.js): a pill that drops in under the top bar and goes
+   away by itself - white for news, pink and red for a problem, the same as
+   the problems under the sign-in card. Problems inside a card or popup
+   (.ferr, .serr) look the same, in place. */
+.toast{
+  position:fixed; left:50%; top:calc(var(--safe) + 7.5vh); z-index:60; transform:translateX(-50%);
+  max-width:min(90vw, 36em); width:max-content; padding:.75em 1.4em; border-radius:1.3em;
+  background:rgba(255,255,255,.96); color:#24242e; font-family:var(--sys); font-weight:600; font-size:clamp(13px, 2.1vh, 24px); line-height:1.4; text-align:center;
+  box-shadow:0 1vh 3.4vh rgba(30,40,90,.18); animation:toastin .3s ease-out both; pointer-events:none;
+}
+.toast.bad{ background:#fff1f2; color:#be123c; box-shadow:0 0 0 1px #fecdd3, 0 1vh 3vh rgba(190,18,60,.14); }
+.toast.out{ animation:toastout .35s ease-in both; }
+@keyframes toastin{ from{ opacity:0; transform:translate(-50%, -1.6vh) } to{ opacity:1; transform:translate(-50%, 0) } }
+@keyframes toastout{ to{ opacity:0; transform:translate(-50%, -1.6vh) } }
+.ferr, .serr, .sact .serr{
+  display:block; width:fit-content; max-width:100%; margin:1.4vh auto 0; padding:.6em 1.1em; border-radius:1.1em;
+  background:#fff1f2; color:#be123c; box-shadow:0 0 0 1px #fecdd3; font-family:var(--sys); font-weight:500; font-size:clamp(12px, 1.9vh, 22px); line-height:1.4; text-align:center;
+}
+.ferr:empty, .serr:empty{ display:none; }
+/* the small buttons in a list (Take back, Change it): clear pills, not tiny words */
+.cend .btn{ font-size:.8em; padding:.4em 1em; }

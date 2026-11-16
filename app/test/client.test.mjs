@@ -126,6 +126,10 @@ test('light only: no dark theme left', () => {
   assert.ok(!css.includes('body.dark'));
   const menu = readFileSync(new URL('../src/ui/menu.js', import.meta.url), 'utf8');
   assert.ok(!menu.includes("row('Theme'"));
+  assert.ok(!/color-scheme:\s*dark/.test(css), 'the browser\'s own controls drawn light');
+  assert.ok(!css.includes('prefers-color-scheme'));
+  const beta = readFileSync(new URL('../../server/src/beta.js', import.meta.url), 'utf8');
+  assert.ok(!beta.includes('prefers-color-scheme: dark'), 'the beta page too');
 });
 
 test('Create: the app makes games in their own folders, and opens Claude Code there', () => {

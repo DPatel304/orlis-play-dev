@@ -102,8 +102,8 @@ try {
 
   console.log('\n5. The owner lets them in: it says so, and everything opens');
   await api('POST', `/api/joins/${joins[0].id}/approve`, null, M);
-  await pg.waitForSelector('.letin', { timeout: 25000 });
-  check((await pg.textContent('.letin')).includes('You\u2019re in!'), 'You\u2019re in! The Store and Create are open.');
+  await pg.waitForSelector('.toast', { timeout: 25000 });
+  check((await pg.textContent('.toast')).includes('You\u2019re in!'), 'You\u2019re in! The Store and Create are open.');
   await wait(1500);
   const after = await body();
   check(after.includes('Leaf Pile'), 'Home has all the games now');

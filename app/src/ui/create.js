@@ -13,6 +13,7 @@
    went: waiting, in the Store, or not this time (with the owner's note).
 
    Everyone else sees what's coming. */
+import { toast } from './toast.js';
 import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
@@ -31,7 +32,7 @@ import { requestWizard, changePop } from './request.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* how a requested game is going, as whoever asked sees it */
-const ASKED = { waiting: ['Asked', ''], making: ['Being made', ''], made: ['Waiting for OK', ''], ready: ['Waiting for OK', ''], 'in-store': ['In the Store', 'ok'], declined: ['Not this time', 'no'] };
+const ASKED = { waiting: ['Asked', 'wait'], making: ['Being made', 'make'], made: ['Waiting for OK', 'check'], ready: ['Waiting for OK', 'check'], 'in-store': ['In the Store', 'ok'], declined: ['Not this time', 'no'] };
 const STATE = { waiting: ['Waiting for OK', ''], approved: ['In the Store', 'ok'], declined: ['Not this time', 'no'] };
 
 /* Create's banner: the same banner as Home's and the Store's, with its own
@@ -83,8 +84,8 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   }
 
   const { hero, text } = banner('Create', 'Make a game', 'Describe it. We’ll make it.');
-  const btns = h('div', 'sbtns'), said_ = h('p', 'csaid', '');
-  text.append(btns, said_);
+  const btns = h('div', 'sbtns');
+  text.append(btns);
   scroll.appendChild(hero);
   const body = h('div', 'cbody');
   scroll.appendChild(body);
@@ -93,7 +94,8 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   const pickFile = document.createElement('input');
   pickFile.type = 'file'; pickFile.accept = '.orlis'; pickFile.style.display = 'none';
   s.appendChild(pickFile);
-  let said = '';
+  /* what just happened, or went wrong (bad), said once in a pop-up */
+  let said = '', bad = false;
   let mine = [];                 /* the games being made on this PC */
   let pop = null;
   let moving = false;            /* a request on its way: keep how it's going up to date */
@@ -321,7 +323,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
       const g = await outbox.add(new Uint8Array(await f.arrayBuffer()));
       sfx.select(); said = `${g.name} is ready to send.`;
       await send();
-    } catch (e){ said = e.message; draw(); }
+    } catch (e){ said = e.message; bad = true; draw(); }
   });
 
   async function send(){
@@ -388,7 +390,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     if (slots) btns.append(h('span', 'cslots', `${Math.max(0, slots.total - slots.used)} of ${slots.total} left`));
     if (kit) btns.append(sbtn('Dev Kit', kitPop, 'ghost'));
     if (waiting.length) btns.append(sbtn('Send now', () => { sfx.select(); send(); }, 'ghost'));
-    said_.textContent = said;
+    if (said){ toast(said, { bad }); said = ''; bad = false; }
     body.innerHTML = '';
 
     moving = !!(asked && asked.some(x => ['waiting', 'making', 'made', 'ready'].includes(x.state)));
@@ -405,7 +407,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
           const when = new Date(x.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
           r.append(h('div', 'cask', `${x.game ? `<b>${esc(x.game.name)}</b> ` : ''}<span class="csent">${esc(x.sentence)}</span><small>${esc(when)}${x.note ? ` · “${esc(x.note)}”` : ''}</small>`));
           const end = h('div', 'cend');
-          if (x.state === 'waiting') end.appendChild(btn('Take back', async () => { try { await account.call('DELETE', `/api/requests/${x.id}`); said = 'Taken back.'; } catch (e){ said = e.message; } draw(); }, 'quiet'));
+          if (x.state === 'waiting') end.appendChild(btn('Take back', async () => { try { await account.call('DELETE', `/api/requests/${x.id}`); said = 'Taken back.'; } catch (e){ said = e.message; bad = true; } draw(); }, 'quiet'));
           if (x.state === 'in-store' && x.gameId && x.game) end.appendChild(btn('Change it', () => { sfx.select(); changePop({ game: { id: x.gameId, name: x.game.name }, send: sendAsk, onDone: () => draw() }); }, 'quiet'));
           end.appendChild(h('span', `cstate ${cls}`, esc(label)));
           r.appendChild(end);

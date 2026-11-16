@@ -180,7 +180,18 @@ export function welcome(done, { auto = true, glide = false } = {}){
       i.type = type || 'text'; i.autocomplete = extra || 'off'; i.spellcheck = false;
       if (opts.value) i.value = opts.value;
       if (opts.hidden){ i.type = 'hidden'; boxes[key] = i; f.appendChild(i); continue; }
-      boxes[key] = i; l.appendChild(i); f.appendChild(l);
+      boxes[key] = i;
+      /* a password: an eye in the box, to see what you typed */
+      if (i.type === 'password'){
+        const wrap = h('span', 'pwwrap'), eye = document.createElement('button');
+        eye.type = 'button'; eye.className = 'eye'; eye.tabIndex = -1;
+        const set = (on) => { i.type = on ? 'text' : 'password'; eye.innerHTML = on ? '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>'; eye.title = on ? 'Hide password' : 'Show password'; eye.setAttribute('aria-label', eye.title); };
+        set(false);
+        eye.addEventListener('click', (e) => { e.preventDefault(); set(i.type === 'password'); i.focus(); });
+        i.dataset.pw = '1';
+        wrap.append(i, eye); l.appendChild(wrap);
+      } else l.appendChild(i);
+      f.appendChild(l);
     }
     const go = button(label, 'go');
     go.type = 'submit';
@@ -202,7 +213,7 @@ export function welcome(done, { auto = true, glide = false } = {}){
         const v = b.value.trim(), stop = (t) => { b.focus(); throw new Error(t); };
         if (b.type === 'email' && !v) stop('Type your email first.');
         if (b.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) stop('That email needs an @ and a dot.');
-        if (b.type === 'password' && !b.value) stop('Type your password first.');
+        if ((b.type === 'password' || b.dataset.pw) && !b.value) stop('Type your password first.');
       }
     };
     f.addEventListener('submit', submit);
@@ -229,7 +240,7 @@ export function welcome(done, { auto = true, glide = false } = {}){
     return found;
   }
   async function find(){
-    show(h('h2', '', 'Finding your Orlis server…'));
+    show(h('p', 'finding', 'Finding your Orlis<span class="dots"><i></i><i></i><i></i></span>'));
     const found = await look();
     if (found.length === 1) return connect(found[0]);
     if (found.length > 1) return choose(found);
@@ -250,7 +261,7 @@ export function welcome(done, { auto = true, glide = false } = {}){
     show(h('h2', '', 'Can’t reach your Orlis server'),
       h('p', 'lede', 'Check this PC is online. It’ll keep trying.'),
       msg, onPick(button('Try again', 'wide'), () => { sfx.select(); find(); }), typed);
-    const me = s.lastChild;
+    const me = card.lastChild;
     const tick = async () => {
       if (!s.contains(me)) return;
       const found = await look();

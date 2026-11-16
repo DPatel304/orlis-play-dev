@@ -124,7 +124,6 @@ button[disabled]{ opacity:.6; }
 .said{ min-height:1.5em; font-size:15px; margin:12px 0 0; }
 .bad{ color:#be123c; }
 .done h2{ font-size:22px; margin:6px 0 8px; }
-@media (prefers-color-scheme: dark){ :root{ --ink:#f2efe8; --dim:#b9b4c9; --card:rgba(40,36,62,.92); } body{ background:radial-gradient(120% 80% at 20% 0%, #3a4a6a 0%, #2a2740 60%, #1d1b2c 100%); } input{ background:#1d1b2c; border-color:#4a4566; } }
 </style></head><body><main>
 <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6 56 19v26L32 58 8 45V19z" fill="#7fb8c9"/><path d="M32 6 56 19 32 32 8 19z" fill="#cfe4ea"/><path d="M32 32v26L8 45V19z" fill="#9f97d6"/></svg>
 <div class="tag">Closed beta</div>
