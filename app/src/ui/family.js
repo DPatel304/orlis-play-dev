@@ -121,7 +121,7 @@ export function familyPage({ nav = {}, onWho, onRecalibrate }){
       if (firstOf.get(p.accountId) === p) continue;      /* (a grown-up's own) */
       tiles.appendChild(withFace(onPick(button(`<span class="av">${AVATARS[p.avatar] || AVATARS.cube}</span><span class="nm">${esc(p.name)}</span>`, 'who'), () => { sfx.select(); kidCard(p); }), p, 220));
     }
-    if (profiles.length < MAX) tiles.appendChild(onPick(button('<span class="av">+</span><span class="nm">Add a kid</span>', 'who add'), () => { sfx.select(); kidCard(null); }));
+    if (profiles.length < MAX) tiles.appendChild(onPick(button('<span class="av">+</span><span class="nm">Add a child</span>', 'who add'), () => { sfx.select(); kidCard(null); }));
     body.appendChild(tiles);
   }
 
@@ -129,7 +129,7 @@ export function familyPage({ nav = {}, onWho, onRecalibrate }){
   function kidCard(p){
     let pick = p ? p.avatar : 'rocket';
     const box = nameBox(p ? p.name : '');
-    const card = popup(h('h2', '', p ? esc(p.name) : 'Add a kid'), box);
+    const card = popup(h('h2', '', p ? esc(p.name) : 'Add a child'), box);
     if (MAKING && p && p.look){
       /* they have an avatar: it, and a way to change it, instead of the old pictures */
       const row = h('div', 'favrow'); row.append(faceOf(p, 140), btn('Change their avatar', () => { closePop(); openMaker(p, { onDone: draw }); }, 'go'));

@@ -279,20 +279,29 @@ export function welcome(done, { auto = true, glide = false } = {}){
     getIn(sv);
   }
   const device = () => (navigator.userAgent.includes('Windows') ? 'Windows PC' : 'A device');
-  const finish = (r, joined = false) => {
+  const finish = (r, joined = false, fresh = joined) => {
     account.set({ token: r.token, account: r.account, household: r.household || null, profiles: r.profiles, current: null });
+    /* a brand-new account: first, any children to add (once) */
+    const then = (next) => fresh ? kids(next) : next();
     /* asked to join: straight on to the starter games while the owner lets them in */
-    if (r.account && r.account.waiting) return who();
+    if (r.account && r.account.waiting) return then(who);
     sfx.gold?.();
     /* someone joining with the Dev Kit, in the Windows app: setting it up first */
-    if (joined && r.account && r.account.devkit && setup.available) return ready();
-    if (joined && r.account) return welcomeIn();
-    who();
+    if (joined && r.account && r.account.devkit && setup.available) return then(ready);
+    if (joined && r.account) return then(welcomeIn);
+    then(who);
   };
+  /* Just made an account: kids play on their own, under it - add one now,
+     or later (Family). */
+  function kids(next){
+    show(h('h2', '', 'Playing with kids?'),
+      onPick(button('Add a child', 'wide'), () => { sfx.select(); addKid(); }),
+      onPick(button('Not now', 'link'), () => { sfx.back?.(); next(); }));
+  }
 
   /* Accounts are for grown-ups; making one says you are (no tick box -
      pressing Create account is the yes). Kids play on profiles. */
-  const grownups = () => h('p', 'grownups', 'For grown-ups (18+). Kids get profiles.');
+  const grownups = () => h('p', 'grownups', 'For grown-ups (18+).');
   function setupOwner(sv){
     show(h('h2', '', 'Set up Orlis Play'),
       h('p', 'lede', `A new server: "${sv.name}". The first account is the owner's - yours.`),
@@ -300,7 +309,7 @@ export function welcome(done, { auto = true, glide = false } = {}){
         ['email', 'Your email', 'email', 'email'],
         ['password', 'Password (8+ characters)', 'password', 'new-password'],
         ['name', 'Username', 'text']
-      ], 'Create account', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, adult: true, device: device() }))),
+      ], 'Create account', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, adult: true, device: device() }), false, true)),
       grownups(), msg);
   }
 
@@ -383,7 +392,7 @@ export function welcome(done, { auto = true, glide = false } = {}){
         sfx.select(); account.set({ current: p.id }); done(p);
       }), p, 220));
     }
-    if ((account.state.profiles || []).length < 8) tiles.appendChild(onPick(button('<span class="av">+</span><span class="nm">Add a kid</span>', 'who add'), () => { sfx.select(); addKid(); }));
+    if ((account.state.profiles || []).length < 8) tiles.appendChild(onPick(button('<span class="av">+</span><span class="nm">Add a child</span>', 'who add'), () => { sfx.select(); addKid(); }));
     show(h('h2', '', 'Who\'s playing?'), tiles, msg);
   }
   function addKid(){
@@ -402,8 +411,8 @@ export function welcome(done, { auto = true, glide = false } = {}){
       who();
     });
     f.insertBefore(grid, f.lastChild);
-    show(h('h2', '', 'Add a kid'), h('p', 'lede', 'Just a name and a picture - nothing else is needed.'), f, msg,
-      onPick(button('Back', 'link'), () => { sfx.back?.(); who(); }));
+    show(corner('←', 'back', 'Back', () => { sfx.back?.(); who(); }),
+      h('h2', '', 'Add a child'), h('p', 'lede', 'Just a name and a picture.'), f, msg);
   }
 
   /* (still waiting: straight on to the starter games - it lets them know when they're in) */

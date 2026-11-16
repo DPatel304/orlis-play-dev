@@ -76,12 +76,16 @@ try {
   check(!(await pg.$('label >> text=Invite code')), 'no invite code');
   const labels = (await pg.$$eval('form label', ls => ls.map(l => l.textContent.trim()))).join(' | ');
   check(/Username/.test(labels) && !(await pg.$('form input[type=checkbox]')), 'Username, and no tick box: ' + labels);
-  check(/For grown-ups \(18\+\)/.test(await pg.textContent('.acctcard')), 'For grown-ups (18+). Kids get profiles.');
+  check(/For grown-ups \(18\+\)/.test(await pg.textContent('.acctcard')), 'For grown-ups (18+).');
   seenText.push(await body());
   await shot('2-account');
   const boxes = await pg.$$('form input:not([type=hidden])'); const vals = ['correct horse', 'Sam']; let k = 0;
   for (const i of boxes){ if ((await i.getAttribute('type')) === 'checkbox') await i.check(); else await i.fill(vals[k++]); }
   await pg.click('form .go');
+  await pg.waitForSelector('text=Playing with kids?', { timeout: 20000 });
+  check(!!(await pg.$('.acctcard >> text=Add a child')), 'a new account: Playing with kids? - Add a child, or Not now');
+  await shot('2-kids');
+  await pg.click('.acctcard >> text=Not now');
 
   console.log('\n3. Straight in to play, while the owner hasn\u2019t said yes yet');
   await pg.waitForSelector('.tvtop', { timeout: 20000 }); await wait(1500);
