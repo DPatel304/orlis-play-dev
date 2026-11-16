@@ -93,6 +93,17 @@ export const account = {
   }
 };
 
+/* An address someone typed or pasted, as the server's web address: a web
+   address (https://..., as Tailscale Funnel gives) as it is; a bare
+   laptop address (192.168.1.20) on the home Wi-Fi gets http and the
+   server's port. */
+export function serverUrl(text){
+  let u = String(text || '').trim().replace(/\/+$/, '');
+  if (/^https:\/\//i.test(u)) return u;
+  if (!/^http:\/\//i.test(u)) u = 'http://' + u;
+  return /:\d+$/.test(u) ? u : u + ':47871';
+}
+
 export async function call(url, method, path, body, token){
   let r;
   try {
@@ -202,8 +213,7 @@ export function welcome(done, { auto = true } = {}){
     const list = h('ol', 'setupsteps');
     const note = h('p', 'lede setupnote', '');
     const addr = form([['url', 'Its address (in the server’s window)', 'text']], 'Connect', async ({ url }) => {
-      let u = url.trim(); if (!/^https?:\/\//.test(u)) u = 'http://' + u;
-      if (!/:\d+$/.test(u.replace(/\/$/, ''))) u = u.replace(/\/$/, '') + ':47871';
+      let u = serverUrl(url);
       const r = await hello(u);
       connect({ url: u, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false });
     });
