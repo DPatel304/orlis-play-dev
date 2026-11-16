@@ -850,7 +850,9 @@ body.titled #ui > .screen{ top:34px; }
 .shtext p{ font-size:2.8vh; margin:0 0 2vh; opacity:.95; line-height:1.3; }
 .schips{ display:flex; gap:.9vh; flex-wrap:wrap; margin-bottom:2.6vh; }
 .schip{ padding:.6vh 1.5vh; border-radius:999px; background:rgba(255,255,255,.2); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); font-size:1.9vh; font-weight:600; }
-.sbtns{ display:flex; gap:1.4vh; align-items:center; }
+.sbtns{ display:flex; flex-wrap:wrap; gap:1.4vh; align-items:center; }
+.sbtns .btn.sbtn{ flex-shrink:0; white-space:nowrap; }
+.shtext .sbtns{ width:max-content; max-width:min(92vw, 62vw + 20em); }
 .sact{ display:flex; gap:1.4vh; align-items:center; }
 .btn.sbtn{ display:inline-flex; align-items:center; border:none; border-radius:999px; padding:1.5vh 3.8vh; font-family:inherit; font-size:2.7vh; font-weight:700; transition:transform .18s ease, box-shadow .18s ease; }
 .btn.sbtn .lbl{ display:flex; align-items:center; gap:.5em; }

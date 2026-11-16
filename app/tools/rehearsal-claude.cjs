@@ -15,7 +15,7 @@ const api = async (m, p, b) => { const r = await fetch(S + p, { method: m, heade
 const TAURI = `window.__claude = { installed: false, signedIn: false }; window.__asked = [];
 window.__TAURI__ = { core: { invoke: async (c) => {
   if (c === 'find_servers') return [{ url: '${S}', name: 'Home' }];
-  if (c === 'setup_status') return { tailscale: { installed: true, state: 'on' }, claude: window.__claude };
+  if (c === 'setup_status'){ await new Promise(r => setTimeout(r, 400)); return { tailscale: { installed: true, state: 'on' }, claude: { ...window.__claude } }; }   /* (slow, as a real PC can be) */
   if (c === 'install_claude'){ __asked.push(c); setTimeout(() => { __claude.installed = true; }, 1500); return null; }
   if (c === 'claude_signin'){ __asked.push(c); setTimeout(() => { __claude.signedIn = true; }, 1500); return null; }
   if (c === 'games_list') return [];
@@ -38,7 +38,12 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await pg.click('.tvtab >> text=Create'); await pg.waitForTimeout(1800);
 
   log('\n1. No Claude Code yet: Request a game, and Connect Claude Code');
+  await pg.waitForTimeout(1500);
   const t = await txt(pg, '.sbtns');
+  check((await pg.$$('.sbtns .sbtn')).length === 3, 'each button once: ' + (await pg.$$('.sbtns .sbtn')).length + ' buttons');
+  const fit = await pg.$$eval('.sbtns .sbtn', bs => bs.map(b => b.scrollWidth <= b.clientWidth + 1));
+  check(fit.every(Boolean), 'no button squashed (labels fit)');
+  await pg.screenshot({ path: `${out}-0-create.png` });
   check(t.includes('Request a game') && t.includes('Connect Claude Code') && !t.includes('Make it myself'), 'buttons: ' + t);
   await pg.click('.sbtn >> text=Connect Claude Code'); await pg.waitForTimeout(600);
   check((await pg.$$('.fpop .setupstep')).length === 2, 'two steps');

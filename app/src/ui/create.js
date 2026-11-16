@@ -355,14 +355,20 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     return sec;
   };
 
+  let drawing = 0;
   async function draw(){
-    const [waiting, sent, asked] = await Promise.all([creator ? outbox.list() : [], creator ? outbox.sent() : [], account.call('GET', '/api/requests').then(r => r.requests || [], () => null)]);
+    /* everything it needs first; then, if a newer draw started meanwhile,
+       leave it to that one - so overlapping draws never double anything */
+    const me = ++drawing;
+    const [waiting, sent, asked, ok] = await Promise.all([creator ? outbox.list() : [], creator ? outbox.sent() : [],
+      account.call('GET', '/api/requests').then(r => r.requests || [], () => null),
+      creator && making.available && claudeOk === null ? setup.status().then(claudeConnected) : claudeOk]);
+    if (me !== drawing) return;
+    if (ok !== null) claudeOk = ok;
     btns.innerHTML = '';
     btns.append(sbtn('<span class="plus">+</span>Request a game', askPop, 'get'));
-    if (creator && making.available){
-      if (claudeOk === null) claudeOk = claudeConnected(await setup.status());
+    if (creator && making.available)
       btns.append(claudeOk ? sbtn('Make it myself', newGamePop, 'ghost') : sbtn('Connect Claude Code', connectPop, 'ghost'));
-    }
     if (creator) btns.append(sbtn('Send a game…', () => { sfx.select(); pickFile.click(); }, 'ghost'));
     if (waiting.length) btns.append(sbtn('Send now', () => { sfx.select(); send(); }, 'ghost'));
     said_.textContent = said;
@@ -396,7 +402,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     /* your games, as the Store's cards */
     if (making.available){
       const sec = row('Your games', mine.length ? 'On this PC' : '');
-      if (!mine.length) sec.appendChild(h('p', 'cempty', 'None yet - press New game to make your first.'));
+      if (!mine.length) sec.appendChild(h('p', 'cempty', 'None yet - press Make it myself to make your first.'));
       else {
         const shelf = h('div', 'sshelf');
         for (const g of mine){
