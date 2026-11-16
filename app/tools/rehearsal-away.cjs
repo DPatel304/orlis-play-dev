@@ -26,6 +26,7 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
    "opened", and the Wi-Fi: at home (no server), or at your house (and where). */
 const TAURI = `window.__fs = JSON.parse(localStorage.getItem('test.fs') || '{}'); const keep = () => localStorage.setItem('test.fs', JSON.stringify(__fs));
 window.__TAURI__ = { core: { invoke: async (c, a) => {
+  if (c === 'setup_status') return { tailscale: { installed: true, state: 'on' }, claude: { installed: true, signedIn: true } };
   if (c === 'find_servers'){ const n = await window.__net(); return n.away ? [] : [{ url: n.moved ? '${MOVED}' : '${S}', name: 'Home' }]; }
   if (c === 'games_list') return Object.entries(__fs).map(([folder, f]) => ({ folder, manifest: f['orlis.json'], changed: f.at }));
   if (c === 'game_make'){ let n = a.name, k = 2; while (__fs[n]) n = a.name + ' ' + k++; __fs[n] = { ...a.files, at: Date.now() }; keep(); return n; }
@@ -91,7 +92,7 @@ async function join(pg, code, email, name){
 }
 async function newGame(pg, name, idea){
   await tab(pg, 'Create');
-  await pg.click('.sbtn >> text=New game'); await pg.waitForTimeout(800);
+  await pg.click('.sbtn >> text=Make it myself'); await pg.waitForTimeout(800);
   await pg.fill('.fpop input.finput', name); await pg.fill('.fpop textarea', idea);
   await pg.click('.fpop .btn.go'); await pg.waitForTimeout(1500);
   await pg.keyboard.press('Escape');

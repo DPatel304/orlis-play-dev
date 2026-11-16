@@ -45,7 +45,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Pending::default())
-        .invoke_handler(tauri::generate_handler![set_display_mode, check_update, install_update, find_servers, creating::games_list, creating::game_make, creating::game_write, creating::game_read, creating::game_show, creating::claude_open, creating::game_version, setup::setup_status, setup::install_tailscale, setup::tailscale_login, setup::install_claude, setup::open_link])
+        .invoke_handler(tauri::generate_handler![set_display_mode, check_update, install_update, find_servers, creating::games_list, creating::game_make, creating::game_write, creating::game_read, creating::game_show, creating::claude_open, creating::game_version, setup::setup_status, setup::install_tailscale, setup::tailscale_login, setup::install_claude, setup::claude_signin, setup::open_link])
         .setup(|app| {
             let app = app.handle().clone();
             tauri::async_runtime::spawn(async move {

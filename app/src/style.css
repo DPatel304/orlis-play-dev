@@ -1174,3 +1174,7 @@ canvas.avface{ display:block; border-radius:50%; }
 .cask .csent{ color:#4a4d5c; }
 .cend{ display:flex; align-items:center; gap:1.4vh; flex-shrink:0; }
 @media (max-width: 800px){ .reqgrid.five{ grid-template-columns:repeat(2, 1fr); } .reqgrid.three{ grid-template-columns:1fr; } }
+.btn.wide.glow{ background:#6d5efc; color:#fff; border-color:#6d5efc; box-shadow:0 0 0 .5vh rgba(109,94,252,.18); }
+.fpop .claudecheck .setupsteps{ width:100%; font-size:1em; }
+.fpop .claudecheck .setupstep{ box-shadow:none; border:1px solid #ecebf3; }
+.fpop .claudecheck .setupnote{ margin:1.2vh 0 0; }

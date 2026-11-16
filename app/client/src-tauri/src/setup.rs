@@ -2,11 +2,12 @@
 //! (Tailscale, to reach the family's Orlis; Claude Code, to make games),
 //! whether it's there yet, and a button to get each.
 //!
-//!   setup_status       { tailscale: { installed, state }, claude: { installed } }
+//!   setup_status       { tailscale: { installed, state }, claude: { installed, signedIn } }
 //!   install_tailscale  Windows' own installer (winget) in a window of its own,
 //!                      or else Tailscale's download page in the browser
 //!   tailscale_login    the sign-in page Tailscale gives, opened in the browser
 //!   install_claude     Claude Code's own installer, in a window of its own
+//!   claude_signin      Claude Code, in a window of its own, to sign in once
 //!   open_link          a page in the browser - only the few setup pages here
 //!
 //! Nothing here takes text from a game or a server into a command: every
@@ -85,7 +86,9 @@ pub async fn setup_status() -> Value {
         let claude = crate::creating::find_claude().is_some();
         #[cfg(not(windows))]
         let claude = false;
-        json!({ "tailscale": { "installed": installed, "state": state }, "claude": { "installed": claude } })
+        let home = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")).map(PathBuf::from);
+        let signed_in = claude && home.map(|h| claude_signed_in(&h, std::env::var("ANTHROPIC_API_KEY").ok())).unwrap_or(false);
+        json!({ "tailscale": { "installed": installed, "state": state }, "claude": { "installed": claude, "signedIn": signed_in } })
     })
     .await
     .unwrap_or_else(|_| json!({ "tailscale": { "installed": false, "state": "missing" }, "claude": { "installed": false } }))
@@ -212,6 +215,43 @@ pub fn install_claude() -> Result<(), String> {
     }
 }
 
+/// Has Claude Code been signed in on this PC? Its sign-in is kept in the
+/// home folder (".claude/.credentials.json", and the account in
+/// ".claude.json"); or a key from the Claude Console is set.
+pub fn claude_signed_in(home: &std::path::Path, api_key: Option<String>) -> bool {
+    if api_key.map(|k| !k.trim().is_empty()).unwrap_or(false) {
+        return true;
+    }
+    if home.join(".claude").join(".credentials.json").is_file() {
+        return true;
+    }
+    std::fs::read_to_string(home.join(".claude.json")).map(|t| t.contains("\"oauthAccount\"")).unwrap_or(false)
+}
+
+/// Claude Code in a window of its own, to sign in once: the first time it
+/// runs, it asks to sign in and opens Claude's sign-in page in the browser. (Only Claude Code's own path is
+/// in the command - found on this PC, nothing typed by anyone.)
+#[tauri::command]
+pub fn claude_signin() -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        let claude = crate::creating::find_claude().ok_or("Claude Code isn't on this PC yet - install it first.")?;
+        let path = claude.to_string_lossy().replace('\'', "''");
+        let script = format!("$host.UI.RawUI.WindowTitle = 'Sign in to Claude (Orlis Play)'; Write-Host 'Claude Code asks you to sign in: choose your Claude account, then sign in on the page that opens in the browser.'; Write-Host 'Once you are signed in, close this window and go back to Orlis Play.'; Write-Host ''; & '{path}'");
+        Command::new("powershell.exe")
+            .args(["-NoLogo", "-NoExit", "-ExecutionPolicy", "Bypass", "-Command", &script])
+            .creation_flags(NEW_CONSOLE)
+            .spawn()
+            .map_err(|e| format!("Couldn't open Claude Code: {e}"))?;
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        Err("Only in Orlis Play for Windows.".into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -223,6 +263,24 @@ mod tests {
         assert_eq!(tailscale_state(true, Some(br#"{"BackendState":"NeedsLogin"}"#)), "signin");
         assert_eq!(tailscale_state(true, Some(br#"{"BackendState":"Stopped"}"#)), "off");
         assert_eq!(tailscale_state(true, None), "signin");
+    }
+
+    #[test]
+    fn signed_in_to_claude_is_seen_in_the_home_folder() {
+        let home = std::env::temp_dir().join(format!("orlis-claude-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&home);
+        std::fs::create_dir_all(home.join(".claude")).unwrap();
+        assert!(!claude_signed_in(&home, None));
+        assert!(claude_signed_in(&home, Some("sk-ant-x".into())));
+        assert!(!claude_signed_in(&home, Some("  ".into())));
+        std::fs::write(home.join(".claude.json"), r#"{"numStartups":1}"#).unwrap();
+        assert!(!claude_signed_in(&home, None));
+        std::fs::write(home.join(".claude.json"), r#"{"oauthAccount":{"emailAddress":"a@b"}}"#).unwrap();
+        assert!(claude_signed_in(&home, None));
+        std::fs::remove_file(home.join(".claude.json")).unwrap();
+        std::fs::write(home.join(".claude").join(".credentials.json"), "{}").unwrap();
+        assert!(claude_signed_in(&home, None));
+        let _ = std::fs::remove_dir_all(&home);
     }
 
     #[test]

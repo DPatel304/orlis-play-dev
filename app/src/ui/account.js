@@ -14,6 +14,7 @@ import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
 import { openMaker, withFace, MAKING } from './avatar-maker.js';
 import { setup, connectSteps } from './setup.js';
+import { claudeChecklist } from './connect-claude.js';
 
 const KEY = 'orlis.account';
 export const AVATARS = {
@@ -314,38 +315,12 @@ export function welcome(done, { auto = true } = {}){
   /* 2b: a new creator - getting ready to make games: Claude Code (a button
      installs it), then a first game, made and ready to try in a moment. */
   function ready(){
-    const list = h('ol', 'setupsteps'), note = h('p', 'lede setupnote', '');
-    const first = onPick(button('Make my first game', 'wide'), () => { sfx.select(); account.set({ firstGame: true }); who(); });
+    const first = onPick(button('Make my first game', 'wide'), () => { sfx.select(); check.stop(); account.set({ firstGame: true }); who(); });
+    const check = claudeChecklist({ onConnected: () => first.classList.add('glow') });
     show(h('h2', '', 'You’re in!'),
-      h('p', 'lede', 'You’re a creator. Two things, and you’re making games:'),
-      list, note, msg, first,
-      onPick(button('Later', 'link'), () => { sfx.back?.(); who(); }));
-    const me = s.lastChild;
-    let lastKey = '', busy = false;
-    const draw = (has) => {
-      if (lastKey === String(has)) return;
-      if (lastKey) note.textContent = '';
-      lastKey = String(has);
-      list.innerHTML = '';
-      const a = h('li', 'setupstep ' + (has ? 'done' : 'now'), `<span class="tick">${has ? '\u2713' : ''}</span><div><b>Install Claude Code</b><small>${has ? 'Claude Code is on this PC.' : 'Claude makes the games with you. It takes a minute or two.'}</small></div>`);
-      if (!has) a.lastChild.appendChild(onPick(button('Install Claude Code', 'go small'), async () => {
-        if (busy) return; busy = true; sfx.select(); say('');
-        try { await setup.installClaude(); note.textContent = 'Claude Code is installing in its own window. When it says it’s done, close that window and come back here.'; }
-        catch (e){ say(e.message, true); }
-        busy = false;
-      }));
-      const b = h('li', 'setupstep ' + (has ? 'now' : 'later'), '<span class="tick"></span><div><b>Sign in to Claude</b><small>The first time Claude Code opens, it asks you to sign in with your Claude account (a paid Claude plan). It opens when you make your first game.</small></div>');
-      list.append(a, b);
-    };
-    const tick = async () => {
-      if (!s.contains(me)) return;
-      const st = await setup.status();
-      if (!s.contains(me)) return;
-      draw(!!(st.claude && st.claude.installed));
-      watching = setTimeout(tick, 4000);
-    };
-    draw(false);
-    tick();
+      h('p', 'lede', 'You’re a creator. Connect Claude Code - two things, once - and you’re making games:'),
+      check.el, msg, first,
+      onPick(button('Later', 'link'), () => { sfx.back?.(); check.stop(); who(); }));
   }
 
   /* 3: who's playing - straight past it when there's only one profile to

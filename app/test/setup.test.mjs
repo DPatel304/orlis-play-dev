@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { connectSteps } from '../src/ui/setup.js';
+import { connectSteps, claudeSteps, claudeConnected } from '../src/ui/setup.js';
 
 const states = (steps) => steps.map(s => [s.key, s.state, s.action]);
 
@@ -23,4 +23,13 @@ test('signed in: waiting for the share; found: all done', () => {
   assert.deepEqual(states(connectSteps({ tailscale: { installed: true, state: 'on' } })),
     [['install', 'done', null], ['signin', 'done', null], ['share', 'now', null]]);
   assert.deepEqual(connectSteps({ tailscale: { installed: true, state: 'on' } }, true).map(s => s.state), ['done', 'done', 'done']);
+});
+
+test('connect Claude Code: install, then sign in once, then connected', () => {
+  const at = (c) => claudeSteps({ claude: c }).map(s => [s.key, s.state, s.action]);
+  assert.deepEqual(at({ installed: false }), [['install', 'now', 'install'], ['signin', 'later', null]]);
+  assert.deepEqual(at({ installed: true, signedIn: false }), [['install', 'done', null], ['signin', 'now', 'signin']]);
+  assert.deepEqual(at({ installed: true, signedIn: true }), [['install', 'done', null], ['signin', 'done', null]]);
+  assert.equal(claudeConnected(null), false);
+  assert.equal(claudeConnected({ claude: { installed: true, signedIn: true } }), true);
 });

@@ -25,6 +25,7 @@ const FIRST = (idea) => `Read CLAUDE.md, then turn the game in game.js into this
 /* the Windows app, standing in: game folders kept in memory, Claude Code "opened" */
 const TAURI = `window.__fs = window.__fs || {}; window.__calls = [];
 window.__TAURI__ = { core: { invoke: async (c, a) => { __calls.push([c, a && (a.folder || a.name)]);
+  if (c === 'setup_status') return { tailscale: { installed: true, state: 'on' }, claude: { installed: true, signedIn: true } };
   if (c === 'find_servers') return [{ url: '${S}', name: 'Home' }];
   if (c === 'games_list') return Object.entries(__fs).map(([folder, f]) => ({ folder, manifest: f['orlis.json'], changed: f.at }));
   if (c === 'game_make'){ let n = a.name, k = 2; while (__fs[n]) n = a.name + ' ' + k++; __fs[n] = { ...a.files, at: Date.now() }; return n; }
@@ -95,7 +96,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
 
   log('\n3. He makes a new game');
   await bro.click('.tvtab >> text=Create'); await bro.waitForTimeout(1500);
-  await bro.click('.sbtn >> text=New game'); await bro.waitForTimeout(800);
+  await bro.click('.sbtn >> text=Make it myself'); await bro.waitForTimeout(800);
   await bro.fill('.fpop input.finput', 'Firefly Jar'); await bro.fill('.fpop textarea', IDEA);
   await bro.click('.fpop .btn.go'); await bro.waitForTimeout(1500);
   const asked = await bro.evaluate(() => window.__claudeAsked);

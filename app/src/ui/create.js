@@ -17,7 +17,8 @@ import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
 import { account } from './account.js';
-import { setup } from './setup.js';
+import { setup, claudeConnected } from './setup.js';
+import { claudeChecklist } from './connect-claude.js';
 import { outbox } from './outbox.js';
 import { topBar } from './tabs.js';
 import { CREATE_SOON, looks } from './menu.js';
@@ -326,6 +327,21 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     draw();
   }
 
+  /* Connect Claude Code: to make games themselves, on their own Claude
+     account - install it, sign in once; then Make it myself is there */
+  let claudeOk = null;
+  function connectPop(){
+    sfx.select();
+    const go = btn('Make my first game', () => { check.stop(); closePop(); newGamePop(); }, 'go');
+    go.style.display = 'none';
+    const check = claudeChecklist({ onConnected: () => { claudeOk = true; go.style.display = ''; head.textContent = 'Connected!'; draw(); } });
+    const head = h('h2', '', 'Connect Claude Code');
+    const card = popup(head,
+      h('p', '', 'To make games yourself: Claude Code, on your own Claude account, makes them with you - you say what you want, it builds it. Two things, once:'),
+      check.el, h('div', 'fbtns'));
+    card.lastChild.append(btn('Later', () => { sfx.back?.(); check.stop(); closePop(); }, 'flink'), go);
+  }
+
   /* Request a game: the wizard, then back here to see it listed */
   const sendAsk = (recipe) => account.call('POST', '/api/requests', recipe).then((r) => { said = 'Sent! The owner will read it and make it.'; return r; });
   const store_ = async () => { try { return (await account.call('GET', '/api/store')).games || []; } catch { return []; } };
@@ -343,7 +359,10 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     const [waiting, sent, asked] = await Promise.all([creator ? outbox.list() : [], creator ? outbox.sent() : [], account.call('GET', '/api/requests').then(r => r.requests || [], () => null)]);
     btns.innerHTML = '';
     btns.append(sbtn('<span class="plus">+</span>Request a game', askPop, 'get'));
-    if (creator && making.available) btns.append(sbtn('Make it myself', newGamePop, 'ghost'));
+    if (creator && making.available){
+      if (claudeOk === null) claudeOk = claudeConnected(await setup.status());
+      btns.append(claudeOk ? sbtn('Make it myself', newGamePop, 'ghost') : sbtn('Connect Claude Code', connectPop, 'ghost'));
+    }
     if (creator) btns.append(sbtn('Send a game…', () => { sfx.select(); pickFile.click(); }, 'ghost'));
     if (waiting.length) btns.append(sbtn('Send now', () => { sfx.select(); send(); }, 'ghost'));
     said_.textContent = said;
