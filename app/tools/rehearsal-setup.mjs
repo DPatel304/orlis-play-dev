@@ -65,7 +65,7 @@ try {
 
   console.log('\n2. Back online: it finds the server by itself - nothing to type');
   net.online = true;
-  await pg.waitForSelector('.acctlogo', { timeout: 20000 });
+  await pg.waitForSelector('.getin', { timeout: 20000 });
   check(true, 'found it on its own');
   check((await pg.$$('form input:not([type=hidden])')).length === 1, 'just one box: their email');
   await shot('2-email');
@@ -126,7 +126,7 @@ try {
   await pg.keyboard.press('Escape').catch(() => {});
   await pg.click('.burger'); await wait(500);
   await pg.click('.popitem >> text=Sign out');
-  await pg.waitForSelector('.acctlogo', { timeout: 20000 });
+  await pg.waitForSelector('.getin', { timeout: 20000 });
   await pg.fill('form input[type=email]', 'Sam@Example.com');
   await pg.click('form .go');
   await pg.waitForSelector('text=Welcome back', { timeout: 10000 });

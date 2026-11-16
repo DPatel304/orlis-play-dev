@@ -112,10 +112,10 @@ function toCreate(){
 /* The Windows app's way in: find the server and sign in (once), then pick
    who's playing (each time). The profiles are brought up to date quietly,
    if the server's in reach. */
-function toWho(arrive){
+function toWho(arrive, glide = false){
   account.refresh();
   /* (a new creator who picked "Make my first game": straight to Create, where it's made) */
-  go('who', () => welcome(() => (account.state && account.state.firstGame ? toCreate() : toMenu(arrive)), { auto: arrive }));
+  go('who', () => welcome(() => (account.state && account.state.firstGame ? toCreate() : toMenu(arrive)), { auto: arrive, glide }));
 }
 
 function toCalibration(){
@@ -473,7 +473,9 @@ const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : nul
   audio.resume();
   let show = null;
   if (straight) show = { done: true };
-  else go('boot', () => (show = bootShow()));
+  /* (signing in comes next: the cube stays, and glides over beside it) */
+  const settle = account.needed && !account.signedIn && !straight;
+  if (!straight) go('boot', () => (show = bootShow({ settle })));
   requestAnimationFrame(tick);
   pose.setVideo(video, { forceMouse: debug });
   window.__pose = pose; window.__cursor = cursor; window.__music = music;   /* handles for tests; harmless in play */
@@ -492,6 +494,6 @@ const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : nul
      screen, its tiles flying out of the cube. */
   if (straight) toGame(straight);
   /* In the Windows app: signed in, and who's playing, first. */
-  else if (account.needed) toWho(true);
+  else if (account.needed) toWho(true, settle);
   else toMenu(true);
 })();

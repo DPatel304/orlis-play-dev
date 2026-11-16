@@ -28,7 +28,11 @@ export const SYS = '"Segoe UI Variable Display","Segoe UI","SF Pro Display",-app
    for how long, and how long a loop takes. */
 const WAVE_SPEED = 1.1, WAVE_FOR = 0.18, LOOP = 0.75;
 
-export function boot(){
+/* settle: signing in comes next - after the wink the cube stays, and the
+   front door's picture (front.js) carries on from here, gliding it over;
+   no break into the home screen's tiles. */
+export const SETTLE = WINK + 1.3;
+export function boot({ settle = false } = {}){
   clearUI();
   const s = screen('boot');
   const wait = h('p', 'bootwait', 'Starting the camera…');
@@ -43,17 +47,17 @@ export function boot(){
   const show = {
     camReady: true,
     get t(){ return t; },
-    get done(){ return t >= BOOT; },
+    get done(){ return t >= (settle ? SETTLE : BOOT); },
     tick(dt){
       idle += dt;
       /* the cube waits for the camera before it breaks */
-      if (skip && t < HOLD) t = HOLD;
+      if (skip && t < HOLD) t = settle ? SETTLE : HOLD;
       if (t < HOLD || show.camReady) t += dt;
       if (t > HOLD && !show.camReady) t = HOLD;
       wait.classList.toggle('show', t >= HOLD && !show.camReady && idle > HOLD + 1);
       if (!merged && t >= MERGE){ merged = true; sfx.boot(); }
       if (!winked && t >= WINK){ winked = true; sfx.wink(); }
-      if (!broke && t >= BREAK){ broke = true; sfx.whoosh?.(); }
+      if (!broke && !settle && t >= BREAK){ broke = true; sfx.whoosh?.(); }
       /* the Easter egg: waving while they swirl */
       for (let i = 0; i < loops.length; i++){
         const p = pose.players[i], lp = loops[i];

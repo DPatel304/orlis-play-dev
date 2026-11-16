@@ -79,7 +79,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await bro.waitForSelector('text=Which Orlis server?', { timeout: 20000 }).catch(() => {});
   await bro.click('.btn >> text=Home').catch(() => {});
   /* getting in: his email, then what a new account needs (with the invite code) */
-  await bro.waitForSelector('.acctlogo', { timeout: 15000 });
+  await bro.waitForSelector('.getin', { timeout: 15000 });
   await bro.fill('form input[type=email]', 'brother@example.com'); await bro.click('form .btn.go');
   await bro.waitForSelector('text=Make an account', { timeout: 10000 }); await bro.waitForTimeout(300);
   const inputs = await bro.$$('form input:not([type=hidden]):not([type=checkbox])');

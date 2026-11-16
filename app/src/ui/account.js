@@ -9,7 +9,7 @@
 
    Only in the Windows app (window.__TAURI__). Opened any other way - the
    browser, the tests - there's no account step at all. */
-import { brandGlow, logo } from './welcome-bg.js';
+import { frontScene } from './front.js';
 import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
@@ -147,12 +147,13 @@ async function hello(url){
    One overlay at a time, swapped in place: finding the server, then signing
    in or joining (or, on a brand-new server, setting up as the owner), then
    "Who's playing?". done() once a profile's picked. */
-export function welcome(done, { auto = true } = {}){
+export function welcome(done, { auto = true, glide = false } = {}){
   clearUI();
   const s = screen('dim account');
-  /* a soft brand glow behind, and everything else on one card over it */
-  const card = h('div', 'acctcard');
-  s.append(brandGlow(), card);
+  /* the cube resting on the left (drawn behind - front.js), and everything
+     else on one card on the right */
+  const card = h('div', 'acctcard' + (glide ? ' glide' : ''));
+  s.append(card);
   /* (a screen that keeps checking - the setup checklist - stops when another's shown) */
   let watching = null;
   const stopWatching = () => { if (watching){ clearTimeout(watching); watching = null; } };
@@ -293,8 +294,7 @@ export function welcome(done, { auto = true } = {}){
   /* Getting in: just an email. An account with it - its password; none -
      what a new account needs. */
   function getIn(sv, typed = ''){
-    show(logo(),
-      form([['email', 'Email', 'email', 'email', { value: typed }]], 'Continue', async ({ email }) => {
+    const f = form([['email', 'Email', 'email', 'email', { value: typed }]], 'Continue', async ({ email }) => {
         /* (a server from before email-first sign-in hasn't this - it needs its update) */
         const r = await call(sv.url, 'POST', '/api/account-exists', { email }).catch((e) => {
           if (e.status === 404) throw new Error('The Orlis server needs an update. On its laptop, right-click the Orlis cube by the clock, then Restart.');
@@ -302,8 +302,9 @@ export function welcome(done, { auto = true } = {}){
         });
         sfx.select?.();
         return r.exists ? signIn(sv, email.trim()) : join(sv, email.trim());
-      }),
-      msg);
+      });
+    f.classList.add('getin');
+    show(f, msg);
   }
   /* the card's corner icons: back (top-left), help (top-right) - small, so
      the form is what you see */
@@ -395,7 +396,7 @@ export function welcome(done, { auto = true } = {}){
 
   /* (still waiting: straight on to the starter games - it lets them know when they're in) */
   if (account.signedIn) who(); else find();
-  return { tick(){}, draw(){} };
+  return frontScene({ glide });
 }
 
 const esc = (t) => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
