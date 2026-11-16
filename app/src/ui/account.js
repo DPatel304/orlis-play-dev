@@ -290,16 +290,18 @@ export function welcome(done, { auto = true, glide = false } = {}){
     who();
   };
 
+  /* Accounts are for grown-ups; making one says you are (no tick box -
+     pressing Create account is the yes). Kids play on profiles. */
+  const grownups = () => h('p', 'grownups', 'For grown-ups (18+). Kids get profiles.');
   function setupOwner(sv){
     show(h('h2', '', 'Set up Orlis Play'),
       h('p', 'lede', `A new server: "${sv.name}". The first account is the owner's - yours.`),
       form([
         ['email', 'Your email', 'email', 'email'],
         ['password', 'Password (8+ characters)', 'password', 'new-password'],
-        ['name', 'Username', 'text'],
-        ['adult', 'I\'m a grown-up (18+)', 'check']
-      ], 'Create account', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, device: device() }))),
-      msg);
+        ['name', 'Username', 'text']
+      ], 'Create account', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, adult: true, device: device() }))),
+      grownups(), msg);
   }
 
   /* Getting in: just an email. An account with it - its password; none -
@@ -345,10 +347,9 @@ export function welcome(done, { auto = true, glide = false } = {}){
         ['email', '', 'email', 'username', { value: email, hidden: true }],
         ...(free ? [] : [['invite', 'Invite code (from the owner)', 'text']]),
         ['password', 'Password (8+ characters)', 'password', 'new-password'],
-        ['name', 'Username', 'text'],
-        ['adult', 'I\'m a grown-up (18+)', 'check']
-      ], 'Create account', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, device: device() }), true)),
-      msg, another(sv, email));
+        ['name', 'Username', 'text']
+      ], 'Create account', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, adult: true, device: device() }), true)),
+      grownups(), msg, another(sv, email));
   }
 
   /* 2b: a new creator - getting ready to make games: Claude Code (a button

@@ -75,7 +75,8 @@ try {
   check((await body()).includes('sam@example.com'), 'a new email: Make an account, for sam@example.com');
   check(!(await pg.$('label >> text=Invite code')), 'no invite code');
   const labels = (await pg.$$eval('form label', ls => ls.map(l => l.textContent.trim()))).join(' | ');
-  check(/Username/.test(labels) && /grown-up \(18\+\)/.test(labels), 'Username, and I\u2019m a grown-up (18+): ' + labels);
+  check(/Username/.test(labels) && !(await pg.$('form input[type=checkbox]')), 'Username, and no tick box: ' + labels);
+  check(/For grown-ups \(18\+\)/.test(await pg.textContent('.acctcard')), 'For grown-ups (18+). Kids get profiles.');
   seenText.push(await body());
   await shot('2-account');
   const boxes = await pg.$$('form input:not([type=hidden])'); const vals = ['correct horse', 'Sam']; let k = 0;
