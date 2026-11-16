@@ -2,6 +2,58 @@
 
 Ideas kept for later. Not promises, and not in order within a section.
 
+## Decisions
+
+What's been decided, so it isn't only in chat. Newest last within each part.
+
+**Controllers and wearables** (Nov 15-16, 2026)
+- **The camera comes first.** Everything works with the camera alone; watches
+  and headbands are added later, and every game must still play fully without
+  them.
+- **The watch is the Bangle.js 2** (for building and for our family): tough,
+  readable screen, programmed in JavaScript over Bluetooth, weeks of battery.
+  Its screen has 8 colours, so two player colours (orange, purple) will need
+  to change to ones it can show.
+- **One Orlis watch protocol** (motion in; colour, pictures and buzz out), so
+  the PineTime (about a quarter of the price, for other families) and our own
+  band later work without the games changing.
+- **The watch screen is for glances:** who you are (colour, avatar), your
+  status, Nova on your wrist in LKP, secrets the TV can't keep (missions,
+  roles, team puzzles), tap to choose. Icons over words; buzz first.
+- Also explored, not chosen yet: light-up headbands in player colours, a
+  sturdy dance pad, the four-player floor "team controller" (drawings
+  committed), our own kid-friendly band (prototype on a Seeed XIAO nRF52840
+  Sense; outsource the circuit board to a freelance engineer).
+
+**The product** (Nov 16, 2026)
+- **Starter Kit:** two watches, kid straps and a quick-start card; families
+  download Orlis Play to their Windows laptop or MacBook (plug into the TV
+  recommended). Needs first: watch setup in the app, a Mac version, and the
+  Store and accounts online so it works without our laptop server.
+- **Not building our own console box for now:** mini PC prices have roughly
+  doubled with the 2026 memory shortage. Revisit when they settle.
+- **Hosting: as much as possible on our laptop, no Tailscale for families.**
+  Leaning towards a tiny relay (a $5 AWS Lightsail box that only forwards
+  traffic and stores nothing), or Tailscale Funnel (on our laptop only).
+  Not final.
+- **Joining: no invite codes.** People sign up with email and password, verify
+  their email with a code, and the owner approves them (or pre-approves
+  emails). Email sent with Gmail first, Amazon SES later. Not built yet.
+
+**Money** (Nov 16, 2026)
+- **No subscriptions.** Buy once, keep what you buy.
+- **Ways in:** the Starter Kit (about $129-149 with PineTimes; software
+  forever), game packs ($5-15, kept forever), a Season Pass that doesn't
+  renew by itself (games kept forever), a lifetime pass, and pay-as-you-go
+  game-making credits (AI costs real money, so never unlimited).
+- **No Steam.** Sell direct from our own website: Paddle or Lemon Squeezy
+  for the software (they handle sales tax), Stripe for physical kits.
+- **The order:** families (the kit and packs), then Kickstarter, then a
+  classroom licence (pilot with a preschool or teacher), then a creator
+  marketplace (a share of each sale, every game reviewed), then venues and
+  therapy settings (no medical claims).
+- **Never:** ads to kids, selling data, loot boxes, or purchases by kids.
+
 ## Creator mode
 
 From the VibeBox concept (worked out together with a friend, who is doing
