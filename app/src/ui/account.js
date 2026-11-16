@@ -281,7 +281,11 @@ export function welcome(done, { auto = true } = {}){
   function getIn(sv, typed = ''){
     show(logo(),
       form([['email', 'Email', 'email', 'email', { value: typed }]], 'Continue', async ({ email }) => {
-        const r = await call(sv.url, 'POST', '/api/account-exists', { email });
+        /* (a server from before email-first sign-in hasn't this - it needs its update) */
+        const r = await call(sv.url, 'POST', '/api/account-exists', { email }).catch((e) => {
+          if (e.status === 404) throw new Error('The Orlis server needs an update. On its computer: the cube in the corner, then Restart.');
+          throw e;
+        });
         sfx.select?.();
         return r.exists ? signIn(sv, email.trim()) : join(sv, email.trim());
       }),
