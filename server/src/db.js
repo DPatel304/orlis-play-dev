@@ -151,6 +151,11 @@ export const STEPS = [
     household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE
   );
   ALTER TABLE accounts ADD COLUMN slots INTEGER NOT NULL DEFAULT 3;
+  `,
+  /* 10: joining with the owner's OK - an account that's asked to join waits
+     (pending) until the owner lets them in */
+  `
+  ALTER TABLE accounts ADD COLUMN pending INTEGER NOT NULL DEFAULT 0;
   `
 ];
 

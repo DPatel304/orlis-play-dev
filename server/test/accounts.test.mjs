@@ -29,7 +29,7 @@ test('a new server asks to be set up; the first account is the owner and needs n
     const hi = await call('GET', '/api/hello');
     assert.match(hi.id, /^[0-9a-f]{18}$/, 'the server\'s own id, for finding it again');
     delete hi.id;
-    assert.deepEqual(hi, { status: 200, app: 'orlis', name: 'Test Orlis', version: '0.1.0', setup: true, invite: true });
+    assert.deepEqual(hi, { status: 200, app: 'orlis', name: 'Test Orlis', version: '0.1.0', setup: true, invite: true, approval: false });
     const me = await call('POST', '/api/signup', grownUp('Parent@Example.com'));
     assert.equal(me.status, 201);
     assert.equal(me.account.role, 'owner');

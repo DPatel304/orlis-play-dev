@@ -34,7 +34,7 @@ const BACKUP_LOOK = 60 * 60 * 1000, QUIET = 2 * 60 * 1000;
 /* restart(): how to start this server again (to finish a restore) - given
    when something's there to do it. status.update: what the updater last
    found, for the owner's page. */
-export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, publicUrl = null, internetPort = null, files = null, notify = null } = {}){
+export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, approveJoins = false, publicUrl = null, internetPort = null, files = null, notify = null } = {}){
   mkdirSync(dataDir, { recursive: true });
   const safe = backups(dataDir, { version: VERSION });
   /* a restore the owner asked for, done before anything is opened */
@@ -49,7 +49,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
      the Wi-Fi when its address changes (a router gives the laptop a new one) */
   const idFile = join(dataDir, 'server.id');
   if (!existsSync(idFile)) writeFileSync(idFile, randomBytes(9).toString('hex'));
-  const info = { id: readFileSync(idFile, 'utf8').trim(), name: name || `${hostname()}'s Orlis`, version: VERSION, everyoneCreates, tailscaleJoin, publicUrl };
+  const info = { id: readFileSync(idFile, 'utf8').trim(), name: name || `${hostname()}'s Orlis`, version: VERSION, everyoneCreates, tailscaleJoin, approveJoins, publicUrl };
   /* its files (the Store's games, games sent in): the data folder, on the laptop - files.js */
   const keep = files || folderFiles(dataDir);
   const shop = await store(keep, starters);
@@ -58,6 +58,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   /* a note for the owner, by the clock (the cube shows it - supervisor.js) */
   const tell = notify || ((title, text) => console.log(`@@say ${String(title).replace(/[|\n]/g, ' ')}|${String(text).replace(/\n/g, ' ')}`));
   const asked = requests(db, keep, shop, sent, log, tell);
+  info.tell = tell;              /* (someone asking to join: a note by the clock) */
   /* who sees which game in the Store (db.js, step 9) */
   const reach = {
     of: (id) => db.prepare('SELECT 1 FROM reach WHERE game_id = ?').get(id) ? 'family' : 'everyone',

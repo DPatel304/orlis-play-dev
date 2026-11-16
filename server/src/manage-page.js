@@ -132,7 +132,16 @@ var TRY = ${TRY_SECS};
 
   var views = {
     approvals: function(){
-      return Promise.all([call('GET', '/api/requests'), call('GET', '/api/server')]).then(function(rs){ requestsCard(rs[0].requests, rs[1].maker); })
+      /* people asking to join: let them in, or not (only shown when someone's waiting) */
+      return call('GET', '/api/joins').then(function(r){
+        if (!r.joins || !r.joins.length) return;
+        var c = card('Waiting to join');
+        r.joins.forEach(function(j){
+          row(c, '<b>' + esc(j.name || j.email) + '</b><small>' + esc(j.email) + ' \\u00b7 ' + esc(j.family) + ' \\u00b7 asked ' + esc(when(j.createdAt)) + '</small>',
+            [btn('Let them in', 'go', function(){ call('POST', '/api/joins/' + encodeURIComponent(j.id) + '/approve').then(show, fail(c)); }),
+             sure('Decline', 'Decline? Click again', 'danger', function(){ call('POST', '/api/joins/' + encodeURIComponent(j.id) + '/decline').then(show, fail(c)); })]);
+        });
+      }).then(function(){ return Promise.all([call('GET', '/api/requests'), call('GET', '/api/server')]); }).then(function(rs){ requestsCard(rs[0].requests, rs[1].maker); })
         .then(function(){ return call('GET', '/api/submissions'); }).then(function(r){
         var waiting = r.submissions.filter(function(x){ return x.state === 'waiting'; });
         var done = r.submissions.filter(function(x){ return x.state !== 'waiting'; });
@@ -229,7 +238,7 @@ var TRY = ${TRY_SECS};
       return call('GET', '/api/history').then(function(r){
         var c = card('What happened to the family\\u2019s games');
         if (!r.history.length) note(c, 'Nothing yet. Every game sent, played, approved, declined or taken out is kept here, and every grown-up made a creator or not.');
-        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed' };
+        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed', 'asked-to-join': 'Asked to join', 'join-approved': 'Let in', 'join-declined': 'Not let in' };
         r.history.forEach(function(x){
           row(c, '<span class="tag ' + (x.what === 'approved' ? 'ok' : x.what === 'declined' || x.what === 'removed' ? 'declined' : '') + '">' + esc(SAY[x.what] || x.what) + '</span> ' +
             (x.name ? '<b>' + esc(x.name) + '</b>' + (x.version ? ' <span class="tag">version ' + esc(x.version) + '</span>' : '') : '') +
@@ -275,7 +284,7 @@ var TRY = ${TRY_SECS};
     }
   };
   /* how many are waiting, on the tab */
-  function count(){ call('GET', '/api/submissions').then(function(r){ var n = r.submissions.filter(function(x){ return x.state === 'waiting'; }).length; document.getElementById('waiting').textContent = n ? n : ''; }, function(){}); }
+  function count(){ Promise.all([call('GET', '/api/submissions'), call('GET', '/api/joins').catch(function(){ return { joins: [] }; })]).then(function(r){ var n = r[0].submissions.filter(function(x){ return x.state === 'waiting'; }).length + r[1].joins.length; document.getElementById('waiting').textContent = n ? n : ''; }, function(){}); }
   function show(){
     main.innerHTML = '';
     if (key) count();

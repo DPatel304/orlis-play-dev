@@ -5,7 +5,7 @@ const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os');
 const [appUrl, out, serverDir] = process.argv.slice(2);
 const data = fs.mkdtempSync(path.join(os.tmpdir(), 'orlis-claude-'));
-const srv = cp.spawn(process.execPath, ['--no-warnings', 'src/main.js'], { cwd: serverDir, env: { ...process.env, ORLIS_DATA: data, ORLIS_NAME: 'Home', ORLIS_MAKER: 'false', ORLIS_NO_TRAY: '1', ORLIS_NO_UPDATE: '1' } });
+const srv = cp.spawn(process.execPath, ['--no-warnings', 'src/main.js'], { cwd: serverDir, env: { ...process.env, ORLIS_DATA: data, ORLIS_NAME: 'Home', ORLIS_APPROVE_JOINS: 'false', ORLIS_MAKER: 'false', ORLIS_NO_TRAY: '1', ORLIS_NO_UPDATE: '1' } });
 const S = 'http://127.0.0.1:47871';
 const fail = [], log = console.log;
 const check = (ok, what) => { log((ok ? '  ✓ ' : '  ✗ ') + what); if (!ok) fail.push(what); };
@@ -28,6 +28,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   const state = { server: { url: S, name: 'Home' }, token: me.token, account: me.account, household: me.household, profiles: me.profiles, current: me.profiles[0].id };
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 1600, height: 900 } });
+  await ctx.route(/\.ts\.net\//, r => r.abort());   /* (never the real family server on the internet) */
   await ctx.addInitScript(TAURI + `localStorage.setItem('orlis.account', ${JSON.stringify(JSON.stringify(state))});`);
   const pg = await ctx.newPage();
   const errs = [];

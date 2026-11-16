@@ -8,7 +8,7 @@ const fs = require('fs'), path = require('path'), cp = require('child_process'),
 const [appUrl, out, serverDir] = process.argv.slice(2);
 const data = fs.mkdtempSync(path.join(os.tmpdir(), 'orlis-req-'));
 const srv = cp.spawn(process.execPath, ['--no-warnings', 'src/main.js'], { cwd: serverDir,
-  env: { ...process.env, ORLIS_DATA: data, ORLIS_NAME: 'Home', ORLIS_EVERYONE_CREATES: 'false', ORLIS_MAKER: 'false', ORLIS_NO_TRAY: '1', ORLIS_NO_UPDATE: '1' } });
+  env: { ...process.env, ORLIS_DATA: data, ORLIS_NAME: 'Home', ORLIS_APPROVE_JOINS: 'false', ORLIS_EVERYONE_CREATES: 'false', ORLIS_MAKER: 'false', ORLIS_NO_TRAY: '1', ORLIS_NO_UPDATE: '1' } });
 const S = 'http://127.0.0.1:47871';
 const log = (...a) => console.log(...a);
 const fail = [];
@@ -37,6 +37,7 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(35
 
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 1600, height: 900 } });
+  await ctx.route(/\.ts\.net\//, r => r.abort());   /* (never the real family server on the internet) */
   await ctx.addInitScript(TAURI + `if (!localStorage.getItem('orlis.account')) localStorage.setItem('orlis.account', ${JSON.stringify(JSON.stringify(state))});`);
   const pg = await ctx.newPage();
   const errs = [];

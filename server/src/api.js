@@ -31,6 +31,7 @@ import { hashPassword, checkPassword, burnTime, newToken, hashToken, newId, newI
 export const LIMITS = {
   profiles: 8,              /* per family */
   invites: 20,              /* unused ones an owner can have out at once */
+  askers: 20,               /* people waiting to join at once */
   password: [8, 200],
   name: [1, 20],
   tries: 10,                /* wrong passwords for one email before a pause */
@@ -46,15 +47,19 @@ export function api(db, info, extra = () => [], manageKey = null){
   /* Over Tailscale, no invite is needed: being shared this laptop is the invite. */
   const AWAY_JOINS = info.tailscaleJoin !== false;
   /* (tailscaleJoin: false to need invites from everyone; a function, in the tests, says who's "away") */
+  /* Joining with the owner's OK: anyone can ask (no invite code), and waits */
+  const APPROVE = info.approveJoins === true;
   const joinsFree = (ip) => typeof info.tailscaleJoin === 'function' ? info.tailscaleJoin(ip) : AWAY_JOINS && isTailscale(ip);      /* email -> { n, until } */
 
   /* ---------- who's asking ---------- */
-  function who(headers){
+  function who(headers, { waiting = false } = {}){
     const m = /^Bearer (.+)$/.exec(headers.authorization || '');
     if (!m) throw new Fail(401, 'signed_out', 'Please sign in.');
     const s = q('SELECT s.token_hash, a.* FROM sessions s JOIN accounts a ON a.id = s.account_id WHERE s.token_hash = ?').get(hashToken(m[1]));
     if (!s) throw new Fail(401, 'signed_out', 'Please sign in again.');
     q('UPDATE sessions SET last_seen = ? WHERE token_hash = ?').run(now(), s.token_hash);
+    /* (asked to join, not let in yet: only "am I in yet?" and signing out) */
+    if (s.pending && !waiting) throw new Fail(403, 'waiting', 'Waiting for the owner to let you in.');
     return s;
   }
   /* The owner: signed in as the owner, or - on the server's own laptop -
@@ -103,7 +108,7 @@ export function api(db, info, extra = () => [], manageKey = null){
   const device = (v) => text(v).slice(0, 60) || 'A device';
 
   /* ---------- what's sent back ---------- */
-  const accountOut = (a) => ({ id: a.id, email: a.email, role: a.role, devkit: a.role === 'owner' || !!a.devkit, createdAt: a.created_at });
+  const accountOut = (a) => ({ id: a.id, email: a.email, role: a.role, devkit: a.role === 'owner' || !!a.devkit, waiting: !!a.pending, createdAt: a.created_at });
   const householdOf = (a) => { const h = q('SELECT id, name FROM households WHERE id = ?').get(a.household_id); return h ? { ...h } : null; };
   /* the family's profiles: everyone's kids (and grown-ups) in the household */
   const lookOf = (t) => { try { return t ? JSON.parse(t) : null; } catch { return null; } };
@@ -123,7 +128,7 @@ export function api(db, info, extra = () => [], manageKey = null){
   return [
     ...extra(who, owner),
     /* The app's "is this an Orlis server, and does it need setting up?" */
-    ['GET', '/api/hello', ({ ip }) => ({ app: 'orlis', id: info.id, name: info.name, version: info.version, setup: accounts() === 0, invite: !joinsFree(ip) })],
+    ['GET', '/api/hello', ({ ip }) => ({ app: 'orlis', id: info.id, name: info.name, version: info.version, setup: accounts() === 0, invite: !joinsFree(ip) && !APPROVE, approval: APPROVE && !joinsFree(ip) })],
 
     /* Joining: a grown-up's email and password, an invite (unless this is
        the first account), their own profile's name, and a yes to "I'm a
@@ -134,7 +139,11 @@ export function api(db, info, extra = () => [], manageKey = null){
       const first = accounts() === 0;
       let invite = null;
       const free = !first && joinsFree(ip) && !text(body.invite);
-      if (!first && !free){
+      /* no invite code: they ask to join, and wait for the owner's OK */
+      const asks = !first && !free && APPROVE && !text(body.invite);
+      if (asks && q('SELECT COUNT(*) AS n FROM accounts WHERE pending = 1').get().n >= LIMITS.askers)
+        throw new Fail(429, 'busy', 'Lots of people are waiting to join right now. Try again tomorrow.');
+      if (!first && !free && !asks){
         invite = q('SELECT * FROM invites WHERE code = ? AND used_by IS NULL').get(tidyInvite(body.invite));
         if (!invite) throw new Fail(400, 'bad_invite', 'That invite code isn\'t right, or it\'s been used. Ask for a new one.');
       }
@@ -148,12 +157,14 @@ export function api(db, info, extra = () => [], manageKey = null){
           home = newId();
           q('INSERT INTO households (id, name, created_at) VALUES (?, ?, ?)').run(home, familyName(body.family, `${n}'s family`), t);
         }
-        q('INSERT INTO accounts (id, email, password_hash, role, created_at, household_id) VALUES (?, ?, ?, ?, ?, ?)').run(id, e, hashPassword(p), first ? 'owner' : EVERYONE_CREATES || free ? 'creator' : invite.role, t, home);
+        q('INSERT INTO accounts (id, email, password_hash, role, created_at, household_id, pending) VALUES (?, ?, ?, ?, ?, ?, ?)').run(id, e, hashPassword(p), first ? 'owner' : EVERYONE_CREATES || free || asks ? 'creator' : invite.role, t, home, asks ? 1 : 0);
         q('INSERT INTO profiles (id, account_id, name, avatar, created_at) VALUES (?, ?, ?, ?, ?)').run(newId(), id, n, avatar(body.avatar), t);
         if (invite) q('UPDATE invites SET used_by = ?, used_at = ? WHERE code = ?').run(id, t, invite.code);
         db.exec('COMMIT');
         if (free) history(db).add({ id, email: e }, 'joined', { note: e });
+        if (asks) history(db).add({ id, email: e }, 'asked-to-join', { note: `${e} · ${familyName(body.family, `${n}'s family`)}` });
       } catch (err){ db.exec('ROLLBACK'); throw err; }
+      if (asks) info.tell?.(`${n} wants to join`, `${e} - open Manage Orlis Server to let them in`);
       return [201, signIn(id, body.device)];
     }],
 
@@ -173,13 +184,13 @@ export function api(db, info, extra = () => [], manageKey = null){
     }],
 
     ['POST', '/api/signout', ({ headers }) => {
-      const a = who(headers);
+      const a = who(headers, { waiting: true });
       q('DELETE FROM sessions WHERE token_hash = ?').run(a.token_hash);
       return { ok: true };
     }],
 
     ['GET', '/api/me', ({ headers }) => {
-      const a = who(headers);
+      const a = who(headers, { waiting: true });
       return { account: accountOut(a), household: householdOf(a), profiles: profilesOf(a) };
     }],
     /* the asker's own family: its name and its grown-ups */
@@ -284,6 +295,35 @@ export function api(db, info, extra = () => [], manageKey = null){
       if (!r.changes) throw new Fail(404, 'no_account', 'No such account.');
       if (before.role !== body.role) history(db).add(me, body.role === 'creator' ? 'creator' : 'not-creator', { note: before.email });
       return { id: params.id, role: body.role };
+    }],
+    /* people waiting to join, for the owner to let in (or not) */
+    ['GET', '/api/joins', ({ headers, ip }) => {
+      owner(headers, ip);
+      return { joins: q(`SELECT a.id, a.email, a.created_at AS createdAt, h.name AS family,
+          (SELECT p.name FROM profiles p WHERE p.account_id = a.id ORDER BY p.created_at LIMIT 1) AS name
+        FROM accounts a JOIN households h ON h.id = a.household_id WHERE a.pending = 1 ORDER BY a.created_at`).all().map(r => ({ ...r })) };
+    }],
+    ['POST', '/api/joins/:id/approve', ({ headers, params, ip }) => {
+      const me = owner(headers, ip);
+      const a = q('SELECT email FROM accounts WHERE id = ? AND pending = 1').get(params.id);
+      if (!a) throw new Fail(404, 'no_one', 'They aren\'t waiting any more.');
+      q('UPDATE accounts SET pending = 0 WHERE id = ?').run(params.id);
+      history(db).add(me, 'join-approved', { note: a.email });
+      return { ok: true };
+    }],
+    /* not let in: their account goes (and their family, if it's only them) */
+    ['POST', '/api/joins/:id/decline', ({ headers, params, ip }) => {
+      const me = owner(headers, ip);
+      const a = q('SELECT email, household_id FROM accounts WHERE id = ? AND pending = 1').get(params.id);
+      if (!a) throw new Fail(404, 'no_one', 'They aren\'t waiting any more.');
+      db.exec('BEGIN');
+      try {
+        q('DELETE FROM accounts WHERE id = ?').run(params.id);
+        if (!q('SELECT 1 FROM accounts WHERE household_id = ?').get(a.household_id)) q('DELETE FROM households WHERE id = ?').run(a.household_id);
+        db.exec('COMMIT');
+      } catch (err){ db.exec('ROLLBACK'); throw err; }
+      history(db).add(me, 'join-declined', { note: a.email });
+      return { ok: true };
     }],
     /* game slots: how many made-for-them games someone can keep (3 to start) */
     ['POST', '/api/accounts/:id/slots', ({ headers, params, body, ip }) => {

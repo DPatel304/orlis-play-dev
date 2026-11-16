@@ -13,8 +13,9 @@ import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
 import { openMaker, withFace, MAKING } from './avatar-maker.js';
-import { setup, connectSteps } from './setup.js';
+import { setup } from './setup.js';
 import { claudeChecklist } from './connect-claude.js';
+import { HOME_SERVER } from './home-server.js';
 
 const KEY = 'orlis.account';
 export const AVATARS = {
@@ -192,10 +193,14 @@ export function welcome(done, { auto = true } = {}){
       const list = await findServers();
       for (const sv of list){ try { const r = await hello(sv.url); found.push({ url: sv.url, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false }); } catch {} }
     }
+    /* none on this Wi-Fi: the family's server, on the internet */
+    if (!found.length && HOME_SERVER){
+      try { const r = await hello(HOME_SERVER); found.push({ url: HOME_SERVER, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false }); } catch {}
+    }
     return found;
   }
   async function find(){
-    show(h('h2', '', 'Finding your Orlis server…'), h('p', 'lede', 'Looking on this Wi-Fi, and over Tailscale.'));
+    show(h('h2', '', 'Finding your Orlis server…'));
     const found = await look();
     if (found.length === 1) return connect(found[0]);
     if (found.length > 1) return choose(found);
@@ -204,68 +209,27 @@ export function welcome(done, { auto = true } = {}){
   function choose(list){
     show(h('h2', '', 'Which Orlis server?'), ...list.map(sv => onPick(button(sv.name, 'wide'), () => connect(sv))));
   }
-  /* Not found: a checklist for someone at their own home - Tailscale
-     installed, signed in, the share accepted - each step ticking itself off,
-     a button for what can be done from here, and it connects by itself as
-     soon as the family's Orlis answers. (On the same Wi-Fi, none of it's
-     needed: the server's found by itself.) */
-  async function notFound(){
-    const list = h('ol', 'setupsteps');
-    const note = h('p', 'lede setupnote', '');
-    const addr = form([['url', 'Its address (in the server’s window)', 'text']], 'Connect', async ({ url }) => {
-      let u = serverUrl(url);
+  /* Not found: most likely no internet just now. It keeps trying by itself,
+     and connects as soon as the server answers; or type its address. */
+  function notFound(){
+    const addr = form([['url', 'Server address', 'text']], 'Connect', async ({ url }) => {
+      const u = serverUrl(url);
       const r = await hello(u);
       connect({ url: u, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false });
     });
-    const typed = h('details', 'setuptype'); typed.append(h('summary', '', 'Type an address instead'), addr);
-    show(h('h2', '', 'Let’s connect to the family’s Orlis'),
-      h('p', 'lede', 'From your own home, Orlis Play reaches the family’s laptop through Tailscale. Three steps, once:'),
-      list, note, msg,
-      h('p', 'lede small', 'On the same home Wi-Fi as the laptop? None of this is needed - check Orlis Server is running on it, then Try again.'),
-      onPick(button('Try again', 'link'), () => { sfx.select(); find(); }), typed);
+    const typed = h('details', 'setuptype'); typed.append(h('summary', '', 'Type an address'), addr);
+    show(h('h2', '', 'Can’t reach your Orlis server'),
+      h('p', 'lede', 'Check this PC is online. It’ll keep trying.'),
+      msg, onPick(button('Try again', 'wide'), () => { sfx.select(); find(); }), typed);
     const me = s.lastChild;
-    let busy = false, lastKey = '';
-    const act = async (step) => {
-      if (busy) return; busy = true; sfx.select(); say('');
-      try {
-        if (step.action === 'install'){
-          const r = await setup.installTailscale();
-          note.textContent = r && r.how === 'winget' ? 'Tailscale is installing in its own window. Say yes if Windows asks, then sign in when Tailscale asks.' : 'Tailscale’s download page is open in your browser: download it, run it, then come back here.';
-        } else if (step.action === 'signin'){
-          const r = await setup.tailscaleLogin();
-          note.textContent = r && r.opened ? 'Sign in on the page that just opened in your browser, then come back here.' : 'Click the Tailscale icon by the clock (it may be under the ^ arrow) and choose Log in.';
-        }
-      } catch (e){ say(e.message, true); }
-      busy = false;
-    };
-    const draw = (steps) => {
-      const key = JSON.stringify(steps.map(x => [x.state, x.line, x.action]));
-      if (key === lastKey) return;
-      /* (a step's moved on: what was said about the last one's done with) */
-      if (lastKey) note.textContent = '';
-      lastKey = key;
-      list.innerHTML = '';
-      for (const st of steps){
-        const li = h('li', 'setupstep ' + st.state, `<span class="tick">${st.state === 'done' ? '\u2713' : ''}</span><div><b>${esc(st.title)}</b><small>${esc(st.line)}</small></div>`);
-        if (st.action && st.state === 'now') li.lastChild.appendChild(onPick(button(st.action === 'install' ? 'Install Tailscale' : 'Sign in to Tailscale', 'go small'), () => act(st)));
-        list.appendChild(li);
-      }
-    };
-    /* every few seconds: what's there now - and the family's Orlis, once it answers */
     const tick = async () => {
       if (!s.contains(me)) return;
-      const st = await setup.status();
+      const found = await look();
       if (!s.contains(me)) return;
-      draw(connectSteps(st, false));
-      if (st.tailscale && st.tailscale.state === 'on'){
-        const found = await look();
-        if (!s.contains(me)) return;
-        if (found.length){ sfx.gold?.(); draw(connectSteps(st, true)); return found.length === 1 ? connect(found[0]) : choose(found); }
-      }
-      watching = setTimeout(tick, 4000);
+      if (found.length){ sfx.gold?.(); return found.length === 1 ? connect(found[0]) : choose(found); }
+      watching = setTimeout(tick, 8000);
     };
-    draw(connectSteps({ tailscale: { state: 'missing' } }, false));
-    tick();
+    watching = setTimeout(tick, 8000);
   }
 
   /* 2: in - set up, sign in, or join */
@@ -280,6 +244,8 @@ export function welcome(done, { auto = true } = {}){
   const device = () => (navigator.userAgent.includes('Windows') ? 'Windows PC' : 'A device');
   const finish = (r, joined = false) => {
     account.set({ token: r.token, account: r.account, household: r.household || null, profiles: r.profiles, current: null });
+    /* asked to join: waiting for the owner to let them in */
+    if (r.account && r.account.waiting) return waiting(joined);
     sfx.gold?.();
     /* someone joining with the Dev Kit, in the Windows app: setting it up first */
     if (joined && r.account && r.account.devkit && setup.available) return ready();
@@ -305,13 +271,13 @@ export function welcome(done, { auto = true } = {}){
         ['password', 'Password', 'password', 'current-password']
       ], 'Sign in', async (v) => finish(await call(sv.url, 'POST', '/api/signin', { ...v, device: device() }))),
       msg,
-      /* (over Tailscale, no invite is needed - being shared the laptop is the invite) */
+      /* (no invite needed: over Tailscale, or when the owner lets people in) */
       onPick(button(sv.invite === false ? 'New here? Make an account' : 'New here? Join with an invite', sv.invite === false ? 'wide' : 'link'), () => { sfx.select(); join(sv); }));
   }
   function join(sv){
     const free = sv.invite === false;
     show(h('h2', '', free ? 'Make an account' : 'Join with an invite'),
-      h('p', 'lede', free ? `On "${sv.name}", over Tailscale - no invite needed.` : 'Ask the owner for an invite code.'),
+      h('p', 'lede', free ? `For "${sv.name}"` : 'Ask the owner for an invite code.'),
       form([
         ...(free ? [] : [['invite', 'Invite code', 'text']]),
         ['email', 'Your email (a grown-up\'s)', 'email', 'email'],
@@ -325,6 +291,26 @@ export function welcome(done, { auto = true } = {}){
 
   /* 2b: a new creator - getting ready to make games: Claude Code (a button
      installs it), then a first game, made and ready to try in a moment. */
+  /* 2c: waiting for the owner's OK - it checks by itself, and moves on as
+     soon as they're let in */
+  function waiting(joined = true){
+    show(h('h2', '', 'Almost there!'),
+      h('p', 'lede', 'Waiting for the owner to let you in. This moves on by itself.'),
+      h('div', 'waitdots', '<span></span><span></span><span></span>'),
+      onPick(button('Sign out', 'link'), () => { sfx.back?.(); account.signOut(); find(); }));
+    const me = s.lastChild;
+    const tick = async () => {
+      if (!s.contains(me)) return;
+      try {
+        await account.refresh();
+        if (!account.signedIn){ return find(); }          /* (turned down: their account's gone) */
+        if (account.state.account && !account.state.account.waiting){ sfx.gold?.(); return joined ? welcomeIn() : who(); }
+      } catch {}
+      if (s.contains(me)) watching = setTimeout(tick, 5000);
+    };
+    watching = setTimeout(tick, 5000);
+  }
+
   /* 2a: a new grown-up - straight on to making their first game, or later */
   function welcomeIn(){
     show(h('h2', '', 'You’re in!'),
@@ -377,7 +363,8 @@ export function welcome(done, { auto = true } = {}){
       onPick(button('Back', 'link'), () => { sfx.back?.(); who(); }));
   }
 
-  if (account.signedIn) who(); else find();
+  if (account.signedIn && account.state.account && account.state.account.waiting) waiting(false);
+  else if (account.signedIn) who(); else find();
   return { tick(){}, draw(){} };
 }
 

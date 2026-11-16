@@ -13,7 +13,9 @@ const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os');
 const [appUrl, out, serverDir] = process.argv.slice(2);
 const data = fs.mkdtempSync(path.join(os.tmpdir(), 'orlis-e2e-'));
-const srv = cp.spawn(process.execPath, ['--no-warnings', 'src/main.js'], { cwd: serverDir, env: { ...process.env, ORLIS_DATA: data, ORLIS_NAME: 'Home' } });
+/* a browser that never reaches the real family server on the internet */
+const isolated = async (b, o) => { const c = await b.newContext(o); await c.route(/\.ts\.net\//, r => r.abort()); return c; };
+const srv = cp.spawn(process.execPath, ['--no-warnings', 'src/main.js'], { cwd: serverDir, env: { ...process.env, ORLIS_DATA: data, ORLIS_NAME: 'Home', ORLIS_APPROVE_JOINS: 'false' } });
 const S = 'http://127.0.0.1:47871';
 const api = async (m, p, b, t, extra = {}) => { const r = await fetch(S + p, { method: m, headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: 'Bearer ' + t } : {}), ...extra }, body: b ? JSON.stringify(b) : undefined }); return { status: r.status, ...(await r.json().catch(() => ({}))) }; };
 const log = (...a) => console.log(...a);
@@ -52,7 +54,7 @@ const FAKE = `window.__fakeOn = () => {
 };`;
 
 async function page(b, state, name){
-  const pg = await (await b.newContext({ viewport: { width: 1600, height: 900 } })).newPage();
+  const pg = await (await isolated(b, { viewport: { width: 1600, height: 900 } })).newPage();
   pg.errs = [];
   pg.on('pageerror', e => { if (!/sandboxed/.test(e.message)) pg.errs.push(name + ': ' + e.message); });
   await pg.addInitScript(TAURI + FAKE + (state ? `localStorage.setItem('orlis.account', ${JSON.stringify(JSON.stringify(state))});` : ''));
@@ -206,7 +208,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   check(tried && tried.tried, 'the server knows the owner played it');
 
   log('\n10. The owner approves it on the management page');
-  const mg = await (await b.newContext({ viewport: { width: 1200, height: 800 } })).newPage();
+  const mg = await (await isolated(b, { viewport: { width: 1200, height: 800 } })).newPage();
   mg.on('pageerror', e => fail.push('manage: ' + e.message));
   await mg.goto(`${S}/manage?k=${key}`); await mg.waitForTimeout(800);
   await mg.click('nav button[data-t=approvals]'); await mg.waitForTimeout(800);

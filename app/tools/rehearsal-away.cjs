@@ -14,7 +14,7 @@ const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os');
 const [appUrl, out, serverDir, gameFile, manifestFile] = process.argv.slice(2);
 const data = fs.mkdtempSync(path.join(os.tmpdir(), 'orlis-away-'));
-const srv = cp.spawn(process.execPath, ['--no-warnings', 'src/main.js'], { cwd: serverDir, env: { ...process.env, ORLIS_DATA: data, ORLIS_NAME: 'Home' } });
+const srv = cp.spawn(process.execPath, ['--no-warnings', 'src/main.js'], { cwd: serverDir, env: { ...process.env, ORLIS_DATA: data, ORLIS_NAME: 'Home', ORLIS_APPROVE_JOINS: 'false' } });
 const S = 'http://127.0.0.1:47871', MOVED = 'http://localhost:47871';
 const api = async (m, p, b, t, extra = {}) => { const r = await fetch(S + p, { method: m, headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: 'Bearer ' + t } : {}), ...extra }, body: b ? JSON.stringify(b) : undefined }); return { status: r.status, ...(await r.json().catch(() => ({}))) }; };
 const log = (...a) => console.log(...a);
@@ -54,6 +54,7 @@ const FAKE = `window.__fakeOn = () => {
 async function pc(b, name, state){
   const n = { away: false, moved: false };
   const ctx = await b.newContext({ viewport: { width: 1600, height: 900 } });
+  await ctx.route(/\.ts\.net\//, r => r.abort());   /* (never the real family server on the internet) */
   await ctx.exposeFunction('__net', () => n);
   await ctx.route(/:47871\//, (r) => {
     const u = new URL(r.request().url());
@@ -153,8 +154,8 @@ function claude(files, prompt){
   log('\n2. Before they come over: setting up at their own home finds no server');
   const early = await pc(b, 'early');
   early.net.away = true; await early.reload();
-  await early.waitForSelector('text=Couldn\'t find an Orlis server', { timeout: 20000 }).catch(() => {});
-  check((await txt(early, 'body')).includes('same home Wi-Fi'), 'the app says to be on the home Wi-Fi with the server: "' + (await txt(early, 'h2')) + '"');
+  await early.waitForSelector('text=Can’t reach your Orlis server', { timeout: 20000 }).catch(() => {});
+  check((await txt(early, 'body')).includes('Can’t reach your Orlis server') && !(await txt(early, 'body')).includes('Tailscale'), 'the app says plainly it can’t reach the server (no Tailscale): "' + (await txt(early, 'h2')) + '"');
   await shot(early, '02-not-found');
   await early.context().close();
 
