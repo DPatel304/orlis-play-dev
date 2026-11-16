@@ -51,7 +51,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
      the Wi-Fi when its address changes (a router gives the laptop a new one) */
   const idFile = join(dataDir, 'server.id');
   if (!existsSync(idFile)) writeFileSync(idFile, randomBytes(9).toString('hex'));
-  const info = { id: readFileSync(idFile, 'utf8').trim(), name: name || `${hostname()}'s Orlis`, version: VERSION, everyoneCreates, tailscaleJoin, approveJoins, publicUrl };
+  const info = { id: readFileSync(idFile, 'utf8').trim(), name: name || 'Orlis', version: VERSION, everyoneCreates, tailscaleJoin, approveJoins, publicUrl };
   /* its files (the Store's games, games sent in): the data folder, on the laptop - files.js */
   const keep = files || folderFiles(dataDir);
   const shop = await store(keep, starters);
@@ -79,6 +79,19 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
     }],
     ...shop.routes(who, owner, log, reach),
     ...club.routes(owner),
+    /* the server's name, as families see it - the owner's to change (kept in
+       settings.json, so it stays after a restart) */
+    ['POST', '/api/server/name', ({ headers, ip, body }) => {
+      owner(headers, ip);
+      const n = String((body && body.name) || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+      if (!n) throw new Fail(400, 'name', 'Give it a name.');
+      info.name = n;
+      const file = join(dataDir, 'settings.json');
+      let s = {};
+      try { s = JSON.parse(readFileSync(file, 'utf8')) || {}; } catch {}
+      writeFileSync(file, JSON.stringify({ ...s, name: n }, null, 2));
+      return { name: n };
+    }],
     /* the owner shares a family's game with everyone - or keeps it in the family */
     ['POST', '/api/store/:id/reach', async ({ headers, params, body, ip }) => {
       const me = owner(headers, ip);

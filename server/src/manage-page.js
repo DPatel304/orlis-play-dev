@@ -202,7 +202,8 @@ var TRY = ${TRY_SECS};
       }).catch(function(){}).then(function(){ return call('GET', '/api/server'); }).then(function(s){
         var c = card('This server');
         var u = UPDATE[s.update && s.update.state] || ['', ''];
-        row(c, '<div class="big">' + esc(s.name) + '</div><small>Orlis Server ' + esc(s.version) + '</small>');
+        row(c, '<div class="big">' + esc(s.name) + '</div><small>Orlis Server ' + esc(s.version) + ' \\u00b7 the name families see</small>',
+          [btn('Rename', '', function(){ var n = prompt('Its name, as families see it:', s.name); if (n && n.trim()) call('POST', '/api/server/name', { name: n }).then(show, fail(c)); })]);
         row(c, '<span class="' + u[1] + '">' + esc(u[0]) + '</span>');
         row(c, 'Making requested games<small>' + esc({ ready: 'Ready - with this laptop\u2019s Claude Code', making: 'Making one now', 'no-claude': 'Claude Code isn\u2019t on this laptop yet', off: 'Switched off' }[(s.maker || {}).state] || 'Switched off') + '</small>');
         row(c, 'Last backup<small>' + (s.backups[0] ? esc(when(s.backups[0].at)) : 'None yet - one is made each day') + '</small>');

@@ -273,7 +273,7 @@ export function welcome(done, { auto = true } = {}){
       msg);
   }
   function signIn(sv){
-    show(h('h2', '', 'Sign in'), h('p', 'lede', `to "${sv.name}"`),
+    show(h('h2', '', 'Sign in'),
       form([
         ['email', 'Email', 'email', 'email'],
         ['password', 'Password', 'password', 'current-password']
