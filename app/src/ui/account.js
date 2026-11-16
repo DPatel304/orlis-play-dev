@@ -13,6 +13,7 @@ import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
 import { openMaker, withFace, MAKING } from './avatar-maker.js';
+import { setup, connectSteps } from './setup.js';
 
 const KEY = 'orlis.account';
 export const AVATARS = {
@@ -128,7 +129,10 @@ async function hello(url){
 export function welcome(done, { auto = true } = {}){
   clearUI();
   const s = screen('dim account');
-  const show = (...nodes) => { s.innerHTML = ''; s.append(...nodes); };
+  /* (a screen that keeps checking - the setup checklist - stops when another's shown) */
+  let watching = null;
+  const stopWatching = () => { if (watching){ clearTimeout(watching); watching = null; } };
+  const show = (...nodes) => { stopWatching(); s.innerHTML = ''; s.append(...nodes); };
   const msg = h('p', 'lede formmsg', '');
   const say = (t, bad) => { msg.textContent = t || ''; msg.classList.toggle('bad', !!bad); };
 
@@ -168,8 +172,7 @@ export function welcome(done, { auto = true } = {}){
   }
 
   /* 1: find the server */
-  async function find(){
-    show(h('h2', '', 'Finding your Orlis server…'), h('p', 'lede', 'Looking on this Wi-Fi, and over Tailscale.'));
+  async function look(){
     const saved = account.state && account.state.server;
     let found = [];
     if (saved){ try { const r = await hello(saved.url); found = [{ url: saved.url, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false }]; } catch {} }
@@ -177,6 +180,11 @@ export function welcome(done, { auto = true } = {}){
       const list = await findServers();
       for (const sv of list){ try { const r = await hello(sv.url); found.push({ url: sv.url, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false }); } catch {} }
     }
+    return found;
+  }
+  async function find(){
+    show(h('h2', '', 'Finding your Orlis server…'), h('p', 'lede', 'Looking on this Wi-Fi, and over Tailscale.'));
+    const found = await look();
     if (found.length === 1) return connect(found[0]);
     if (found.length > 1) return choose(found);
     notFound();
@@ -184,28 +192,90 @@ export function welcome(done, { auto = true } = {}){
   function choose(list){
     show(h('h2', '', 'Which Orlis server?'), ...list.map(sv => onPick(button(sv.name, 'wide'), () => connect(sv))));
   }
-  function notFound(){
-    const addr = form([['url', 'Or type its address (it\'s in the server\'s window)', 'text']], 'Connect', async ({ url }) => {
+  /* Not found: a checklist for someone at their own home - Tailscale
+     installed, signed in, the share accepted - each step ticking itself off,
+     a button for what can be done from here, and it connects by itself as
+     soon as the family's Orlis answers. (On the same Wi-Fi, none of it's
+     needed: the server's found by itself.) */
+  async function notFound(){
+    const list = h('ol', 'setupsteps');
+    const note = h('p', 'lede setupnote', '');
+    const addr = form([['url', 'Its address (in the server’s window)', 'text']], 'Connect', async ({ url }) => {
       let u = url.trim(); if (!/^https?:\/\//.test(u)) u = 'http://' + u;
       if (!/:\d+$/.test(u.replace(/\/$/, ''))) u = u.replace(/\/$/, '') + ':47871';
       const r = await hello(u);
       connect({ url: u, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false });
     });
-    show(h('h2', '', 'Couldn\'t find an Orlis server'),
-      h('p', 'lede', 'Make sure Orlis Server is running on the laptop, and that this PC is on the same home Wi-Fi - or, from somewhere else, that Tailscale is on and signed in.'),
-      onPick(button('Try again', 'wide'), () => { sfx.select(); find(); }), addr, msg);
+    const typed = h('details', 'setuptype'); typed.append(h('summary', '', 'Type an address instead'), addr);
+    show(h('h2', '', 'Let’s connect to the family’s Orlis'),
+      h('p', 'lede', 'From your own home, Orlis Play reaches the family’s laptop through Tailscale. Three steps, once:'),
+      list, note, msg,
+      h('p', 'lede small', 'On the same home Wi-Fi as the laptop? None of this is needed - check Orlis Server is running on it, then Try again.'),
+      onPick(button('Try again', 'link'), () => { sfx.select(); find(); }), typed);
+    const me = s.lastChild;
+    let busy = false, lastKey = '';
+    const act = async (step) => {
+      if (busy) return; busy = true; sfx.select(); say('');
+      try {
+        if (step.action === 'install'){
+          const r = await setup.installTailscale();
+          note.textContent = r && r.how === 'winget' ? 'Tailscale is installing in its own window. Say yes if Windows asks, then sign in when Tailscale asks.' : 'Tailscale’s download page is open in your browser: download it, run it, then come back here.';
+        } else if (step.action === 'signin'){
+          const r = await setup.tailscaleLogin();
+          note.textContent = r && r.opened ? 'Sign in on the page that just opened in your browser, then come back here.' : 'Click the Tailscale icon by the clock (it may be under the ^ arrow) and choose Log in.';
+        }
+      } catch (e){ say(e.message, true); }
+      busy = false;
+    };
+    const draw = (steps) => {
+      const key = JSON.stringify(steps.map(x => [x.state, x.line, x.action]));
+      if (key === lastKey) return;
+      /* (a step's moved on: what was said about the last one's done with) */
+      if (lastKey) note.textContent = '';
+      lastKey = key;
+      list.innerHTML = '';
+      for (const st of steps){
+        const li = h('li', 'setupstep ' + st.state, `<span class="tick">${st.state === 'done' ? '\u2713' : ''}</span><div><b>${esc(st.title)}</b><small>${esc(st.line)}</small></div>`);
+        if (st.action && st.state === 'now') li.lastChild.appendChild(onPick(button(st.action === 'install' ? 'Install Tailscale' : 'Sign in to Tailscale', 'go small'), () => act(st)));
+        list.appendChild(li);
+      }
+    };
+    /* every few seconds: what's there now - and the family's Orlis, once it answers */
+    const tick = async () => {
+      if (!s.contains(me)) return;
+      const st = await setup.status();
+      if (!s.contains(me)) return;
+      draw(connectSteps(st, false));
+      if (st.tailscale && st.tailscale.state === 'on'){
+        const found = await look();
+        if (!s.contains(me)) return;
+        if (found.length){ sfx.gold?.(); draw(connectSteps(st, true)); return found.length === 1 ? connect(found[0]) : choose(found); }
+      }
+      watching = setTimeout(tick, 4000);
+    };
+    draw(connectSteps({ tailscale: { state: 'missing' } }, false));
+    tick();
   }
 
   /* 2: in - set up, sign in, or join */
   function connect(sv){
     account.set({ server: { url: sv.url, name: sv.name, ...(sv.id ? { id: sv.id } : {}) } });
-    if (sv.setup) return setup(sv);
+    if (sv.setup) return setupOwner(sv);
+    /* (someone new, over Tailscale: straight to making an account - they've
+       never been signed in on this PC) */
+    if (sv.invite === false && !account.state.account) return join(sv);
     signIn(sv);
   }
   const device = () => (navigator.userAgent.includes('Windows') ? 'Windows PC' : 'A device');
-  const finish = (r) => { account.set({ token: r.token, account: r.account, household: r.household || null, profiles: r.profiles, current: null }); sfx.gold?.(); who(); };
+  const finish = (r, joined = false) => {
+    account.set({ token: r.token, account: r.account, household: r.household || null, profiles: r.profiles, current: null });
+    sfx.gold?.();
+    /* a new creator, in the Windows app: getting ready to make games first */
+    if (joined && r.account && r.account.role === 'creator' && setup.available) return ready();
+    who();
+  };
 
-  function setup(sv){
+  function setupOwner(sv){
     show(h('h2', '', 'Set up Orlis Play'),
       h('p', 'lede', `A new server: "${sv.name}". The first account is the owner's - yours.`),
       form([
@@ -236,9 +306,46 @@ export function welcome(done, { auto = true } = {}){
         ['password', 'A password (8 or more characters)', 'password', 'new-password'],
         ['name', 'Your first name (your profile)', 'text'],
         ['adult', 'I\'m a parent or guardian, 18 or over', 'check']
-      ], 'Join', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, device: device() }))),
+      ], 'Join', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, device: device() }), true)),
       msg,
       onPick(button('Already have an account? Sign in', 'link'), () => { sfx.select(); signIn(sv); }));
+  }
+
+  /* 2b: a new creator - getting ready to make games: Claude Code (a button
+     installs it), then a first game, made and ready to try in a moment. */
+  function ready(){
+    const list = h('ol', 'setupsteps'), note = h('p', 'lede setupnote', '');
+    const first = onPick(button('Make my first game', 'wide'), () => { sfx.select(); account.set({ firstGame: true }); who(); });
+    show(h('h2', '', 'You’re in!'),
+      h('p', 'lede', 'You’re a creator. Two things, and you’re making games:'),
+      list, note, msg, first,
+      onPick(button('Later', 'link'), () => { sfx.back?.(); who(); }));
+    const me = s.lastChild;
+    let lastKey = '', busy = false;
+    const draw = (has) => {
+      if (lastKey === String(has)) return;
+      if (lastKey) note.textContent = '';
+      lastKey = String(has);
+      list.innerHTML = '';
+      const a = h('li', 'setupstep ' + (has ? 'done' : 'now'), `<span class="tick">${has ? '\u2713' : ''}</span><div><b>Install Claude Code</b><small>${has ? 'Claude Code is on this PC.' : 'Claude makes the games with you. It takes a minute or two.'}</small></div>`);
+      if (!has) a.lastChild.appendChild(onPick(button('Install Claude Code', 'go small'), async () => {
+        if (busy) return; busy = true; sfx.select(); say('');
+        try { await setup.installClaude(); note.textContent = 'Claude Code is installing in its own window. When it says it’s done, close that window and come back here.'; }
+        catch (e){ say(e.message, true); }
+        busy = false;
+      }));
+      const b = h('li', 'setupstep ' + (has ? 'now' : 'later'), '<span class="tick"></span><div><b>Sign in to Claude</b><small>The first time Claude Code opens, it asks you to sign in with your Claude account (a paid Claude plan). It opens when you make your first game.</small></div>');
+      list.append(a, b);
+    };
+    const tick = async () => {
+      if (!s.contains(me)) return;
+      const st = await setup.status();
+      if (!s.contains(me)) return;
+      draw(!!(st.claude && st.claude.installed));
+      watching = setTimeout(tick, 4000);
+    };
+    draw(false);
+    tick();
   }
 
   /* 3: who's playing - straight past it when there's only one profile to

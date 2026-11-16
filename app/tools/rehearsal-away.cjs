@@ -83,6 +83,9 @@ async function join(pg, code, email, name){
   for (const [i, v] of [code, email, 'correct horse', name].entries()) await inputs[i].fill(v);
   await pg.check('form input[type=checkbox]');
   await pg.click('form .btn.go');
+  /* (a new creator: "You're in!" - getting ready to make games - then Later, for now) */
+  await pg.waitForSelector('text=You’re in!', { timeout: 20000 }); await pg.waitForTimeout(500);
+  await pg.click('.btn >> text=Later');
   await pg.waitForSelector('.tvtop', { timeout: 20000 }); await pg.waitForTimeout(1000);
   return pg.evaluate(() => JSON.parse(localStorage.getItem('orlis.account')));
 }

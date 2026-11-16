@@ -17,6 +17,7 @@ use tauri::{AppHandle, LogicalSize, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_updater::{Update, UpdaterExt};
 
 mod creating;
+mod setup;
 
 /// Song files the game can play.
 const SONGS: &[&str] = &["mp3", "m4a", "aac", "ogg", "oga", "opus", "wav", "flac", "webm"];
@@ -44,7 +45,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Pending::default())
-        .invoke_handler(tauri::generate_handler![set_display_mode, check_update, install_update, find_servers, creating::games_list, creating::game_make, creating::game_write, creating::game_read, creating::game_show, creating::claude_open, creating::game_version])
+        .invoke_handler(tauri::generate_handler![set_display_mode, check_update, install_update, find_servers, creating::games_list, creating::game_make, creating::game_write, creating::game_read, creating::game_show, creating::claude_open, creating::game_version, setup::setup_status, setup::install_tailscale, setup::tailscale_login, setup::install_claude, setup::open_link])
         .setup(|app| {
             let app = app.handle().clone();
             tauri::async_runtime::spawn(async move {
@@ -256,30 +257,7 @@ const DISCOVERY_PORT: u16 = 47870;
 /// Tailscale isn't installed or isn't running - that's fine, the Wi-Fi's
 /// still looked on. Only IPv4 (what the server's discovery listens on).
 fn tailscale_peers() -> Vec<std::net::Ipv4Addr> {
-    let mut tried: Vec<std::path::PathBuf> = vec!["tailscale".into()];
-    if cfg!(windows) {
-        for var in ["ProgramFiles", "ProgramW6432"] {
-            if let Ok(dir) = std::env::var(var) {
-                tried.push(std::path::Path::new(&dir).join("Tailscale").join("tailscale.exe"));
-            }
-        }
-    }
-    for exe in tried {
-        let mut cmd = std::process::Command::new(&exe);
-        cmd.args(["status", "--json"]);
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            const NO_WINDOW: u32 = 0x0800_0000;
-            cmd.creation_flags(NO_WINDOW);
-        }
-        let Ok(out) = cmd.output() else { continue };
-        if !out.status.success() {
-            continue;
-        }
-        return peers_from_status(&out.stdout);
-    }
-    Vec::new()
+    setup::tailscale_status_json().map(|s| peers_from_status(&s)).unwrap_or_default()
 }
 
 /// From Tailscale's status, as JSON: each peer's IPv4 address (online ones

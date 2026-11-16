@@ -173,7 +173,7 @@ pub fn game_show(app: AppHandle, folder: String) -> Result<(), String> {
 /// Where Claude Code is, if it's on this PC: on the PATH, or where its
 /// installers put it.
 #[cfg(windows)]
-fn find_claude() -> Option<PathBuf> {
+pub fn find_claude() -> Option<PathBuf> {
     use std::os::windows::process::CommandExt;
     const NO_WINDOW: u32 = 0x0800_0000;
     if let Ok(out) = std::process::Command::new("where.exe").arg("claude").creation_flags(NO_WINDOW).output() {

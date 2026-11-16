@@ -673,6 +673,20 @@ body.remote .btn.popitem.kfocus{ box-shadow:inset 0 0 0 .4vh #6d5efc; }
 .formmsg.bad{ color:var(--bad); }
 .btn.link{ background:transparent; border:none; box-shadow:none; color:#4a3fe0; font-weight:600; }
 .btn.wide{ min-width:min(70vw, 22em); }
+/* setup's checklist: each step ticks itself off as it's done */
+.setupsteps{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:1.2vh; width:min(86vw, 36em); font-size:clamp(14px, 2.3vh, 26px); text-align:left; }
+.setupstep{ display:grid; grid-template-columns:1.9em 1fr; gap:.8em; align-items:start; background:#fff; border-radius:16px; padding:.9em 1.1em; box-shadow:0 4px 16px rgba(20,24,50,.06); }
+.setupstep .tick{ width:1.6em; height:1.6em; border-radius:50%; border:2px solid #c9c6dc; display:grid; place-items:center; font-weight:700; color:#fff; }
+.setupstep.done .tick{ background:#6fb070; border-color:#6fb070; }
+.setupstep.now .tick{ border-color:#6d5efc; }
+.setupstep.later{ opacity:.55; }
+.setupstep b{ display:block; color:#24242e; }
+.setupstep small{ display:block; color:#5b5f6e; font-size:.82em; margin-top:.2em; line-height:1.45; }
+.setupstep .btn.go{ margin-top:.7em; background:#6d5efc; color:#fff; border:none; font-size:.9em; }
+.setupnote{ min-height:1.2em; color:#4a3fe0 !important; }
+.lede.small{ font-size:clamp(12px, 1.9vh, 20px); }
+.setuptype{ width:min(86vw, 34em); text-align:left; color:#5b5f6e; }
+.setuptype summary{ cursor:pointer; font-weight:600; color:#4a3fe0; margin-bottom:1vh; }
 .whotiles{ display:flex; flex-wrap:wrap; justify-content:center; gap:2.4vw; max-width:90vw; }
 .btn.who{ width:clamp(120px, 16vh, 220px); padding:2vh 1vh; border-radius:3vh; }
 .btn.who .lbl{ display:flex; flex-direction:column; align-items:center; gap:1vh; }

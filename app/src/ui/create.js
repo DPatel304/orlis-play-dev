@@ -17,6 +17,7 @@ import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
 import { account } from './account.js';
+import { setup } from './setup.js';
 import { outbox } from './outbox.js';
 import { topBar } from './tabs.js';
 import { CREATE_SOON, looks } from './menu.js';
@@ -44,6 +45,8 @@ function banner(kicker, title, line){
 
 /* How the last Try it went, to say so on coming back to Create. */
 let lastTry = null;
+/* the first game a new creator made (setup's "Make my first game"), for a friendlier word after trying it */
+let firstFolder = null;
 
 export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }){
   clearUI();
@@ -157,15 +160,16 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
         h('div', 'fbtns')).querySelector('.fbtns').append(btn('OK', () => { sfx.select(); closePop(); }, 'go'));
       return;
     }
-    const cmd = 'irm https://claude.ai/install.ps1 | iex';
+    const note = h('p', 'fnote', 'It installs in a window of its own and takes a minute or two. When it says it’s done, close that window and press Open in Claude Code again.');
     const card = popup(h('h2', '', 'Claude Code isn’t on this PC yet'),
-      h('p', '', `${isNew ? `${gameName} is made - ` : ''}to make games, Claude Code needs installing once, and it uses your own Claude account.`),
-      h('p', 'fnote', '1. Open PowerShell (search for it in the Start menu).<br>2. Paste this and press Enter:'),
-      h('div', 'ccmd', esc(cmd)),
-      h('p', 'fnote', '3. When it’s done, close PowerShell and come back here: pick the game under Your games, then Open in Claude Code. (Claude Code’s own setup help: code.claude.com/docs/en/setup)'),
-      h('div', 'fbtns'));
-    const copy = btn('Copy', async () => { try { await navigator.clipboard.writeText(cmd); copy.querySelector('.lbl').textContent = 'Copied'; } catch {} });
-    card.querySelector('.fbtns').append(copy, btn('OK', () => { sfx.select(); closePop(); }, 'go'));
+      h('p', '', `${isNew ? `${esc(gameName)} is made. ` : ''}To make games, Claude Code needs installing once. It uses your own Claude account (a paid Claude plan).`),
+      note, h('div', 'fbtns'));
+    card.querySelector('.fbtns').append(
+      btn('Not now', () => { sfx.back?.(); closePop(); }),
+      btn('Install Claude Code', async () => {
+        try { await setup.installClaude(); sfx.select(); note.textContent = 'Claude Code is installing in its own window. When it says it’s done, close that window, then press Open in Claude Code on your game.'; }
+        catch (e){ problem(card)(e); }
+      }, 'go'));
   }
 
   /* What's wrong, said plainly - and written down for Claude to read. */
@@ -255,7 +259,9 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     if (!t) return;
     const g = mine.find(x => x.folder === t.folder) || { folder: t.folder, manifest: { name: t.name } };
     const card = popup(h('h2', '', t.failed ? `${esc(t.name)} stopped` : `How was ${esc(t.name)}?`),
-      h('p', '', t.failed ? `It stopped after ${t.secs} seconds because something went wrong. It’s written down for Claude: tell it “It broke when I tried it - have a look”.` : `You played ${t.secs} seconds, with no errors. Tell Claude what to change, or send it when you’re happy.`),
+      h('p', '', t.failed ? `It stopped after ${t.secs} seconds because something went wrong. It’s written down for Claude: tell it “It broke when I tried it - have a look”.`
+        : t.folder === firstFolder ? 'That’s your own game, made on this PC. Now make it yours: press Open in Claude Code and tell Claude what to change - like “make the stars rainbow coloured”, or “make it about catching fish”.'
+        : `You played ${t.secs} seconds, with no errors. Tell Claude what to change, or send it when you’re happy.`),
       h('div', 'fbtns'));
     card.querySelector('.fbtns').append(
       btn('Open in Claude Code', async () => { try { await opened(g.folder, t.name, await making.openClaude(g.folder), false); } catch (e){ problem(card)(e); } }),
@@ -270,6 +276,28 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   }
   /* (back from Try it) */
   if (lastTry) refreshMine().then(afterTry);
+  /* (a new creator who picked "Make my first game" in setup) */
+  else if (account.state && account.state.firstGame && making.available) firstGame();
+
+  /* Their first game: the starter (Star Catch), made in a moment with no
+     Claude needed, and straight on to trying it - so the first thing they
+     see is a game of their own working on their TV. */
+  async function firstGame(){
+    account.set({ firstGame: false });
+    let card = popup(h('h2', '', 'Making your first game…'), h('p', '', 'One moment.'));
+    try {
+      const made = await making.make({ name: 'Star Catch', idea: 'Reach up and catch the falling stars', from: null });
+      firstFolder = made.folder;
+      await refreshMine();
+      const g = mine.find(x => x.folder === made.folder) || { folder: made.folder, manifest: { name: made.name } };
+      sfx.gold?.();
+      card = popup(h('h2', '', 'Your first game is ready'),
+        h('p', '', `It’s ${esc(made.name)}: reach up and catch the falling stars. Stand back so the camera can see you, then press Try it.`),
+        h('p', 'fnote', 'After that, you’ll make it your own with Claude.'),
+        h('div', 'fbtns'));
+      card.querySelector('.fbtns').append(btn('Later', () => { sfx.back?.(); closePop(); }), btn('Try it', () => { sfx.select(); closePop(); tryIt(g, card); }, 'go'));
+    } catch (e){ problem(card)(e); }
+  }
 
   pickFile.addEventListener('change', async () => {
     const f = pickFile.files && pickFile.files[0];

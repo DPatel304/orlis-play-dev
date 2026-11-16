@@ -83,6 +83,9 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   for (let i = 0; i < 4; i++) await inputs[i].fill(vals[i]);
   await bro.check('form input[type=checkbox]');
   await bro.click('form .btn.go');
+  /* (a new creator: "You're in!" - getting ready to make games - then Later, for now) */
+  await bro.waitForSelector('text=You’re in!', { timeout: 20000 }); await bro.waitForTimeout(500);
+  await bro.click('.btn >> text=Later');
   await bro.waitForSelector('.tvtop', { timeout: 20000 });
   await bro.waitForTimeout(1000);
   const broAcct = await bro.evaluate(() => JSON.parse(localStorage.getItem('orlis.account')));

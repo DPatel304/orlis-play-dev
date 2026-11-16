@@ -99,7 +99,8 @@ function toCreate(){
    if the server's in reach. */
 function toWho(arrive){
   account.refresh();
-  go('who', () => welcome(() => toMenu(arrive), { auto: arrive }));
+  /* (a new creator who picked "Make my first game": straight to Create, where it's made) */
+  go('who', () => welcome(() => (account.state && account.state.firstGame ? toCreate() : toMenu(arrive)), { auto: arrive }));
 }
 
 function toCalibration(){
