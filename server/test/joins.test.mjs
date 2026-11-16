@@ -29,6 +29,9 @@ test('joining with the owner\'s OK: no code - they ask, wait, and are let in (or
     assert.equal((await call('GET', '/api/me', null, sam.token)).account.waiting, true);
     assert.equal((await call('GET', '/api/store', null, sam.token)).status, 403);
     assert.equal((await call('POST', '/api/requests', { start: 'new', view: 'hands', action: 'catch' }, sam.token)).status, 403);
+    /* but their own family, yes: they add their kids while they wait (and play the starter games) */
+    assert.equal((await call('POST', '/api/profiles', { name: 'Kiddo', avatar: 'rocket' }, sam.token)).status, 201);
+    assert.equal((await call('GET', '/api/me', null, sam.token)).profiles.length, 2);
     /* signing in again, still waiting */
     assert.equal((await call('POST', '/api/signin', { email: 'sam@example.com', password: 'correct horse' })).account.waiting, true);
 

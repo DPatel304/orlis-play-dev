@@ -84,6 +84,11 @@ export function storePage({ nav = {}, onPlay, onChange = () => {}, onWho, onReca
   scroll.addEventListener('scroll', () => s.classList.toggle('scrolled', scroll.scrollTop > 40), { passive: true });
   /* (a message instead of the banner: the top bar's on paper then) */
   const say = (t) => { s.classList.remove('onhero'); scroll.innerHTML = ''; scroll.appendChild(h('div', 'smsg', `<p>${esc(t)}</p>`)); };
+  /* waiting to be let in: the Store opens then */
+  if (account.waiting){
+    say('The Store opens when the owner lets you in.');
+    return { tick(dt){ bar.tick(dt); }, draw(c, W, H){ c.fillStyle = PAPER; c.fillRect(0, 0, W, H); } };
+  }
 
   /* Each game's trailer, once asked for: installed games play their own;
      the others are fetched, checked and played in the sandbox, not kept. */

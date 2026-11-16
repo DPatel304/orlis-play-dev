@@ -1,4 +1,4 @@
-import { GAMES } from '../games/index.js';
+import { GAMES, STARTER_GAMES } from '../games/index.js';
 import { scores } from '../games/common.js';
 import { button, onPick, cursor } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
@@ -9,6 +9,7 @@ import { PAPER } from './boot.js';
 import { remote } from './remote.js';
 import { trailer } from './trailer.js';
 import { topBar } from './tabs.js';
+import { account } from './account.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -113,7 +114,9 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
   if (pose.mouse.active && pose.reason !== 'debug') s.appendChild(h('div', 'warnstrip', '⚠ No camera — the mouse is playing'));
 
   const items = [];
-  for (const g of GAMES) if (!HIDDEN.has(g.id)) items.push({ kind: 'game', g, shelf: 'games', accent: iconOf(g).cols[0], icon: iconOf(g), name: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '', paint: poster(g), trailer: undefined });
+  /* (waiting to be let in: the starter games only) */
+  const waiting = account.waiting;
+  for (const g of GAMES) if (!HIDDEN.has(g.id) && (!waiting || STARTER_GAMES.includes(g.id))) items.push({ kind: 'game', g, shelf: 'games', accent: iconOf(g).cols[0], icon: iconOf(g), name: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '', paint: poster(g), trailer: undefined });
 
   /* the banner: the game you're on, playing itself, right across the top -
      the same banner as the Store's and Create's */

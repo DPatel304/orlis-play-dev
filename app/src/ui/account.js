@@ -33,6 +33,8 @@ export const account = {
   state: load(),
   get needed(){ return inApp(); },
   get signedIn(){ return !!(this.state && this.state.token); },
+  /* asked to join, not let in yet */
+  get waiting(){ return !!(this.signedIn && this.state.account && this.state.account.waiting); },
   get current(){ const s = this.state; return s && s.profiles ? s.profiles.find(p => p.id === s.current) || null : null; },
   /* Is a child playing? Each grown-up's own profile is the first on their
      account; every other profile is a child's. */
@@ -43,7 +45,12 @@ export const account = {
     return !!first && first.id !== me.id;
   },
   get role(){ return this.state && this.state.account ? this.state.account.role : null; },
-  set(patch){ this.state = { ...(this.state || {}), ...patch }; save(this.state); },
+  set(patch){
+    const was = this.waiting;
+    this.state = { ...(this.state || {}), ...patch }; save(this.state);
+    /* let in (however it was found out): the app says so, and opens up */
+    if (was && !this.waiting && this.signedIn && typeof window !== 'undefined') window.dispatchEvent(new Event('orlisletin'));
+  },
   signOut(){
     const s = this.state;
     if (s && s.token && s.server) call(s.server.url, 'POST', '/api/signout', null, s.token).catch(() => {});
@@ -295,8 +302,9 @@ export function welcome(done, { auto = true } = {}){
      soon as they're let in */
   function waiting(joined = true){
     show(h('h2', '', 'Almost there!'),
-      h('p', 'lede', 'Waiting for the owner to let you in. This moves on by itself.'),
+      h('p', 'lede', 'The owner will let you in soon. Play while you wait.'),
       h('div', 'waitdots', '<span></span><span></span><span></span>'),
+      onPick(button('Play while you wait', 'wide'), () => { sfx.select(); who(); }),
       onPick(button('Sign out', 'link'), () => { sfx.back?.(); account.signOut(); find(); }));
     const me = s.lastChild;
     const tick = async () => {
@@ -363,8 +371,8 @@ export function welcome(done, { auto = true } = {}){
       onPick(button('Back', 'link'), () => { sfx.back?.(); who(); }));
   }
 
-  if (account.signedIn && account.state.account && account.state.account.waiting) waiting(false);
-  else if (account.signedIn) who(); else find();
+  /* (still waiting: straight on to the starter games - it lets them know when they're in) */
+  if (account.signedIn) who(); else find();
   return { tick(){}, draw(){} };
 }
 

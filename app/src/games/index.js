@@ -20,3 +20,6 @@ const inApp = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__T
 export const GAMES = [popParty, sleepyBear, leafPile, stackItHigh, skyPainter, uncleBsBoat, danceParty, lastKnownPosition, castleDefense]
   .filter(g => !(inApp && FROM_STORE.has(g.id)));
 export const byId = (id) => GAMES.find(g => g.id === id);
+/* Waiting for the owner to let you in: these three, built in, to play
+   meanwhile. The rest - and the Store, and Create - open once you're in. */
+export const STARTER_GAMES = ['sleepy-bear', 'sky-painter', 'stack-it-high'];

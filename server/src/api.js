@@ -195,12 +195,12 @@ export function api(db, info, extra = () => [], manageKey = null){
     }],
     /* the asker's own family: its name and its grown-ups */
     ['GET', '/api/household', ({ headers }) => {
-      const a = who(headers);
+      const a = who(headers, { waiting: true });   /* (their own family: fine while waiting) */
       return { household: householdOf(a), accounts: q('SELECT id, email, role, created_at AS createdAt FROM accounts WHERE household_id = ? ORDER BY created_at').all(a.household_id).map(r => ({ ...r })) };
     }],
     /* the family's name, as it's shown ("The Patels") */
     ['PATCH', '/api/household', ({ headers, body }) => {
-      const a = who(headers);
+      const a = who(headers, { waiting: true });   /* (their own family: fine while waiting) */
       const n = familyName(body.name, '');
       if (!n) throw new Fail(400, 'bad_name', 'Give the family a name.');
       q('UPDATE households SET name = ? WHERE id = ?').run(n, a.household_id);
@@ -209,14 +209,14 @@ export function api(db, info, extra = () => [], manageKey = null){
 
     /* ---------- the family's profiles ---------- */
     ['POST', '/api/profiles', ({ headers, body }) => {
-      const a = who(headers);
+      const a = who(headers, { waiting: true });   /* (their own family: fine while waiting) */
       if (profilesOf(a).length >= LIMITS.profiles) throw new Fail(400, 'full', `A family can have up to ${LIMITS.profiles} profiles.`);
       const p = { id: newId(), name: name(body.name), avatar: avatar(body.avatar), look: body.look === undefined ? null : look(body.look) };
       q('INSERT INTO profiles (id, account_id, name, avatar, look, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(p.id, a.id, p.name, p.avatar, p.look && JSON.stringify(p.look), now());
       return [201, { ...p, accountId: a.id }];
     }],
     ['PATCH', '/api/profiles/:id', ({ headers, params, body }) => {
-      const a = who(headers);
+      const a = who(headers, { waiting: true });   /* (their own family: fine while waiting) */
       const p = familyProfile(a, params.id);
       if (!p) throw new Fail(404, 'no_profile', 'No such profile.');
       const n = body.name === undefined ? p.name : name(body.name);
@@ -226,7 +226,7 @@ export function api(db, info, extra = () => [], manageKey = null){
       return { id: p.id, name: n, avatar: v, look: l, accountId: p.account_id };
     }],
     ['DELETE', '/api/profiles/:id', ({ headers, params }) => {
-      const a = who(headers);
+      const a = who(headers, { waiting: true });   /* (their own family: fine while waiting) */
       const p = familyProfile(a, params.id);
       if (!p) throw new Fail(404, 'no_profile', 'No such profile.');
       /* (a grown-up's own profile - the first on their account - stays) */

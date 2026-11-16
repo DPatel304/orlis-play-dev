@@ -82,14 +82,32 @@ try {
   const joins = (await api('GET', '/api/joins', null, M)).joins;
   check(joins.length === 1 && joins[0].email === 'sam@example.com', 'the owner sees them waiting');
 
-  console.log('\n4. The owner lets them in: the app moves on by itself');
-  await api('POST', `/api/joins/${joins[0].id}/approve`, null, M);
-  await pg.waitForSelector('text=You’re in!', { timeout: 15000 });
-  check(true, 'You’re in!');
-  await shot('4-in');
+  console.log('\n4. Playing while they wait: the three starter games, nothing else');
+  await pg.click('.btn >> text=Play while you wait');
+  await pg.waitForSelector('.tvtop', { timeout: 20000 }); await wait(1500);
+  const home = await body();
+  check(['Sleepy Bear', 'Sky Painter', 'Stack It High'].every(n => home.includes(n)), 'Home has the starter games');
+  check(!home.includes('Leaf Pile') && !home.includes('Last Known Position'), 'and only those, for now');
+  await shot('4-starters');
+  await pg.click('.tvtab >> text=Store'); await wait(1200);
+  check((await body()).includes('The Store opens when the owner lets you in.'), 'the Store: opens when they\u2019re let in');
+  await pg.click('.tvtab >> text=Create'); await wait(1200);
+  check((await body()).includes('Opens when the owner lets you in.'), 'Create: the same');
+  await shot('4-create-locked');
+  await pg.click('.tvtab >> text=Home'); await wait(1200);
 
-  console.log('\n5. Their first game');
-  await pg.click('.btn >> text=Make a game');
+  console.log('\n5. The owner lets them in: it says so, and everything opens');
+  await api('POST', `/api/joins/${joins[0].id}/approve`, null, M);
+  await pg.waitForSelector('.letin', { timeout: 25000 });
+  check((await pg.textContent('.letin')).includes('You\u2019re in!'), 'You\u2019re in! The Store and Create are open.');
+  await wait(1500);
+  const after = await body();
+  check(after.includes('Leaf Pile'), 'Home has all the games now');
+  await shot('5-in');
+  await pg.click('.tvtab >> text=Create'); await wait(1500);
+
+  console.log('\n6. Their first game');
+  await pg.click('.sbtn >> text=Make a game');
   await pg.waitForSelector('.reqpop', { timeout: 20000 }); await wait(600);
   check((await pg.textContent('.reqpop h2')).trim() === 'Make a game', 'Create opens on Make a game');
   await pg.click('.reqtile >> text=Surprise me'); await wait(500);

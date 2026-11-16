@@ -87,6 +87,21 @@ function toStore(){
   music.stop(); voice.hush();
   go('store', () => storePage({ nav: tabs(), onPlay: toGame, onChange: () => {}, onWho: () => toWho(false), onRecalibrate: toCalibration }));
 }
+/* Waiting to be let in (playing the starter games meanwhile): every so
+   often, are they in yet? Once they are, it says so, and on a page with
+   tabs, that page comes back with everything open. (Mid-game, it waits for
+   the next page.) */
+setInterval(() => { if (account.waiting) account.refresh(); }, 15000);
+addEventListener('orlisletin', () => {
+  sfx.gold?.();
+  const note = document.createElement('div');
+  note.className = 'letin';
+  note.textContent = 'You’re in! The Store and Create are open.';
+  document.body.appendChild(note);
+  setTimeout(() => note.remove(), 7000);
+  if (mode === 'menu') toMenu(false); else if (mode === 'store') toStore(); else if (mode === 'create') toCreate();
+});
+
 function toFamily(){
   go('family', () => familyPage({ nav: tabs(), onWho: () => toWho(false), onRecalibrate: toCalibration }));
 }

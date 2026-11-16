@@ -67,6 +67,11 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
      with the Dev Kit, they can also build them with Claude Code */
   const grown = account.signedIn && !account.isKid;
   const kit = creator && !!(account.state.account && account.state.account.devkit);
+  /* waiting to be let in: Create opens then */
+  if (grown && account.waiting){
+    scroll.appendChild(banner('Create', 'Make a game', 'Opens when the owner lets you in.').hero);
+    return scene;
+  }
   if (!grown){
     const m = CREATE_SOON;
     scroll.appendChild(banner('Coming soon', m.name, m.line).hero);
