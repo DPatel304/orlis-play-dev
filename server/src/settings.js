@@ -14,6 +14,10 @@
      tailscaleJoin   join over Tailscale with no invite  ORLIS_TAILSCALE_JOIN
      publicUrl       its address on the internet, if it has one (none on the
                      laptop) - for setup links     ORLIS_PUBLIC_URL
+     internetPort    the internet door: where a tunnel (Tailscale Funnel)
+                     hands in requests from the internet. Only this laptop
+                     can reach it; everyone through it counts as the
+                     internet (47872; 0 or false: none)  ORLIS_INTERNET_PORT
      maker           make requested games here, with this computer's
                      Claude Code (true)            ORLIS_MAKER
 
@@ -23,14 +27,15 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DISCOVERY_PORT } from './discovery.js';
 
-export const DEFAULTS = { name: null, port: 47871, host: '0.0.0.0', discovery: true, everyoneCreates: true, tailscaleJoin: true, publicUrl: null, maker: true };
+export const DEFAULTS = { name: null, port: 47871, host: '0.0.0.0', discovery: true, everyoneCreates: true, tailscaleJoin: true, publicUrl: null, internetPort: 47872, maker: true };
 const ENV = { dataDir: 'ORLIS_DATA', name: 'ORLIS_NAME', port: 'ORLIS_PORT', host: 'ORLIS_HOST', discovery: 'ORLIS_DISCOVERY',
-  everyoneCreates: 'ORLIS_EVERYONE_CREATES', tailscaleJoin: 'ORLIS_TAILSCALE_JOIN', publicUrl: 'ORLIS_PUBLIC_URL', maker: 'ORLIS_MAKER' };
+  everyoneCreates: 'ORLIS_EVERYONE_CREATES', tailscaleJoin: 'ORLIS_TAILSCALE_JOIN', publicUrl: 'ORLIS_PUBLIC_URL', internetPort: 'ORLIS_INTERNET_PORT', maker: 'ORLIS_MAKER' };
 
 const yes = (v) => /^(1|true|yes|on)$/i.test(String(v).trim());
 const as = (key, v) => {
   if (v == null || v === '') return undefined;
-  if (key === 'port'){ const n = Number(v); if (!Number.isInteger(n) || n < 0 || n > 65535) throw new Error(`${key} must be a port number`); return n; }
+  if (key === 'internetPort' && (v === false || /^(false|off|no|0)$/i.test(String(v).trim()))) return false;
+  if (key === 'port' || key === 'internetPort'){ const n = Number(v); if (!Number.isInteger(n) || n < 0 || n > 65535) throw new Error(`${key} must be a port number`); return n; }
   if (['discovery', 'everyoneCreates', 'tailscaleJoin', 'maker'].includes(key)) return typeof v === 'boolean' ? v : yes(v);
   if (key === 'publicUrl'){ const u = String(v).trim().replace(/\/$/, ''); if (!/^https:\/\/[^\s/]+/.test(u)) throw new Error('publicUrl must start with https://'); return u; }
   return String(v);
@@ -51,4 +56,4 @@ export function settings({ env = {}, defaultDataDir }){
 
 /* what start() (app.js) takes, from the settings */
 export const startOptions = (s) => ({ dataDir: s.dataDir, name: s.name || undefined, port: s.port, host: s.host,
-  discoveryPort: s.discovery ? DISCOVERY_PORT : false, everyoneCreates: s.everyoneCreates, tailscaleJoin: s.tailscaleJoin, publicUrl: s.publicUrl });
+  discoveryPort: s.discovery ? DISCOVERY_PORT : false, everyoneCreates: s.everyoneCreates, tailscaleJoin: s.tailscaleJoin, publicUrl: s.publicUrl, internetPort: s.internetPort });

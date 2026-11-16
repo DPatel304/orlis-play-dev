@@ -60,6 +60,43 @@ as of their last visit.
 On your own Wi-Fi, joining always needs an invite code, so a visitor on the
 Wi-Fi can't just make an account.
 
+## On the internet, with Tailscale Funnel (only this laptop needs Tailscale)
+
+Funnel gives this laptop a public `https://….ts.net` address, so family can
+reach Orlis from anywhere with nothing to install but Orlis Play. Your home
+network isn't opened: Tailscale on this laptop reaches out, and hands the
+requests in.
+
+Orlis Server has an **internet door** for this: port 47872, which only this
+laptop can reach. Everyone who comes in through it counts as the internet -
+never you, never the home Wi-Fi, never Tailscale - so the management page and
+your owner key don't work through it, and joining needs an invite.
+**Always point Funnel at 47872, never at 47871** (the main port trusts this
+laptop).
+
+1. Tailscale installed and signed in on this laptop, and Orlis Server updated
+   (the internet door came in with this version).
+2. Optional, but a good idea: the address shows this laptop's name and is
+   public, so rename it first - Tailscale's admin console > Machines > this
+   laptop > Edit machine name, to something like `orlis`.
+3. In PowerShell, run:
+
+       tailscale funnel --bg 47872
+
+   The first time, it shows a link to turn on HTTPS and Funnel for your
+   Tailscale account: open it, allow it, and run the command again. It then
+   prints the address, like `https://orlis.your-name.ts.net/`. `--bg` keeps it
+   on, across restarts too.
+4. Check it from a phone on mobile data (not your Wi-Fi):
+   `https://orlis.your-name.ts.net/api/hello` should show a line starting
+   `{"app":"orlis"`.
+5. Family: in Orlis Play, **Type an address instead**, paste the address,
+   and join with an invite code from you.
+
+`tailscale funnel status` shows what's on; `tailscale funnel reset` turns it
+off. Settings: the door's port is `internetPort` in settings.json (or
+`ORLIS_INTERNET_PORT`); `0` or `false` turns it off.
+
 ## The Store
 
 The games in the Store are the `.orlis` files in `Orlis Server data\games`.

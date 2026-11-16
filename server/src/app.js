@@ -34,7 +34,7 @@ const BACKUP_LOOK = 60 * 60 * 1000, QUIET = 2 * 60 * 1000;
 /* restart(): how to start this server again (to finish a restore) - given
    when something's there to do it. status.update: what the updater last
    found, for the owner's page. */
-export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, publicUrl = null, files = null, notify = null } = {}){
+export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, publicUrl = null, internetPort = null, files = null, notify = null } = {}){
   mkdirSync(dataDir, { recursive: true });
   const safe = backups(dataDir, { version: VERSION });
   /* a restore the owner asked for, done before anything is opened */
@@ -86,6 +86,16 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const web = makeServer(api(db, info, owners, manageKey));
   await new Promise((ok, no) => { web.once('error', no); web.listen(port, host, ok); });
   const at = web.address().port;
+  /* the internet door: for a tunnel (Tailscale Funnel) to hand in requests
+     from the internet. Only this laptop can reach it, and everyone through it
+     counts as the internet - never the owner, never the home Wi-Fi. */
+  let door = null;
+  if (internetPort !== null && internetPort !== false){
+    door = web.internetDoor();
+    /* (taken by something else: the server still starts, just without it) */
+    try { await new Promise((ok, no) => { door.once('error', no); door.listen(internetPort, '127.0.0.1', ok); }); }
+    catch (e){ console.error(`(the internet door couldn't open on port ${internetPort}: ${e.message})`); door = null; }
+  }
   const udp = discoveryPort === false ? null
     : await listenForApps({ port: discoveryPort, answer: () => ({ id: info.id, name: info.name, port: at, version: VERSION }) });
   /* the daily backup, at a quiet moment */
@@ -93,8 +103,8 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const first = setTimeout(look, 60 * 1000), every = setInterval(look, BACKUP_LOOK);
   first.unref?.(); every.unref?.();
   return {
-    port: at, info, db, discovery: udp, store: shop, backups: safe, restored, manageKey,
+    port: at, internetPort: door ? door.address().port : null, info, db, discovery: udp, store: shop, backups: safe, restored, manageKey,
     manageUrl: `http://127.0.0.1:${at}/manage?k=${manageKey}`,
-    close: () => new Promise((ok) => { clearTimeout(first); clearInterval(every); udp?.close(); web.close(() => { db.close(); ok(); }); web.closeAllConnections?.(); })
+    close: () => new Promise((ok) => { clearTimeout(first); clearInterval(every); udp?.close(); door?.close(); door?.closeAllConnections?.(); web.close(() => { db.close(); ok(); }); web.closeAllConnections?.(); })
   };
 }

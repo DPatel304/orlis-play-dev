@@ -16,6 +16,22 @@ export class Page {
 }
 /* Is this request from this very machine? */
 export const isLocal = (ip) => ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+
+/* Someone on the internet, come in through the internet door (a tunnel such
+   as Tailscale Funnel, which hands their requests in from this machine). Never
+   the owner, never the home Wi-Fi, never Tailscale. */
+export const INTERNET = 'internet';
+/* Who a request is from. Through the internet door: the internet, whatever
+   it says. Otherwise the address it came from - except that something on this
+   machine passing on someone else's request (a tunnel or proxy says so in its
+   headers) isn't this machine either. */
+const PASSED_ON = ['x-forwarded-for', 'forwarded', 'x-real-ip', 'tailscale-funnel-request', 'cf-connecting-ip'];
+export function whoFrom(req, internet = false){
+  if (internet) return INTERNET;
+  const ip = req.socket.remoteAddress;
+  if (isLocal(ip) && PASSED_ON.some(h => req.headers[h] !== undefined)) return INTERNET;
+  return ip;
+}
 /* Whether someone's coming in over Tailscale: its addresses are 100.64.0.0/10
    (IPv4) and fd7a:115c:a1e0::/48 (IPv6). Only people the owner has shared
    this laptop with in Tailscale (or their own devices) can come from there. */
@@ -38,12 +54,19 @@ export const activity = { last: 0 };
 
 /* routes: [method, '/api/thing/:id', handler(req) -> body | [status, body]] */
 export function makeServer(routes){
+  const handle = handler(routes);
+  const web = createServer((req, res) => handle(req, res, false));
+  /* the internet door: the same server, where everyone is the internet */
+  web.internetDoor = () => createServer((req, res) => handle(req, res, true));
+  return web;
+}
+function handler(routes){
   const table = routes.map(([method, path, fn]) => {
     const names = [];
     const re = new RegExp('^' + path.replace(/:(\w+)/g, (_, n) => { names.push(n); return '([^/]+)'; }) + '$');
     return { method, re, names, fn };
   });
-  return createServer(async (req, res) => {
+  return async (req, res, internet) => {
     activity.last = Date.now();
     /* The app is a page from its own address (tauri.localhost), so it needs
        permission to call this one. Sign-in uses a token in a header, not a
@@ -63,7 +86,7 @@ export function makeServer(routes){
       const file = (req.headers['content-type'] || '').startsWith('application/octet-stream');
       const json = req.method === 'GET' || file ? {} : await readJson(req);
       const raw = file ? await readRaw(req) : null;
-      const out = await hit.fn({ params, body: json, raw, query: url.searchParams, headers: req.headers, ip: req.socket.remoteAddress });
+      const out = await hit.fn({ params, body: json, raw, query: url.searchParams, headers: req.headers, ip: whoFrom(req, internet) });
       if (Array.isArray(out)) [status, body] = out; else body = out;
     } catch (e){
       if (e instanceof Fail){ status = e.status; body = { error: e.code, message: e.message }; }
@@ -84,7 +107,7 @@ export function makeServer(routes){
     const text = JSON.stringify(body ?? {});
     res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(text) });
     res.end(text);
-  });
+  };
 }
 
 function readRaw(req){
