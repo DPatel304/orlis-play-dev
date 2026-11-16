@@ -20,6 +20,10 @@ test('joining with the owner\'s OK: no code - they ask, wait, and are let in (or
     assert.equal(hi.invite, false, 'no invite code asked for');
     assert.equal(hi.approval, true, 'joining waits for the owner');
 
+    /* getting in starts with an email: is there an account? */
+    assert.equal((await call('POST', '/api/account-exists', { email: 'owner@example.com' })).exists, true);
+    assert.equal((await call('POST', '/api/account-exists', { email: 'SAM@example.com' })).exists, false);
+    assert.equal((await call('POST', '/api/account-exists', { email: 'nope' })).status, 400);
     /* they make an account - and wait */
     const sam = await call('POST', '/api/signup', grownUp('sam@example.com', { name: 'Sam', family: 'Uncle B' }));
     assert.equal(sam.status, 201);

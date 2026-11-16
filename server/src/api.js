@@ -32,6 +32,7 @@ export const LIMITS = {
   profiles: 8,              /* per family */
   invites: 20,              /* unused ones an owner can have out at once */
   askers: 20,               /* people waiting to join at once */
+  looks: 30,                /* emails looked up a minute (getting in starts with one) */
   password: [8, 200],
   name: [1, 20],
   tries: 10,                /* wrong passwords for one email before a pause */
@@ -43,6 +44,7 @@ const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 export function api(db, info, extra = () => [], manageKey = null){
   const q = (sql) => db.prepare(sql);
   const tries = new Map();
+  const looked = [];             /* when emails were looked up, the last minute's */
   const EVERYONE_CREATES = info.everyoneCreates !== false;
   /* Over Tailscale, no invite is needed: being shared this laptop is the invite. */
   const AWAY_JOINS = info.tailscaleJoin !== false;
@@ -169,6 +171,18 @@ export function api(db, info, extra = () => [], manageKey = null){
       } catch (err){ db.exec('ROLLBACK'); throw err; }
       if (asks) info.tell?.(`${n} wants to join`, `${e} - open Manage Orlis Server to let them in`);
       return [201, signIn(id, body.device)];
+    }],
+
+    /* Getting in starts with an email: is there an account with it? (Then
+       the app asks for its password, or for what a new account needs.) A
+       limit on how often, so it can't be used to go through a list of emails. */
+    ['POST', '/api/account-exists', ({ body }) => {
+      const t = Date.now();
+      while (looked.length && t - looked[0] > 60e3) looked.shift();
+      if (looked.length >= LIMITS.looks) throw new Fail(429, 'paused', 'Too many tries. Wait a minute, then try again.');
+      looked.push(t);
+      const e = email(body.email);
+      return { exists: !!q('SELECT 1 FROM accounts WHERE email = ?').get(e) };
     }],
 
     ['POST', '/api/signin', ({ body }) => {

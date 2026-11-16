@@ -65,14 +65,20 @@ try {
 
   console.log('\n2. Back online: it finds the server by itself - nothing to type');
   net.online = true;
-  await pg.waitForSelector('text=Make an account', { timeout: 20000 });
-  check(true, 'found it on its own, straight to Make an account');
+  await pg.waitForSelector('text=Welcome to Orlis Play', { timeout: 20000 });
+  check(true, 'found it on its own');
+  check((await pg.$$('form input:not([type=hidden])')).length === 1, 'just one box: their email');
+  await shot('2-email');
+  await pg.fill('form input[type=email]', 'sam@example.com');
+  await pg.click('form .go');
+  await pg.waitForSelector('text=Make an account', { timeout: 10000 });
+  check((await body()).includes('sam@example.com'), 'a new email: Make an account, for sam@example.com');
   check(!(await pg.$('label >> text=Invite code')), 'no invite code');
   const labels = (await pg.$$eval('form label', ls => ls.map(l => l.textContent.trim()))).join(' | ');
   check(/Username/.test(labels) && /grown-up \(18\+\)/.test(labels), 'Username, and I\u2019m a grown-up (18+): ' + labels);
   seenText.push(await body());
   await shot('2-account');
-  const boxes = await pg.$$('form input'); const vals = ['sam@example.com', 'correct horse', 'Sam']; let k = 0;
+  const boxes = await pg.$$('form input:not([type=hidden])'); const vals = ['correct horse', 'Sam']; let k = 0;
   for (const i of boxes){ if ((await i.getAttribute('type')) === 'checkbox') await i.check(); else await i.fill(vals[k++]); }
   await pg.click('form .go');
 
@@ -115,6 +121,21 @@ try {
   const page = await body();
   check(/Your games/.test(page) && /Asked/.test(page), 'it’s in Your games: Asked');
   await shot('5-asked');
+
+  console.log('\n7. Signed out, and back: an email with an account asks for its password');
+  await pg.keyboard.press('Escape').catch(() => {});
+  await pg.click('.burger'); await wait(500);
+  await pg.click('.popitem >> text=Sign out');
+  await pg.waitForSelector('text=Welcome to Orlis Play', { timeout: 20000 });
+  await pg.fill('form input[type=email]', 'Sam@Example.com');
+  await pg.click('form .go');
+  await pg.waitForSelector('text=Welcome back', { timeout: 10000 });
+  check((await pg.$$('form input:not([type=hidden])')).length === 1, 'Welcome back - just the password');
+  await shot('7-welcome-back');
+  await pg.fill('form input[type=password]', 'correct horse');
+  await pg.click('form .go');
+  await pg.waitForSelector('.tvtop', { timeout: 20000 });
+  check(true, 'signed in, back to Home');
 
   check(!seenText.some(t => /Tailscale/i.test(t)), 'no mention of Tailscale anywhere in setup');
   check(!errs.length, 'no errors: ' + JSON.stringify(errs));

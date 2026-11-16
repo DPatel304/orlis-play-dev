@@ -78,12 +78,13 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   const bro = await page(b, null, 'brother');
   await bro.waitForSelector('text=Which Orlis server?', { timeout: 20000 }).catch(() => {});
   await bro.click('.btn >> text=Home').catch(() => {});
-  await bro.waitForSelector('text=New here? Join with an invite', { timeout: 15000 });
-  await bro.click('text=New here? Join with an invite');
-  await bro.waitForTimeout(400);
-  const inputs = await bro.$$('form input');
-  const vals = [inv.code, 'brother@example.com', 'correct horse', 'Uncle B'];
-  for (let i = 0; i < 4; i++) await inputs[i].fill(vals[i]);
+  /* getting in: his email, then what a new account needs (with the invite code) */
+  await bro.waitForSelector('text=Welcome to Orlis Play', { timeout: 15000 });
+  await bro.fill('form input[type=email]', 'brother@example.com'); await bro.click('form .btn.go');
+  await bro.waitForSelector('text=Make an account', { timeout: 10000 }); await bro.waitForTimeout(300);
+  const inputs = await bro.$$('form input:not([type=hidden]):not([type=checkbox])');
+  const vals = [inv.code, 'correct horse', 'Uncle B'];
+  for (let i = 0; i < 3; i++) await inputs[i].fill(vals[i]);
   await bro.check('form input[type=checkbox]');
   await bro.click('form .btn.go');
   /* (someone new: "You're in!" - then Later, for now) */

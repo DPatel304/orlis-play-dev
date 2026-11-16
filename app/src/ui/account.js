@@ -160,7 +160,7 @@ export function welcome(done, { auto = true } = {}){
   function form(fields, label, send){
     const f = h('form', 'acctform');
     const boxes = {};
-    for (const [key, text, type, extra] of fields){
+    for (const [key, text, type, extra, opts = {}] of fields){
       if (type === 'check'){
         const l = h('label', 'check');
         const c = document.createElement('input'); c.type = 'checkbox'; boxes[key] = c;
@@ -171,6 +171,8 @@ export function welcome(done, { auto = true } = {}){
       const l = h('label', 'field', `<span>${text}</span>`);
       const i = document.createElement('input');
       i.type = type || 'text'; i.autocomplete = extra || 'off'; i.spellcheck = false;
+      if (opts.value) i.value = opts.value;
+      if (opts.hidden){ i.type = 'hidden'; boxes[key] = i; f.appendChild(i); continue; }
       boxes[key] = i; l.appendChild(i); f.appendChild(l);
     }
     const go = button(label, 'go');
@@ -187,7 +189,7 @@ export function welcome(done, { auto = true } = {}){
     f.addEventListener('submit', submit);
     go.addEventListener('pick', submit);
     f.append(go);
-    setTimeout(() => { const first = Object.values(boxes).find(b => b.type !== 'checkbox'); first?.focus(); }, 50);
+    setTimeout(() => { const first = Object.values(boxes).find(b => b.type !== 'checkbox' && b.type !== 'hidden'); first?.focus(); }, 50);
     return f;
   }
 
@@ -244,10 +246,7 @@ export function welcome(done, { auto = true } = {}){
   function connect(sv){
     account.set({ server: { url: sv.url, name: sv.name, ...(sv.id ? { id: sv.id } : {}) } });
     if (sv.setup) return setupOwner(sv);
-    /* (someone new, over Tailscale: straight to making an account - they've
-       never been signed in on this PC) */
-    if (sv.invite === false && !account.state.account) return join(sv);
-    signIn(sv);
+    getIn(sv);
   }
   const device = () => (navigator.userAgent.includes('Windows') ? 'Windows PC' : 'A device');
   const finish = (r, joined = false) => {
@@ -272,29 +271,38 @@ export function welcome(done, { auto = true } = {}){
       ], 'Create account', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, device: device() }))),
       msg);
   }
-  function signIn(sv){
-    show(h('h2', '', 'Sign in'),
+
+  /* Getting in: just an email. An account with it - its password; none -
+     what a new account needs. */
+  function getIn(sv, typed = ''){
+    show(h('h2', '', 'Welcome to Orlis Play'),
+      form([['email', 'Email', 'email', 'email', { value: typed }]], 'Continue', async ({ email }) => {
+        const r = await call(sv.url, 'POST', '/api/account-exists', { email });
+        sfx.select?.();
+        return r.exists ? signIn(sv, email.trim()) : join(sv, email.trim());
+      }),
+      msg);
+  }
+  const another = (sv, email) => onPick(button('Use a different email', 'link'), () => { sfx.back?.(); getIn(sv, email); });
+  function signIn(sv, email){
+    show(h('h2', '', 'Welcome back'), h('p', 'lede', esc(email)),
       form([
-        ['email', 'Email', 'email', 'email'],
+        ['email', '', 'email', 'username', { value: email, hidden: true }],
         ['password', 'Password', 'password', 'current-password']
       ], 'Sign in', async (v) => finish(await call(sv.url, 'POST', '/api/signin', { ...v, device: device() }))),
-      msg,
-      /* (no invite needed: over Tailscale, or when the owner lets people in) */
-      onPick(button(sv.invite === false ? 'New here? Make an account' : 'New here? Join with an invite', sv.invite === false ? 'wide' : 'link'), () => { sfx.select(); join(sv); }));
+      msg, another(sv, email));
   }
-  function join(sv){
+  function join(sv, email){
     const free = sv.invite === false;
-    show(h('h2', '', free ? 'Make an account' : 'Join with an invite'),
-      h('p', 'lede', free ? `For "${sv.name}"` : 'Ask the owner for an invite code.'),
+    show(h('h2', '', 'Make an account'), h('p', 'lede', esc(email)),
       form([
-        ...(free ? [] : [['invite', 'Invite code', 'text']]),
-        ['email', 'Email', 'email', 'email'],
+        ['email', '', 'email', 'username', { value: email, hidden: true }],
+        ...(free ? [] : [['invite', 'Invite code (from the owner)', 'text']]),
         ['password', 'Password (8+ characters)', 'password', 'new-password'],
         ['name', 'Username', 'text'],
         ['adult', 'I\'m a grown-up (18+)', 'check']
-      ], 'Join', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, device: device() }), true)),
-      msg,
-      onPick(button('Already have an account? Sign in', 'link'), () => { sfx.select(); signIn(sv); }));
+      ], 'Create account', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, device: device() }), true)),
+      msg, another(sv, email));
   }
 
   /* 2b: a new creator - getting ready to make games: Claude Code (a button

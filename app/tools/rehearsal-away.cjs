@@ -79,10 +79,12 @@ const fsOf = (pg, folder) => pg.evaluate((f) => window.__fs[f], folder);
 const setFiles = (pg, folder, files) => pg.evaluate(([f, x]) => { Object.assign(window.__fs[f], x, { at: Date.now() }); localStorage.setItem('test.fs', JSON.stringify(window.__fs)); }, [folder, files]);
 
 async function join(pg, code, email, name){
-  await pg.waitForSelector('text=New here? Join with an invite', { timeout: 20000 });
-  await pg.click('text=New here? Join with an invite'); await pg.waitForTimeout(400);
-  const inputs = await pg.$$('form input');
-  for (const [i, v] of [code, email, 'correct horse', name].entries()) await inputs[i].fill(v);
+  /* getting in: their email, then what a new account needs (with the invite code) */
+  await pg.waitForSelector('text=Welcome to Orlis Play', { timeout: 20000 });
+  await pg.fill('form input[type=email]', email); await pg.click('form .btn.go');
+  await pg.waitForSelector('text=Make an account', { timeout: 10000 }); await pg.waitForTimeout(300);
+  const inputs = await pg.$$('form input:not([type=hidden]):not([type=checkbox])');
+  for (const [i, v] of [code, 'correct horse', name].entries()) await inputs[i].fill(v);
   await pg.check('form input[type=checkbox]');
   await pg.click('form .btn.go');
   /* (someone new: "You're in!" - then Later, for now) */
