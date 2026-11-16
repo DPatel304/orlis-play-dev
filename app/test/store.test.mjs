@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { buildOrlis, PACKAGES } from '../kit/build-orlis.mjs';
 import { readOrlis, manifestOf } from '../../server/src/orlis-file.js';
 import { KIT } from '../src/kit.js';
-import { FROM_STORE } from '../src/games/index.js';
+import { FROM_STORE, STARTER_GAMES } from '../src/games/index.js';
 
 /* The Store's side of the app: games packaged as .orlis files, sharing the
    app's parts through the Game Kit. */
@@ -30,8 +30,9 @@ test('the sandbox seals a game off: scripts only, nothing to load or connect to'
   assert.ok(lib.includes('await sandboxed(rec)') && !lib.includes('import(u)'), 'downloaded games only ever run sandboxed');
 });
 
-test('in the Windows app, Store games aren\'t built in; everywhere else they are', () => {
-  assert.ok(FROM_STORE.has('pop-party') && PACKAGES['pop-party'], 'Pop Party comes from the Store, and is packaged');
+test('the starter games are built in everywhere (playable before the owner lets you in); Store games can still update them', () => {
+  for (const id of STARTER_GAMES) assert.ok(!FROM_STORE.has(id), `${id} is built in`);
+  assert.ok(PACKAGES['pop-party'], 'Pop Party is still packaged, so the Store can send a newer version');
   const idx = readFileSync(new URL('../src/games/index.js', import.meta.url), 'utf8');
   assert.ok(idx.includes('.filter(g => !(inApp && FROM_STORE.has(g.id)))'));
 });

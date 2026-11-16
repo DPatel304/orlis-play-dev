@@ -15,11 +15,11 @@ import skyPainter from './sky-painter.js';
 /* In the Windows app, some games aren't built in: they come from the Store,
    as .orlis files, and join this list when downloaded (ui/library.js).
    Opened any other way - the browser, the tests - they're all built in. */
-export const FROM_STORE = new Set(['pop-party']);
+export const FROM_STORE = new Set([]);
 const inApp = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
 export const GAMES = [popParty, sleepyBear, leafPile, stackItHigh, skyPainter, uncleBsBoat, danceParty, lastKnownPosition, castleDefense]
   .filter(g => !(inApp && FROM_STORE.has(g.id)));
 export const byId = (id) => GAMES.find(g => g.id === id);
-/* Waiting for the owner to let you in: these three, built in, to play
+/* Waiting for the owner to let you in: these two, built in, to play
    meanwhile. The rest - and the Store, and Create - open once you're in. */
-export const STARTER_GAMES = ['sleepy-bear', 'sky-painter', 'stack-it-high'];
+export const STARTER_GAMES = ['pop-party', 'sky-painter'];

@@ -196,13 +196,14 @@ export function welcome(done, { auto = true } = {}){
     const saved = account.state && account.state.server;
     let found = [];
     if (saved){ try { const r = await hello(saved.url); found = [{ url: saved.url, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false }]; } catch {} }
+    /* the family's server, on the internet */
+    if (!found.length && HOME_SERVER){
+      try { const r = await hello(HOME_SERVER); found.push({ url: HOME_SERVER, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false }); } catch {}
+    }
+    /* not there (or none built in): one on this Wi-Fi */
     if (!found.length){
       const list = await findServers();
       for (const sv of list){ try { const r = await hello(sv.url); found.push({ url: sv.url, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false }); } catch {} }
-    }
-    /* none on this Wi-Fi: the family's server, on the internet */
-    if (!found.length && HOME_SERVER){
-      try { const r = await hello(HOME_SERVER); found.push({ url: HOME_SERVER, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false }); } catch {}
     }
     return found;
   }
@@ -251,8 +252,8 @@ export function welcome(done, { auto = true } = {}){
   const device = () => (navigator.userAgent.includes('Windows') ? 'Windows PC' : 'A device');
   const finish = (r, joined = false) => {
     account.set({ token: r.token, account: r.account, household: r.household || null, profiles: r.profiles, current: null });
-    /* asked to join: waiting for the owner to let them in */
-    if (r.account && r.account.waiting) return waiting(joined);
+    /* asked to join: straight on to the starter games while the owner lets them in */
+    if (r.account && r.account.waiting) return who();
     sfx.gold?.();
     /* someone joining with the Dev Kit, in the Windows app: setting it up first */
     if (joined && r.account && r.account.devkit && setup.available) return ready();
@@ -265,9 +266,9 @@ export function welcome(done, { auto = true } = {}){
       h('p', 'lede', `A new server: "${sv.name}". The first account is the owner's - yours.`),
       form([
         ['email', 'Your email', 'email', 'email'],
-        ['password', 'A password (8 or more characters)', 'password', 'new-password'],
-        ['name', 'Your first name (your profile)', 'text'],
-        ['adult', 'I\'m a parent or guardian, 18 or over', 'check']
+        ['password', 'Password (8+ characters)', 'password', 'new-password'],
+        ['name', 'Username', 'text'],
+        ['adult', 'I\'m a grown-up (18+)', 'check']
       ], 'Create account', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, device: device() }))),
       msg);
   }
@@ -287,10 +288,10 @@ export function welcome(done, { auto = true } = {}){
       h('p', 'lede', free ? `For "${sv.name}"` : 'Ask the owner for an invite code.'),
       form([
         ...(free ? [] : [['invite', 'Invite code', 'text']]),
-        ['email', 'Your email (a grown-up\'s)', 'email', 'email'],
-        ['password', 'A password (8 or more characters)', 'password', 'new-password'],
-        ['name', 'Your first name (your profile)', 'text'],
-        ['adult', 'I\'m a parent or guardian, 18 or over', 'check']
+        ['email', 'Email', 'email', 'email'],
+        ['password', 'Password (8+ characters)', 'password', 'new-password'],
+        ['name', 'Username', 'text'],
+        ['adult', 'I\'m a grown-up (18+)', 'check']
       ], 'Join', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, device: device() }), true)),
       msg,
       onPick(button('Already have an account? Sign in', 'link'), () => { sfx.select(); signIn(sv); }));
@@ -298,27 +299,6 @@ export function welcome(done, { auto = true } = {}){
 
   /* 2b: a new creator - getting ready to make games: Claude Code (a button
      installs it), then a first game, made and ready to try in a moment. */
-  /* 2c: waiting for the owner's OK - it checks by itself, and moves on as
-     soon as they're let in */
-  function waiting(joined = true){
-    show(h('h2', '', 'Almost there!'),
-      h('p', 'lede', 'The owner will let you in soon. Play while you wait.'),
-      h('div', 'waitdots', '<span></span><span></span><span></span>'),
-      onPick(button('Play while you wait', 'wide'), () => { sfx.select(); who(); }),
-      onPick(button('Sign out', 'link'), () => { sfx.back?.(); account.signOut(); find(); }));
-    const me = s.lastChild;
-    const tick = async () => {
-      if (!s.contains(me)) return;
-      try {
-        await account.refresh();
-        if (!account.signedIn){ return find(); }          /* (turned down: their account's gone) */
-        if (account.state.account && !account.state.account.waiting){ sfx.gold?.(); return joined ? welcomeIn() : who(); }
-      } catch {}
-      if (s.contains(me)) watching = setTimeout(tick, 5000);
-    };
-    watching = setTimeout(tick, 5000);
-  }
-
   /* 2a: a new grown-up - straight on to making their first game, or later */
   function welcomeIn(){
     show(h('h2', '', 'You’re in!'),

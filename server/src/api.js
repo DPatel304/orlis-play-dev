@@ -134,7 +134,7 @@ export function api(db, info, extra = () => [], manageKey = null){
        the first account), their own profile's name, and a yes to "I'm a
        parent or guardian, 18 or over". */
     ['POST', '/api/signup', ({ body, ip }) => {
-      if (body.adult !== true) throw new Fail(400, 'adult', 'Accounts are for parents and guardians, 18 or over. Kids get profiles on a grown-up\'s account.');
+      if (body.adult !== true) throw new Fail(400, 'adult', 'Accounts are for grown-ups (18+). Kids get profiles on a grown-up\'s account.');
       const e = email(body.email), p = password(body.password), n = name(body.name);
       const first = accounts() === 0;
       let invite = null;

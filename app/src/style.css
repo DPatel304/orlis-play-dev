@@ -1181,8 +1181,4 @@ canvas.avface{ display:block; border-radius:50%; }
 .fpop .claudecheck .setupstep{ box-shadow:none; border:1px solid #ecebf3; }
 .fpop .claudecheck .setupnote{ margin:1.2vh 0 0; }
 .sbtns .cslots{ color:#fff; opacity:.8; font-size:2.2vh; font-weight:600; margin-left:.6vh; }
-.waitdots{ display:flex; gap:1.2vh; justify-content:center; margin:2vh 0 3vh; }
-.waitdots span{ width:1.6vh; height:1.6vh; border-radius:50%; background:#6d5efc; opacity:.25; animation:waitdot 1.2s ease-in-out infinite; }
-.waitdots span:nth-child(2){ animation-delay:.2s; } .waitdots span:nth-child(3){ animation-delay:.4s; }
-@keyframes waitdot{ 50% { opacity:1; transform:translateY(-.6vh); } }
 .letin{ position:fixed; left:50%; top:12vh; transform:translateX(-50%); z-index:50; background:#fff; color:#16161d; font-weight:700; font-size:2.6vh; padding:1.6vh 3.4vh; border-radius:999px; box-shadow:0 1vh 4vh rgba(20,24,50,.25); animation:fadein .3s ease both; }

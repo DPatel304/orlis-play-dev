@@ -69,7 +69,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   const kit = creator && !!(account.state.account && account.state.account.devkit);
   /* waiting to be let in: Create opens then */
   if (grown && account.waiting){
-    scroll.appendChild(banner('Create', 'Make a game', 'Opens when the owner lets you in.').hero);
+    scroll.appendChild(banner('Create', 'Make a game', 'Pending account approval').hero);
     return scene;
   }
   if (!grown){

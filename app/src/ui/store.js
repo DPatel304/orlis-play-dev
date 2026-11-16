@@ -86,7 +86,7 @@ export function storePage({ nav = {}, onPlay, onChange = () => {}, onWho, onReca
   const say = (t) => { s.classList.remove('onhero'); scroll.innerHTML = ''; scroll.appendChild(h('div', 'smsg', `<p>${esc(t)}</p>`)); };
   /* waiting to be let in: the Store opens then */
   if (account.waiting){
-    say('The Store opens when the owner lets you in.');
+    say('Pending account approval');
     return { tick(dt){ bar.tick(dt); }, draw(c, W, H){ c.fillStyle = PAPER; c.fillRect(0, 0, W, H); } };
   }
 

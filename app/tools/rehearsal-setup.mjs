@@ -68,32 +68,30 @@ try {
   await pg.waitForSelector('text=Make an account', { timeout: 20000 });
   check(true, 'found it on its own, straight to Make an account');
   check(!(await pg.$('label >> text=Invite code')), 'no invite code');
+  const labels = (await pg.$$eval('form label', ls => ls.map(l => l.textContent.trim()))).join(' | ');
+  check(/Username/.test(labels) && /grown-up \(18\+\)/.test(labels), 'Username, and I\u2019m a grown-up (18+): ' + labels);
   seenText.push(await body());
   await shot('2-account');
   const boxes = await pg.$$('form input'); const vals = ['sam@example.com', 'correct horse', 'Sam']; let k = 0;
   for (const i of boxes){ if ((await i.getAttribute('type')) === 'checkbox') await i.check(); else await i.fill(vals[k++]); }
   await pg.click('form .go');
 
-  console.log('\n3. Waiting for the owner');
-  await pg.waitForSelector('text=Almost there!', { timeout: 15000 });
-  check(true, 'Almost there! - waiting for the owner');
-  seenText.push(await body());
-  await shot('3-waiting');
-  const joins = (await api('GET', '/api/joins', null, M)).joins;
-  check(joins.length === 1 && joins[0].email === 'sam@example.com', 'the owner sees them waiting');
-
-  console.log('\n4. Playing while they wait: the three starter games, nothing else');
-  await pg.click('.btn >> text=Play while you wait');
+  console.log('\n3. Straight in to play, while the owner hasn\u2019t said yes yet');
   await pg.waitForSelector('.tvtop', { timeout: 20000 }); await wait(1500);
+  seenText.push(await body());
+  const joins = (await api('GET', '/api/joins', null, M)).joins;
+  check(joins.length === 1 && joins[0].email === 'sam@example.com' && joins[0].name === 'Sam', 'the owner sees them waiting (username Sam)');
+
+  console.log('\n4. Two starter games, nothing else');
   const home = await body();
-  check(['Sleepy Bear', 'Sky Painter', 'Stack It High'].every(n => home.includes(n)), 'Home has the starter games');
-  check(!home.includes('Leaf Pile') && !home.includes('Last Known Position'), 'and only those, for now');
+  check(['Pop Party', 'Sky Painter'].every(n => home.includes(n)), 'Home has Pop Party and Sky Painter');
+  check(!['Sleepy Bear', 'Leaf Pile', 'Stack It High', 'Last Known Position'].some(n => home.includes(n)), 'and only those, for now');
   await shot('4-starters');
   await pg.click('.tvtab >> text=Store'); await wait(1200);
-  check((await body()).includes('The Store opens when the owner lets you in.'), 'the Store: opens when they\u2019re let in');
+  check((await body()).includes('Pending account approval'), 'the Store: Pending account approval');
   await pg.click('.tvtab >> text=Create'); await wait(1200);
-  check((await body()).includes('Opens when the owner lets you in.'), 'Create: the same');
-  await shot('4-create-locked');
+  check((await body()).includes('Pending account approval'), 'Create: the same');
+  await shot('4-create-pending');
   await pg.click('.tvtab >> text=Home'); await wait(1200);
 
   console.log('\n5. The owner lets them in: it says so, and everything opens');
