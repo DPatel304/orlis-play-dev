@@ -66,10 +66,11 @@ test('the whole way: asked for, read and made on the owner’s laptop, OK’d, i
     assert.equal((await manage('POST', `/api/requests/${asked.id}/make`)).ok, true);
     assert.equal((await call('GET', '/api/requests', null, bro.token)).requests[0].state, 'making', 'they see it being made');
     let seenPrompt = null;
-    const m = maker({ base: `http://127.0.0.1:${s.port}`, key: s.manageKey, dataDir, every: 1e9, log: () => {},
+    const told = [];
+    const m = maker({ base: `http://127.0.0.1:${s.port}`, key: s.manageKey, dataDir, every: 1e9, log: (x) => told.push(x),
       run: fakeClaude((man, prompt) => { seenPrompt = prompt; man.name = 'Firefly Jar'; man.blurb = 'Catch fireflies and fill the jar with light'; }) });
     await m.tick(); m.stop();
-    assert.match(seenPrompt, /Make the jar big and in the middle/);
+    assert.match(String(seenPrompt), /Make the jar big and in the middle/, `the maker said: ${told.join(' / ')}`);
     /* waiting for the owner's OK, as theirs */
     const mine = (await call('GET', '/api/requests', null, bro.token)).requests[0];
     assert.equal(mine.state, 'ready');
