@@ -35,12 +35,14 @@ export function installTitlebar(){
   /* in a game: back when the mouse comes to the top */
   addEventListener('mousemove', (e) => { if (playing) bar.classList.toggle('peek', e.clientY < HEIGHT * 1.5); });
   addEventListener('orlisdisplay', update);
+  addEventListener('fullscreenchange', update);
   update();
 }
 
 function update(){
   if (!bar) return;
-  const on = window.ORLIS_DISPLAY !== 'bigpicture';
+  /* (no bar in full screen, however it came about) */
+  const on = window.ORLIS_DISPLAY !== 'bigpicture' && !document.fullscreenElement;
   document.body.classList.toggle('titled', on);
   bar.hidden = !on;
   bar.classList.toggle('tucked', playing);

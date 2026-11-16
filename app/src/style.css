@@ -1182,3 +1182,4 @@ canvas.avface{ display:block; border-radius:50%; }
 .fpop .claudecheck .setupnote{ margin:1.2vh 0 0; }
 .sbtns .cslots{ color:#fff; opacity:.8; font-size:2.2vh; font-weight:600; margin-left:.6vh; }
 .letin{ position:fixed; left:50%; top:12vh; transform:translateX(-50%); z-index:50; background:#fff; color:#16161d; font-weight:700; font-size:2.6vh; padding:1.6vh 3.4vh; border-radius:999px; box-shadow:0 1vh 4vh rgba(20,24,50,.25); animation:fadein .3s ease both; }
+.keyhint{ display:inline-block; margin-left:1vh; padding:.2em .6em; border:1px solid currentColor; border-radius:.5em; font-size:.75em; font-weight:700; opacity:.55; }

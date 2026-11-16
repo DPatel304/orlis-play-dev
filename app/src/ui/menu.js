@@ -363,7 +363,7 @@ function settings(onRecalibrate){
       }, 'mode'));
     }
     mark();
-    row('Display', seg);
+    row('Display', seg, h('span', 'keyhint', 'F11'));
   } else row('Display', small('Full screen', () => toggleFullscreen()));
 
   /* the camera: which one (when there's a choice), and finding everyone again */
@@ -400,6 +400,13 @@ function settings(onRecalibrate){
 }
 
 export function toggleFullscreen(){
+  /* the Windows app: Big Picture (the whole window full screen, no title
+     bar) and back to a window - never the page alone, which left the window
+     and its title bar as they were */
+  if (typeof window !== 'undefined' && window.orlisDisplay){
+    window.orlisDisplay.set(window.ORLIS_DISPLAY === 'bigpicture' ? 'window' : 'bigpicture').catch?.(() => {});
+    return;
+  }
   if (document.fullscreenElement) document.exitFullscreen?.();
   else document.documentElement.requestFullscreen?.().catch(() => {});
 }

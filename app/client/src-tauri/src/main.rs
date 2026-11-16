@@ -353,8 +353,8 @@ window.orlisApp = {
 };
 "#;
 
-/// The display mode, for the game's Settings screen; and F11, which switches
-/// between the two like full screen in any Windows game.
+/// The display mode, for the game's Settings screen; and F11 or Alt+Enter,
+/// which switch between the two like full screen in Windows games.
 const DISPLAY_SCRIPT: &str = r#"
 window.orlisDisplay = {
   get mode(){ return window.ORLIS_DISPLAY; },
@@ -365,8 +365,9 @@ window.orlisDisplay = {
   }
 };
 addEventListener('keydown', (e) => {
-  if (e.key !== 'F11') return;
+  if (!(e.key === 'F11' || (e.key === 'Enter' && e.altKey))) return;
   e.preventDefault();
+  if (e.repeat) return;
   window.orlisDisplay.set(window.ORLIS_DISPLAY === 'bigpicture' ? 'window' : 'bigpicture');
 }, true);
 "#;
