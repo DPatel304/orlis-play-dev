@@ -271,8 +271,9 @@ export function welcome(done, { auto = true } = {}){
   const finish = (r, joined = false) => {
     account.set({ token: r.token, account: r.account, household: r.household || null, profiles: r.profiles, current: null });
     sfx.gold?.();
-    /* a new creator, in the Windows app: getting ready to make games first */
-    if (joined && r.account && r.account.role === 'creator' && setup.available) return ready();
+    /* someone joining with the Dev Kit, in the Windows app: setting it up first */
+    if (joined && r.account && r.account.devkit && setup.available) return ready();
+    if (joined && r.account) return welcomeIn();
     who();
   };
 
@@ -314,11 +315,18 @@ export function welcome(done, { auto = true } = {}){
 
   /* 2b: a new creator - getting ready to make games: Claude Code (a button
      installs it), then a first game, made and ready to try in a moment. */
+  /* 2a: a new grown-up - straight on to making their first game, or later */
+  function welcomeIn(){
+    show(h('h2', '', 'You’re in!'),
+      onPick(button('Make a game', 'wide'), () => { sfx.select(); account.set({ firstGame: 'make' }); who(); }),
+      onPick(button('Later', 'link'), () => { sfx.back?.(); who(); }));
+  }
+
   function ready(){
     const first = onPick(button('Make my first game', 'wide'), () => { sfx.select(); check.stop(); account.set({ firstGame: true }); who(); });
     const check = claudeChecklist({ onConnected: () => first.classList.add('glow') });
     show(h('h2', '', 'You’re in!'),
-      h('p', 'lede', 'You’re a creator. Connect Claude Code - two things, once - and you’re making games:'),
+      h('p', 'lede', 'Set up your Dev Kit:'),
       check.el, msg, first,
       onPick(button('Later', 'link'), () => { sfx.back?.(); check.stop(); who(); }));
   }

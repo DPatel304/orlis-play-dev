@@ -31,8 +31,8 @@ import { requestWizard, changePop } from './request.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* how a requested game is going, as whoever asked sees it */
-const ASKED = { waiting: ['Requested', ''], making: ['Being made', ''], made: ['Made - waiting for the owner’s OK', ''], ready: ['Made - waiting for the owner’s OK', ''], 'in-store': ['In the Store', 'ok'], declined: ['Not this time', 'no'] };
-const STATE = { waiting: ['Waiting for the owner’s OK', ''], approved: ['In the Store', 'ok'], declined: ['Not this time', 'no'] };
+const ASKED = { waiting: ['Asked', ''], making: ['Being made', ''], made: ['Waiting for OK', ''], ready: ['Waiting for OK', ''], 'in-store': ['In the Store', 'ok'], declined: ['Not this time', 'no'] };
+const STATE = { waiting: ['Waiting for OK', ''], approved: ['In the Store', 'ok'], declined: ['Not this time', 'no'] };
 
 /* Create's banner: the same banner as Home's and the Store's, with its own
    picture - a sparkle on purple and teal. */
@@ -63,8 +63,10 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   const scene = { tick(dt){ bar.tick(dt); }, draw(c, W, H){ c.fillStyle = PAPER; c.fillRect(0, 0, W, H); } };
   const creator = account.signedIn && (account.role === 'creator' || account.role === 'owner');
 
-  /* grown-ups can ask for games (Request a game); creators can make them too */
+  /* every grown-up makes games (Make a game: described, then made for them);
+     with the Dev Kit, they can also build them with Claude Code */
   const grown = account.signedIn && !account.isKid;
+  const kit = creator && !!(account.state.account && account.state.account.devkit);
   if (!grown){
     const m = CREATE_SOON;
     scroll.appendChild(banner('Coming soon', m.name, m.line).hero);
@@ -75,11 +77,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     return scene;
   }
 
-  const { hero, text } = banner('Create', 'Make a game', !creator
-    ? 'Describe a game - tap a few pictures, say it in your words - and it’s made for you, for the Store.'
-    : making.available
-      ? 'Describe a game and it’s made for you - or make it yourself with Claude, try it, and send it for the Store.'
-      : 'Describe a game and it’s made for you. Or send a game you’ve made, for the owner to OK for the Store.');
+  const { hero, text } = banner('Create', 'Make a game', 'Describe it. We’ll make it.');
   const btns = h('div', 'sbtns'), said_ = h('p', 'csaid', '');
   text.append(btns, said_);
   scroll.appendChild(hero);
@@ -285,8 +283,10 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   }
   /* (back from Try it) */
   if (lastTry) refreshMine().then(afterTry);
-  /* (a new creator who picked "Make my first game" in setup) */
-  else if (account.state && account.state.firstGame && making.available) firstGame();
+  /* (a new grown-up who picked "Make a game" on joining: straight into it) */
+  else if (account.state && account.state.firstGame === 'make'){ account.set({ firstGame: false }); setTimeout(askPop, 300); }
+  /* (someone new with the Dev Kit who picked "Make my first game" in setup) */
+  else if (account.state && account.state.firstGame === true && making.available) firstGame();
 
   /* Their first game: the starter (Star Catch), made in a moment with no
      Claude needed, and straight on to trying it - so the first thing they
@@ -320,30 +320,34 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   });
 
   async function send(){
-    if (!creator) return;
+    if (!kit) return;
     const r = await outbox.sync();
     if (r.sent) { said = `Sent ${r.sent === 1 ? 'it' : r.sent + ' games'} for the owner’s OK.`; sfx.gold?.(); }
-    else if (!r.reached) said = (said ? said + ' ' : '') + 'It’ll send by itself as soon as this PC can reach the Orlis server - on its Wi-Fi, or over Tailscale.';
+    else if (!r.reached) said = (said ? said + ' ' : '') + 'It’ll send when the Orlis server’s in reach.';
     draw();
   }
 
-  /* Connect Claude Code: to make games themselves, on their own Claude
-     account - install it, sign in once; then Make it myself is there */
+  /* The Dev Kit: building games yourself, with Claude Code. Set up once
+     (install it, sign in), then: build a game, or send in a game file. */
   let claudeOk = null;
-  function connectPop(){
+  function kitPop(){
     sfx.select();
-    const go = btn('Make my first game', () => { check.stop(); closePop(); newGamePop(); }, 'go');
-    go.style.display = 'none';
-    const check = claudeChecklist({ onConnected: () => { claudeOk = true; go.style.display = ''; head.textContent = 'Connected!'; draw(); } });
-    const head = h('h2', '', 'Connect Claude Code');
-    const card = popup(head,
-      h('p', '', 'To make games yourself: Claude Code, on your own Claude account, makes them with you - you say what you want, it builds it. Two things, once:'),
-      check.el, h('div', 'fbtns'));
-    card.lastChild.append(btn('Later', () => { sfx.back?.(); check.stop(); closePop(); }, 'flink'), go);
+    if (!claudeOk && making.available){
+      const go = btn('Build a game', () => { check.stop(); closePop(); newGamePop(); }, 'go');
+      go.style.display = 'none';
+      const check = claudeChecklist({ onConnected: () => { claudeOk = true; go.style.display = ''; head.textContent = 'Ready!'; draw(); } });
+      const head = h('h2', '', 'Dev Kit setup');
+      const card = popup(head, h('p', '', 'Build games yourself with Claude Code. Two steps, once.'), check.el, h('div', 'fbtns'));
+      card.lastChild.append(btn('Send a game file', () => { check.stop(); closePop(); sfx.select(); pickFile.click(); }, 'flink'), btn('Later', () => { sfx.back?.(); check.stop(); closePop(); }, 'flink'), go);
+      return;
+    }
+    const card = popup(h('h2', '', 'Dev Kit'), h('div', 'fbtns'));
+    if (making.available) card.lastChild.append(btn('Build a game', () => { closePop(); newGamePop(); }, 'go'));
+    card.lastChild.append(btn('Send a game file', () => { closePop(); sfx.select(); pickFile.click(); }, making.available ? 'flink' : 'go'));
   }
 
   /* Request a game: the wizard, then back here to see it listed */
-  const sendAsk = (recipe) => account.call('POST', '/api/requests', recipe).then((r) => { said = 'Sent! The owner will read it and make it.'; return r; });
+  const sendAsk = (recipe) => account.call('POST', '/api/requests', recipe).then((r) => { said = 'Sent!'; return r; });
   const store_ = async () => { try { return (await account.call('GET', '/api/store')).games || []; } catch { return []; } };
   function askPop(){ sfx.select(); closePop(); requestWizard({ store: store_, send: sendAsk, onDone: () => draw() }); }
 
@@ -360,36 +364,34 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     /* everything it needs first; then, if a newer draw started meanwhile,
        leave it to that one - so overlapping draws never double anything */
     const me = ++drawing;
-    const [waiting, sent, asked, ok] = await Promise.all([creator ? outbox.list() : [], creator ? outbox.sent() : [],
+    const [waiting, sent, asked, ok] = await Promise.all([kit ? outbox.list() : [], kit ? outbox.sent() : [],
       account.call('GET', '/api/requests').then(r => r.requests || [], () => null),
-      creator && making.available && claudeOk === null ? setup.status().then(claudeConnected) : claudeOk]);
+      kit && making.available && claudeOk === null ? setup.status().then(claudeConnected) : claudeOk]);
     if (me !== drawing) return;
     if (ok !== null) claudeOk = ok;
     btns.innerHTML = '';
-    btns.append(sbtn('<span class="plus">+</span>Request a game', askPop, 'get'));
-    if (creator && making.available)
-      btns.append(claudeOk ? sbtn('Make it myself', newGamePop, 'ghost') : sbtn('Connect Claude Code', connectPop, 'ghost'));
-    if (creator) btns.append(sbtn('Send a game…', () => { sfx.select(); pickFile.click(); }, 'ghost'));
+    btns.append(sbtn('<span class="plus">+</span>Make a game', askPop, 'get'));
+    if (kit) btns.append(sbtn('Dev Kit', kitPop, 'ghost'));
     if (waiting.length) btns.append(sbtn('Send now', () => { sfx.select(); send(); }, 'ghost'));
     said_.textContent = said;
     body.innerHTML = '';
 
     moving = !!(asked && asked.some(x => ['waiting', 'making', 'made', 'ready'].includes(x.state)));
     /* the games they've asked for, and how each is going */
-    if (asked === null || asked.length || !creator){
-      const sec = row('Your requests', asked && asked.length ? 'The owner reads each one, then makes it' : '');
-      if (asked === null) sec.appendChild(h('p', 'cempty', 'Can’t reach the Orlis server right now to see how they’re going.'));
-      else if (!asked.length) sec.appendChild(h('p', 'cempty', 'None yet - press Request a game to describe your first.'));
+    if (asked === null || asked.length || !kit){
+      const sec = row('Your games', '');
+      if (asked === null) sec.appendChild(h('p', 'cempty', 'Can’t reach the Orlis server right now.'));
+      else if (!asked.length) sec.appendChild(h('p', 'cempty', 'None yet.'));
       else {
         const list = h('div', 'clist');
         for (const x of asked.filter(x => x.state !== 'withdrawn')){
           const [label, cls] = ASKED[x.state] || [x.state, ''];
           const r = h('div', 'citem');
           const when = new Date(x.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
-          r.append(h('div', 'cask', `${x.game ? `<b>${esc(x.game.name)}</b> ` : ''}<span class="csent">${esc(x.sentence)}</span><small>${esc(when)}${x.note ? ` · the owner says: “${esc(x.note)}”` : ''}</small>`));
+          r.append(h('div', 'cask', `${x.game ? `<b>${esc(x.game.name)}</b> ` : ''}<span class="csent">${esc(x.sentence)}</span><small>${esc(when)}${x.note ? ` · “${esc(x.note)}”` : ''}</small>`));
           const end = h('div', 'cend');
           if (x.state === 'waiting') end.appendChild(btn('Take back', async () => { try { await account.call('DELETE', `/api/requests/${x.id}`); said = 'Taken back.'; } catch (e){ said = e.message; } draw(); }, 'quiet'));
-          if (x.state === 'in-store' && x.gameId && x.game) end.appendChild(btn('Ask for a change', () => { sfx.select(); changePop({ game: { id: x.gameId, name: x.game.name }, send: sendAsk, onDone: () => draw() }); }, 'quiet'));
+          if (x.state === 'in-store' && x.gameId && x.game) end.appendChild(btn('Change it', () => { sfx.select(); changePop({ game: { id: x.gameId, name: x.game.name }, send: sendAsk, onDone: () => draw() }); }, 'quiet'));
           end.appendChild(h('span', `cstate ${cls}`, esc(label)));
           r.appendChild(end);
           list.appendChild(r);
@@ -397,12 +399,12 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
         sec.appendChild(list);
       }
     }
-    if (!creator) return;
+    if (!kit) return;
 
-    /* your games, as the Store's cards */
-    if (making.available){
-      const sec = row('Your games', mine.length ? 'On this PC' : '');
-      if (!mine.length) sec.appendChild(h('p', 'cempty', 'None yet - press Make it myself to make your first.'));
+    /* games they've built themselves (Dev Kit), as the Store's cards */
+    if (making.available && (mine.length || claudeOk)){
+      const sec = row('Built by you', '');
+      if (!mine.length) sec.appendChild(h('p', 'cempty', 'None yet.'));
       else {
         const shelf = h('div', 'sshelf');
         for (const g of mine){
@@ -420,7 +422,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     }
 
     if (waiting.length){
-      const sec = row('Waiting to send', 'Sends as soon as this PC can reach the Orlis server (its Wi-Fi, or Tailscale)');
+      const sec = row('Waiting to send', '');
       const list = h('div', 'clist');
       for (const x of waiting){
         const r = h('div', 'citem');
@@ -434,14 +436,13 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     /* out of reach: how they'd gone, as of the last visit */
     const last = sent === null ? outbox.lastSent() : null;
     const shown = sent === null ? last.list : sent;
-    const sec = row('Sent', sent === null && last.list ? `How each one went, as of ${new Date(last.at).toLocaleDateString([], { month: 'short', day: 'numeric' })} - the Orlis server’s out of reach right now` : 'And how each one went');
-    if (shown === null) sec.appendChild(h('p', 'cempty', 'Can’t reach the Orlis server right now to see how they went.'));
-    else if (!shown.length) sec.appendChild(h('p', 'cempty', 'Nothing sent yet.'));
-    else {
+    /* (only once something's been sent: no empty rows) */
+    if (shown && shown.length){
+      const sec = row('Sent', sent === null && last.list ? `As of ${new Date(last.at).toLocaleDateString([], { month: 'short', day: 'numeric' })}` : '');
       const list = h('div', 'clist');
       for (const x of shown){
         const [label, cls] = STATE[x.state] || [x.state, ''];
-        list.appendChild(h('div', 'citem', `<div><b>${esc(x.name)}</b> <span class="ctag">version ${esc(x.version)}</span><small>${esc(new Date(x.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' }))}${x.note ? ` · the owner says: “${esc(x.note)}”` : ''}</small></div><span class="cstate ${cls}">${esc(label)}</span>`));
+        list.appendChild(h('div', 'citem', `<div><b>${esc(x.name)}</b> <span class="ctag">version ${esc(x.version)}</span><small>${esc(new Date(x.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' }))}${x.note ? ` · “${esc(x.note)}”` : ''}</small></div><span class="cstate ${cls}">${esc(label)}</span>`));
       }
       sec.appendChild(list);
     }

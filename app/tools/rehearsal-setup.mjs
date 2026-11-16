@@ -100,32 +100,26 @@ try {
   for (const i of boxes){ if ((await i.getAttribute('type')) === 'checkbox') await i.check(); else await i.fill(vals[k++]); }
   await pg.click('form .go');
 
-  console.log('\n5. Getting ready to make games');
-  await pg.waitForSelector('text=You’re in!', { timeout: 15000 }); await wait(1000);
-  check((await steps())[0] === 'now:Install Claude Code', 'Claude Code is next: ' + (await steps()).join(' | '));
-  await shot('5-ready');
-  await pg.click('.setupstep .btn >> text=Install Claude Code');
-  await wait(6500);
-  check((await steps())[0] === 'done:Install Claude Code', 'installed, ticked: ' + (await steps()).join(' | '));
-  await shot('6-claude');
+  console.log('\n5. You\u2019re in - and straight on to making a game');
+  await pg.waitForSelector('text=You\u2019re in!', { timeout: 15000 }); await wait(800);
+  check(!(await pg.$('.setupstep')), 'no Claude Code setup (that\u2019s the Dev Kit)');
+  await shot('5-in');
+  await pg.click('.btn >> text=Make a game');
+  await pg.waitForSelector('.reqpop', { timeout: 20000 }); await wait(600);
+  check((await pg.textContent('.reqpop h2')).trim() === 'Make a game', 'Create opens on Make a game');
+  await shot('6-make');
 
-  console.log('\n6. Make my first game');
-  await pg.click('.btn >> text=Make my first game');
-  await pg.waitForSelector('text=Your first game is ready', { timeout: 20000 }); await wait(800);
-  check(true, 'Create made it: "' + (await pg.textContent('.fpop p')).trim() + '"');
-  check(Object.keys(await pg.evaluate(() => window.__fs)).includes('Star Catch'), 'its folder is on this PC');
-  await shot('7-first');
-  await pg.click('.fpop .btn >> text=Try it'); await wait(2500);
-  await pg.evaluate(() => window.__fakeOn());
-  await wait(12000);
-  const r = await pg.evaluate(() => { const i = window.__round && window.__round(); return i ? { sandboxed: !!i.box, failed: i.failed || null } : null; });
-  check(r && r.sandboxed && !r.failed, 'their first game plays: ' + JSON.stringify(r));
-  await shot('8-playing');
-  await pg.keyboard.press('Escape'); await wait(500);
-  await pg.click('.screen.dim .btn >> nth=1'); await wait(2500);
-  const after = ((await pg.textContent('.fpop').catch(() => '')) || '').replace(/\s+/g, ' ');
-  check(/make it yours/.test(after), 'after trying it, how to make it their own: "' + after.slice(0, 140) + '…"');
-  await shot('9-after');
+  console.log('\n6. Their first game, described and sent');
+  await pg.click('.reqtile >> text=Surprise me'); await wait(500);
+  check((await pg.textContent('.reqpop h2')).trim() === 'Ready?', 'everything picked for them');
+  await shot('7-ready');
+  await pg.click('.reqfoot .btn.go >> text=Send request');
+  await pg.waitForSelector('.reqpop >> text=Sent!', { timeout: 8000 });
+  await pg.click('.reqfoot .btn.go >> text=OK'); await wait(1200);
+  const page = ((await pg.textContent('.createpage').catch(() => '')) || '').replace(/\s+/g, ' ');
+  check(/Your games/.test(page) && /Asked/.test(page), 'it\u2019s in Your games: Asked');
+  check(!/Dev Kit/.test(page), 'no Dev Kit for a new grown-up');
+  await shot('8-asked');
   check(!errs.length, 'no errors: ' + JSON.stringify(errs));
 } catch (e){ fail.push(e.message); console.log('  ✗ ' + e.message); await shot('x-failed').catch(() => {}); }
 await b.close(); await s.close();

@@ -103,7 +103,7 @@ export function api(db, info, extra = () => [], manageKey = null){
   const device = (v) => text(v).slice(0, 60) || 'A device';
 
   /* ---------- what's sent back ---------- */
-  const accountOut = (a) => ({ id: a.id, email: a.email, role: a.role, createdAt: a.created_at });
+  const accountOut = (a) => ({ id: a.id, email: a.email, role: a.role, devkit: a.role === 'owner' || !!a.devkit, createdAt: a.created_at });
   const householdOf = (a) => { const h = q('SELECT id, name FROM households WHERE id = ?').get(a.household_id); return h ? { ...h } : null; };
   /* the family's profiles: everyone's kids (and grown-ups) in the household */
   const lookOf = (t) => { try { return t ? JSON.parse(t) : null; } catch { return null; } };
@@ -266,7 +266,7 @@ export function api(db, info, extra = () => [], manageKey = null){
       owner(headers, ip);
       const hs = q('SELECT id, name, created_at AS createdAt FROM households ORDER BY created_at').all().map(h => ({ ...h }));
       for (const h of hs){
-        h.accounts = q('SELECT id, email, role, created_at AS createdAt FROM accounts WHERE household_id = ? ORDER BY created_at').all(h.id).map(r => ({ ...r }));
+        h.accounts = q('SELECT id, email, role, devkit, created_at AS createdAt FROM accounts WHERE household_id = ? ORDER BY created_at').all(h.id).map(r => ({ ...r, devkit: r.role === 'owner' || !!r.devkit }));
         h.profiles = q('SELECT COUNT(*) AS n FROM profiles p JOIN accounts x ON x.id = p.account_id WHERE x.household_id = ?').get(h.id).n;
       }
       return { households: hs.filter(h => h.accounts.length) };
@@ -284,6 +284,18 @@ export function api(db, info, extra = () => [], manageKey = null){
       if (!r.changes) throw new Fail(404, 'no_account', 'No such account.');
       if (before.role !== body.role) history(db).add(me, body.role === 'creator' ? 'creator' : 'not-creator', { note: before.email });
       return { id: params.id, role: body.role };
+    }],
+    /* the Dev Kit: building games yourself with Claude Code - the owner
+       switches it on or off for someone (it's theirs to give) */
+    ['POST', '/api/accounts/:id/devkit', ({ headers, params, body, ip }) => {
+      const me = owner(headers, ip);
+      if (params.id === me.id) throw new Fail(400, 'self', 'The owner always has the Dev Kit.');
+      const on = body.on === true;
+      const before = q('SELECT email, devkit FROM accounts WHERE id = ?').get(params.id);
+      if (!before) throw new Fail(404, 'no_account', 'No such account.');
+      q('UPDATE accounts SET devkit = ? WHERE id = ?').run(on ? 1 : 0, params.id);
+      if (!!before.devkit !== on) history(db).add(me, on ? 'devkit-on' : 'devkit-off', { note: before.email });
+      return { id: params.id, devkit: on };
     }]
   ];
 }

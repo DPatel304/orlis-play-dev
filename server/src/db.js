@@ -135,6 +135,11 @@ export const STEPS = [
     created_at  TEXT NOT NULL
   );
   CREATE INDEX jobs_status ON jobs(status, created_at);
+  `,
+  /* 8: the Dev Kit - building games yourself, with Claude Code. Off unless
+     the owner switches it on for someone (the owner always has it). */
+  `
+  ALTER TABLE accounts ADD COLUMN devkit INTEGER NOT NULL DEFAULT 0;
   `
 ];
 

@@ -84,19 +84,28 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   for (let i = 0; i < 4; i++) await inputs[i].fill(vals[i]);
   await bro.check('form input[type=checkbox]');
   await bro.click('form .btn.go');
-  /* (a new creator: "You're in!" - getting ready to make games - then Later, for now) */
+  /* (someone new: "You're in!" - then Later, for now) */
   await bro.waitForSelector('text=You’re in!', { timeout: 20000 }); await bro.waitForTimeout(500);
   await bro.click('.btn >> text=Later');
   await bro.waitForSelector('.tvtop', { timeout: 20000 });
   await bro.waitForTimeout(1000);
+  /* the owner gives him the Dev Kit; his app sees it when it next opens */
+  {
+    const st = await bro.evaluate(() => JSON.parse(localStorage.getItem('orlis.account')));
+    const k = fs.readFileSync(path.join(data, 'manage.key'), 'utf8').trim();
+    await api('POST', `/api/accounts/${st.account.id}/devkit`, { on: true }, null, { 'X-Orlis-Manage': k });
+    await bro.reload(); await bro.waitForSelector('.tvtop', { timeout: 25000 }); await bro.waitForTimeout(1500);
+  }
   const broAcct = await bro.evaluate(() => JSON.parse(localStorage.getItem('orlis.account')));
+  check(broAcct.account.devkit === true, 'the owner gave him the Dev Kit');
   check(broAcct.account.role === 'creator', 'joined as a creator, in a family of his own');
   const tabs = await bro.$$eval('.tvtabs .tvtab', t => t.map(x => x.textContent));
   check(tabs.includes('Create'), 'he sees the Create tab: ' + JSON.stringify(tabs));
 
   log('\n3. He makes a new game');
   await bro.click('.tvtab >> text=Create'); await bro.waitForTimeout(1500);
-  await bro.click('.sbtn >> text=Make it myself'); await bro.waitForTimeout(800);
+  await bro.click('.sbtn >> text=Dev Kit'); await bro.waitForTimeout(600);
+  await bro.click('.fpop .btn >> text=Build a game'); await bro.waitForTimeout(800);
   await bro.fill('.fpop input.finput', 'Firefly Jar'); await bro.fill('.fpop textarea', IDEA);
   await bro.click('.fpop .btn.go'); await bro.waitForTimeout(1500);
   const asked = await bro.evaluate(() => window.__claudeAsked);

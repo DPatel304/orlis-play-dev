@@ -1,4 +1,4 @@
-/* Request a game: a grown-up describes a game by tapping pictures and
+/* Make a game (once "Request a game"): a grown-up describes a game by tapping pictures and
    saying it in their own words; it goes to the owner, who makes it with
    their own Claude Code (server: requests.js). Nothing to install, no
    Claude account needed.
@@ -109,12 +109,12 @@ export function requestWizard({ store = async () => [], send, onDone = () => {} 
     const nav = (label, fn, cls = '') => { const b = button(label, cls); onPick(b, fn); foot.appendChild(b); return b; };
 
     if (step === 'start'){
-      body.append(h('h2', '', 'Request a game'), h('p', 'reqlede', 'Describe a game, and it’s made for you. Tap to pick - only two choices are needed.'));
+      body.append(h('h2', '', 'Make a game'));
       const grid = h('div', 'reqgrid three');
       grid.append(
-        tile('<span class="ri">✨</span><b>Make something new</b><small>Start from scratch</small>', '', () => { set({ start: 'new', like: null }); next(); }),
-        tile('<span class="ri">\u{1F3AE}</span><b>Like a game I know</b><small>Pick a game, then say what’s different</small>', '', () => { set({ start: 'like' }); next(); }),
-        tile('<span class="ri">\u{1F3B2}</span><b>Surprise me</b><small>Everything picked for you - change what you like</small>', '', surprise));
+        tile('<span class="ri">✨</span><b>Make something new</b><small>From scratch</small>', '', () => { set({ start: 'new', like: null }); next(); }),
+        tile('<span class="ri">\u{1F3AE}</span><b>Like a game I know</b><small>Then change it</small>', '', () => { set({ start: 'like' }); next(); }),
+        tile('<span class="ri">\u{1F3B2}</span><b>Surprise me</b><small>We pick it all</small>', '', surprise));
       body.appendChild(grid);
       nav('Cancel', () => { sfx.back?.(); close(); }, 'link');
       if (r.view || r.action || r.words) nav('Start over', () => { drop(); r = blank(); draw(); }, 'link');
@@ -124,7 +124,7 @@ export function requestWizard({ store = async () => [], send, onDone = () => {} 
       body.append(h('h2', '', 'Which game is it like?'));
       const grid = h('div', 'reqgrid');
       if (games === null){ body.append(h('p', 'reqlede', 'Looking in the Store…')); games = await store(); return draw(); }
-      if (!games.length) body.append(h('p', 'reqlede', 'The Store’s out of reach right now - try Make something new instead.'));
+      if (!games.length) body.append(h('p', 'reqlede', 'The Store’s out of reach right now.'));
       for (const g of games) grid.appendChild(tile(`<b>${esc(g.name)}</b><small>${esc(g.blurb || '')}</small>`, r.like === g.id ? 'on' : '', () => { set({ like: g.id }); next(); }));
       body.appendChild(grid);
     }
@@ -132,12 +132,12 @@ export function requestWizard({ store = async () => [], send, onDone = () => {} 
       body.append(h('h2', '', 'How is it seen?'));
       const grid = h('div', 'reqgrid two');
       grid.append(
-        tile('<span class="ri">\u{1F590}️</span><b>Your hands</b><small>You’re in the game: your hands are glowing mitts (like Pop Party)</small>', r.view === 'hands' ? 'on' : '', () => { set({ view: 'hands' }); next(); }),
-        tile('<span class="ri">\u{1F9D1}‍\u{1F680}</span><b>Your character</b><small>You see yourself in the world, moving as you move (like Last Known Position)</small>', r.view === 'character' ? 'on' : '', () => { set({ view: 'character' }); next(); }));
+        tile('<span class="ri">\u{1F590}️</span><b>Your hands</b><small>Like Pop Party</small>', r.view === 'hands' ? 'on' : '', () => { set({ view: 'hands' }); next(); }),
+        tile('<span class="ri">\u{1F9D1}‍\u{1F680}</span><b>Your character</b><small>Like Last Known Position</small>', r.view === 'character' ? 'on' : '', () => { set({ view: 'character' }); next(); }));
       body.appendChild(grid);
     }
     if (step === 'action'){
-      body.append(h('h2', '', r.start === 'like' ? 'Anything different to do? (optional)' : 'What do you do?'));
+      body.append(h('h2', '', r.start === 'like' ? 'Anything different? (optional)' : 'What do you do?'));
       const grid = h('div', 'reqgrid five');
       for (const [id, a] of Object.entries(ACTIONS)) grid.appendChild(tile(`<span class="ri">${a.icon}</span><b>${a.label}</b><small>${a.line}</small>`, r.action === id ? 'on' : '', () => { set({ action: r.action === id && r.start === 'like' ? null : id }); next(); }));
       body.appendChild(grid);
@@ -157,7 +157,7 @@ export function requestWizard({ store = async () => [], send, onDone = () => {} 
       body.append(place, pc);
     }
     if (step === 'twists'){
-      body.append(h('h2', '', 'Any twists? (optional, up to two)'));
+      body.append(h('h2', '', 'Any twists? (up to two)'));
       const tc = h('div', 'reqchips big');
       for (const [id, label] of Object.entries(TWISTS)){
         const on = r.twists.includes(id);
@@ -179,19 +179,19 @@ export function requestWizard({ store = async () => [], send, onDone = () => {} 
       line('Players', 'players', [[1, 'One'], [2, 'One or two']]);
     }
     if (step === 'words'){
-      body.append(h('h2', '', 'In your own words (optional)'));
-      const words = Object.assign(document.createElement('textarea'), { className: 'finput reqwords', value: r.words, placeholder: 'How does it start? What’s funny? How do you win? Anything you can picture - the more you say, the closer it’ll be.' });
+      body.append(h('h2', '', 'Anything else? (optional)'));
+      const words = Object.assign(document.createElement('textarea'), { className: 'finput reqwords', value: r.words, placeholder: 'How it starts, what’s funny, how you win…' });
       const left = h('p', 'reqcount', '');
       const tally = () => { const n = count(words.value); left.textContent = `${n} of ${WORDS} words`; left.classList.toggle('over', n > WORDS); };
       words.addEventListener('input', () => { set({ words: words.value }); tally(); });
       tally();
-      const name = Object.assign(document.createElement('input'), { className: 'finput', maxLength: 40, value: r.name, placeholder: 'Its name (optional - or let it be named for you)' });
+      const name = Object.assign(document.createElement('input'), { className: 'finput', maxLength: 40, value: r.name, placeholder: 'Name (optional)' });
       name.addEventListener('input', () => set({ name: name.value }));
-      body.append(words, left, h('p', 'reqtip', 'Tip: to speak instead of typing, click in the box, then press the Windows key and H together.'), name);
+      body.append(words, left, h('p', 'reqtip', 'Tip: Windows key + H to speak instead.'), name);
       setTimeout(() => words.focus(), 50);
     }
     if (step === 'review'){
-      body.append(h('h2', '', 'Ready to send?'), h('p', 'reqlede', 'This is what the owner gets. They read every request, then make it - you’ll see how it’s going in Create.'));
+      body.append(h('h2', '', 'Ready?'));
       if (r.words) body.append(h('blockquote', 'reqquote', esc(r.words)));
       const err = h('p', 'ferr', '');
       body.appendChild(err);
@@ -214,7 +214,7 @@ export function requestWizard({ store = async () => [], send, onDone = () => {} 
   }
   function sent(){
     card.innerHTML = '';
-    card.append(h('h2', '', 'Sent!'), h('p', 'reqlede', 'The owner will read it and make it. You’ll see how it’s going in Create - and when it’s ready, it’s in the Store.'));
+    card.append(h('h2', '', 'Sent!'), h('p', 'reqlede', 'You’ll see it in Create when it’s ready.'));
     const ok = button('OK', 'go'); onPick(ok, () => { sfx.select?.(); close(); });
     const f = h('div', 'reqfoot'); f.appendChild(ok); card.appendChild(f);
   }
@@ -237,7 +237,7 @@ export function changePop({ game, send, onDone = () => {} }){
       const on = chips.includes(id);
       c.appendChild(chip(label, on, () => { chips = on ? chips.filter(x => x !== id) : [...chips, id].slice(-4); draw(); }));
     }
-    const t = Object.assign(document.createElement('textarea'), { className: 'finput reqwords short', value: words, placeholder: 'Anything else? Say it in your own words.' });
+    const t = Object.assign(document.createElement('textarea'), { className: 'finput reqwords short', value: words, placeholder: 'Anything else?' });
     t.addEventListener('input', () => { words = t.value; card.querySelector('.reqsum').textContent = changeSentence(game.name, chips, words); });
     const err = h('p', 'ferr', '');
     const f = h('div', 'reqfoot');

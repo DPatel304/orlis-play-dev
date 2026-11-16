@@ -42,6 +42,8 @@ button.danger{ color:var(--bad); }
 .seg{ display:inline-flex; padding:3px; border-radius:999px; background:#f1f2f6; }
 .seg button{ border:0; background:transparent; font:inherit; font-size:14px; font-weight:600; padding:5px 13px; border-radius:999px; cursor:pointer; color:var(--dim); }
 .seg button.on{ background:#fff; color:var(--ink); box-shadow:0 1px 4px rgba(20,24,50,.12); }
+.kit{ border:1px solid var(--line, #e3e5ec); background:#fff; font:inherit; font-size:14px; font-weight:600; padding:5px 13px; border-radius:999px; cursor:pointer; color:var(--dim); margin-left:8px; }
+.kit.on{ background:#6d5efc; border-color:#6d5efc; color:#fff; }
 .fam{ font-weight:700; }
 .code{ font-size:26px; font-weight:800; letter-spacing:.14em; color:var(--violet); }
 .icon{ width:40px; height:40px; border-radius:23%; display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:12px; }
@@ -194,6 +196,13 @@ var TRY = ${TRY_SECS};
                 seg.appendChild(b);
               });
               right.push(seg);
+              /* the Dev Kit: building games with Claude Code (off unless you switch it on) */
+              var kit = document.createElement('button'); kit.className = 'kit' + (a.devkit ? ' on' : '');
+              var label = function(){ kit.textContent = a.devkit ? 'Dev Kit \u2713' : 'Dev Kit'; kit.className = 'kit' + (a.devkit ? ' on' : ''); };
+              kit.title = 'Build games themselves with Claude Code';
+              kit.onclick = function(){ call('POST', '/api/accounts/' + encodeURIComponent(a.id) + '/devkit', { on: !a.devkit }).then(function(r){ a.devkit = r.devkit; label(); }, fail(c)); };
+              label();
+              right.push(kit);
             }
             row(c, '&nbsp;&nbsp;' + esc(a.email), right);
           });
@@ -210,7 +219,7 @@ var TRY = ${TRY_SECS};
       return call('GET', '/api/history').then(function(r){
         var c = card('What happened to the family\\u2019s games');
         if (!r.history.length) note(c, 'Nothing yet. Every game sent, played, approved, declined or taken out is kept here, and every grown-up made a creator or not.');
-        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined' };
+        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away' };
         r.history.forEach(function(x){
           row(c, '<span class="tag ' + (x.what === 'approved' ? 'ok' : x.what === 'declined' || x.what === 'removed' ? 'declined' : '') + '">' + esc(SAY[x.what] || x.what) + '</span> ' +
             (x.name ? '<b>' + esc(x.name) + '</b>' + (x.version ? ' <span class="tag">version ' + esc(x.version) + '</span>' : '') : '') +

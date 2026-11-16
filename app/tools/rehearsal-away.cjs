@@ -84,15 +84,22 @@ async function join(pg, code, email, name){
   for (const [i, v] of [code, email, 'correct horse', name].entries()) await inputs[i].fill(v);
   await pg.check('form input[type=checkbox]');
   await pg.click('form .btn.go');
-  /* (a new creator: "You're in!" - getting ready to make games - then Later, for now) */
+  /* (someone new: "You're in!" - then Later, for now) */
   await pg.waitForSelector('text=You’re in!', { timeout: 20000 }); await pg.waitForTimeout(500);
   await pg.click('.btn >> text=Later');
   await pg.waitForSelector('.tvtop', { timeout: 20000 }); await pg.waitForTimeout(1000);
+  /* the owner gives them the Dev Kit (the management page's switch), and
+     their app sees it the next time it opens */
+  const st = await pg.evaluate(() => JSON.parse(localStorage.getItem('orlis.account')));
+  const key = fs.readFileSync(path.join(data, 'manage.key'), 'utf8').trim();
+  await api('POST', `/api/accounts/${st.account.id}/devkit`, { on: true }, null, { 'X-Orlis-Manage': key });
+  await restart(pg);
   return pg.evaluate(() => JSON.parse(localStorage.getItem('orlis.account')));
 }
 async function newGame(pg, name, idea){
   await tab(pg, 'Create');
-  await pg.click('.sbtn >> text=Make it myself'); await pg.waitForTimeout(800);
+  await pg.click('.sbtn >> text=Dev Kit'); await pg.waitForTimeout(600);
+  await pg.click('.fpop .btn >> text=Build a game'); await pg.waitForTimeout(800);
   await pg.fill('.fpop input.finput', name); await pg.fill('.fpop textarea', idea);
   await pg.click('.fpop .btn.go'); await pg.waitForTimeout(1500);
   await pg.keyboard.press('Escape');
@@ -177,7 +184,7 @@ function claude(files, prompt){
   const t1 = await tryIt(bro, 'Firefly Jar', 14);
   check(t1 && t1.sandboxed && !t1.failed, 'Try it works with no server: ' + JSON.stringify(t1));
   let said = await sendIt(bro, 'Firefly Jar');
-  check(/send by itself as soon as this PC can reach the Orlis server/.test(said), 'Check and send: "' + said + '"');
+  check(/send when the Orlis server’s in reach/.test(said), 'Check and send: "' + said + '"');
   check(JSON.stringify(await outboxOf(bro)) === JSON.stringify([['Firefly Jar', '0.1', '']]), 'it waits on his PC: ' + JSON.stringify(await outboxOf(bro)));
   await tab(bro, 'Create'); await shot(bro, '05-waiting');
 
@@ -253,7 +260,7 @@ function claude(files, prompt){
   bro.net.away = true;
   await restart(bro); await tab(bro, 'Create');
   const away = await txt(bro, 'body');
-  check(/as of .* out of reach/.test(away) && /Approved|In the Store/i.test(away), 'away, Create still shows how they went, as of his visit');
+  check(/As of /.test(away) && /Approved|In the Store/i.test(away), 'away, Create still shows how they went, as of his visit');
   await shot(bro, '13-away-sent');
   await setFiles(bro, folder, claude(await fsOf(bro, folder), 'When the jar is full, make a big rainbow arc across the sky as the fireflies fly out.'));
   said = await sendIt(bro, 'Firefly Jar');

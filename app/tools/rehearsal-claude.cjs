@@ -1,5 +1,5 @@
 // Connect Claude Code, on Create: a creator without Claude Code installs it and
-// signs in, from the app (the Windows app standing in), and Make it myself appears.
+// signs in, from the app (the Windows app standing in), and Build a game appears.
 //   NODE_PATH=$(npm root -g) node tools/rehearsal-claude.cjs http://localhost:5191/ /tmp/claude ../server
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os');
@@ -37,15 +37,16 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await pg.waitForTimeout(1000);
   await pg.click('.tvtab >> text=Create'); await pg.waitForTimeout(1800);
 
-  log('\n1. No Claude Code yet: Request a game, and Connect Claude Code');
+  log('\n1. The owner (who has the Dev Kit), no Claude Code yet: Make a game, and Dev Kit');
   await pg.waitForTimeout(1500);
   const t = await txt(pg, '.sbtns');
-  check((await pg.$$('.sbtns .sbtn')).length === 3, 'each button once: ' + (await pg.$$('.sbtns .sbtn')).length + ' buttons');
+  check((await pg.$$('.sbtns .sbtn')).length === 2, 'each button once: ' + (await pg.$$('.sbtns .sbtn')).length + ' buttons');
   const fit = await pg.$$eval('.sbtns .sbtn', bs => bs.map(b => b.scrollWidth <= b.clientWidth + 1));
   check(fit.every(Boolean), 'no button squashed (labels fit)');
   await pg.screenshot({ path: `${out}-0-create.png` });
-  check(t.includes('Request a game') && t.includes('Connect Claude Code') && !t.includes('Make it myself'), 'buttons: ' + t);
-  await pg.click('.sbtn >> text=Connect Claude Code'); await pg.waitForTimeout(600);
+  check(t.includes('Make a game') && t.includes('Dev Kit'), 'buttons: ' + t);
+  await pg.click('.sbtn >> text=Dev Kit'); await pg.waitForTimeout(600);
+  check((await txt(pg, '.fpop h2')) === 'Dev Kit setup', 'not set up yet: the setup');
   check((await pg.$$('.fpop .setupstep')).length === 2, 'two steps');
   await pg.screenshot({ path: `${out}-1-connect.png` });
 
@@ -56,13 +57,15 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   check((await pg.$$('.fpop .setupstep.done')).length === 1, 'installed: ticked');
   await pg.click('.fpop .btn >> text=Sign in to Claude'); await pg.waitForTimeout(300);
   check((await txt(pg, '.fpop .setupnote')).includes('sign in'), 'says how to sign in');
-  await pg.waitForSelector('.fpop h2 >> text=Connected!', { timeout: 10000 }).catch(() => {});
-  check((await txt(pg, '.fpop h2')) === 'Connected!', 'Connected!');
-  check(await pg.isVisible('.fpop .btn >> text=Make my first game'), 'Make my first game');
+  await pg.waitForSelector('.fpop h2 >> text=Ready!', { timeout: 10000 }).catch(() => {});
+  check((await txt(pg, '.fpop h2')) === 'Ready!', 'Ready!');
+  check(await pg.isVisible('.fpop .btn >> text=Build a game'), 'Build a game');
   await pg.screenshot({ path: `${out}-2-connected.png` });
   check(JSON.stringify(await pg.evaluate(() => window.__asked)) === '["install_claude","claude_signin"]', 'the app asked Windows to install, then to sign in');
   await pg.click('.fpop .btn >> text=Later'); await pg.waitForTimeout(800);
-  check((await txt(pg, '.sbtns')).includes('Make it myself'), 'Create now has Make it myself');
+  await pg.click('.sbtn >> text=Dev Kit'); await pg.waitForTimeout(500);
+  check((await txt(pg, '.fpop h2')) === 'Dev Kit' && await pg.isVisible('.fpop .btn >> text=Build a game'), 'set up: Dev Kit has Build a game');
+  await pg.screenshot({ path: out + '-3-devkit.png' });
 
   check(!errs.length, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close(); srv.kill();
