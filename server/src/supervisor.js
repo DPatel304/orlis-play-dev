@@ -158,7 +158,8 @@ export function supervise({ exe, dataDir, version, afterUpdate = false, spawn = 
     const args = [WORKER]; if (first && afterUpdate) args.push(AFTER_UPDATE);
     first = false;
     worker = spawn(exe, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, env: { ...process.env, ORLIS_SUPERVISED: '1' } });
-    worker.stdout?.on('data', (d) => log(d.toString()));
+    /* (a line "@@say title|text" from the server: a note by the clock - a new game request, say) */
+    worker.stdout?.on('data', (d) => { const t = d.toString(); for (const l of t.split(/\r?\n/)) if (l.startsWith('@@say ')) tell('say ' + l.slice(6)); log(t); });
     worker.stderr?.on('data', (d) => log(d.toString()));
     worker.on('error', (e) => log(`(the server couldn't start: ${e.message})`));
     worker.on('exit', (code) => {

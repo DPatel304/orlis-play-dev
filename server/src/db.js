@@ -101,6 +101,40 @@ export const STEPS = [
   /* 6: each profile's avatar - its look, from the avatar maker (looks.js) */
   `
   ALTER TABLE profiles ADD COLUMN look TEXT;
+  `,
+  /* 7: games asked for (Request a game - requests.js), and the jobs the
+     owner's laptop picks up to make them: a queue of its own, so whatever
+     makes the games can be somewhere else from the server (in the cloud,
+     the server; on the laptop, Claude Code) */
+  `
+  CREATE TABLE requests (
+    id           TEXT PRIMARY KEY,
+    account_id   TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    kind         TEXT NOT NULL CHECK (kind IN ('new', 'change')),
+    game_id      TEXT,
+    recipe       TEXT NOT NULL,
+    sentence     TEXT NOT NULL,
+    words        TEXT NOT NULL DEFAULT '',
+    prompt       TEXT,
+    status       TEXT NOT NULL CHECK (status IN ('waiting', 'making', 'made', 'declined', 'withdrawn')),
+    note         TEXT NOT NULL DEFAULT '',
+    problem      TEXT,
+    submission_id TEXT,
+    created_at   TEXT NOT NULL,
+    decided_at   TEXT
+  );
+  CREATE INDEX requests_account ON requests(account_id);
+  CREATE TABLE jobs (
+    id          TEXT PRIMARY KEY,
+    kind        TEXT NOT NULL,
+    request_id  TEXT REFERENCES requests(id) ON DELETE CASCADE,
+    status      TEXT NOT NULL CHECK (status IN ('queued', 'taken', 'done', 'failed')),
+    taken_at    TEXT,
+    finished_at TEXT,
+    error       TEXT,
+    created_at  TEXT NOT NULL
+  );
+  CREATE INDEX jobs_status ON jobs(status, created_at);
   `
 ];
 

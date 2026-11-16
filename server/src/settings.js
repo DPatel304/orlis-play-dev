@@ -14,6 +14,8 @@
      tailscaleJoin   join over Tailscale with no invite  ORLIS_TAILSCALE_JOIN
      publicUrl       its address on the internet, if it has one (none on the
                      laptop) - for setup links     ORLIS_PUBLIC_URL
+     maker           make requested games here, with this computer's
+                     Claude Code (true)            ORLIS_MAKER
 
    (Whether the Windows exe shows its icon or updates itself are about the
    exe, not the server: ORLIS_NO_TRAY and ORLIS_NO_UPDATE, read in main.js.) */
@@ -21,15 +23,15 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DISCOVERY_PORT } from './discovery.js';
 
-export const DEFAULTS = { name: null, port: 47871, host: '0.0.0.0', discovery: true, everyoneCreates: true, tailscaleJoin: true, publicUrl: null };
+export const DEFAULTS = { name: null, port: 47871, host: '0.0.0.0', discovery: true, everyoneCreates: true, tailscaleJoin: true, publicUrl: null, maker: true };
 const ENV = { dataDir: 'ORLIS_DATA', name: 'ORLIS_NAME', port: 'ORLIS_PORT', host: 'ORLIS_HOST', discovery: 'ORLIS_DISCOVERY',
-  everyoneCreates: 'ORLIS_EVERYONE_CREATES', tailscaleJoin: 'ORLIS_TAILSCALE_JOIN', publicUrl: 'ORLIS_PUBLIC_URL' };
+  everyoneCreates: 'ORLIS_EVERYONE_CREATES', tailscaleJoin: 'ORLIS_TAILSCALE_JOIN', publicUrl: 'ORLIS_PUBLIC_URL', maker: 'ORLIS_MAKER' };
 
 const yes = (v) => /^(1|true|yes|on)$/i.test(String(v).trim());
 const as = (key, v) => {
   if (v == null || v === '') return undefined;
   if (key === 'port'){ const n = Number(v); if (!Number.isInteger(n) || n < 0 || n > 65535) throw new Error(`${key} must be a port number`); return n; }
-  if (['discovery', 'everyoneCreates', 'tailscaleJoin'].includes(key)) return typeof v === 'boolean' ? v : yes(v);
+  if (['discovery', 'everyoneCreates', 'tailscaleJoin', 'maker'].includes(key)) return typeof v === 'boolean' ? v : yes(v);
   if (key === 'publicUrl'){ const u = String(v).trim().replace(/\/$/, ''); if (!/^https:\/\/[^\s/]+/.test(u)) throw new Error('publicUrl must start with https://'); return u; }
   return String(v);
 };

@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import * as sea from 'node:sea';
 import { start, VERSION } from './app.js';
 import { settings, startOptions } from './settings.js';
+import { maker } from './maker.js';
 import { activity } from './http.js';
 import { updater, QUIET, AFTER_UPDATE } from './update.js';
 import { supervise, WORKER, RESTART } from './supervisor.js';
@@ -64,6 +65,9 @@ async function main(){
       }
       catch (e){ if (!after || e.code !== 'EADDRINUSE' || tries >= 20) throw e; await new Promise(r => setTimeout(r, 500)); }
     }
+    /* the maker: games people asked for, made here with this laptop's
+       Claude Code (maker.js) - off with "maker": false in settings.json */
+    if (config.maker) maker({ base: `http://127.0.0.1:${s.port}`, key: s.manageKey, dataDir, status });
     const line = '-'.repeat(60);
     console.log(`${line}
   Orlis Server ${VERSION} is running: "${s.info.name}"

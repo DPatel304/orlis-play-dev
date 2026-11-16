@@ -14,6 +14,7 @@ import { api } from './api.js';
 import { listenForApps, DISCOVERY_PORT } from './discovery.js';
 import { store } from './store.js';
 import { folderFiles } from './files.js';
+import { requests } from './requests.js';
 
 /* The server's version: 0.1 and the build number, stamped in when the exe
    is built (build-exe.mjs); run from the code, plain 0.1.0. */
@@ -33,7 +34,7 @@ const BACKUP_LOOK = 60 * 60 * 1000, QUIET = 2 * 60 * 1000;
 /* restart(): how to start this server again (to finish a restore) - given
    when something's there to do it. status.update: what the updater last
    found, for the owner's page. */
-export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, publicUrl = null, files = null } = {}){
+export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, publicUrl = null, files = null, notify = null } = {}){
   mkdirSync(dataDir, { recursive: true });
   const safe = backups(dataDir, { version: VERSION });
   /* a restore the owner asked for, done before anything is opened */
@@ -54,8 +55,12 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const shop = await store(keep, starters);
   const log = history(db);
   const sent = submissions(db, keep, shop, log);
+  /* a note for the owner, by the clock (the cube shows it - supervisor.js) */
+  const tell = notify || ((title, text) => console.log(`@@say ${String(title).replace(/[|\n]/g, ' ')}|${String(text).replace(/\n/g, ' ')}`));
+  const asked = requests(db, keep, shop, sent, log, tell);
   const owners = (who, owner) => [
     ...sent.routes(who, owner, (h, ip) => h['x-orlis-manage'] !== undefined ? owner(h, ip) : who(h)),
+    ...asked.routes(who, owner, (h, ip) => h['x-orlis-manage'] !== undefined ? owner(h, ip) : who(h)),
     /* the management page itself: only to this laptop */
     ['GET', '/manage', ({ ip }) => {
       if (!isLocal(ip)) throw new Fail(404, 'not_found', 'Nothing here.');
@@ -67,7 +72,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
     /* the owner's page in the app: this server, its backups */
     ['GET', '/api/server', ({ headers, ip }) => {
       owner(headers, ip);
-      return { name: info.name, version: VERSION, addresses: lan(at), tailscale: tailscaleAt(), awayJoins: info.tailscaleJoin !== false, update: status.update, backups: safe.list(), restoring: safe.pending(), restored: restored ? restored.id : null, canRestart: !!restart };
+      return { name: info.name, version: VERSION, maker: status.maker || { state: 'off' }, addresses: lan(at), tailscale: tailscaleAt(), awayJoins: info.tailscaleJoin !== false, update: status.update, backups: safe.list(), restoring: safe.pending(), restored: restored ? restored.id : null, canRestart: !!restart };
     }],
     ['POST', '/api/backups', ({ headers, ip }) => { owner(headers, ip); return [201, safe.make('manual', db)]; }],
     ['POST', '/api/backups/:id/restore', ({ headers, params, ip }) => {

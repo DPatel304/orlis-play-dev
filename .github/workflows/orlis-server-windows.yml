@@ -17,6 +17,10 @@ on:
       - 'app/src/ui/avatars.js'
       - 'app/src/ui/crew.js'
       - 'app/src/games/common.js'
+      # (the maker makes requested games with the creator kit, as Create does)
+      - 'app/src/ui/creator-kit*.js'
+      - 'app/src/ui/orlis-file.js'
+      - 'app/src/kit.js'
       - '.github/workflows/orlis-server-windows.yml'
   workflow_dispatch:
 

@@ -80,37 +80,45 @@ export function submissions(db, files, shop, log = { add(){} }){
     return r ? r.name : 'A family';
   };
 
+  /* A game file in, for the owner's OK, as sent by account a (a creator
+     sending their own, or the owner's laptop sending one it made for them -
+     requests.js): the same checks either way. [status, the submission] */
+  async function accept(a, raw, note = null){
+    if (!raw || !raw.length) throw new Fail(400, 'no_file', 'Send the game\'s .orlis file.');
+    const { manifest: m } = checkGame(raw);
+    /* whose game this id is */
+    const inStore = (await shop.games()).find(g => g.id === m.id);
+    if (inStore && inStore.by === 'Orlis Play' && a.role !== 'owner') throw new Fail(409, 'taken', `"${m.id}" is one of Orlis Play's own games. Give your game an id of its own.`);
+    const other = q("SELECT 1 FROM submissions WHERE game_id = ? AND account_id != ? AND status IN ('waiting', 'approved')").get(m.id, a.id);
+    if (other) throw new Fail(409, 'taken', `Another family already has a game called "${m.id}". Give yours an id of its own.`);
+    /* a change to a game in the Store comes as a newer version - or the
+       families who have it would never be offered it */
+    if (inStore && !newer(m.version, inStore.version)) throw new Fail(409, 'old_version', `The Store already has version ${inStore.version} of ${m.name}. In Create, press Check and send again: it gives this one a newer number.`);
+    if (q("SELECT COUNT(*) AS n FROM submissions WHERE account_id = ? AND status = 'waiting'").get(a.id).n >= LIMITS.waiting) throw new Fail(400, 'too_many', `You have ${LIMITS.waiting} games waiting already. Wait for the owner to look at them first.`);
+    const sha = sha256(raw);
+    const same = q("SELECT * FROM submissions WHERE account_id = ? AND sha256 = ? AND status = 'waiting'").get(a.id, sha);
+    if (same) return [200, out(same)];       /* (sent twice: the same one) */
+    /* an older version still waiting is replaced by this one */
+    for (const r of q("SELECT id FROM submissions WHERE account_id = ? AND game_id = ? AND status = 'waiting'").all(a.id, m.id)){
+      q("UPDATE submissions SET status = 'withdrawn', decided_at = ? WHERE id = ?").run(now(), r.id);
+      try { await files.del(fileOf(r.id)); } catch {}
+    }
+    const id = newId();
+    await files.put(fileOf(id), raw);
+    q("INSERT INTO submissions (id, game_id, name, version, account_id, bytes, sha256, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'waiting', ?)").run(id, m.id, m.name, m.version, a.id, raw.length, sha, now());
+    log.add(a, 'sent', { gameId: m.id, name: m.name, version: m.version, note: `${note ? note + ' · ' : ''}from ${familyName(a.id)} · fingerprint ${sha.slice(0, 12)}` });
+    return [201, out(q('SELECT * FROM submissions WHERE id = ?').get(id))];
+  }
+
   return {
+    accept,
     dir: files.where('submissions/'),
     routes: (who, owner, asker) => [
       /* send a game in (the body is the .orlis file itself) */
       ['POST', '/api/submissions', async ({ headers, raw }) => {
         const a = who(headers);
         if (a.role !== 'creator' && a.role !== 'owner') throw new Fail(403, 'not_creator', 'Only creators can send games in. The owner can make you one.');
-        if (!raw || !raw.length) throw new Fail(400, 'no_file', 'Send the game\'s .orlis file.');
-        const { manifest: m } = checkGame(raw);
-        /* whose game this id is */
-        const inStore = (await shop.games()).find(g => g.id === m.id);
-        if (inStore && inStore.by === 'Orlis Play' && a.role !== 'owner') throw new Fail(409, 'taken', `"${m.id}" is one of Orlis Play's own games. Give your game an id of its own.`);
-        const other = q("SELECT 1 FROM submissions WHERE game_id = ? AND account_id != ? AND status IN ('waiting', 'approved')").get(m.id, a.id);
-        if (other) throw new Fail(409, 'taken', `Another family already has a game called "${m.id}". Give yours an id of its own.`);
-        /* a change to a game in the Store comes as a newer version - or the
-           families who have it would never be offered it */
-        if (inStore && !newer(m.version, inStore.version)) throw new Fail(409, 'old_version', `The Store already has version ${inStore.version} of ${m.name}. In Create, press Check and send again: it gives this one a newer number.`);
-        if (q("SELECT COUNT(*) AS n FROM submissions WHERE account_id = ? AND status = 'waiting'").get(a.id).n >= LIMITS.waiting) throw new Fail(400, 'too_many', `You have ${LIMITS.waiting} games waiting already. Wait for the owner to look at them first.`);
-        const sha = sha256(raw);
-        const same = q("SELECT * FROM submissions WHERE account_id = ? AND sha256 = ? AND status = 'waiting'").get(a.id, sha);
-        if (same) return [200, out(same)];       /* (sent twice: the same one) */
-        /* an older version still waiting is replaced by this one */
-        for (const r of q("SELECT id FROM submissions WHERE account_id = ? AND game_id = ? AND status = 'waiting'").all(a.id, m.id)){
-          q("UPDATE submissions SET status = 'withdrawn', decided_at = ? WHERE id = ?").run(now(), r.id);
-          try { await files.del(fileOf(r.id)); } catch {}
-        }
-        const id = newId();
-        await files.put(fileOf(id), raw);
-        q("INSERT INTO submissions (id, game_id, name, version, account_id, bytes, sha256, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'waiting', ?)").run(id, m.id, m.name, m.version, a.id, raw.length, sha, now());
-        log.add(a, 'sent', { gameId: m.id, name: m.name, version: m.version, note: `from ${familyName(a.id)} · fingerprint ${sha.slice(0, 12)}` });
-        return [201, out(q('SELECT * FROM submissions WHERE id = ?').get(id))];
+        return accept(a, raw);
       }],
       /* a creator's own, with how each went; the owner (or the management
          page): every one waiting, and the latest decided */

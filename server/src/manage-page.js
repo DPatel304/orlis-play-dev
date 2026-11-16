@@ -50,6 +50,7 @@ button.danger{ color:var(--bad); }
 #waiting:not(:empty){ display:inline-block; min-width:20px; margin-left:6px; padding:0 6px; border-radius:999px; background:var(--violet); color:#fff; font-size:12.5px; line-height:20px; }
 nav button.on #waiting{ background:#fff; color:var(--ink); }
 textarea{ width:100%; font:inherit; font-size:15px; border:1px solid #e3e5ec; border-radius:12px; padding:10px 12px; margin-top:10px; resize:vertical; min-height:70px; }
+blockquote.words{ margin:8px 0 0; padding:8px 12px; border-left:3px solid #d6d2f5; color:#3b3d4a; white-space:pre-wrap; font-size:14px; } details.prompt{ margin:-4px 0 14px; } details.prompt summary{ cursor:pointer; color:#6d5efc; font-weight:600; font-size:14px; } textarea.promptbox{ width:100%; min-height:220px; margin-top:8px; font:13px/1.45 ui-monospace,Consolas,monospace; }
 .tag{ display:inline-block; font-size:12.5px; font-weight:700; padding:2px 9px; border-radius:999px; background:#f1f2f6; color:var(--dim); }
 .tag.approved, .tag.ok{ background:#dcfce7; color:#15803d; }
 button:disabled{ opacity:.55; cursor:not-allowed; } .tag.declined{ background:#fee2e2; color:var(--bad); }
@@ -85,9 +86,50 @@ var TRY = ${TRY_SECS};
   var UPDATE = { 'up to date': ['Up to date', 'ok'], ready: ['A newer version is ready - it switches at a quiet moment', ''], offline: ['Couldn\\u2019t check for updates just now', ''], waiting: ['Checking for updates soon', ''], off: ['Updates only in the Windows exe', ''] };
   var KINDS = { daily: 'Daily', update: 'Before an update', manual: 'Made by you', 'before-restore': 'Before a restore' };
 
+  /* Game requests: each read here - its sentence, their words, the prompt
+     Claude gets (changeable) - then Make this game, or Decline with a note.
+     They're made on this laptop with its Claude Code (the maker). */
+  var MAKER = { ready: '', making: 'Making one now on this laptop…', 'no-claude': 'Claude Code isn’t on this laptop yet, so requests can’t be made here. Install it (code.claude.com/docs/en/setup), sign in once, then restart Orlis Server.', off: 'Making games is switched off on this server ("maker": false).' };
+  function requestsCard(list, maker){
+    var waiting = list.filter(function(x){ return x.state === 'waiting' || x.state === 'making'; });
+    var done = list.filter(function(x){ return x.state !== 'waiting' && x.state !== 'making'; });
+    var c = card('Game requests');
+    var m = maker && MAKER[maker.state]; if (m) note(c, m, maker.state === 'making' ? '' : 'warn');
+    if (!waiting.length) note(c, 'Nothing asked for. When someone uses Request a game in Orlis Play, it shows up here - and by the clock.');
+    waiting.forEach(function(x){
+      var making = x.state === 'making';
+      var top = '<b>' + esc(x.sentence) + '</b>' + (making ? ' <span class="tag">being made…</span>' : '') +
+        '<small>From ' + esc(x.family) + ' (' + esc(x.by) + ') · asked ' + esc(when(x.createdAt)) + (x.kind === 'change' ? ' · a change to their game' : '') + '</small>' +
+        (x.words ? '<blockquote class="words">' + esc(x.words) + '</blockquote>' : '') +
+        (x.problem ? '<p class="err">Last time it couldn’t be made: ' + esc(x.problem) + '</p>' : '');
+      var r2 = row(c, top, making ? [] : [
+        btn('Decline…', '', function(){
+          if (r2.nextSibling && r2.nextSibling.dataset && r2.nextSibling.dataset.note) return;
+          var box = h('<div data-note="1"><textarea maxlength="300" placeholder="A note for them (they’ll see it in Orlis Play)"></textarea><div style="text-align:right;margin-top:8px"></div></div>');
+          box.lastChild.appendChild(btn('Decline it', 'danger', function(){ call('POST', '/api/requests/' + encodeURIComponent(x.id) + '/decline', { note: box.firstChild.value }).then(show, fail(c)); }));
+          r2.after(box); box.firstChild.focus();
+        }),
+        btn('Make this game', 'go', function(b){
+          b.textContent = 'Starting…';
+          call('POST', '/api/requests/' + encodeURIComponent(x.id) + '/prompt', { prompt: area.value }).then(function(){ return call('POST', '/api/requests/' + encodeURIComponent(x.id) + '/make'); }).then(show, fail(c));
+        })
+      ]);
+      /* the prompt Claude will get - theirs, made into instructions; change it before making it */
+      var det = h('<details class="prompt"><summary>The prompt for Claude (you can change it)</summary></details>');
+      var area = document.createElement('textarea'); area.className = 'promptbox'; area.value = x.prompt || ''; area.disabled = making;
+      det.appendChild(area); r2.after(det);
+    });
+    if (done.length){
+      var d = card('Requests lately');
+      var SAY = { made: 'Made - waiting for your OK', ready: 'Made - waiting for your OK', 'in-store': 'In the Store', declined: 'Declined' };
+      done.forEach(function(x){ row(d, '<b>' + esc(x.sentence) + '</b> <span class="tag ' + (x.state === 'in-store' ? 'approved' : x.state === 'declined' ? 'declined' : '') + '">' + esc(SAY[x.state] || x.state) + '</span><small>' + esc(x.family) + (x.note ? ' · “' + esc(x.note) + '”' : '') + '</small>'); });
+    }
+  }
+
   var views = {
     approvals: function(){
-      return call('GET', '/api/submissions').then(function(r){
+      return Promise.all([call('GET', '/api/requests'), call('GET', '/api/server')]).then(function(rs){ requestsCard(rs[0].requests, rs[1].maker); })
+        .then(function(){ return call('GET', '/api/submissions'); }).then(function(r){
         var waiting = r.submissions.filter(function(x){ return x.state === 'waiting'; });
         var done = r.submissions.filter(function(x){ return x.state !== 'waiting'; });
         var c = card('Waiting for your OK');
@@ -118,6 +160,7 @@ var TRY = ${TRY_SECS};
         var u = UPDATE[s.update && s.update.state] || ['', ''];
         row(c, '<div class="big">' + esc(s.name) + '</div><small>Orlis Server ' + esc(s.version) + '</small>');
         row(c, '<span class="' + u[1] + '">' + esc(u[0]) + '</span>');
+        row(c, 'Making requested games<small>' + esc({ ready: 'Ready - with this laptop\u2019s Claude Code', making: 'Making one now', 'no-claude': 'Claude Code isn\u2019t on this laptop yet', off: 'Switched off' }[(s.maker || {}).state] || 'Switched off') + '</small>');
         row(c, 'Last backup<small>' + (s.backups[0] ? esc(when(s.backups[0].at)) : 'None yet - one is made each day') + '</small>');
         if (s.addresses && s.addresses.length) row(c, 'Its address on the home Wi-Fi<small>' + esc(s.addresses.join('  or  ')) + ' - Orlis Play finds it by itself; this is in case it ever asks</small>');
         if (s.restoring) note(c, 'A restore is waiting: it happens as the server next starts.', 'warn');
@@ -167,7 +210,7 @@ var TRY = ${TRY_SECS};
       return call('GET', '/api/history').then(function(r){
         var c = card('What happened to the family\\u2019s games');
         if (!r.history.length) note(c, 'Nothing yet. Every game sent, played, approved, declined or taken out is kept here, and every grown-up made a creator or not.');
-        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)' };
+        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined' };
         r.history.forEach(function(x){
           row(c, '<span class="tag ' + (x.what === 'approved' ? 'ok' : x.what === 'declined' || x.what === 'removed' ? 'declined' : '') + '">' + esc(SAY[x.what] || x.what) + '</span> ' +
             (x.name ? '<b>' + esc(x.name) + '</b>' + (x.version ? ' <span class="tag">version ' + esc(x.version) + '</span>' : '') : '') +
