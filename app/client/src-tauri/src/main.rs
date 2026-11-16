@@ -170,7 +170,7 @@ fn open(app: &AppHandle) -> tauri::Result<()> {
         // Orlis Play's own title bar (src/ui/titlebar.js) instead of
         // Windows' one; the shadow keeps the edges for resizing.
         .decorations(false)
-        .shadow(true)
+        .shadow(mode != "bigpicture")
         .initialization_script(&script)
         // Sound may start before anyone clicks (the intro's chime, the
         // music), plus the engine's usual defaults, which this replaces.
@@ -212,7 +212,15 @@ fn set_display_mode(app: AppHandle, mode: String) -> Result<String, String> {
     }
     if let Some(w) = app.get_webview_window("main") {
         let big = mode == "bigpicture";
+        // (the shadow that keeps a window's edges for resizing leaves a
+        // frame round the screen in full screen - off there, back after)
+        if big {
+            let _ = w.set_shadow(false);
+        }
         w.set_fullscreen(big).map_err(|e| e.to_string())?;
+        if !big {
+            let _ = w.set_shadow(true);
+        }
         if !big {
             let _ = w.set_size(LogicalSize::new(WINDOW_SIZE.0, WINDOW_SIZE.1));
             let _ = w.center();

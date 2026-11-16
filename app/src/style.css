@@ -1206,6 +1206,18 @@ canvas.avface{ display:block; border-radius:50%; }
 .acctlogo svg{ width:clamp(44px, 7vh, 80px); height:auto; }
 .acctlogo h2{ margin:0; }
 .acctcard .formmsg:empty{ display:none; }
+/* focus: the border turns purple, no halo - so the box you're in is the
+   same size as the rest */
+.acctcard .acctform input:focus{ box-shadow:none; }
+/* the corner icons: back, top-left; help, top-right */
+.acctcard .btn.cardicon{
+  position:absolute; top:clamp(10px, 1.8vh, 22px); width:clamp(34px, 5vh, 54px); height:clamp(34px, 5vh, 54px); min-width:0; padding:0;
+  border:none; border-radius:50%; background:transparent; box-shadow:none; color:#8a8ea0;
+  font-size:clamp(16px, 2.6vh, 28px); font-weight:600; display:grid; place-items:center;
+}
+.acctcard .btn.cardicon.back{ left:clamp(10px, 1.8vh, 22px); }
+.acctcard .btn.cardicon.help{ right:clamp(10px, 1.8vh, 22px); }
+.acctcard .btn.cardicon:hover, .acctcard .btn.cardicon.hot, body.remote .acctcard .btn.cardicon.kfocus{ background:rgba(20,24,50,.06); color:#4a3fe0; transform:none; box-shadow:none; }
 /* a message (most often a problem) floats just under the card, so the card
    itself never grows or jumps; the box goes red while there's a problem */
 .acctcard .formmsg{
@@ -1216,4 +1228,4 @@ canvas.avface{ display:block; border-radius:50%; }
 }
 .acctcard .formmsg.bad{ background:#fff1f2; color:#be123c; box-shadow:0 0 0 1px #fecdd3, 0 1vh 3vh rgba(190,18,60,.12); }
 @keyframes msgin{ from{ opacity:0; transform:translate(-50%, -.8vh) } to{ opacity:1; transform:translate(-50%, 0) } }
-.acctcard:has(.formmsg.bad) .acctform input:is([type=email], [type=password], [type=text]){ border-color:#f43f5e; box-shadow:0 0 0 .3em rgba(244,63,94,.14); }
+.acctcard:has(.formmsg.bad) .acctform input:is([type=email], [type=password], [type=text]){ border-color:#f43f5e; }

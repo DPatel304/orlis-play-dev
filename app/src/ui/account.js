@@ -291,7 +291,10 @@ export function welcome(done, { auto = true } = {}){
       }),
       msg);
   }
-  const another = (sv, email) => onPick(button('Use a different email', 'link'), () => { sfx.back?.(); getIn(sv, email); });
+  /* the card's corner icons: back (top-left), help (top-right) - small, so
+     the form is what you see */
+  const corner = (label, cls, title, fn) => { const b = onPick(button(label, 'cardicon ' + cls), fn); b.title = title; b.setAttribute('aria-label', title); return b; };
+  const another = (sv, email) => corner('←', 'back', 'Use a different email', () => { sfx.back?.(); getIn(sv, email); });
   function signIn(sv, email){
     show(h('h2', '', 'Welcome back'), h('p', 'lede', esc(email)),
       form([
@@ -299,7 +302,7 @@ export function welcome(done, { auto = true } = {}){
         ['password', 'Password', 'password', 'current-password']
       ], 'Sign in', async (v) => finish(await call(sv.url, 'POST', '/api/signin', { ...v, device: device() }))),
       msg,
-      onPick(button('Forgot password?', 'link'), () => { sfx.select?.(); forgot(sv, email); }),
+      corner('?', 'help', 'Forgot password?', () => { sfx.select?.(); forgot(sv, email); }),
       another(sv, email));
   }
   /* a forgotten password: whoever runs the server sets a new one */
@@ -307,7 +310,7 @@ export function welcome(done, { auto = true } = {}){
     show(h('h2', '', 'Forgot your password?'),
       h('p', 'lede', 'Ask whoever runs your Orlis server to give you a new one.'),
       h('p', 'lede small', 'If that’s you: on the server’s laptop, right-click the Orlis cube by the clock, then <b>Manage Orlis Server</b> › Families › <b>New password</b>.'),
-      onPick(button('Back to sign in', 'wide'), () => { sfx.back?.(); signIn(sv, email); }));
+      corner('←', 'back', 'Back to sign in', () => { sfx.back?.(); signIn(sv, email); }));
   }
   function join(sv, email){
     const free = sv.invite === false;
