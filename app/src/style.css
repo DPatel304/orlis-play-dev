@@ -1183,3 +1183,26 @@ canvas.avface{ display:block; border-radius:50%; }
 .sbtns .cslots{ color:#fff; opacity:.8; font-size:2.2vh; font-weight:600; margin-left:.6vh; }
 .letin{ position:fixed; left:50%; top:12vh; transform:translateX(-50%); z-index:50; background:#fff; color:#16161d; font-weight:700; font-size:2.6vh; padding:1.6vh 3.4vh; border-radius:999px; box-shadow:0 1vh 4vh rgba(20,24,50,.25); animation:fadein .3s ease both; }
 .keyhint{ display:inline-block; margin-left:1vh; padding:.2em .6em; border:1px solid currentColor; border-radius:.5em; font-size:.75em; font-weight:700; opacity:.55; }
+
+/* ---------- the welcome screens: a soft brand glow behind one card ---------- */
+.screen.dim.account{ background:#f3efe8; -webkit-backdrop-filter:none; backdrop-filter:none; overflow:hidden; }
+.acctbg{ position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+.acctbg .glow{ position:absolute; width:90vmax; height:90vmax; border-radius:50%; transform:translate(-50%,-50%); animation:glowdrift 40s ease-in-out infinite; }
+.acctbg .g1{ left:25%; top:20%; background:radial-gradient(closest-side, rgba(201,184,255,.95), rgba(201,184,255,0)); }
+.acctbg .g2{ left:80%; top:80%; background:radial-gradient(closest-side, rgba(159,224,230,.95), rgba(159,224,230,0)); animation-delay:-14s; animation-duration:46s; }
+.acctbg .g3{ left:72%; top:14%; width:70vmax; height:70vmax; background:radial-gradient(closest-side, rgba(255,210,184,.9), rgba(255,210,184,0)); animation-delay:-27s; animation-duration:52s; }
+@keyframes glowdrift{ 0%,100%{ transform:translate(-50%,-50%) } 50%{ transform:translate(-44%,-56%) } }
+.acctbg .bigcube{ position:absolute; left:50%; top:50%; width:100vh; height:100vh; transform:translate(-50%,-50%); opacity:.18; filter:blur(2px); }
+.acctbg .grain{ position:absolute; inset:0; opacity:.07; background-image:radial-gradient(#000 .6px, transparent .6px); background-size:3px 3px; }
+@media (prefers-reduced-motion: reduce){ .acctbg .glow{ animation:none; } }
+.acctcard{
+  position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:2.2vh;
+  max-width:94vw; max-height:92vh; overflow:auto; padding:4vh clamp(20px, 3.6vh, 48px) 3.4vh;
+  border-radius:3.2vh; background:rgba(250,247,238,.94); color:#16161d;
+  box-shadow:0 2.4vh 7vh rgba(58,51,96,.22);
+}
+.acctcard:empty{ display:none; }
+.acctlogo{ display:flex; flex-direction:column; align-items:center; gap:1.2vh; }
+.acctlogo svg{ width:clamp(44px, 7vh, 80px); height:auto; }
+.acctlogo h2{ margin:0; }
+.acctcard .formmsg:empty{ display:none; }

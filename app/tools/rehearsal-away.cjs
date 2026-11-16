@@ -80,7 +80,7 @@ const setFiles = (pg, folder, files) => pg.evaluate(([f, x]) => { Object.assign(
 
 async function join(pg, code, email, name){
   /* getting in: their email, then what a new account needs (with the invite code) */
-  await pg.waitForSelector('text=Welcome to Orlis Play', { timeout: 20000 });
+  await pg.waitForSelector('.acctlogo', { timeout: 20000 });
   await pg.fill('form input[type=email]', email); await pg.click('form .btn.go');
   await pg.waitForSelector('text=Make an account', { timeout: 10000 }); await pg.waitForTimeout(300);
   const inputs = await pg.$$('form input:not([type=hidden]):not([type=checkbox])');

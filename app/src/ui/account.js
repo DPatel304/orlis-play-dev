@@ -9,6 +9,7 @@
 
    Only in the Windows app (window.__TAURI__). Opened any other way - the
    browser, the tests - there's no account step at all. */
+import { brandGlow, logo } from './welcome-bg.js';
 import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
@@ -149,10 +150,13 @@ async function hello(url){
 export function welcome(done, { auto = true } = {}){
   clearUI();
   const s = screen('dim account');
+  /* a soft brand glow behind, and everything else on one card over it */
+  const card = h('div', 'acctcard');
+  s.append(brandGlow(), card);
   /* (a screen that keeps checking - the setup checklist - stops when another's shown) */
   let watching = null;
   const stopWatching = () => { if (watching){ clearTimeout(watching); watching = null; } };
-  const show = (...nodes) => { stopWatching(); s.innerHTML = ''; s.append(...nodes); };
+  const show = (...nodes) => { stopWatching(); card.innerHTML = ''; card.append(...nodes); card.scrollTop = 0; };
   const msg = h('p', 'lede formmsg', '');
   const say = (t, bad) => { msg.textContent = t || ''; msg.classList.toggle('bad', !!bad); };
 
@@ -275,7 +279,7 @@ export function welcome(done, { auto = true } = {}){
   /* Getting in: just an email. An account with it - its password; none -
      what a new account needs. */
   function getIn(sv, typed = ''){
-    show(h('h2', '', 'Welcome to Orlis Play'),
+    show(logo(),
       form([['email', 'Email', 'email', 'email', { value: typed }]], 'Continue', async ({ email }) => {
         const r = await call(sv.url, 'POST', '/api/account-exists', { email });
         sfx.select?.();
