@@ -24,6 +24,9 @@ export const remote = {
   mark(el){
     document.querySelectorAll('.kfocus').forEach(e => { if (e !== el) e.classList.remove('kfocus'); });
     if (el) el.classList.add('kfocus');
+    /* a box in a sign-in form: typing goes there; off it, the box lets go */
+    if (el && el.tagName === 'INPUT') el.focus();
+    else if (document.activeElement && document.activeElement.tagName === 'INPUT') document.activeElement.blur();
     this.cur = el || null;
   },
 
@@ -35,7 +38,9 @@ export const remote = {
     return all.filter(e => e.classList.contains('dim') && !e.classList.contains('lost')).pop() || all.pop() || null;
   },
   buttons(layer){
-    return [...layer.querySelectorAll('.btn')].filter(b => !b.disabled && !b.closest('.hide') && b.getBoundingClientRect().width > 0);
+    /* (and the boxes and tick of a sign-in form, so the remote can go up and down them) */
+    const boxes = [...layer.querySelectorAll('.acctform input')].filter(i => i.type !== 'hidden');
+    return [...layer.querySelectorAll('.btn'), ...boxes].filter(b => !b.disabled && !b.closest('.hide') && b.getBoundingClientRect().width > 0);
   },
   /* Where to start from in this layer. */
   start(layer, bs){
@@ -75,7 +80,8 @@ export const remote = {
       e.preventDefault?.();
       this.lastKey++;
       document.body.classList.add('remote');
-      const cur = this.start(layer, bs);
+      /* (from the box being typed in, if that's where you are) */
+      const cur = e.target && bs.includes(e.target) ? e.target : this.start(layer, bs);
       if (OK.has(e.key)){ const b = cur || bs[0]; this.mark(b); b.click(); return true; }
       const next = cur ? this.nearest(cur, bs, dir) : bs[0];
       if (!next) return true;
@@ -104,12 +110,15 @@ export const remote = {
     const layer = this.layer(); if (!layer) return;
     if (this.cur && this.cur.isConnected && layer.contains(this.cur)) return;
     const bs = this.buttons(layer);
-    if (bs.length) this.mark(layer.querySelector('.btn.focus') || bs[0]);
+    const act = document.activeElement;
+    if (bs.length) this.mark(act && bs.includes(act) ? act : layer.querySelector('.btn.focus') || bs[0]);
   },
 
   install(back){
     this.back = back;
     addEventListener('keydown', (e) => this.key(e));
+    /* a sign-in box that gets the cursor (a new screen's first box) takes the highlight too */
+    addEventListener('focusin', (e) => { const t = e.target; if (t && t.closest && t.closest('.acctform') && t.tagName === 'INPUT' && document.body.classList.contains('remote')) this.mark(t); });
     if (typeof window !== 'undefined') window.__remote = this;
     /* pointing again: the remote's highlight steps aside */
     addEventListener('pointermove', () => document.body.classList.remove('remote'));
@@ -122,5 +131,7 @@ export function typing(e){
   if (!t || !t.tagName) return false;
   if (t.isContentEditable) return true;
   if (t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return true;
+  /* in a sign-in box, up and down move to the next box (left and right stay the box's) */
+  if (t.tagName === 'INPUT' && t.closest && t.closest('.acctform') && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) return false;
   return t.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'submit', 'range'].includes((t.type || 'text').toLowerCase());
 }

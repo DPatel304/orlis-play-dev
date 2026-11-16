@@ -44,6 +44,8 @@ function update(){
   /* (no bar in full screen, however it came about) */
   const on = window.ORLIS_DISPLAY !== 'bigpicture' && !document.fullscreenElement;
   document.body.classList.toggle('titled', on);
+  /* (Big Picture: sized for across the room - style.css) */
+  document.body.classList.toggle('bigpicture', window.ORLIS_DISPLAY === 'bigpicture');
   bar.hidden = !on;
   bar.classList.toggle('tucked', playing);
 }

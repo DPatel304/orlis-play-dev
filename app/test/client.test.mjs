@@ -121,6 +121,11 @@ test('Home, the Store and Create are pages under the same tabs; the corner menu 
   assert.match(main, /const HOMEY = new Set\(\['menu', 'store', 'create', 'family', 'who'\]\)/);
 });
 
+test('the title bar really goes in Big Picture: hidden beats its display:flex', () => {
+  const css = readFileSync(new URL('../src/style.css', import.meta.url), 'utf8');
+  assert.match(css, /\.titlebar\[hidden\]\{\s*display:none/);
+});
+
 test('light only: no dark theme left', () => {
   const css = readFileSync(new URL('../src/style.css', import.meta.url), 'utf8');
   assert.ok(!css.includes('body.dark'));
