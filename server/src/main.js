@@ -10,6 +10,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as sea from 'node:sea';
 import { start, VERSION } from './app.js';
+import { settings, startOptions } from './settings.js';
 import { activity } from './http.js';
 import { updater, QUIET, AFTER_UPDATE } from './update.js';
 import { supervise, WORKER, RESTART } from './supervisor.js';
@@ -24,7 +25,9 @@ const supervised = process.argv.includes(WORKER) && !!process.env.ORLIS_SUPERVIS
 const asTray = windowsExe && !supervised && !process.env.ORLIS_NO_TRAY;
 /* Only the exe on Windows updates itself (and not with ORLIS_NO_UPDATE). */
 const selfUpdates = windowsExe && !process.env.ORLIS_NO_UPDATE;
-const dataDir = process.env.ORLIS_DATA || (runningAsExe ? join(exeDir, 'Orlis Server data') : join(process.cwd(), 'data'));
+/* its settings (settings.js): the environment, the data folder's settings.json, or the defaults */
+const config = settings({ env: process.env, defaultDataDir: runningAsExe ? join(exeDir, 'Orlis Server data') : join(process.cwd(), 'data') });
+const dataDir = config.dataDir;
 
 const lan = Object.values(networkInterfaces()).flat()
   .filter(n => n && n.family === 'IPv4' && !n.internal).map(n => n.address);
@@ -54,7 +57,7 @@ async function main(){
     let s;
     for (let tries = 0; ; tries++){
       try {
-        s = await start({ dataDir, name: process.env.ORLIS_NAME, starters: starters(), status,
+        s = await start({ ...startOptions(config), starters: starters(), status,
           /* (to finish a restore: under the icon, it starts this again) */
           restart: supervised ? () => s.close().then(() => process.exit(RESTART)) : null });
         break;
@@ -72,7 +75,7 @@ async function main(){
   Only devices on this home network can reach it - it is not on
   the internet. If Windows asks, allow it on PRIVATE networks only.
 
-  Games in the Store: ${s.store.games().map(g => g.name).join(', ') || 'none yet'}
+  Games in the Store: ${(await s.store.games()).map(g => g.name).join(', ') || 'none yet'}
   (add a game by putting its .orlis file in ${s.store.dir})
 
   ${supervised ? 'Manage it: double-click the Orlis cube.' : `Manage it (on this laptop): ${s.manageUrl}`}

@@ -12,8 +12,6 @@
    tries it (in Orlis Play's Store, "Waiting for your OK") and approves it,
    or declines it with a note for the creator. Approved, it goes into the
    Store, made by the creator's family. */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
-import { join } from 'node:path';
 import { readOrlis, writeOrlis, manifestOf, sha256 } from './orlis-file.js';
 import { badWords } from './words.js';
 import { Fail, Raw } from './http.js';
@@ -71,29 +69,28 @@ export function checkGame(bytes){
   return { parts, manifest: m };
 }
 
-export function submissions(db, dataDir, shop, log = { add(){} }){
-  const dir = join(dataDir, 'submissions');
-  mkdirSync(dir, { recursive: true });
+/* (the files waiting are kept in the file store - files.js - under "submissions/") */
+export function submissions(db, files, shop, log = { add(){} }){
   const q = (sql) => db.prepare(sql);
   const out = (r) => r && ({ id: r.id, gameId: r.game_id, name: r.name, version: r.version, bytes: r.bytes, state: r.status, note: r.note, createdAt: r.created_at, decidedAt: r.decided_at, tried: !!r.tried_at,
     ...(r.email ? { by: r.email, family: r.family, sha256: r.sha256 } : {}) });
-  const fileOf = (id) => join(dir, `${id}.orlis`);
+  const fileOf = (id) => `submissions/${id}.orlis`;
   const familyName = (accountId) => {
     const r = q('SELECT h.name FROM accounts a JOIN households h ON h.id = a.household_id WHERE a.id = ?').get(accountId);
     return r ? r.name : 'A family';
   };
 
   return {
-    dir,
+    dir: files.where('submissions/'),
     routes: (who, owner, asker) => [
       /* send a game in (the body is the .orlis file itself) */
-      ['POST', '/api/submissions', ({ headers, raw }) => {
+      ['POST', '/api/submissions', async ({ headers, raw }) => {
         const a = who(headers);
         if (a.role !== 'creator' && a.role !== 'owner') throw new Fail(403, 'not_creator', 'Only creators can send games in. The owner can make you one.');
         if (!raw || !raw.length) throw new Fail(400, 'no_file', 'Send the game\'s .orlis file.');
         const { manifest: m } = checkGame(raw);
         /* whose game this id is */
-        const inStore = shop.games().find(g => g.id === m.id);
+        const inStore = (await shop.games()).find(g => g.id === m.id);
         if (inStore && inStore.by === 'Orlis Play' && a.role !== 'owner') throw new Fail(409, 'taken', `"${m.id}" is one of Orlis Play's own games. Give your game an id of its own.`);
         const other = q("SELECT 1 FROM submissions WHERE game_id = ? AND account_id != ? AND status IN ('waiting', 'approved')").get(m.id, a.id);
         if (other) throw new Fail(409, 'taken', `Another family already has a game called "${m.id}". Give yours an id of its own.`);
@@ -107,17 +104,17 @@ export function submissions(db, dataDir, shop, log = { add(){} }){
         /* an older version still waiting is replaced by this one */
         for (const r of q("SELECT id FROM submissions WHERE account_id = ? AND game_id = ? AND status = 'waiting'").all(a.id, m.id)){
           q("UPDATE submissions SET status = 'withdrawn', decided_at = ? WHERE id = ?").run(now(), r.id);
-          try { unlinkSync(fileOf(r.id)); } catch {}
+          try { await files.del(fileOf(r.id)); } catch {}
         }
         const id = newId();
-        writeFileSync(fileOf(id), raw);
+        await files.put(fileOf(id), raw);
         q("INSERT INTO submissions (id, game_id, name, version, account_id, bytes, sha256, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'waiting', ?)").run(id, m.id, m.name, m.version, a.id, raw.length, sha, now());
         log.add(a, 'sent', { gameId: m.id, name: m.name, version: m.version, note: `from ${familyName(a.id)} · fingerprint ${sha.slice(0, 12)}` });
         return [201, out(q('SELECT * FROM submissions WHERE id = ?').get(id))];
       }],
       /* a creator's own, with how each went; the owner (or the management
          page): every one waiting, and the latest decided */
-      ['GET', '/api/submissions', ({ headers, ip, query }) => {
+      ['GET', '/api/submissions', async ({ headers, ip, query }) => {
         const a = asker(headers, ip);
         if (a.role === 'owner' && (headers['x-orlis-manage'] !== undefined || query.get('all') === '1')){
           const rows = q(`SELECT s.*, x.email, h.name AS family FROM submissions s JOIN accounts x ON x.id = s.account_id JOIN households h ON h.id = x.household_id
@@ -125,23 +122,25 @@ export function submissions(db, dataDir, shop, log = { add(){} }){
           /* (a waiting one's own details, from its file: its icon, its
              lines for the Store, who it's for - so the owner sees it as it
              would be) */
-          const details = (r) => {
-            if (r.status !== 'waiting' || !existsSync(fileOf(r.id))) return {};
+          const details = async (r) => {
+            if (r.status !== 'waiting') return {};
             try {
-              const m = manifestOf(readOrlis(readFileSync(fileOf(r.id))));
+              const data = await files.get(fileOf(r.id)); if (!data) return {};
+              const m = manifestOf(readOrlis(data));
               return { game: { icon: m.icon, blurb: m.blurb, about: m.about, players: m.players, uses: m.uses, ages: m.ages, tags: m.tags, howto: m.howto } };
             } catch { return {}; }
           };
-          return { submissions: rows.map(r => ({ ...out(r), ...details(r) })) };
+          return { submissions: await Promise.all(rows.map(async r => ({ ...out(r), ...(await details(r)) }))) };
         }
         return { submissions: q("SELECT * FROM submissions WHERE account_id = ? AND status != 'withdrawn' ORDER BY created_at DESC LIMIT 50").all(a.id).map(out) };
       }],
       /* the file: the owner's, to try it */
-      ['GET', '/api/submissions/:id/file', ({ headers, ip, params }) => {
+      ['GET', '/api/submissions/:id/file', async ({ headers, ip, params }) => {
         owner(headers, ip);
         const r = q("SELECT * FROM submissions WHERE id = ? AND status = 'waiting'").get(params.id);
-        if (!r || !existsSync(fileOf(r.id))) throw new Fail(404, 'no_submission', 'That game isn\'t waiting any more.');
-        return new Raw(readFileSync(fileOf(r.id)), `${r.game_id}-${r.version}.orlis`);
+        const data = r && await files.get(fileOf(r.id));
+        if (!data) throw new Fail(404, 'no_submission', 'That game isn\'t waiting any more.');
+        return new Raw(data, `${r.game_id}-${r.version}.orlis`);
       }],
       /* the owner played it (in Orlis Play, for long enough to see it) */
       ['POST', '/api/submissions/:id/tried', ({ headers, ip, params, body }) => {
@@ -153,14 +152,15 @@ export function submissions(db, dataDir, shop, log = { add(){} }){
         q('UPDATE submissions SET tried_at = ? WHERE id = ?').run(now(), r.id);
         return { ok: true };
       }],
-      ['POST', '/api/submissions/:id/approve', ({ headers, ip, params }) => {
+      ['POST', '/api/submissions/:id/approve', async ({ headers, ip, params }) => {
         const me = owner(headers, ip);
         const r = q("SELECT * FROM submissions WHERE id = ? AND status = 'waiting'").get(params.id);
-        if (!r || !existsSync(fileOf(r.id))) throw new Fail(404, 'no_submission', 'That game isn\'t waiting any more.');
+        const data = r && await files.get(fileOf(r.id));
+        if (!data) throw new Fail(404, 'no_submission', 'That game isn\'t waiting any more.');
         /* not before the owner's played it */
         if (!r.tried_at) throw new Fail(409, 'try_first', `Play ${r.name} first: in Orlis Play, the Store's "Waiting for your OK" row, Try it.`);
         /* into the Store, made by the creator's family */
-        const { parts, manifest } = checkGame(readFileSync(fileOf(r.id)));
+        const { parts, manifest } = checkGame(data);
         const raw = JSON.parse(parts['manifest.json'].toString('utf8'));
         raw.by = familyName(r.account_id);
         /* a starter game - one new games can start from - only if the owner
@@ -168,31 +168,31 @@ export function submissions(db, dataDir, shop, log = { add(){} }){
         const maker = q('SELECT role FROM accounts WHERE id = ?').get(r.account_id);
         raw.starter = !!maker && maker.role === 'owner';
         const file = writeOrlis({ 'manifest.json': JSON.stringify(raw, null, 2), 'game.js': parts['game.js'] });
-        writeFileSync(join(shop.dir, `${manifest.id}.orlis`), file);
+        await shop.add(manifest.id, file);
         q("UPDATE submissions SET status = 'approved', decided_at = ? WHERE id = ?").run(now(), r.id);
         const sender = q('SELECT email FROM accounts WHERE id = ?').get(r.account_id);
         log.add(me, 'approved', { gameId: r.game_id, name: r.name, version: r.version, note: `made by ${sender ? sender.email : 'someone'}, ${raw.by} · fingerprint ${r.sha256.slice(0, 12)}${raw.starter ? ' · a starter game' : ''}` });
-        try { unlinkSync(fileOf(r.id)); } catch {}
+        try { await files.del(fileOf(r.id)); } catch {}
         return { ok: true, game: { id: manifest.id, name: manifest.name, version: manifest.version, by: raw.by } };
       }],
-      ['POST', '/api/submissions/:id/decline', ({ headers, ip, params, body }) => {
+      ['POST', '/api/submissions/:id/decline', async ({ headers, ip, params, body }) => {
         const me = owner(headers, ip);
         const was = q("SELECT * FROM submissions WHERE id = ? AND status = 'waiting'").get(params.id);
         const note = (typeof body.note === 'string' ? body.note : '').trim().slice(0, 300);
         const r = q("UPDATE submissions SET status = 'declined', note = ?, decided_at = ? WHERE id = ? AND status = 'waiting'").run(note, now(), params.id);
         if (!r.changes) throw new Fail(404, 'no_submission', 'That game isn\'t waiting any more.');
-        try { unlinkSync(fileOf(params.id)); } catch {}
+        try { await files.del(fileOf(params.id)); } catch {}
         log.add(me, 'declined', { gameId: was.game_id, name: was.name, version: was.version, note: note || null });
         return { ok: true };
       }],
       /* the creator takes one back, while it's waiting */
-      ['DELETE', '/api/submissions/:id', ({ headers, params }) => {
+      ['DELETE', '/api/submissions/:id', async ({ headers, params }) => {
         const a = who(headers);
         const was = q("SELECT * FROM submissions WHERE id = ? AND account_id = ? AND status = 'waiting'").get(params.id, a.id);
         const r = q("UPDATE submissions SET status = 'withdrawn', decided_at = ? WHERE id = ? AND account_id = ? AND status = 'waiting'").run(now(), params.id, a.id);
         if (!r.changes) throw new Fail(404, 'no_submission', 'That game isn\'t waiting any more.');
         log.add(a, 'withdrawn', { gameId: was.game_id, name: was.name, version: was.version });
-        try { unlinkSync(fileOf(params.id)); } catch {}
+        try { await files.del(fileOf(params.id)); } catch {}
         return { ok: true };
       }]
     ]

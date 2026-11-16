@@ -13,6 +13,7 @@ import { submissions } from './submissions.js';
 import { api } from './api.js';
 import { listenForApps, DISCOVERY_PORT } from './discovery.js';
 import { store } from './store.js';
+import { folderFiles } from './files.js';
 
 /* The server's version: 0.1 and the build number, stamped in when the exe
    is built (build-exe.mjs); run from the code, plain 0.1.0. */
@@ -32,7 +33,7 @@ const BACKUP_LOOK = 60 * 60 * 1000, QUIET = 2 * 60 * 1000;
 /* restart(): how to start this server again (to finish a restore) - given
    when something's there to do it. status.update: what the updater last
    found, for the owner's page. */
-export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true } = {}){
+export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, publicUrl = null, files = null } = {}){
   mkdirSync(dataDir, { recursive: true });
   const safe = backups(dataDir, { version: VERSION });
   /* a restore the owner asked for, done before anything is opened */
@@ -47,10 +48,12 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
      the Wi-Fi when its address changes (a router gives the laptop a new one) */
   const idFile = join(dataDir, 'server.id');
   if (!existsSync(idFile)) writeFileSync(idFile, randomBytes(9).toString('hex'));
-  const info = { id: readFileSync(idFile, 'utf8').trim(), name: name || `${hostname()}'s Orlis`, version: VERSION, everyoneCreates, tailscaleJoin };
-  const shop = store(dataDir, starters);
+  const info = { id: readFileSync(idFile, 'utf8').trim(), name: name || `${hostname()}'s Orlis`, version: VERSION, everyoneCreates, tailscaleJoin, publicUrl };
+  /* its files (the Store's games, games sent in): the data folder, on the laptop - files.js */
+  const keep = files || folderFiles(dataDir);
+  const shop = await store(keep, starters);
   const log = history(db);
-  const sent = submissions(db, dataDir, shop, log);
+  const sent = submissions(db, keep, shop, log);
   const owners = (who, owner) => [
     ...sent.routes(who, owner, (h, ip) => h['x-orlis-manage'] !== undefined ? owner(h, ip) : who(h)),
     /* the management page itself: only to this laptop */

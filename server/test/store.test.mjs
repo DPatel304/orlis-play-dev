@@ -76,12 +76,12 @@ test('starter games: an update replaces an older one, but one the owner removed 
   const file = join(r.s.store.dir, 'pop-party.orlis');
   await r.s.close();
   r = { s: await start({ dataDir, port: 0, discoveryPort: false, starters: [{ name: 'pop-party.orlis', data: game('pop-party', '1.1') }] }) };
-  assert.equal(r.s.store.games()[0].version, '1.1', 'brought up to date');
+  assert.equal((await r.s.store.games())[0].version, '1.1', 'brought up to date');
   await r.s.close();
   unlinkSync(file);
   r = { s: await start({ dataDir, port: 0, discoveryPort: false, starters: [{ name: 'pop-party.orlis', data: game('pop-party', '1.1') }] }) };
   assert.ok(!existsSync(file), 'not put back');
-  assert.equal(r.s.store.games().length, 0);
+  assert.equal((await r.s.store.games()).length, 0);
   await r.s.close();
 });
 
