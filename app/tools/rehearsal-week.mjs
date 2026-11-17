@@ -99,7 +99,7 @@ try {
   /* (its ending plays, then the scores) */
   await pg.waitForFunction(() => [...document.querySelectorAll('.btn')].some(x => /All games/.test(x.textContent)), null, { timeout: 30000 });
   await shot('3-results');
-  await pg.waitForFunction(() => /Challenge done: Play 4 different games/.test((document.querySelector('.toast') || {}).textContent || ''), null, { timeout: 12000 });
+  await pg.waitForFunction(() => /Star earned: Play 4 different games/.test((document.querySelector('.toast') || {}).textContent || ''), null, { timeout: 12000 });
   check(true, 'a toast says so: ' + (await pg.textContent('.toast')).trim());
   await wait(1000);
   const plays = await api('GET', '/api/challenges', null, me.token);

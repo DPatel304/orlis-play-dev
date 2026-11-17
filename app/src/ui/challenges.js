@@ -17,6 +17,8 @@ import { sfx } from '../audio/sound.js';
 const ICON = { rounds: '\u{1F3AE}', different: '\u{1F9ED}', minutes: '⏱️' };
 const COLS = [['#6d5efc', '#a78bfa'], ['#0ea5e9', '#38bdf8'], ['#f59e0b', '#fbbf24']];
 const SHOW_SECS = 4.5;
+/* the star: gold, rounded - the same one everywhere (an SVG, so it looks the same on every PC) */
+export const STAR = (size = '1em') => `<svg class="star" viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true"><polygon points="12 2.6 14.9 8.8 21.7 9.6 16.7 14.2 18 21 12 17.6 6 21 7.3 14.2 2.3 9.6 9.1 8.8" fill="#ffc83d" stroke="#ffc83d" stroke-width="2" stroke-linejoin="round"/><polygon points="12 5.8 13.7 9.6 17.8 10.1 14.8 12.9 15.6 17 12 15 8.4 17 9.2 12.9 6.2 10.1 10.3 9.6" fill="#ffe27a"/></svg>`;
 let splashed = false;
 
 export const splashWanted = () => !splashed && !/[?&]splash=0\b/.test(typeof location === 'undefined' ? '' : location.search);
@@ -31,7 +33,7 @@ const sayPill = (data) => {
 
 export function challengePill(data){
   const [a, b] = sayPill(data);
-  const pill = button(`<span class="trophy">\u{1F3C6}</span><b>${esc(a)}</b>${b ? `<i>${esc(b)}</i>` : ''}`, 'chpill' + (!b ? ' alldone' : ''));
+  const pill = button(`<span class="starico">${STAR('3.4vh')}</span><b>${esc(a)}</b>${b ? `<i>${esc(b)}</i>` : ''}`, 'chpill' + (!b ? ' alldone' : ''));
   pill.title = 'This week’s challenges'; pill.setAttribute('aria-label', 'This week’s challenges');
   onPick(pill, () => { sfx.select(); showChallenges(data, { auto: false, from: pill }); });
   return pill;
@@ -49,13 +51,14 @@ export function showChallenges(data, { auto = false, from = null, onClosed = () 
       `<div class="chic" style="background:linear-gradient(135deg,${COLS[i % 3][0]},${COLS[i % 3][1]})">${ICON[c.kind] || '⭐'}</div>
        <div class="chtt">${esc(c.title)}</div>
        <div class="chbarbig"><i style="width:${pct}%"></i></div>
-       <div class="chft"><span>${c.have} / ${c.need}</span>${c.done ? '<span class="chtr got">\u{1F3C6} Done!</span>' : '<span class="chtr">\u{1F3C6} Trophy</span>'}</div>`);
+       <div class="chft"><span>${c.have} / ${c.need}</span>${c.done ? `<span class="chtr got">${STAR('2.2vh')} Star earned!</span>` : `<span class="chtr">${STAR('2.2vh')} Earns a star</span>`}</div>`);
     card.style.setProperty('--i', i);
     row.appendChild(card);
   });
-  const trophies = data.trophies ? `<span class="chtrophies">\u{1F3C6} ${data.trophies} earned</span>` : '';
+  const stars = data.stars ?? data.trophies ?? 0;
+  const total = stars ? `<span class="chtrophies">${STAR('2.4vh')} ${stars} earned</span>` : '';
   const go = button('Continue', 'link close chgo');
-  layer.append(h('h2', '', 'This week’s challenges'), h('p', 'chsub', `New every Monday${trophies}`), row,
+  layer.append(h('h2', '', 'This week’s challenges'), h('p', 'chsub', `New every Monday${total}`), row,
     h('p', 'chhint', auto ? 'Press any key to play' : 'Press any key to close'), go);
 
   let closed = false, timer = null;

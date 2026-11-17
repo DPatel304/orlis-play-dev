@@ -111,7 +111,7 @@ What's been decided, so it isn't only in chat. Newest last within each part.
 
 - **Coming back each week (built):** Play's *Featured this week* is games
   from Discover, a new few every Monday (the owner can pin one to keep it
-  there); three *family challenges* a week, reached together, a trophy for
+  there); three *family challenges* a week, reached together, a star for
   each, reset every Monday with nothing lost for a missed week; *Jump back
   in*; moving previews. Deliberately not: streaks that punish a missed day,
   random prizes, endless autoplay, countdowns aimed at kids.

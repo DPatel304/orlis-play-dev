@@ -210,7 +210,7 @@ function showResults(){
   /* told to the family's server, for this week's challenges (not a game
      being tried out - from Create, or waiting for the owner's OK) */
   if (!game.back && !game.trial) week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) })
-    .then((done) => done.forEach((c, i) => setTimeout(() => { sfx.gold?.(); toast(`\u{1F3C6} Challenge done: ${c.title}`, { ms: 6000 }); }, 900 + i * 1200)), () => {});
+    .then((done) => done.forEach((c, i) => setTimeout(() => { sfx.gold?.(); toast(`\u2605 Star earned: ${c.title}`, { ms: 6000 }); }, 900 + i * 1200)), () => {});
   /* (a game being tried goes back where it came from: Create) */
   go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'All games'));
 }

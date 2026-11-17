@@ -29,7 +29,7 @@ test('challenges: three a week, counted from the family\'s rounds', () => {
   assert.equal(got.find(c => c.kind === 'different').have, 3, 'three different games');
 });
 
-test('rounds reported from Orlis Play count for the family this week; a done challenge is a trophy; the owner features a game', async () => {
+test('rounds reported from Orlis Play count for the family this week; a done challenge is a star; the owner features a game', async () => {
   const s = await start({ dataDir: mkdtempSync(join(tmpdir(), 'orlis-week-')), port: 0, discoveryPort: false, tailscaleJoin: () => true });
   const base = `http://127.0.0.1:${s.port}`;
   const call = async (method, path, body, token, manage) => {
@@ -47,8 +47,8 @@ test('rounds reported from Orlis Play count for the family this week; a done cha
     assert.equal((await call('POST', '/api/plays', { gameId: 'pop-party' })).status, 401, 'signed in only');
     const after = await call('GET', '/api/challenges', null, me.token);
     assert.ok(after.challenges.find(c => c.id === target.id).done, 'done');
-    assert.equal(after.trophies, 1, 'a trophy');
-    assert.equal((await call('GET', '/api/challenges', null, me.token)).trophies, 1, 'only once');
+    assert.equal(after.stars, 1, 'a star'); assert.equal(after.trophies, 1, '(and the old name, for older apps)');
+    assert.equal((await call('GET', '/api/challenges', null, me.token)).stars, 1, 'only once');
     /* featuring: owner only, and it shows in Discover's list */
     assert.equal((await call('POST', '/api/store/pop-party/feature', { on: true }, me.token, false)).featured, true, 'the owner (signed in) features a game');
     const st = await call('GET', '/api/store', null, me.token);

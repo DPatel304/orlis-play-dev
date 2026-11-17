@@ -5,7 +5,7 @@
 
    Challenges: three goals a week the family reaches together, made of the
    rounds everyone plays (each Orlis Play tells the server when a round
-   ends: which game, how long). Reaching one wins the family a trophy. They
+   ends: which game, how long). Reaching one wins the family a star. They
    reset every Monday; nothing is lost for missing a week. */
 import { Fail } from './http.js';
 
@@ -81,8 +81,9 @@ export function weekly(db, { now = () => new Date() } = {}){
           const list = progress(challenges(now()), plays);
           const week = from.toISOString().slice(0, 10);
           for (const c of list) if (c.done) q('INSERT OR IGNORE INTO trophies (household_id, week, challenge_id, at) VALUES (?, ?, ?, ?)').run(a.household_id, week, c.id, now().toISOString());
-          const trophies = q('SELECT COUNT(*) AS n FROM trophies WHERE household_id = ?').get(a.household_id).n;
-          return { week, ends: to.toISOString(), challenges: list, trophies };
+          /* (stars; the table is still called trophies, and the answer keeps that name too, for older apps) */
+          const stars = q('SELECT COUNT(*) AS n FROM trophies WHERE household_id = ?').get(a.household_id).n;
+          return { week, ends: to.toISOString(), challenges: list, stars, trophies: stars };
         }],
         /* the owner puts a Discover game up front, or lets it take turns */
         ['POST', '/api/store/:id/feature', ({ headers, params, body, ip }) => {

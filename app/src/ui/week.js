@@ -7,7 +7,7 @@ import { account } from './account.js';
 
 export const week = {
   store: null,          /* { games, featured } */
-  challenges: null,     /* { week, ends, challenges, trophies } */
+  challenges: null,     /* { week, ends, challenges, stars } */
   at: 0,
 
   /* true if anything changed */
