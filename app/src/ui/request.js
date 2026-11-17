@@ -47,7 +47,7 @@ export const WORDS = 500;
 
 const esc = (t) => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const count = (s) => ((s || '').match(/\S+/g) || []).length;
-const blank = () => ({ at: null, start: null, like: null, name: '', view: 'hands', action: null, thing: '', place: '', twists: [], ages: '4-6', energy: 'bouncy', minutes: SHORT, players: 2, look: null, words: '' });
+const blank = () => ({ at: null, start: 'new', like: null, name: '', view: 'hands', action: null, thing: '', place: '', twists: [], ages: '4-6', energy: 'bouncy', minutes: SHORT, players: 2, look: null, words: '' });
 
 /* The one-sentence sum-up - the same words the server keeps. */
 export function sentence(r, { likeName = null } = {}){
@@ -115,36 +115,25 @@ const LOOK_WORD = { sunny: 'Sunny', cozy: 'Cozy', night: 'Night', candy: 'Candy'
    is where it goes; it keeps a draft; onDone() when they're finished with it
    (after sending), onPlay() to go and see it on Play. */
 export function gameBuilder({ host, store = async () => [], send, onDone = () => {}, onOpen = () => {}, onPlay = null }){
-  let r = blank(), games = null, step = 'start', reach = 0, round = { thing: 0, name: 0 };
+  let r = blank(), step = 'action', reach = 0, round = { thing: 0, name: 0 };
   const root = h('section', 'builder'); host.prepend(root);
   const close = () => { root.remove(); onDone(); };
-  const likeName = () => (games || []).find(g => g.id === r.like)?.name || null;
   const set = (patch) => { r = { ...r, ...patch }; };
   let pools = {};   /* the shuffled suggestions, per action */
   const poolFor = (a) => pools[a] || (pools[a] = shuffled(ACTIONS[a].things));
 
   /* the order of the steps, for how they started */
-  const order = () => ['start', r.start === 'like' ? 'like' : null, 'action', 'thing', 'look', 'length', 'name', 'words', 'review'].filter(Boolean);
-  const ready = (s) => s === 'start' ? !!r.start : s === 'like' ? !!r.like : s === 'action' ? (r.start === 'like' || !!r.action) : s === 'length' ? !!r.minutes : true;
+  const order = () => ['action', 'thing', 'look', 'length', 'name', 'words', 'review'];
+  const ready = (s) => s === 'action' ? !!r.action : s === 'length' ? !!r.minutes : true;
   /* the ones that can be skipped, and whether they've been answered (else the pill says Skip) */
-  const optional = (s) => ['thing', 'look', 'name', 'words'].includes(s) || (s === 'action' && r.start === 'like');
+  const optional = (s) => ['thing', 'look', 'name', 'words'].includes(s);
   const answered = (s) => s === 'thing' ? !!r.thing.trim() : s === 'look' ? !!r.look : s === 'name' ? !!r.name.trim() : s === 'words' ? !!r.words.trim() : s === 'action' ? !!r.action : true;
   const go = (s, quiet) => { step = s; reach = Math.max(reach, order().indexOf(s)); if (!quiet) sfx.select?.(); draw(); };
   const next = () => { const o = order(); go(o[Math.min(o.length - 1, o.indexOf(step) + 1)]); };
   const up = () => { const o = order(), i = o.indexOf(step); if (i > 0) go(o[i - 1]); };
 
-  function surprise(){
-    const pick = (a) => a[Math.floor(Math.random() * a.length)];
-    const action = pick(Object.keys(ACTIONS));
-    set({ start: 'surprise', like: null, view: 'hands', action, thing: pick(ACTIONS[action].things), look: pick(Object.keys(LOOKS)), minutes: pick([SHORT, LONG]) });
-    reach = order().length - 1;
-    go('review');
-  }
-
   /* the question each step asks, and the picture and word its chip shows */
-  const question = (s) => s === 'start' ? 'How do you want to start?'
-    : s === 'like' ? 'Which game is it like?'
-    : s === 'action' ? (r.start === 'like' ? 'Anything different?' : 'What do you do?')
+  const question = (s) => s === 'action' ? 'What do you do?'
     : s === 'thing' ? ({ pop: 'What do you pop?', steer: 'What do you fly?', copy: 'Who do you copy?', paint: 'What do you paint with?' }[r.action] || 'What’s in it?')
     : s === 'look' ? 'What does it look like?'
     : s === 'length' ? 'How long is it?'
@@ -152,8 +141,6 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     : s === 'words' ? 'Anything else?'
     : 'Ready?';
   const chipOf = (s) => ({
-    start: [{ new: '✨', like: '\u{1F3AE}', surprise: '\u{1F3B2}' }[r.start] || '✨', { new: 'New', like: 'Like', surprise: 'Surprise' }[r.start] || 'Start'],
-    like: ['\u{1F3AE}', (likeName() || 'Game').slice(0, 14)],
     action: [r.action ? ACTIONS[r.action].icon : '\u{1F3AF}', r.action ? ACTIONS[r.action].short : 'Same'],
     thing: [r.thing.trim() ? artOf(r.thing, r.action) : '✏️', r.thing.trim() ? titled(r.thing).slice(0, 14) : 'Anything'],
     look: [r.look ? LOOK_ICON[r.look] : '\u{1F3A8}', r.look ? LOOK_WORD[r.look] : 'Surprise'],
@@ -179,13 +166,11 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
 
   /* the little steps down the right: a brick for each, in the order they're built */
   const BRICK = ['#ff8fc8', '#3fc1d9', '#7be0a0', '#ffd86b', '#c79bff', '#ffb86b', '#6bc8ff', '#ff6b8f'];
-  const STEP_TITLE = (s) => s === 'start' ? 'Start' : s === 'like' ? 'Which game' : s === 'action' ? 'What you do'
+  const STEP_TITLE = (s) => s === 'action' ? 'What you do'
     : s === 'thing' ? ({ pop: 'What you pop', steer: 'What you fly', copy: 'Who you copy', paint: 'What you paint with' }[r.action] || 'What’s in it')
     : s === 'look' ? 'The look' : s === 'length' ? 'How long' : s === 'name' ? 'Its name' : s === 'words' ? 'Anything else' : 'Ready';
   const ANSWER = (s) => ({
-    start: { new: 'New', like: 'Like a game', surprise: 'Surprise' }[r.start] || '',
-    like: likeName() || '',
-    action: r.action ? ACTIONS[r.action].label : 'Same as it is',
+    action: r.action ? ACTIONS[r.action].label : '',
     thing: r.thing.trim() ? titled(r.thing) : 'Anything',
     look: r.look ? LOOKS[r.look].replace(/^./, c => c.toUpperCase()) : 'A surprise',
     length: r.minutes >= LONG ? 'Long · 10 min' : 'Short · 3 min',
@@ -297,29 +282,9 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
 
   /* what's inside the open question */
   async function fill(s, body){
-    if (s === 'start'){
-      const grid = h('div', 'bgrid n3');
-      grid.append(
-        card(r.start === 'new' ? 'on' : '', '✨', 'Make something new', HUES[0], (el) => { set({ start: 'new', like: null }); advance(el); }),
-        card(r.start === 'like' ? 'on' : '', '\u{1F3AE}', 'Like a game I know', HUES[1], (el) => { set({ start: 'like' }); advance(el); }),
-        card('', '\u{1F3B2}', 'Surprise me', HUES[2], surprise));
-      body.appendChild(grid);
-    }
-    if (s === 'like'){
-      if (games === null){ body.append(h('p', 'bnote', 'Looking in Discover…')); games = await store(); return draw(); }
-      if (!games.length) body.append(h('p', 'bnote', 'Discover’s out of reach right now.'));
-      const grid = h('div', 'bgrid n4');
-      games.slice(0, 8).forEach((g, k) => {
-        const cols = (g.icon && g.icon.cols) || HUES[k % HUES.length];
-        const t = card(r.like === g.id ? 'on' : '', '', g.name, cols, (el) => { set({ like: g.id }); advance(el); });
-        const art = t.querySelector('.bart'); art.textContent = (g.name || '?')[0];
-        grid.appendChild(t);
-      });
-      body.appendChild(grid);
-    }
     if (s === 'action'){
       const grid = h('div', 'bgrid n4');
-      Object.entries(ACTIONS).forEach(([id, a], k) => grid.appendChild(card(r.action === id ? 'on' : '', a.icon, a.label, HUES[[2, 1, 3, 4][k % 4]], (el) => { set({ action: r.action === id && r.start === 'like' ? null : id, thing: r.action === id ? r.thing : '' }); if (r.action) advance(el); else draw(); })));
+      Object.entries(ACTIONS).forEach(([id, a], k) => grid.appendChild(card(r.action === id ? 'on' : '', a.icon, a.label, HUES[[2, 1, 3, 4][k % 4]], (el) => { set({ action: id, thing: r.action === id ? r.thing : '' }); advance(el); })));
       body.appendChild(grid);
     }
     if (s === 'thing'){
@@ -359,7 +324,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     if (s === 'review'){
       const stage = h('div', 'breview');
       const side = h('div', 'bsum');
-      side.append(h('p', 'bnote', esc(sentence(r, { likeName: likeName() }))));
+      side.append(h('p', 'bnote', esc(sentence(r))));
       if (r.words) side.append(h('blockquote', 'reqquote', esc(r.words)));
       const err = h('p', 'ferr', '');
       const go_ = button('Send it', 'bpill go big');
@@ -367,7 +332,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
         if (go_.classList.contains('busy')) return;
         go_.classList.add('busy'); err.textContent = '';
         try {
-          await send({ start: r.start === 'surprise' ? 'new' : r.start, like: r.like, name: r.name, view: 'hands', action: r.action, thing: r.thing, place: '', twists: [], ages: '4-6', energy: 'bouncy', minutes: r.minutes, players: 2, look: r.look, words: r.words });
+          await send({ start: 'new', like: null, name: r.name, view: 'hands', action: r.action, thing: r.thing, place: '', twists: [], ages: '4-6', energy: 'bouncy', minutes: r.minutes, players: 2, look: r.look, words: r.words });
           sfx.gold?.(); sent();
         } catch (e){ go_.classList.remove('busy'); err.textContent = e.message || 'That didn’t send.'; }
       });
