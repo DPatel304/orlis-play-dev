@@ -170,7 +170,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
 
   /* a picture card: art on a colour, one or two words */
   const card = (cls, art, label, cols, fn) => {
-    const t = tile(`<span class="bart">${art}</span><span class="blb">${esc(label)}</span>`, 'bcard ' + cls, fn);
+    const t = tile(`<span class="bart">${art}</span><span class="blb">${esc(label)}</span>`, 'bcard ' + cls, (e) => fn(e && e.currentTarget ? e.currentTarget : t));
     t.style.setProperty('--c1', cols[0]); t.style.setProperty('--c2', cols[1]);
     return t;
   };
@@ -182,32 +182,98 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     return cv;
   };
 
+  /* the little steps down the right: a brick for each, in the order they're built */
+  const BRICK = ['#ff8fc8', '#3fc1d9', '#7be0a0', '#ffd86b', '#c79bff', '#ffb86b', '#6bc8ff', '#ff6b8f'];
+  const STEP_TITLE = (s) => s === 'start' ? 'Start' : s === 'like' ? 'Which game' : s === 'action' ? 'What you do'
+    : s === 'thing' ? ({ pop: 'What you pop', steer: 'What you fly', copy: 'Who you copy', paint: 'What you paint with' }[r.action] || 'What’s in it')
+    : s === 'look' ? 'The look' : s === 'length' ? 'How long' : s === 'name' ? 'Its name' : s === 'words' ? 'Anything else' : 'Ready';
+  const ANSWER = (s) => ({
+    start: { new: 'New', like: 'Like a game', surprise: 'Surprise' }[r.start] || '',
+    like: likeName() || '',
+    action: r.action ? ACTIONS[r.action].label : 'Same as it is',
+    thing: r.thing.trim() ? titled(r.thing) : 'Anything',
+    look: r.look ? LOOKS[r.look].replace(/^./, c => c.toUpperCase()) : 'A surprise',
+    length: r.minutes >= LONG ? 'Long · 10 min' : 'Short · 3 min',
+    name: r.name.trim() || 'Claude picks',
+    words: r.words.trim() ? 'Notes added' : 'No notes',
+    review: ''
+  }[s]);
+  /* the blueprint: a dashed sketch on a grid, filling in as the game does */
+  const blueprint = () => {
+    const o = order();
+    const wrap = h('div', 'bblue' + (r.action ? ' made' : ''));
+    if (r.action){
+      const cv = document.createElement('canvas'); cv.width = 640; cv.height = 400; cv.className = 'bcv';
+      const cols = LOOK_COLS[r.look] || HUES[Object.keys(ACTIONS).indexOf(r.action) % HUES.length];
+      try { previewCover(cv, { name: r.name.trim() || 'Your game', cols, glyph: artOf(r.thing, r.action) }); } catch (e){}
+      wrap.appendChild(cv);
+    } else wrap.append(h('div', 'bgridbg'), h('span', 'bcrane', '\u{1F3D7}️'));
+    wrap.appendChild(h('span', 'bbadge', step === 'review' ? 'Ready!' : `Step ${o.indexOf(step) + 1} of ${o.length}`));
+    return wrap;
+  };
+  const panel = () => {
+    const o = order(), i = o.indexOf(step);
+    const side = h('div', 'bside');
+    side.append(h('h2', 'bsidehead', 'Your game'), blueprint());
+    const list = h('div', 'bsteps');
+    o.forEach((s, k) => {
+      const state = s === step ? 'now' : k <= reach && k < i ? 'ok' : k <= reach ? 'ok' : 'todo';
+      const [ico] = chipOf(s);
+      const done = state === 'ok';
+      const row = button(`<span class="bdot" style="${done ? `background:${BRICK[k % BRICK.length]}` : ''}">${done || s === step ? ico : '?'}</span><span class="bt">${esc(STEP_TITLE(s))}<small>${s === step ? 'building…' : done ? esc(ANSWER(s)) : ''}</small></span>`, 'bst ' + state + (landed === s ? ' land' : ''));
+      if (done) onPick(row, () => { if (!busy) go(s); });
+      else row.tabIndex = -1;
+      list.appendChild(row);
+    });
+    side.appendChild(list);
+    return side;
+  };
+  let landed = null, busy = false;
+  /* an answer is built into the list: its card lifts off, flies across and lands as a brick; then the next question rises */
+  function fly(el){
+    const to = root.querySelector('.bst.now .bdot');
+    if (!el || !to || !el.animate || !document.body.animate) return Promise.resolve();
+    const a = el.getBoundingClientRect(), b = to.getBoundingClientRect();
+    if (!a.width || !b.width) return Promise.resolve();
+    const g = el.cloneNode(true);
+    el.querySelectorAll('canvas').forEach((cv, k) => { try { const c2 = g.querySelectorAll('canvas')[k]; c2.getContext('2d').drawImage(cv, 0, 0); } catch (e){} });
+    Object.assign(g.style, { position: 'fixed', left: a.left + 'px', top: a.top + 'px', width: a.width + 'px', height: a.height + 'px', margin: 0, zIndex: 60, pointerEvents: 'none', transition: 'none' });
+    document.body.appendChild(g);
+    el.style.visibility = 'hidden';
+    const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2), sx = b.width / a.width, sy = b.height / a.height;
+    const anim = g.animate([
+      { transform: 'none', offset: 0 },
+      { transform: `translate(${dx * 0.12}px, ${dy * 0.12 - 30}px) scale(1.06) rotate(-4deg)`, offset: 0.18 },
+      { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy}) rotate(-6deg)`, offset: 0.85, borderRadius: '14px' },
+      { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, offset: 1, opacity: 0.0, borderRadius: '14px' }
+    ], { duration: 560, easing: 'cubic-bezier(.45,0,.2,1)' });
+    sfx.whoosh?.();
+    return anim.finished.then(() => g.remove(), () => g.remove());
+  }
+  const advance = (el) => {
+    if (busy) return;
+    busy = true;
+    fly(el).then(() => { busy = false; landed = step; sfx.select?.(); next(); });
+  };
+
   async function draw(){
     const was = root.querySelector('.bq');
+    const keepLanded = landed;
     root.innerHTML = '';
     const o = order(), i = o.indexOf(step);
-    /* the way up, and the answers so far */
-    if (i > 0){
-      const back = button('‹', 'bback'); back.title = 'Back'; back.setAttribute('aria-label', 'Back one question');
-      onPick(back, () => { sfx.back?.(); up(); });
-      root.appendChild(back);
-    }
-    const trail = h('div', 'btrail');
-    o.slice(0, Math.max(reach, i) + 1).forEach((s) => {
-      const [ico, word] = chipOf(s);
-      const c = button(`<i>${ico}</i>${esc(word)}`, 'bchip' + (s === step ? ' now' : ''));
-      if (s !== step) onPick(c, () => go(s));
-      trail.appendChild(c);
-    });
-    root.appendChild(trail);
+    const main = h('div', 'bmain');
     const body = h('div', 'bq' + (was ? ' in' : ''));
-    root.appendChild(body);
+    main.appendChild(body);
     body.append(h('h1', 'bh', esc(question(step))));
+    root.append(main, panel());
+    landed = null;
     await fill(step, body);
-    /* the pill at the bottom right: Skip (nothing picked) or Next (something typed) */
+    /* what comes next, faintly */
+    if (i < o.length - 1 && step !== 'review') main.appendChild(h('div', 'bnext', `<span>⬇</span> Next: ${esc(STEP_TITLE(o[i + 1]))}`));
+    /* Skip (nothing picked) or Next (something typed) */
     if (optional(step) && step !== 'review'){
       const p = button(answered(step) ? 'Next' : 'Skip', 'bpill ' + (answered(step) ? 'go' : 'skip'));
-      onPick(p, next); root.appendChild(p); root._pill = p;
+      onPick(p, next); main.appendChild(p); root._pill = p;
     }
     onOpen();
   }
@@ -215,14 +281,14 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   /* three picture cards, a refresh for three more, and a place to type your own */
   function suggest(body, three, pick, again, { cover = false, current = '', placeholder, max, input }){
     const grid = h('div', 'bgrid n3');
-    three.forEach((t, k) => grid.appendChild(cover ? coverTile(t, current === t, () => pick(t)) : card(current === t ? 'on' : '', artOf(t, r.action), titled(t) ? t.replace(/^./, c => c.toUpperCase()) : t, HUES[(k + round.thing * 3) % HUES.length], () => pick(t))));
+    three.forEach((t, k) => grid.appendChild(cover ? coverTile(t, current === t, (el) => pick(t, el)) : card(current === t ? 'on' : '', artOf(t, r.action), titled(t) ? t.replace(/^./, c => c.toUpperCase()) : t, HUES[(k + round.thing * 3) % HUES.length], (el) => pick(t, el))));
     const re = button('↻', 'bmore'); re.title = 'Three more ideas'; re.setAttribute('aria-label', 'Three more ideas');
     onPick(re, () => { sfx.select?.(); again(); });
     grid.appendChild(re);
     body.appendChild(grid);
     const typed = h('div', 'btyped'); typed.appendChild(input); body.appendChild(typed);
   }
-  const coverTile = (name, on, fn) => { const t = tile('', 'bcard cover' + (on ? ' on' : ''), fn); t.querySelector('.lbl').replaceWith(coverCanvas(name)); t.setAttribute('aria-label', name); return t; };
+  const coverTile = (name, on, fn) => { const t = tile('', 'bcard cover' + (on ? ' on' : ''), (e) => fn(e && e.currentTarget ? e.currentTarget : t)); t.querySelector('.lbl').replaceWith(coverCanvas(name)); t.setAttribute('aria-label', name); return t; };
   const typer = (value, placeholder, max, onType, onEnter) => {
     const input = Object.assign(document.createElement('input'), { className: 'btype', maxLength: max, value, placeholder });
     input.addEventListener('input', () => onType(input.value));
@@ -237,8 +303,8 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     if (s === 'start'){
       const grid = h('div', 'bgrid n3');
       grid.append(
-        card(r.start === 'new' ? 'on' : '', '✨', 'Make something new', HUES[0], () => { set({ start: 'new', like: null }); next(); }),
-        card(r.start === 'like' ? 'on' : '', '\u{1F3AE}', 'Like a game I know', HUES[1], () => { set({ start: 'like' }); next(); }),
+        card(r.start === 'new' ? 'on' : '', '✨', 'Make something new', HUES[0], (el) => { set({ start: 'new', like: null }); advance(el); }),
+        card(r.start === 'like' ? 'on' : '', '\u{1F3AE}', 'Like a game I know', HUES[1], (el) => { set({ start: 'like' }); advance(el); }),
         card('', '\u{1F3B2}', 'Surprise me', HUES[2], surprise));
       body.appendChild(grid);
     }
@@ -248,7 +314,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
       const grid = h('div', 'bgrid n4');
       games.slice(0, 8).forEach((g, k) => {
         const cols = (g.icon && g.icon.cols) || HUES[k % HUES.length];
-        const t = card(r.like === g.id ? 'on' : '', '', g.name, cols, () => { set({ like: g.id }); next(); });
+        const t = card(r.like === g.id ? 'on' : '', '', g.name, cols, (el) => { set({ like: g.id }); advance(el); });
         const art = t.querySelector('.bart'); art.textContent = (g.name || '?')[0];
         grid.appendChild(t);
       });
@@ -256,24 +322,24 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     }
     if (s === 'action'){
       const grid = h('div', 'bgrid n4');
-      Object.entries(ACTIONS).forEach(([id, a], k) => grid.appendChild(card(r.action === id ? 'on' : '', a.icon, a.label, HUES[[2, 1, 3, 4][k % 4]], () => { set({ action: r.action === id && r.start === 'like' ? null : id, thing: r.action === id ? r.thing : '' }); if (r.action) next(); else draw(); })));
+      Object.entries(ACTIONS).forEach(([id, a], k) => grid.appendChild(card(r.action === id ? 'on' : '', a.icon, a.label, HUES[[2, 1, 3, 4][k % 4]], (el) => { set({ action: r.action === id && r.start === 'like' ? null : id, thing: r.action === id ? r.thing : '' }); if (r.action) advance(el); else draw(); })));
       body.appendChild(grid);
     }
     if (s === 'thing'){
       const pool = r.action ? poolFor(r.action) : ['fireflies', 'balloons', 'fish', 'a dragon', 'snowflakes', 'stars'];
       const input = typer(r.thing, 'Or type your own…', 60, (v) => { set({ thing: v }); pillNow('thing'); refreshSide(); }, next);
-      suggest(body, ideas(pool, round.thing), (t) => { set({ thing: t }); next(); }, () => { round.thing++; draw(); }, { current: r.thing, input });
+      suggest(body, ideas(pool, round.thing), (t, el) => { set({ thing: t }); advance(el); }, () => { round.thing++; draw(); }, { current: r.thing, input });
     }
     if (s === 'look'){
       const grid = h('div', 'bgrid n5');
-      Object.entries(LOOKS).forEach(([id, label]) => grid.appendChild(card(r.look === id ? 'on' : '', LOOK_ICON[id], LOOK_WORD[id], LOOK_COLS[id], () => { set({ look: r.look === id ? null : id }); r.look ? next() : draw(); })));
+      Object.entries(LOOKS).forEach(([id, label]) => grid.appendChild(card(r.look === id ? 'on' : '', LOOK_ICON[id], LOOK_WORD[id], LOOK_COLS[id], (el) => { set({ look: r.look === id ? null : id }); r.look ? advance(el) : draw(); })));
       body.appendChild(grid);
     }
     if (s === 'length'){
       const grid = h('div', 'bgrid n2');
       grid.append(
-        card(r.minutes === SHORT ? 'on' : '', '⏱️', 'Short', HUES[0], () => { set({ minutes: SHORT }); next(); }),
-        card(r.minutes === LONG ? 'on' : '', '\u{1F3D4}️', 'Long', HUES[3], () => { set({ minutes: LONG }); next(); }));
+        card(r.minutes === SHORT ? 'on' : '', '⏱️', 'Short', HUES[0], (el) => { set({ minutes: SHORT }); advance(el); }),
+        card(r.minutes === LONG ? 'on' : '', '\u{1F3D4}️', 'Long', HUES[3], (el) => { set({ minutes: LONG }); advance(el); }));
       grid.querySelectorAll('.bcard').forEach((t, k) => t.appendChild(h('span', 'bsub', k ? '10 minutes' : '3 minutes')));
       body.appendChild(grid);
     }
@@ -282,7 +348,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
       const tally = (n) => { left.textContent = `${n} of ${NAME_MAX} letters`; };
       const input = typer(r.name, 'Or type your own…', NAME_MAX, (v) => { set({ name: v }); tally(v.length); pillNow('name'); refreshSide(); }, next);
       tally(r.name.length);
-      suggest(body, ideas(nameIdeas(r), round.name), (t) => { set({ name: t }); next(); }, () => { round.name++; draw(); }, { cover: true, current: r.name, input });
+      suggest(body, ideas(nameIdeas(r), round.name), (t, el) => { set({ name: t }); advance(el); }, () => { round.name++; draw(); }, { cover: true, current: r.name, input });
       body.appendChild(left);
     }
     if (s === 'words'){
@@ -295,7 +361,6 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     }
     if (s === 'review'){
       const stage = h('div', 'breview');
-      stage.appendChild(coverCanvas(r.name.trim() || 'Your game', 'big'));
       const side = h('div', 'bsum');
       side.append(h('p', 'bnote', esc(sentence(r, { likeName: likeName() }))));
       if (r.words) side.append(h('blockquote', 'reqquote', esc(r.words)));
@@ -315,7 +380,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     }
   }
   /* (typing the name: the cards' own lettering is the typed one on the review, nothing to redraw here) */
-  const refreshSide = () => {};
+  const refreshSide = () => { const old = root.querySelector('.bblue'); if (old) old.replaceWith(blueprint()); };
 
   function sent(){
     root.innerHTML = '';

@@ -26,7 +26,7 @@ const api = async (m, p, b, t, raw) => {
 const TAURI = `window.__TAURI__ = { core: { invoke: async (c) => c === 'find_servers' ? [{ url: '${S}', name: 'Home' }] : null }, window: { getCurrentWindow: () => ({ close(){}, minimize(){}, toggleMaximize(){} }) } };`;
 const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '').replace(/\s+/g, ' ').trim();
 const shot = (pg, n) => pg.screenshot({ path: `${out}-${n}.png` });
-const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(350); };
+const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(sel.includes('bcard') || sel.includes('bpill') ? 1000 : 350); };
 
 (async () => {
   for (let i = 0; i < 40; i++){ try { await fetch(S + '/api/hello'); break; } catch { await wait(250); } }
@@ -60,17 +60,19 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(35
   check(!page.includes('Dev Kit') && !page.includes('Send a game') && !page.includes('Your games') && !page.includes('None yet'), 'no Dev Kit, no Your games');
   check(!(await pg.$('.shero')), 'no banner: straight into the questions');
   check((await txt(pg, '.bh')) === 'How do you want to start?', 'the first question is already there');
-  check(!(await pg.$('.bback')), 'nothing to go back to yet');
+  await pg.waitForTimeout(900);
+  check((await pg.$eval('.createpage', e => e.classList.contains('chromeaway'))), 'the tabs, the cube and the name have slid away');
+  check((await pg.$$('.bst')).length === 8 && (await pg.$$('.bst.todo')).length === 7, 'the build list is on the right: eight steps, the first one being built');
   await shot(pg, '01-create');
 
   log('\n2. The flow, by tapping: one big picture question at a time, the answers as chips above');
   await tap(pg, '.bcard >> text=Make something new');
   check((await txt(pg, '.bh')) === 'What do you do?', 'what you do');
-  check((await pg.$$('.bchip')).length === 2, 'the first answer is a chip above, with this question beside it');
+  check((await pg.$$('.bst.ok')).length === 1 && (await pg.$$('.bq .done')).length === 0, 'the first answer is a brick in the list, not a row above');
   check((await pg.$$eval('.bgrid .blb', e => e.map(x => x.textContent))).join('|') === 'Pop|Fly or steer|Copy the moves|Paint', 'only pop, fly or steer, copy the moves and paint');
   check((await pg.$eval('.bcard', e => e.getBoundingClientRect().height)) > 300, 'big cards');
   await shot(pg, '02-actions');
-  await tap(pg, '.bcard >> text=Fly or steer');
+  await pg.click('.bcard >> text=Fly or steer'); await pg.waitForTimeout(260); await shot(pg, '02b-flying'); await pg.waitForTimeout(900);
   check((await txt(pg, '.bh')) === 'What do you fly?', 'what do you fly');
   check((await pg.$$('.bgrid .bcard')).length === 3, 'three picture cards');
   const first3 = await pg.$$eval('.bgrid .blb', e => e.map(x => x.textContent).join('|'));
@@ -84,7 +86,7 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(35
   await pg.keyboard.press('Enter'); await pg.waitForTimeout(500);
   check((await txt(pg, '.bh')) === 'What does it look like?', 'the look');
   check((await txt(pg, '.bpill')) === 'Skip', 'optional: Skip');
-  check((await pg.$$('.bchip')).length === 4, 'three answers above and this one');
+  check((await pg.$$('.bst.ok')).length === 3, 'three bricks built');
   await tap(pg, '.bcard >> text=Cozy');
   check((await txt(pg, '.bh')) === 'How long is it?', 'how long');
   check((await pg.$$eval('.bsub', e => e.map(x => x.textContent))).join('|') === '3 minutes|10 minutes', 'short is 3, long is 10');
@@ -101,8 +103,8 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(35
   check((await txt(pg, '.bcount')) === '18 of 500 words', 'words counted: ' + (await txt(pg, '.bcount')));
   await shot(pg, '05-words');
   /* up one, and on again */
-  await tap(pg, '.bback');
-  check((await txt(pg, '.bh')) === 'What’s it called?', 'the back arrow goes up one question');
+  await tap(pg, '.bst.ok:has-text("Its name")');
+  check((await txt(pg, '.bh')) === 'What’s it called?', 'tapping a brick goes back to that question');
   await tap(pg, '.bpill');
   /* away to Play and back: the draft keeps */
   await goTo(pg, 'Play'); await pg.waitForTimeout(1500);
@@ -113,7 +115,7 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(35
   check((await txt(pg, '.reqquote')).includes('jar is full'), 'their words, shown back');
   await shot(pg, '06-review');
   /* change one from the chips, and walk back down */
-  await pg.click('.bchip >> text=Cozy'); await pg.waitForTimeout(400);
+  await pg.click('.bst.ok:has-text("The look")'); await pg.waitForTimeout(500);
   check((await txt(pg, '.bh')) === 'What does it look like?', 'tapping a chip goes back to that question');
   await tap(pg, '.bcard >> text=Night');
   check((await txt(pg, '.bh')) === 'How long is it?', 'and carries on down');
@@ -121,6 +123,7 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(35
   await tap(pg, '.bpill'); await tap(pg, '.bpill');
   check((await txt(pg, '.bh')) === 'Ready?', 'back at the review');
   check((await txt(pg, '.bsum .bnote')).includes('starry night'), 'the change is there');
+  check((await pg.$$('.bst.ok')).length === 7, 'every brick built, only Ready left');
   await tap(pg, '.bpill >> text=Send it');
   await pg.waitForSelector('.bsent', { timeout: 5000 });
   check((await txt(pg, '.bsent')).includes('On its way'), 'sent: On its way, under construction on Play');

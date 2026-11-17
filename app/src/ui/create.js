@@ -86,6 +86,23 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
 
   /* the page is the flow: no banner, straight into the first question */
   s.classList.add('flow'); s.classList.remove('onhero');
+  /* the tabs, the cube and who's playing slide up and away (the page is the build now); a handle at the top, the top edge, or Escape brings them back */
+  let awayT = 0;
+  const lift = () => { clearTimeout(awayT); s.classList.add('chromeaway'); };
+  const drop = () => { clearTimeout(awayT); s.classList.remove('chromeaway'); };
+  setTimeout(() => { if (s.isConnected) lift(); }, 450);
+  const handle = onPick(button('▾', 'pullhandle'), () => { sfx.select?.(); s.classList.contains('chromeaway') ? drop() : lift(); });
+  handle.title = 'Show the tabs'; handle.setAttribute('aria-label', 'Show the tabs');
+  s.appendChild(handle);
+  s.addEventListener('pointermove', (e) => {
+    if (e.clientY < 36 && s.classList.contains('chromeaway')) drop();
+    else if (e.clientY > innerHeight * 0.22 && !s.classList.contains('chromeaway')){ clearTimeout(awayT); awayT = setTimeout(lift, 1800); }
+  });
+  const escKey = (e) => {
+    if (!s.isConnected){ removeEventListener('keydown', escKey, true); return; }
+    if (e.key === 'Escape' && !document.querySelector('.fpopwrap')){ e.preventDefault(); sfx.select?.(); s.classList.contains('chromeaway') ? drop() : lift(); }
+  };
+  addEventListener('keydown', escKey, true);
   /* where Make a game builds */
   const buildHost = h('div', 'cbuild');
   scroll.appendChild(buildHost);

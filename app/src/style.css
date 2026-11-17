@@ -1527,14 +1527,6 @@ body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
 .bq.in{ animation:bqin .45s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes bqin{ from{ opacity:0; transform:translateY(4vh); } to{ opacity:1; transform:none; } }
 .bh{ font-size:7vh; line-height:1.05; letter-spacing:-.02em; font-weight:800; color:#16161d; text-align:center; margin:1vh 0 4.4vh; }
-.btrail{ display:flex; flex-wrap:wrap; justify-content:center; gap:1.2vh; min-height:5.6vh; }
-.btn.bchip{ height:5.6vh; padding:0 2vh 0 1.2vh; border-radius:99px; background:#fff; border:0; box-shadow:0 .6vh 1.8vh rgba(20,24,50,.10); font-weight:700; font-size:2.1vh; color:#3b3e4d; }
-.btn.bchip .lbl{ display:flex; align-items:center; gap:1vh; }
-.btn.bchip i{ font-style:normal; font-size:3vh; }
-.btn.bchip.now{ background:#6d5efc; color:#fff; padding:0 2.4vh; }
-.btn.bchip.now i{ display:none; }
-.btn.bback{ position:absolute; left:3vw; top:15.5vh; width:6.4vh; height:6.4vh; min-width:0; padding:0; border-radius:50%; border:0; background:#fff; box-shadow:0 .8vh 2.4vh rgba(20,24,50,.16); font-size:4vh; font-weight:700; color:#3b3e4d; z-index:3; }
-.btn.bback .lbl{ display:grid; place-items:center; padding-bottom:.4vh; }
 .bgrid{ display:grid; gap:2.6vh; justify-content:center; align-items:center; }
 .bgrid.n2{ grid-template-columns:repeat(2, 30vw); }
 .bgrid.n3{ grid-template-columns:repeat(3, 24vw) auto; }
@@ -1610,3 +1602,60 @@ textarea.btype.bwords{ width:62vw; height:26vh; border-radius:3vh; padding:2.4vh
 .homepage.cinema .shtext{ top:49vh; }
 .homepage.cinema .shtext h1{ font-size:9.6vh; }
 .homepage.cinema .shtext p{ font-size:3vh; }
+
+
+/* Make a game as a build: one question at a time on the left, the game going up on the right */
+.createpage.flow .tvtop{ transition:transform .7s cubic-bezier(.5,0,.2,1); }
+.createpage.flow.chromeaway .tvtop{ transform:translateY(-26vh); pointer-events:none; }
+.btn.pullhandle{ position:fixed; top:0; left:50%; transform:translateX(-50%); z-index:6; height:3.6vh; min-width:0; padding:0 3vh; border-radius:0 0 2vh 2vh; border:0; background:#fff; box-shadow:0 .6vh 1.8vh rgba(20,24,50,.14); font-size:2.2vh; color:#6b7080; opacity:.0; transition:opacity .4s; }
+.createpage.flow.chromeaway .btn.pullhandle{ opacity:.85; }
+.builder{ display:grid; grid-template-columns:minmax(0,1fr) 27vw; gap:3vw; align-items:start; padding:6vh 3.5vw 6vh; min-height:100vh; }
+.bmain{ min-width:0; display:flex; flex-direction:column; align-items:flex-start; }
+.bmain .bq{ align-items:flex-start; width:100%; }
+.bmain .bh{ text-align:left; font-size:6.6vh; margin:3vh 0 4vh; }
+.bmain .bgrid{ justify-content:start; gap:2vw; }
+.bmain .bgrid.n2{ grid-template-columns:repeat(2, 20vw); }
+.bmain .bgrid.n3{ grid-template-columns:repeat(3, 17.5vw) auto; }
+.bmain .bgrid.n4{ grid-template-columns:repeat(4, 14vw); }
+.bmain .bgrid.n5{ grid-template-columns:repeat(5, 11vw); }
+.bmain .btn.bcard{ height:34vh; }
+.bmain .bgrid.n5 .btn.bcard{ height:30vh; }
+.bmain .bgrid.n5 .bart{ font-size:9vh; }
+.bmain .btn.bcard .bart{ font-size:12vh; }
+.bmain .btn.bcard .blb{ font-size:3vh; }
+.bmain .btyped{ justify-content:flex-start; }
+.bmain .btype{ width:min(46vw, 100%); }
+.bmain textarea.btype.bwords{ width:min(52vw, 100%); }
+.bmain .bcount, .bmain .bnote{ text-align:left; }
+.bnext{ margin-top:4vh; padding:1.6vh 2.4vh; border:.4vh dashed #c8cde0; border-radius:2.2vh; color:#9aa0b4; font-weight:700; font-size:2.2vh; opacity:.7; }
+.bmain .btn.bpill{ position:static; margin-top:3vh; align-self:flex-end; }
+.bmain .breview{ display:block; }
+.bmain .bsum{ max-width:none; }
+.bside{ position:sticky; top:4vh; background:#fff; border-radius:3.4vh; box-shadow:0 1.4vh 4vh rgba(20,24,50,.12); padding:2.6vh 2vw 2vh; }
+.bsidehead{ margin:0 0 1.4vh; font-size:2.2vh; color:#6b7080; letter-spacing:.06em; text-transform:uppercase; font-weight:800; }
+.bblue{ position:relative; aspect-ratio:8/5; border-radius:2.4vh; overflow:hidden; background:#e8f0ff; border:.35vh dashed #8fa8e8; display:grid; place-items:center; }
+.bblue.made{ border-style:solid; border-color:transparent; box-shadow:0 1vh 2.4vh rgba(20,24,50,.2); }
+.bgridbg{ position:absolute; inset:0; background-image:linear-gradient(#cfdcfb 1px, transparent 1px), linear-gradient(90deg, #cfdcfb 1px, transparent 1px); background-size:2.6vh 2.6vh; opacity:.8; }
+.bcrane{ position:relative; font-size:9vh; }
+.bcv{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; animation:bpop .5s cubic-bezier(.2,.9,.3,1.3) both; }
+@keyframes bpop{ from{ transform:scale(.92); opacity:.4; } to{ transform:none; opacity:1; } }
+.bbadge{ position:absolute; right:1.2vh; top:1.2vh; background:#ffd24a; color:#16161d; font-weight:800; font-size:1.7vh; padding:.6vh 1.4vh; border-radius:99px; transform:rotate(4deg); z-index:2; }
+.bsteps{ position:relative; margin-top:2vh; }
+.bsteps:before{ content:''; position:absolute; left:3.2vh; top:3vh; bottom:3vh; width:.6vh; background:#e9e8f4; border-radius:.3vh; }
+.btn.bst{ position:relative; display:flex; width:100%; height:6.4vh; margin:0 0 .6vh; padding:0; border:0; background:transparent; box-shadow:none; text-align:left; justify-content:flex-start; min-width:0; }
+.btn.bst .lbl{ display:flex; align-items:center; gap:1.6vh; width:100%; }
+.bdot{ position:relative; z-index:1; flex:none; width:6.2vh; height:6.2vh; border-radius:1.8vh; display:grid; place-items:center; font-size:3vh; color:#fff; background:#fff; border:.35vh dashed #c8cde0; box-sizing:border-box; }
+.bt{ font-weight:700; font-size:2.2vh; color:#aab0c4; line-height:1.15; display:block; }
+.bt small{ display:block; font-weight:600; font-size:1.7vh; color:#8a8ea0; }
+.btn.bst.ok .bdot{ border:0; box-shadow:0 .55vh 0 rgba(0,0,0,.18); }
+.btn.bst.ok .bt{ color:#16161d; }
+.btn.bst.ok{ cursor:pointer; }
+.btn.bst.ok:hover .bdot{ transform:translateY(-.3vh); }
+.btn.bst.now .bdot{ border:0; background:#6d5efc; box-shadow:0 0 0 .7vh rgba(109,94,252,.22); animation:bpulse 1.6s ease-in-out infinite; }
+.btn.bst.now .bt{ color:#6d5efc; }
+.btn.bst.todo{ cursor:default; }
+.btn.bst.land .bdot{ animation:bland .55s cubic-bezier(.2,.9,.3,1.4) both; }
+@keyframes bland{ 0%{ transform:translateY(-2.6vh) scale(.7); } 55%{ transform:translateY(.5vh) scale(1.12); } 100%{ transform:none; } }
+@keyframes bpulse{ 0%,100%{ box-shadow:0 0 0 .5vh rgba(109,94,252,.2); } 50%{ box-shadow:0 0 0 1vh rgba(109,94,252,.1); } }
+@media (max-width: 900px){ .builder{ grid-template-columns:1fr; } .bside{ position:static; } }
+.btn.bst.todo .bdot{ color:#c8cde0; font-size:2.4vh; }
