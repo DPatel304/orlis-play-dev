@@ -117,7 +117,7 @@ try {
 
   console.log('\n6. Their first game');
   await pg.waitForSelector('.builder', { timeout: 20000 }); await wait(600);
-  check((await pg.textContent('.builder .bh')).trim() === 'What do you do?', 'Create opens straight into making a game');
+  check((await pg.getAttribute('.builder .bh', 'data-q')) === 'What do you do?', 'Create opens straight into making a game');
   await pg.click('.bcard >> text=Pop'); await wait(1000);
   for (let i = 0; i < 4; i++){ await pg.click('.bdown'); await wait(400); }
   await pg.click('.bpill >> text=Send it');

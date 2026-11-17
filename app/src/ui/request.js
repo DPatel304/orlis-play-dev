@@ -33,9 +33,12 @@ const EMOJI = {
 /* a game is short (about 3 minutes) or long (about 10); a name fits on its card */
 export const SHORT = 3, LONG = 10, NAME_MAX = 24;
 /* the look and feel: a word for the sentence, and the card's colours */
-export const LOOKS = { sunny: 'sunny and bright', cozy: 'warm and cozy', night: 'a starry night', candy: 'sweet candy colours', ocean: 'cool ocean blues' };
-const LOOK_COLS = { sunny: ['#ffd86b', '#ff9f6b'], cozy: ['#e8a36a', '#a45a3b'], night: ['#2a2a6b', '#7a5ad6'], candy: ['#ff8fc8', '#7fc8ff'], ocean: ['#3fc1d9', '#2f6fd8'], none: ['#8b7cff', '#4cc3e8'] };
-const LOOK_ICON = { sunny: '\u2600\ufe0f', cozy: '\u{1F3E1}', night: '\u{1F319}', candy: '\u{1F36D}', ocean: '\u{1F30A}' };
+export const LOOKS = { sunny: 'sunny and bright', cozy: 'warm and cozy', night: 'a starry night', candy: 'sweet candy colours', ocean: 'cool ocean blues',
+  forest: 'a green forest', space: 'outer space', rainbow: 'rainbow colours', snow: 'a snowy world', jungle: 'a jungle', sunset: 'a golden sunset', garden: 'a flower garden', party: 'a party' };
+const LOOK_COLS = { sunny: ['#ffd86b', '#ff9f6b'], cozy: ['#e8a36a', '#a45a3b'], night: ['#2a2a6b', '#7a5ad6'], candy: ['#ff8fc8', '#7fc8ff'], ocean: ['#3fc1d9', '#2f6fd8'],
+  forest: ['#7be0a0', '#2f8f6a'], space: ['#1b1f5e', '#7a5ad6'], rainbow: ['#ff8fc8', '#6bc8ff'], snow: ['#cfe8ff', '#8fb6ff'], jungle: ['#6be0a0', '#3b8f4a'], sunset: ['#ff9f6b', '#c46bff'], garden: ['#ffb3d1', '#8fd6a0'], party: ['#ffd86b', '#ff6b8f'], none: ['#8b7cff', '#4cc3e8'] };
+const LOOK_ICON = { sunny: '\u2600\ufe0f', cozy: '\u{1F3E1}', night: '\u{1F319}', candy: '\u{1F36D}', ocean: '\u{1F30A}',
+  forest: '\u{1F332}', space: '\u{1F680}', rainbow: '\u{1F308}', snow: '❄️', jungle: '\u{1F99C}', sunset: '\u{1F305}', garden: '\u{1F338}', party: '\u{1F389}' };
 /* the colours and symbol a request's card has (Create's Your games uses it too) */
 export const looksOf = (recipe = {}) => ({
   cols: LOOK_COLS[recipe.look] || LOOK_COLS.none,
@@ -47,7 +50,7 @@ export const WORDS = 500;
 
 const esc = (t) => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const count = (s) => ((s || '').match(/\S+/g) || []).length;
-const blank = () => ({ at: null, start: 'new', like: null, name: '', view: 'hands', action: null, thing: '', place: '', twists: [], ages: '4-6', energy: 'bouncy', minutes: SHORT, players: 2, look: null, words: '' });
+const blank = () => ({ at: null, start: 'new', like: null, name: '', view: 'hands', action: null, thing: '', place: '', twists: [], ages: '4-6', energy: 'bouncy', minutes: SHORT, players: 2, look: null, lookText: '', words: '' });
 
 /* The one-sentence sum-up - the same words the server keeps. */
 export function sentence(r, { likeName = null } = {}){
@@ -57,7 +60,7 @@ export function sentence(r, { likeName = null } = {}){
     ? `Like ${likeName}${r.action ? `, but you ${ACTIONS[r.action].does(thing)}` : (r.thing || '').trim() ? `, but with ${thing}` : ''}${place}.`
     : `A ${r.view === 'character' ? 'third-person' : 'first-person'} ${r.action ? ACTIONS[r.action].label.toLowerCase() : ''} game: you ${r.action ? ACTIONS[r.action].does(thing) : 'play'}${place}.`;
   return [head.replace('  ', ' '), extra.length ? `${extra.join('; ').replace(/^./, c => c.toUpperCase())}.` : '',
-    r.look && LOOKS[r.look] ? `The look: ${LOOKS[r.look]}.` : ''].filter(Boolean).join(' ');
+    (LOOKS[r.look] || (r.lookText || '').trim()) ? `The look: ${LOOKS[r.look] || r.lookText.trim()}.` : ''].filter(Boolean).join(' ');
 }
 export const changeSentence = (name, chips, words) => {
   const asks = chips.map(c => CHIP_SAYS[c]);
@@ -105,7 +108,7 @@ export const artOf = (thing, action) => EMOJI[thing] || (action && ACTIONS[actio
 /* the colours behind a card, one pair per place in the row */
 const HUES = [['#7be0a0', '#2fa8d8'], ['#6bc8ff', '#3b6fe0'], ['#ffb86b', '#ff6b8f'], ['#c79bff', '#6b7bff'], ['#ffd86b', '#ff9f6b'], ['#6be0d0', '#3b8fe0']];
 /* a short word for each look, for the little chips at the top */
-const LOOK_WORD = { sunny: 'Sunny', cozy: 'Cozy', night: 'Night', candy: 'Candy', ocean: 'Ocean' };
+const LOOK_WORD = { sunny: 'Sunny', cozy: 'Cozy', night: 'Night', candy: 'Candy', ocean: 'Ocean', forest: 'Forest', space: 'Space', rainbow: 'Rainbow', snow: 'Snow', jungle: 'Jungle', sunset: 'Sunset', garden: 'Garden', party: 'Party' };
 
 /* The builder: Make a game, one big picture question at a time, on the Create
    page itself. A row of little chips at the top shows the answers so far (tap
@@ -113,7 +116,9 @@ const LOOK_WORD = { sunny: 'Sunny', cozy: 'Cozy', night: 'Night', candy: 'Candy'
    is where it goes; it keeps a draft; onDone() when they're finished with it
    (after sending), onPlay() to go and see it on Play. */
 export function gameBuilder({ host, store = async () => [], send, onDone = () => {}, onOpen = () => {}, onPlay = null }){
-  let r = blank(), step = 'action', reach = 0, round = { thing: 0, name: 0 };
+  let r = blank(), step = 'action', reach = 0, round = { thing: 0, name: 0, look: 0 };
+  let lookPoolMade = null;
+  const lookPool = () => lookPoolMade || (lookPoolMade = shuffled(Object.keys(LOOKS)));
   const root = h('section', 'builder'); host.prepend(root);
   const close = () => { root.remove(); onDone(); };
   const set = (patch) => { r = { ...r, ...patch }; };
@@ -125,7 +130,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   const ready = (s) => s === 'action' ? !!r.action : true;
   /* the ones that can be skipped, and whether they've been answered (else the pill says Skip) */
   const optional = (s) => ['thing', 'look', 'name', 'words'].includes(s);
-  const answered = (s) => s === 'thing' ? !!r.thing.trim() : s === 'look' ? !!r.look : s === 'name' ? !!r.name.trim() : s === 'words' ? !!r.words.trim() : s === 'action' ? !!r.action : true;
+  const answered = (s) => s === 'thing' ? !!r.thing.trim() : s === 'look' ? !!(r.look || (r.lookText || '').trim()) : s === 'name' ? !!r.name.trim() : s === 'words' ? !!r.words.trim() : s === 'action' ? !!r.action : true;
   const go = (s, quiet) => { step = s; reach = Math.max(reach, order().indexOf(s)); if (!quiet) sfx.select?.(); draw(); };
   const next = () => { const o = order(); go(o[Math.min(o.length - 1, o.indexOf(step) + 1)]); };
   const up = () => { const o = order(), i = o.indexOf(step); if (i > 0) go(o[i - 1]); };
@@ -140,12 +145,13 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   const chipOf = (s) => ({
     action: [r.action ? ACTIONS[r.action].icon : '\u{1F3AF}', r.action ? ACTIONS[r.action].short : 'Same'],
     thing: [r.thing.trim() ? artOf(r.thing, r.action) : '✏️', r.thing.trim() ? titled(r.thing).slice(0, 14) : 'Anything'],
-    look: [r.look ? LOOK_ICON[r.look] : '\u{1F3A8}', r.look ? LOOK_WORD[r.look] : 'Surprise'],
+    look: [r.look ? LOOK_ICON[r.look] : '\u{1F3A8}', r.look ? LOOK_WORD[r.look] : (r.lookText || '').trim() ? r.lookText.trim().slice(0, 14) : 'Surprise'],
     name: ['\u{1F3F7}️', r.name.trim() ? r.name.trim().slice(0, 14) : 'Any name'],
     words: ['\u{1F4AC}', r.words.trim() ? 'Notes' : 'No notes'],
     review: ['\u{1F680}', 'Ready']
   }[s]);
 
+  const lookCols = () => LOOK_COLS[r.look] || (r.action ? HUES[Object.keys(ACTIONS).indexOf(r.action) % HUES.length] : LOOK_COLS.none);
   /* a picture card: art on a colour, one or two words */
   const card = (cls, art, label, cols, fn) => {
     const t = tile(`<span class="bart">${art}</span><span class="blb">${esc(label)}</span>`, 'bcard ' + cls, (e) => fn(e && e.currentTarget ? e.currentTarget : t));
@@ -155,7 +161,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   /* a game's cover, drawn big, for the name ideas and the review */
   const coverCanvas = (name, cls = '') => {
     const cv = document.createElement('canvas'); cv.width = 720; cv.height = 720; cv.className = 'bcover ' + cls;
-    const cols = LOOK_COLS[r.look] || (r.action ? HUES[Object.keys(ACTIONS).indexOf(r.action) % HUES.length] : LOOK_COLS.none);
+    const cols = lookCols();
     try { previewCover(cv, { name: name || 'Your game', cols, glyph: r.action ? artOf(r.thing, r.action) : '✨' }); } catch (e){}
     return cv;
   };
@@ -168,7 +174,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   const ANSWER = (s) => ({
     action: r.action ? ACTIONS[r.action].label : '',
     thing: r.thing.trim() ? titled(r.thing) : 'Anything',
-    look: r.look ? LOOKS[r.look].replace(/^./, c => c.toUpperCase()) : 'A surprise',
+    look: r.look ? LOOKS[r.look].replace(/^./, c => c.toUpperCase()) : (r.lookText || '').trim() || 'A surprise',
     name: r.name.trim() || 'Claude picks',
     words: r.words.trim() ? 'Notes added' : 'No notes',
     review: ''
@@ -180,7 +186,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     if (r.action){
       const cv = document.createElement('canvas'); cv.width = 640; cv.height = 400; cv.className = 'bcv' + (blueMade ? '' : ' pop');
       blueMade = true;
-      const cols = LOOK_COLS[r.look] || HUES[Object.keys(ACTIONS).indexOf(r.action) % HUES.length];
+      const cols = lookCols();
       try { previewCover(cv, { name: r.name.trim() || 'Your game', cols, glyph: artOf(r.thing, r.action) }); } catch (e){}
       wrap.appendChild(cv);
     } else wrap.append(h('div', 'bgridbg'), h('span', 'bcrane', '\u{1F3D7}️'));
@@ -247,7 +253,10 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     /* (a refresh redraws just the ideas: no rising, and the game on the right stays as it is) */
     const body = h('div', 'bq' + (was && !keepSide ? ' in' : ''));
     main.appendChild(body);
-    body.append(h('h1', 'bh', esc(question(step))));
+    const pic = step === 'action' ? '\u{1F938}' : step === 'thing' ? (ACTIONS[r.action] ? ACTIONS[r.action].icon : '❔') : step === 'look' ? '\u{1F3A8}' : null;
+    const head = h('h1', 'bh' + (pic ? ' bicon' : ''), pic ? `<span class="bpic">${pic}</span><span class="bq-mark">?</span>` : esc(question(step)));
+    head.dataset.q = question(step); if (pic) head.setAttribute('aria-label', question(step));
+    body.append(head);
     root.append(main, side || panel());
     landed = null;
     await fill(step, body);
@@ -262,11 +271,12 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   }
 
   /* three ideas (picture cards, or title plaques for names), a refresh that swaps just those three, and a place to type your own */
-  function suggest(body, getThree, pick, bump, { cover = false, current = '', input }){
+  function suggest(body, getThree, pick, bump, { cover = false, current = '', input, build = null }){
     const re = button('↻', 'bmore'); re.title = 'Three more ideas'; re.setAttribute('aria-label', 'Three more ideas');
-    const cols = LOOK_COLS[r.look] || (r.action ? HUES[Object.keys(ACTIONS).indexOf(r.action) % HUES.length] : LOOK_COLS.none);
+    const cols = lookCols();
     let stack, grid;
     const make = (t, k) => {
+      if (build) return build(t, k, (el) => pick(t, el));
       if (cover){
         const b = tile(`<span class="bpt">${esc(t)}</span>`, 'bplaque' + (current === t ? ' on' : ''), (e) => pick(t, e && e.currentTarget ? e.currentTarget : b));
         b.style.setProperty('--c1', cols[0]); b.style.setProperty('--c2', cols[1] || cols[0]); b.setAttribute('aria-label', t);
@@ -314,9 +324,9 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
       suggest(body, () => ideas(pool, round.thing), (t, el) => { set({ thing: t }); advance(el); }, () => { round.thing++; }, { current: r.thing, input });
     }
     if (s === 'look'){
-      const grid = h('div', 'bgrid n5');
-      Object.entries(LOOKS).forEach(([id, label]) => grid.appendChild(card(r.look === id ? 'on' : '', LOOK_ICON[id], LOOK_WORD[id], LOOK_COLS[id], (el) => { set({ look: r.look === id ? null : id }); r.look ? advance(el) : draw(); })));
-      body.appendChild(grid);
+      const input = typer(r.lookText || '', 'Or describe it…', 30, (v) => { set({ lookText: v, look: null }); pillNow('look'); refreshSide(); }, next);
+      suggest(body, () => ideas(lookPool(), round.look), (t, el) => { set({ look: t, lookText: LOOKS[t] }); advance(el); }, () => { round.look++; },
+        { current: r.look, input, build: (t, k, pickIt) => card(r.look === t ? 'on' : '', LOOK_ICON[t], LOOK_WORD[t], LOOK_COLS[t], pickIt) });
     }
     if (s === 'name'){
       const left = h('p', 'bcount', '');
@@ -345,7 +355,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
         if (go_.classList.contains('busy')) return;
         go_.classList.add('busy'); err.textContent = '';
         try {
-          await send({ start: 'new', like: null, name: r.name, view: 'hands', action: r.action, thing: r.thing, place: '', twists: [], ages: '4-6', energy: 'bouncy', minutes: r.minutes, players: 2, look: r.look, words: r.words });
+          await send({ start: 'new', like: null, name: r.name, view: 'hands', action: r.action, thing: r.thing, place: '', twists: [], ages: '4-6', energy: 'bouncy', minutes: r.minutes, players: 2, look: r.look, lookText: (r.lookText || '').trim(), words: r.words });
           sfx.gold?.(); sent();
         } catch (e){ go_.classList.remove('busy'); err.textContent = e.message || 'That didn’t send.'; }
       });

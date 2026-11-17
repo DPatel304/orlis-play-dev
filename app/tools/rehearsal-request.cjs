@@ -44,6 +44,7 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   await ctx.route(/\.ts\.net\//, r => r.abort());   /* (never the real family server on the internet) */
   await ctx.addInitScript(TAURI + `if (!localStorage.getItem('orlis.account')) localStorage.setItem('orlis.account', ${JSON.stringify(JSON.stringify(state))});`);
   const pg = await ctx.newPage();
+  const q = () => pg.getAttribute('.bh', 'data-q').catch(() => '');
   const errs = [];
   pg.on('pageerror', e => { if (!/sandboxed/.test(e.message)) errs.push(e.message); });
   await pg.goto(appUrl + '?debug&splash=0&fx=0');
@@ -59,7 +60,7 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   const page = await txt(pg, '.createpage');
   check(!page.includes('Dev Kit') && !page.includes('Send a game') && !page.includes('Your games') && !page.includes('None yet'), 'no Dev Kit, no Your games');
   check(!(await pg.$('.shero')), 'no banner: straight into the questions');
-  check((await txt(pg, '.bh')) === 'What do you do?', 'the first question is already there: always a new game, nothing to choose about starting');
+  check((await q()) === 'What do you do?', 'the first question is already there: always a new game, nothing to choose about starting');
   check(!(await txt(pg, '.createpage')).includes('Like a game') && !(await txt(pg, '.createpage')).includes('Surprise'), 'no copy-a-game, no surprise');
   await pg.waitForTimeout(900);
   check((await pg.$eval('.createpage', e => e.classList.contains('chromeaway'))), 'the tabs, the cube and the name have slid away');
@@ -67,13 +68,13 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   await shot(pg, '01-create');
 
   log('\n2. The flow, by tapping: one big picture question at a time, the answers as chips above');
-  check((await txt(pg, '.bh')) === 'What do you do?', 'what you do');
+  check((await q()) === 'What do you do?', 'what you do');
   check((await pg.$$('.bst.ok')).length === 0 && (await pg.$$('.bq .done')).length === 0, 'no answers yet: no bricks, no rows above');
   check((await pg.$$eval('.bgrid .blb', e => e.map(x => x.textContent))).join('|') === 'Pop|Fly or steer|Copy the moves|Paint', 'only pop, fly or steer, copy the moves and paint');
   check((await pg.$eval('.bcard', e => e.getBoundingClientRect().height)) > 300, 'big cards');
   await shot(pg, '02-actions');
   await pg.click('.bcard >> text=Fly or steer'); await pg.waitForTimeout(260); await shot(pg, '02b-flying'); await pg.waitForTimeout(900);
-  check((await txt(pg, '.bh')) === 'What do you fly?', 'what do you fly');
+  check((await q()) === 'What do you fly?', 'what do you fly');
   check((await pg.$$('.bst.ok')).length === 1, 'the first answer is a brick in the list');
   check((await pg.$$('.bgrid .bcard')).length === 3, 'three picture cards');
   const first3 = await pg.$$eval('.bgrid .blb', e => e.map(x => x.textContent).join('|'));
@@ -87,39 +88,41 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   await shot(pg, '03-thing');
   await pg.fill('.btype', 'a friendly dragon');
   await pg.keyboard.press('Enter'); await pg.waitForTimeout(500);
-  check((await txt(pg, '.bh')) === 'What does it look like?', 'the look');
+  check((await q()) === 'What does it look like?', 'the look');
   check(!(await pg.$('.bpill:not(.big)')), 'no Skip button: the arrows do the moving');
   check((await pg.$$('.bst.ok')).length === 2, 'two bricks built');
-  await tap(pg, '.bcard >> text=Cozy');
+  check((await pg.$$('.bgrid .bcard')).length === 3 && !!(await pg.$('.btype')), 'the look: three random choices and a box to type your own');
+  await tap(pg, '.bgrid .bcard >> nth=0');
   check(!(await txt(pg, '.createpage')).includes('How long'), 'no how-long question: every game is 3 minutes');
-  check((await txt(pg, '.bh')) === 'What’s it called?', 'its name');
+  check((await q()) === 'What’s it called?', 'its name');
   check((await pg.$$('.bplaque')).length === 3, 'three name ideas, as lettered titles');
   check((await pg.getAttribute('.btype', 'maxlength')) === '24', 'a name holds 24 letters');
   await pg.fill('.btype', 'Firefly Jar');
   check((await txt(pg, '.bcount')) === '11 of 24 letters', 'letters counted: ' + (await txt(pg, '.bcount')));
   await shot(pg, '04-name');
   await tap(pg, '.bdown');
-  check((await txt(pg, '.bh')) === 'Anything else?', 'anything else');
+  check((await q()) === 'Anything else?', 'anything else');
   await pg.fill('.bwords', 'Catch the fireflies in a jar. When the jar is full it glows and they all fly free.');
   check((await txt(pg, '.bcount')) === '18 of 500 words', 'words counted: ' + (await txt(pg, '.bcount')));
   check((await txt(pg, '.bpill')) === 'Done', 'a clear way on from Anything else: a Done button');
   await shot(pg, '05-words');
   /* up one, and on again */
   await tap(pg, '.bst.ok:has-text("Its name")');
-  check((await txt(pg, '.bh')) === 'What’s it called?', 'tapping a brick goes back to that question');
+  check((await q()) === 'What’s it called?', 'tapping a brick goes back to that question');
   await tap(pg, '.bdown');
   await tap(pg, '.bdown');
-  check((await txt(pg, '.bh')) === 'Ready?', 'review');
+  check((await q()) === 'Ready?', 'review');
   check((await txt(pg, '.reqquote')).includes('jar is full'), 'their words, shown back');
   await shot(pg, '06-review');
   /* change one from the chips, and walk back down */
   await pg.click('.bst.ok:has-text("The look")'); await pg.waitForTimeout(500);
-  check((await txt(pg, '.bh')) === 'What does it look like?', 'tapping a chip goes back to that question');
-  await tap(pg, '.bcard >> text=Night');
-  check((await txt(pg, '.bh')) === 'What’s it called?', 'and carries on down');
+  check((await q()) === 'What does it look like?', 'tapping a chip goes back to that question');
+  await tap(pg, '.bgrid .bcard >> nth=1');
+  check((await q()) === 'What’s it called?', 'and carries on down');
   await tap(pg, '.bdown'); await tap(pg, '.bdown');
-  check((await txt(pg, '.bh')) === 'Ready?', 'back at the review');
-  check((await txt(pg, '.bsum .bnote')).includes('starry night'), 'the change is there');
+  check((await q()) === 'Ready?', 'back at the review');
+  const lookSaid = (await txt(pg, '.bst.ok:has-text("The look") small')).toLowerCase();
+  check(!!lookSaid && (await txt(pg, '.bsum .bnote')).toLowerCase().includes(lookSaid), 'the change is there: ' + lookSaid);
   check((await pg.$$('.bst.ok')).length === 5, 'every brick built, only Ready left');
   await tap(pg, '.bpill >> text=Send it');
   await pg.waitForSelector('.bsent', { timeout: 5000 });
@@ -129,17 +132,20 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   check(list.requests.length === 1 && list.requests[0].family === 'Uncle B', 'the owner has it, from Uncle B');
   check(/dragon/.test(list.requests[0].sentence) && !/minutes|ages/.test(list.requests[0].sentence) && list.requests[0].recipe.view === 'hands', 'only what was decided is in the summary: ' + list.requests[0].sentence);
   await tap(pg, '.bpill >> text=Make another');
-  check((await txt(pg, '.bh')) === 'What do you do?', 'Make another starts a fresh flow');
+  check((await q()) === 'What do you do?', 'Make another starts a fresh flow');
   /* leave half way and come back: always the first question, nothing kept */
   await tap(pg, '.bcard >> text=Pop');
   await goTo(pg, 'Play'); await pg.waitForTimeout(1500);
   await goTo(pg, 'Create'); await pg.waitForSelector('.builder'); await pg.waitForTimeout(1200);
-  check((await txt(pg, '.bh')) === 'What do you do?' && (await pg.$$('.bst.ok')).length === 0, 'back on Create it always opens on the first question');
+  check((await q()) === 'What do you do?' && (await pg.$$('.bst.ok')).length === 0, 'back on Create it always opens on the first question');
 
   log('\n3. A quick one (pop something, move on past the rest), then it shows on Play under construction');
   await tap(pg, '.bcard >> text=Pop');
-  for (let i = 0; i < 4; i++) await tap(pg, '.bdown');
-  check((await txt(pg, '.bh')) === 'Ready?', 'every optional question can be moved past: ' + (await txt(pg, '.bsum .bnote')).slice(0, 90));
+  await tap(pg, '.bdown');
+  await pg.fill('.btype', 'purple clouds');
+  for (let i = 0; i < 3; i++) await tap(pg, '.bdown');
+  check((await txt(pg, '.bsum .bnote')).includes('The look: purple clouds.'), 'a look they typed goes in the summary');
+  check((await q()) === 'Ready?', 'every optional question can be moved past: ' + (await txt(pg, '.bsum .bnote')).slice(0, 90));
   await tap(pg, '.bpill >> text=Send it');
   await pg.waitForSelector('.bsent');
   await tap(pg, '.bpill >> text=See it on Play');

@@ -56,3 +56,12 @@ test('the look is in the sentence, the same on both sides, and only a known one 
   assert.equal(tidy({ ...fireflies, look: 'nonsense' }).look, null);
   assert.ok(!/The look/.test(sentence(fireflies)), 'no look picked: nothing said');
 });
+
+test('a look they typed is said the same way on both sides, and the picked ones are the server\'s too', () => {
+  const r = { ...fireflies, look: null, lookText: 'purple clouds' };
+  assert.match(sentence(r), /The look: purple clouds\.$/);
+  assert.equal(sentence(r), serverSentence(tidy(r)));
+  assert.equal(tidy({ ...fireflies, lookText: 'x'.repeat(90) }).lookText.length, 30);
+  for (const k of Object.keys(LOOKS)) assert.equal(sentence({ ...fireflies, look: k }), serverSentence(tidy({ ...fireflies, look: k })), k);
+  assert.ok(Object.keys(LOOKS).length >= 9, 'enough looks for three rounds of three');
+});

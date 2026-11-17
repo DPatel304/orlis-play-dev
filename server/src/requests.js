@@ -41,7 +41,8 @@ export const TWISTS = {
   together: 'the players work together', helper: 'a friendly helper', silly: 'silly sounds', story: 'a little story'
 };
 /* the look and feel: a word the prompt can use, and the sentence's */
-export const LOOKS = { sunny: 'sunny and bright', cozy: 'warm and cozy', night: 'a starry night', candy: 'sweet candy colours', ocean: 'cool ocean blues' };
+export const LOOKS = { sunny: 'sunny and bright', cozy: 'warm and cozy', night: 'a starry night', candy: 'sweet candy colours', ocean: 'cool ocean blues',
+  forest: 'a green forest', space: 'outer space', rainbow: 'rainbow colours', snow: 'a snowy world', jungle: 'a jungle', sunset: 'a golden sunset', garden: 'a flower garden', party: 'a party' };
 export const CHIPS = {
   easier: 'make it easier', harder: 'make it harder', slower: 'make it slower', faster: 'make it faster', sillier: 'make it sillier',
   longer: 'make it last longer', two: 'add a second player', colours: 'use different colours'
@@ -72,6 +73,7 @@ export function tidy(r = {}){
     minutes: [2, 3, 5, 10].includes(Number(r.minutes)) ? Number(r.minutes) : 3,
     players: [1, 2].includes(Number(r.players)) ? Number(r.players) : 2,
     look: LOOKS[r.look] ? r.look : null,
+    lookText: text(r.lookText, 30),
     words: wordsOf(r.words)
   };
   if (out.start !== 'like') out.like = null;
@@ -88,7 +90,7 @@ export function problems(r, { likeName = null } = {}){
     if (r.start !== 'like' && !r.action) p.push('Pick what you do in it.');
   }
   if (count(r.words) > LIMITS.words) p.push(`That’s more than ${LIMITS.words} words - say it a little shorter.`);
-  const said = badWords([r.name, r.thing, r.place, r.words].filter(Boolean).join('\n'));
+  const said = badWords([r.name, r.thing, r.place, r.lookText, r.words].filter(Boolean).join('\n'));
   if (said.length) p.push('Some of those words aren’t for a children’s game - try saying it another way.');
   return p;
 }
@@ -105,7 +107,7 @@ export function sentence(r, { likeName = null, gameName = null } = {}){
     ? `Like ${likeName}${r.action ? `, but you ${ACTIONS[r.action].does(thing)}` : r.thing ? `, but with ${thing}` : ''}${place}.`
     : `A ${r.view === 'character' ? 'third-person' : 'first-person'} ${r.action ? ACTIONS[r.action].label.toLowerCase() : ''} game: you ${r.action ? ACTIONS[r.action].does(thing) : 'play'}${place}.`;
   return [head.replace('  ', ' '), extra.length ? `${extra.join('; ').replace(/^./, c => c.toUpperCase())}.` : '',
-    r.look ? `The look: ${LOOKS[r.look]}.` : ''].filter(Boolean).join(' ');
+    (LOOKS[r.look] || r.lookText) ? `The look: ${LOOKS[r.look] || r.lookText}.` : ''].filter(Boolean).join(' ');
 }
 
 /* The prompt for Claude Code, from the request. The person's own words are
@@ -124,7 +126,7 @@ Make just that change and keep everything else about the game the same. Leave it
     : 'First person: the players don\'t see themselves; their hands are glowing mitts on the screen - like Pop Party.';
   return `Read CLAUDE.md first, then make ${r.start === 'like' && likeName ? `game.js (it's ${likeName} now) into this game` : 'this game in game.js'}, for Orlis Play.
 
-The game: ${sum}${r.view ? `\n\nHow it's seen: ${view}` : ''}${r.action ? `\n\nThe main thing you do: ${ACTIONS[r.action].label}.${ACTIONS[r.action].like ? ` (Orlis Play's ${ACTIONS[r.action].like} does something similar, if it helps to think of it.)` : ''}` : ''}${r.name ? `\n\nIts name: ${r.name}.` : ''}${r.look ? `\n\nThe look and feel: ${LOOKS[r.look]} - the colours and mood of its world and its icon.` : ''}${quote(r.words)}
+The game: ${sum}${r.view ? `\n\nHow it's seen: ${view}` : ''}${r.action ? `\n\nThe main thing you do: ${ACTIONS[r.action].label}.${ACTIONS[r.action].like ? ` (Orlis Play's ${ACTIONS[r.action].like} does something similar, if it helps to think of it.)` : ''}` : ''}${r.name ? `\n\nIts name: ${r.name}.` : ''}${(LOOKS[r.look] || r.lookText) ? `\n\nThe look and feel: ${LOOKS[r.look] || r.lookText} - the colours and mood of its world and its icon.` : ''}${quote(r.words)}
 
 Keep it simple and fun for young children, in Orlis Play's house style, with nothing to lose and nothing scary. Fill in orlis.json (a name, a blurb, about, the moves, an icon, and a cover: a picture of the game, as the SKILL describes). When it's done, the game must pass Orlis Play's checks.`;
 }
