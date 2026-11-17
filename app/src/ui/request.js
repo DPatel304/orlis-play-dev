@@ -203,7 +203,8 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     const o = order();
     const wrap = h('div', 'bblue' + (r.action ? ' made' : ''));
     if (r.action){
-      const cv = document.createElement('canvas'); cv.width = 640; cv.height = 400; cv.className = 'bcv';
+      const cv = document.createElement('canvas'); cv.width = 640; cv.height = 400; cv.className = 'bcv' + (blueMade ? '' : ' pop');
+      blueMade = true;
       const cols = LOOK_COLS[r.look] || HUES[Object.keys(ACTIONS).indexOf(r.action) % HUES.length];
       try { previewCover(cv, { name: r.name.trim() || 'Your game', cols, glyph: artOf(r.thing, r.action) }); } catch (e){}
       wrap.appendChild(cv);
@@ -220,7 +221,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
       const state = s === step ? 'now' : k <= reach && k < i ? 'ok' : k <= reach ? 'ok' : 'todo';
       const [ico] = chipOf(s);
       const done = state === 'ok';
-      const row = button(`<span class="bdot" style="${done ? `background:${BRICK[k % BRICK.length]}` : ''}">${done || s === step ? ico : '?'}</span><span class="bt">${esc(STEP_TITLE(s))}<small>${s === step ? 'building…' : done ? esc(ANSWER(s)) : ''}</small></span>`, 'bst ' + state + (landed === s ? ' land' : ''));
+      const row = button(`<span class="bdot" style="${done ? `background:${BRICK[k % BRICK.length]}` : ''}">${ico}</span><span class="bt">${esc(STEP_TITLE(s))}<small>${s === step ? 'building…' : done ? esc(ANSWER(s)) : ''}</small></span>`, 'bst ' + state + (landed === s ? ' land' : ''));
       if (done) onPick(row, () => { if (!busy) go(s); });
       else row.tabIndex = -1;
       list.appendChild(row);
@@ -228,7 +229,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     side.appendChild(list);
     return side;
   };
-  let landed = null, busy = false;
+  let landed = null, busy = false, blueMade = !!r.action && !!r.at && r.at !== 'action';
   /* an answer is built into the list: its card lifts off, flies across and lands as a brick; then the next question rises */
   function fly(el){
     const to = root.querySelector('.bst.now .bdot');
@@ -256,24 +257,25 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     fly(el).then(() => { busy = false; landed = step; sfx.select?.(); next(); });
   };
 
-  async function draw(){
+  async function draw({ keepSide = false } = {}){
     const was = root.querySelector('.bq');
-    const keepLanded = landed;
+    const side = keepSide ? root.querySelector('.bside') : null;
     root.innerHTML = '';
-    const o = order(), i = o.indexOf(step);
+    const o = order();
     const main = h('div', 'bmain');
-    const body = h('div', 'bq' + (was ? ' in' : ''));
+    /* (a refresh redraws just the ideas: no rising, and the game on the right stays as it is) */
+    const body = h('div', 'bq' + (was && !keepSide ? ' in' : ''));
     main.appendChild(body);
     body.append(h('h1', 'bh', esc(question(step))));
-    root.append(main, panel());
+    root.append(main, side || panel());
     landed = null;
     await fill(step, body);
-    /* what comes next, faintly */
-    if (i < o.length - 1 && step !== 'review') main.appendChild(h('div', 'bnext', `<span>⬇</span> Next: ${esc(STEP_TITLE(o[i + 1]))}`));
-    /* Skip (nothing picked) or Next (something typed) */
+    /* Skip (nothing picked) or Next (something typed): beside the box you type in, else under the cards */
     if (optional(step) && step !== 'review'){
       const p = button(answered(step) ? 'Next' : 'Skip', 'bpill ' + (answered(step) ? 'go' : 'skip'));
-      onPick(p, next); main.appendChild(p); root._pill = p;
+      onPick(p, next);
+      const typed = body.querySelector('.btyped');
+      (typed || main).appendChild(p); root._pill = p;
     }
     onOpen();
   }
@@ -328,7 +330,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     if (s === 'thing'){
       const pool = r.action ? poolFor(r.action) : ['fireflies', 'balloons', 'fish', 'a dragon', 'snowflakes', 'stars'];
       const input = typer(r.thing, 'Or type your own…', 60, (v) => { set({ thing: v }); pillNow('thing'); refreshSide(); }, next);
-      suggest(body, ideas(pool, round.thing), (t, el) => { set({ thing: t }); advance(el); }, () => { round.thing++; draw(); }, { current: r.thing, input });
+      suggest(body, ideas(pool, round.thing), (t, el) => { set({ thing: t }); advance(el); }, () => { round.thing++; draw({ keepSide: true }); }, { current: r.thing, input });
     }
     if (s === 'look'){
       const grid = h('div', 'bgrid n5');
@@ -348,7 +350,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
       const tally = (n) => { left.textContent = `${n} of ${NAME_MAX} letters`; };
       const input = typer(r.name, 'Or type your own…', NAME_MAX, (v) => { set({ name: v }); tally(v.length); pillNow('name'); refreshSide(); }, next);
       tally(r.name.length);
-      suggest(body, ideas(nameIdeas(r), round.name), (t, el) => { set({ name: t }); advance(el); }, () => { round.name++; draw(); }, { cover: true, current: r.name, input });
+      suggest(body, ideas(nameIdeas(r), round.name), (t, el) => { set({ name: t }); advance(el); }, () => { round.name++; draw({ keepSide: true }); }, { cover: true, current: r.name, input });
       body.appendChild(left);
     }
     if (s === 'words'){

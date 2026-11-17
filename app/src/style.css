@@ -1637,7 +1637,8 @@ textarea.btype.bwords{ width:62vw; height:26vh; border-radius:3vh; padding:2.4vh
 .bblue.made{ border-style:solid; border-color:transparent; box-shadow:0 1vh 2.4vh rgba(20,24,50,.2); }
 .bgridbg{ position:absolute; inset:0; background-image:linear-gradient(#cfdcfb 1px, transparent 1px), linear-gradient(90deg, #cfdcfb 1px, transparent 1px); background-size:2.6vh 2.6vh; opacity:.8; }
 .bcrane{ position:relative; font-size:9vh; }
-.bcv{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; animation:bpop .5s cubic-bezier(.2,.9,.3,1.3) both; }
+.bcv{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.bcv.pop{ animation:bpop .5s cubic-bezier(.2,.9,.3,1.3) both; }
 @keyframes bpop{ from{ transform:scale(.92); opacity:.4; } to{ transform:none; opacity:1; } }
 .bbadge{ position:absolute; right:1.2vh; top:1.2vh; background:#ffd24a; color:#16161d; font-weight:800; font-size:1.7vh; padding:.6vh 1.4vh; border-radius:99px; transform:rotate(4deg); z-index:2; }
 .bsteps{ position:relative; margin-top:2vh; }
@@ -1659,3 +1660,11 @@ textarea.btype.bwords{ width:62vw; height:26vh; border-radius:3vh; padding:2.4vh
 @keyframes bpulse{ 0%,100%{ box-shadow:0 0 0 .5vh rgba(109,94,252,.2); } 50%{ box-shadow:0 0 0 1vh rgba(109,94,252,.1); } }
 @media (max-width: 900px){ .builder{ grid-template-columns:1fr; } .bside{ position:static; } }
 .btn.bst.todo .bdot{ color:#c8cde0; font-size:2.4vh; }
+
+/* the steps still to come: soft tiles with the step's picture faded back, like the rest of the UI (no dashes) */
+.btn.bst.todo .bdot{ border:0; background:#eef0f6; font-size:3vh; box-shadow:none; filter:grayscale(1); opacity:.55; }
+.btn.bst.todo .bt{ color:#aab0c4; }
+.bsteps:before{ background:#eceef5; z-index:0; }
+.bmain .btyped{ align-items:center; gap:2vh; }
+.bmain .btyped .btn.bpill{ margin:0; height:7vh; padding:0 4vh; font-size:2.6vh; }
+.bmain > .btn.bpill{ align-self:flex-start; margin-top:3vh; height:7vh; padding:0 4vh; font-size:2.6vh; }
