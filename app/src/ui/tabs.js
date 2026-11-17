@@ -1,9 +1,9 @@
 /* The top bar every page shares - Play, the Store and Create, like the Apple
    TV's: the Orlis Play name (and who's playing) on the left, the three tabs
-   in the middle, and the clock and the corner menu on the right.
+   in the middle, and who's playing and the corner menu on the right.
 
    topBar(page, nav, opts) gives { el, tick() }: put el on the page and call
-   tick() each frame (it keeps the clock right). nav has home(), store() and
+   tick() each frame. nav has home(), store() and
    create(); the tab for the page you're on is just a label. */
 import { button, onPick } from './cursor.js';
 import { screen, h } from './screens.js';
@@ -63,8 +63,10 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
   /* who's playing (in the Windows app): their picture and name, and picking
      it goes back to "Who's playing?" */
   const who = account.current;
+  let whoChip = null;
   if (who && onWho){
-    brand.appendChild(withFace(onPick(button(`<span class="av">${AVATARS[who.avatar] || AVATARS.cube}</span><span class="nm">${who.name.replace(/[&<>]/g, '')}</span>`, 'whochip'), () => { sfx.select(); onWho(); }), who, 64));
+    /* (on the right, beside the menu) */
+    whoChip = (withFace(onPick(button(`<span class="av">${AVATARS[who.avatar] || AVATARS.cube}</span><span class="nm">${who.name.replace(/[&<>]/g, '')}</span>`, 'whochip'), () => { sfx.select(); onWho(); }), who, 64));
   }
   /* One page: Play has no tabs - Discover and Create are reached from its
      rows and the corner menu; on those, one way back to Play. */
@@ -78,13 +80,13 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
     .map(([id, name]) => ({ id, name, go: () => { if (isBusy()) return; keepBanner(top); nav[id](); } }));
   /* (no camera light here: the camera's off on these pages on purpose, and
      Home says so plainly if there's no camera at all) */
-  const clock = h('span', 'clock', '');
+  /* (no clock: who's playing sits there instead) */
   let menuOpen = null;
   const burger = onPick(button('<span class="bars"><i></i><i></i><i></i></span>', 'burger'), () => {
     if (menuOpen || isBusy()) return;
     menuOpen = cornerMenu({ onRecalibrate, places, onFamily: nav.family && account.signedIn ? nav.family : null, onClosed: () => { menuOpen = null; } });
   });
-  const sys = h('div', 'tvsys'); sys.append(clock, burger);
+  const sys = h('div', 'tvsys'); if (whoChip) sys.append(whoChip); sys.append(burger);
   top.append(brand, tabs, sys);
 
   /* the highlight, one pill under the tabs, sliding from the last one */
@@ -114,16 +116,10 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
     });
   }
 
-  let since = 1;
   return {
     el: top,
     get menuOpen(){ return !!menuOpen; },
-    tick(dt = 0){
-      since += dt;
-      if (since < 1 && clock.textContent) return;
-      since = 0;
-      clock.textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    }
+    tick(){}
   };
 }
 
