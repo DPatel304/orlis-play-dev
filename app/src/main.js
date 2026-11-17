@@ -2,7 +2,7 @@ import './old-names.js';   /* (first: the old Astra Park settings, moved to thei
 import { toast } from './ui/toast.js';
 import { pose } from './tracking/pose.js';
 import { cursor, inFront } from './ui/cursor.js';
-import { menu, toggleFullscreen, openSettings } from './ui/menu.js';
+import { menu, toggleFullscreen, openSettings, played as playedLately } from './ui/menu.js';
 import { remote, typing } from './ui/remote.js';
 import { account, welcome } from './ui/account.js';
 import { installTitlebar, titlebarPlaying } from './ui/titlebar.js';
@@ -126,6 +126,7 @@ function toCalibration(){
    anything stopping. */
 function toGame(g){
   game = g;
+  playedLately(g.id);
   ambience.stop();
   players = pose.cap;
   /* The camera first, if it's off: a moment's "Starting the camera" (the

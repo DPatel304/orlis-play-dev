@@ -92,6 +92,26 @@ const LAST = 'orlis.lastGame';
 let lastFocus = null;
 const remembered = () => { try { return localStorage.getItem(LAST); } catch { return null; } };
 const remember = (id) => { try { localStorage.setItem(LAST, id); } catch {} };
+/* What's been played lately, newest first (Jump back in). */
+const RECENT = 'orlis.recent';
+export const recent = () => { try { const r = JSON.parse(localStorage.getItem(RECENT)); return Array.isArray(r) ? r : []; } catch { return []; } };
+export function played(id){ try { localStorage.setItem(RECENT, JSON.stringify([id, ...recent().filter(x => x !== id)].slice(0, 8))); } catch {} }
+/* Featured: games from Discover first (newest), then these. */
+export const FEATURED = ['pop-party', 'sky-painter', 'last-known-position', 'stack-it-high', 'sleepy-bear', 'leaf-pile'];
+/* Play's rows, from the games on this PC: Jump back in (if anything's been
+   played), Featured (once there are enough games for it to mean something),
+   and All, A-Z. The same game can be in more than one. */
+export function playRows(pool, lately = recent()){
+  const byId = new Map(pool.map(g => [g.id, g])), rows = [];
+  const back = lately.map(id => byId.get(id)).filter(Boolean).slice(0, 6);
+  if (back.length) rows.push({ id: 'back', title: 'Jump back in', games: back });
+  if (pool.length > 3){
+    const feat = [...pool.filter(g => g.store), ...FEATURED.map(id => byId.get(id)).filter(Boolean)];
+    rows.push({ id: 'featured', title: 'Featured', games: feat.filter((g, i) => feat.indexOf(g) === i).slice(0, 6) });
+  }
+  rows.push({ id: 'all', title: 'All', games: [...pool].sort((a, b) => a.name.localeCompare(b.name)) });
+  return rows;
+}
 const HOVER_FOCUS = 0.05;      /* seconds of a hand on a tile to pick it (the cursor's already sticky) */
 const LAUNCH = 0.5;            /* seconds of going in */
 const POINT_AGAIN = 0.04;      /* how far (of the screen) a hand moves to take over from the remote */
@@ -116,7 +136,15 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
   const items = [];
   /* (waiting to be let in: the starter games only) */
   const waiting = account.waiting;
-  for (const g of GAMES) if (!HIDDEN.has(g.id) && (!waiting || STARTER_GAMES.includes(g.id))) items.push({ kind: 'game', g, shelf: 'games', accent: iconOf(g).cols[0], icon: iconOf(g), name: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '', paint: poster(g), trailer: undefined });
+  const pool = GAMES.filter(g => !HIDDEN.has(g.id) && (!waiting || STARTER_GAMES.includes(g.id)));
+  const ROWS = pool.length ? playRows(pool) : [];
+  /* (one picture and one trailer per game, wherever it shows up) */
+  const paints = new Map(), trailers = new Map();
+  const entry = (g, shelf) => {
+    if (!paints.has(g.id)) paints.set(g.id, poster(g));
+    return { kind: 'game', g, shelf, accent: iconOf(g).cols[0], icon: iconOf(g), name: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '', paint: paints.get(g.id) };
+  };
+  ROWS.forEach((r, k) => { for (const g of r.games) items.push(entry(g, k)); });
 
   /* the banner: the game you're on, playing itself, right across the top -
      the same banner as the Store's and Create's */
@@ -147,40 +175,73 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
   const shelves = h('div', 'shelves'), wrap = h('div', 'shelfwrap');
   shelves.appendChild(wrap); s.appendChild(shelves);
   const rows = [];
-  for (const id of ['games']){
-    const list = items.map((it, n) => ({ it, n })).filter(({ it }) => it.shelf === id);
+  for (let k = 0; k < ROWS.length; k++){
+    const list = items.map((it, n) => ({ it, n })).filter(({ it }) => it.shelf === k);
     if (!list.length) continue;
     const sec = h('section', 'shelf');
     const row = h('div', 'shelfrow');
-    sec.append(h('h3', '', 'Your games'), row);
+    sec.append(h('h3', '', ROWS[k].title), row);
     wrap.appendChild(sec);
     rows.push({ sec, row, ns: list.map(({ n }) => n) });
     for (const { it, n } of list) items[n].rowAt = rows.length - 1;
   }
-  const cards = items.map((it, n) => {
-    /* the same card as the Store's: the game's art, then its icon and name */
+  /* a game's card: its art, and its name under it, big enough to read
+     from the sofa (no icon - the art says it - and no small print) */
+  const gameCard = (it) => {
     const card = button('', 'slock');
     card.style.setProperty('--accent', it.accent);
     const L = looks({ id: it.g.id, icon: it.g.store && it.g.store.icon });
     const pic = L.art('sthumb');
-    const meta = h('div', 'smeta');
-    meta.append(L.icon('sicon'), h('div', 'stxt', `<div class="nm"></div><div class="sub">${howMany(it.g)}</div>`));
+    const meta = h('div', 'smeta', '<div class="stxt"><div class="nm"></div></div>');
     meta.querySelector('.nm').textContent = it.name;
     card.insertBefore(pic, card.firstChild);
     card.querySelector('.lbl').replaceWith(meta);
+    return { card, pic };
+  };
+  const cards = items.map((it, n) => {
+    const { card, pic } = gameCard(it);
     onPick(card, () => choose(n));
     card.addEventListener('mouseenter', () => { if (!going && !bar.menuOpen) move(n); });
     card.addEventListener('remotefocus', () => move(n));
     rows[it.rowAt].row.appendChild(card);
     return { card, pic, paint: it.paint, hot: 0, it, still: false };
   });
-  /* the way to more: the Store, at the end of the row */
-  if (nav.store && rows.length){
-    const more = button('', 'slock addtile');
-    more.insertBefore(h('div', 'sthumb', '<span class="plus">+</span>'), more.firstChild);
-    more.querySelector('.lbl').replaceWith(h('div', 'smeta', '<div class="stxt"><div class="nm">Get more games</div><div class="sub">Opens Discover</div></div>'));
-    onPick(more, () => { if (going) return; sfx.select(); nav.store(); });
-    rows[0].row.appendChild(more);
+  const extraTile = (glyph, name, fn) => {
+    const t = button('', 'slock addtile');
+    t.insertBefore(h('div', 'sthumb', `<span class="plus">${glyph}</span>`), t.firstChild);
+    t.querySelector('.lbl').replaceWith(h('div', 'smeta', `<div class="stxt"><div class="nm">${name}</div></div>`));
+    onPick(t, () => { if (going) return; sfx.select(); fn(); });
+    return t;
+  };
+  /* the end of All: every game at once, with filters - and more, in Discover */
+  if (rows.length){
+    const last = rows[rows.length - 1].row;
+    last.appendChild(extraTile('<span class="gridglyph"><i></i><i></i><i></i><i></i></span>', 'See all', () => allGames()));
+    if (nav.store) last.appendChild(extraTile('+', 'Get more games', () => nav.store()));
+  }
+
+  /* All games: a grid of every game, with a filter along the top */
+  function allGames(){
+    const g = screen('dim allgames');
+    const grid = h('div', 'allgrid'), chips = h('div', 'allchips');
+    const close = onPick(button('←', 'cardicon close allback'), () => { sfx.back?.(); g.remove(); remote.mark(cards[focus].card); });
+    close.title = 'Back'; close.setAttribute('aria-label', 'Back');
+    g.append(h('div', 'allhead'), chips, grid);
+    g.firstChild.append(close, h('h2', '', 'All games'));
+    const allRow = ROWS.length - 1;
+    const sets = [['All', ROWS[allRow].games], ...ROWS.slice(0, allRow).map(r => [r.title, r.games])];
+    const fill = (k) => {
+      [...chips.children].forEach((c, i) => c.classList.toggle('on', i === k));
+      grid.innerHTML = '';
+      for (const game of sets[k][1]){
+        const n = items.findIndex(x => x.shelf === allRow && x.g === game);
+        const { card } = gameCard(items[n]);
+        onPick(card, () => { g.remove(); choose(n); });
+        grid.appendChild(card);
+      }
+    };
+    sets.forEach(([t], k) => chips.appendChild(onPick(button(t, 'allchip'), () => { sfx.select?.(); fill(k); })));
+    fill(0);
   }
   /* (which build this is: in the Beta, and while it's being made - not in
      the released app) */
@@ -188,7 +249,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
   if (beta) s.appendChild(h('div', 'buildstamp', typeof __BUILD__ === 'string' ? __BUILD__ : 'dev'));
 
   let scrollY = 0;
-  if (lastFocus === null) lastFocus = Math.max(0, items.findIndex(it => it.g.id === remembered()));
+  /* (by game, not place: the rows change as games are played) */
+  lastFocus = Math.max(0, items.findIndex(it => it.g.id === remembered()));
   let focus = Math.min(lastFocus, items.length - 1), t = 0, going = null, flown = !arrive;
   /* After the remote's used, pointing takes over again only once a hand (or
      the mouse) actually moves - not because the rows slid under one that's
@@ -258,7 +320,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
       bar.tick(dt);
       /* the banner's trailer: the picked game, playing itself */
       const it = items[focus];
-      if (it.trailer === undefined) it.trailer = trailer(it.g);
+      if (it.trailer === undefined){ if (!trailers.has(it.g.id)) trailers.set(it.g.id, trailer(it.g)); it.trailer = trailers.get(it.g.id); }
       if (it.trailer && !going){
         it.trailer.step(Math.min(dt, 1 / 20), TW, TH);
       }
