@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sentence, changeSentence, ACTIONS, TWISTS, CHIPS } from '../src/ui/request.js';
-import { sentence as serverSentence, tidy, ACTIONS as SA, TWISTS as ST, CHIPS as SC } from '../../server/src/requests.js';
+import { sentence, changeSentence, ACTIONS, TWISTS, CHIPS, LOOKS } from '../src/ui/request.js';
+import { sentence as serverSentence, tidy, ACTIONS as SA, TWISTS as ST, CHIPS as SC, LOOKS as SL } from '../../server/src/requests.js';
 
 const fireflies = { start: 'new', view: 'hands', action: 'catch', thing: 'fireflies', place: 'a meadow at night', twists: ['faster', 'golden'], ages: '4-6', energy: 'calm', minutes: 5, players: 2, words: '' };
 
@@ -20,5 +20,14 @@ test('the same choices as the server, so nothing picked is turned away', () => {
   assert.deepEqual(Object.keys(ACTIONS), Object.keys(SA));
   assert.deepEqual(Object.keys(TWISTS), Object.keys(ST));
   assert.deepEqual(Object.keys(CHIPS), Object.keys(SC));
+  assert.deepEqual(LOOKS, SL);
   assert.equal(changeSentence('Firefly Jar', ['slower'], ''), 'A change to Firefly Jar: make it slower.');
+});
+
+test('the look is in the sentence, the same on both sides, and only a known one is kept', () => {
+  const r = { ...fireflies, look: 'night' };
+  assert.match(sentence(r), /The look: a starry night\.$/);
+  assert.equal(sentence(r), serverSentence(tidy(r)));
+  assert.equal(tidy({ ...fireflies, look: 'nonsense' }).look, null);
+  assert.ok(!/The look/.test(sentence(fireflies)), 'no look picked: nothing said');
 });

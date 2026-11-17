@@ -28,7 +28,7 @@ import { unpack, check, build, pack, nextVersion } from './creator-kit.js';
 import { newer } from './store.js';
 import { library } from './library.js';
 import { PAPER } from './boot.js';
-import { requestWizard, changePop } from './request.js';
+import { gameBuilder, changePop } from './request.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* how a requested game is going, as whoever asked sees it */
@@ -87,6 +87,9 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   const btns = h('div', 'sbtns');
   text.append(btns);
   scroll.appendChild(hero);
+  /* where Make a game builds, between the banner and the rest (the banner shrinks while it's open) */
+  const buildHost = h('div', 'cbuild');
+  scroll.appendChild(buildHost);
   const body = h('div', 'cbody');
   scroll.appendChild(body);
   const sbtn = (label, fn, cls) => onPick(button(label, 'sbtn ' + cls), fn);
@@ -357,6 +360,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   const sendAsk = (recipe) => account.call('POST', '/api/requests', recipe).then((r) => { said = 'Sent!'; return r; });
   const store_ = async () => { try { return (await account.call('GET', '/api/store')).games || []; } catch { return []; } };
   let slots = null;              /* { used, total } game slots (none for the owner) */
+  let building = null;           /* the builder, while it's open */
   function askPop(){
     sfx.select(); closePop();
     if (slots && slots.used >= slots.total){
@@ -364,7 +368,12 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
       card.lastChild.append(btn('OK', () => { sfx.select(); closePop(); }, 'go'));
       return;
     }
-    requestWizard({ store: store_, send: sendAsk, onDone: () => draw() });
+    if (building) { scroll.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    building = gameBuilder({
+      host: buildHost, store: store_, send: sendAsk,
+      onOpen: () => { hero.classList.add('mini'); s.classList.add('building'); scroll.scrollTo({ top: 0, behavior: 'smooth' }); },
+      onDone: () => { building = null; hero.classList.remove('mini'); s.classList.remove('building'); draw(); }
+    });
   }
 
   /* a row, the Store's way: its name, then what's in it */

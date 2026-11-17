@@ -10,6 +10,7 @@
        name: optional, view: 'hands' | 'character', action: one of ACTIONS,
        thing, place, twists: up to two of TWISTS, ages: '2-3' | '4-6' | '7+',
        energy: 'calm' | 'bouncy' | 'wild', minutes: 2 | 5 | 10, players: 1 | 2,
+       look: optional, one of LOOKS (the colours and feel),
        words: their own description, up to 500 words }
    A change: { change: a game id of theirs in the Store, chips: of CHIPS, words }
 
@@ -39,6 +40,8 @@ export const TWISTS = {
   faster: 'it gets a little faster as it goes', surprise: 'a big surprise at the end', golden: 'a golden one now and then, worth extra',
   together: 'the players work together', helper: 'a friendly helper', silly: 'silly sounds', story: 'a little story'
 };
+/* the look and feel: a word the prompt can use, and the sentence's */
+export const LOOKS = { sunny: 'sunny and bright', cozy: 'warm and cozy', night: 'a starry night', candy: 'sweet candy colours', ocean: 'cool ocean blues' };
 export const CHIPS = {
   easier: 'make it easier', harder: 'make it harder', slower: 'make it slower', faster: 'make it faster', sillier: 'make it sillier',
   longer: 'make it last longer', two: 'add a second player', colours: 'use different colours'
@@ -68,6 +71,7 @@ export function tidy(r = {}){
     energy: oneOf(r.energy, ['calm', 'bouncy', 'wild'], 'bouncy'),
     minutes: [2, 5, 10].includes(Number(r.minutes)) ? Number(r.minutes) : 5,
     players: [1, 2].includes(Number(r.players)) ? Number(r.players) : 2,
+    look: LOOKS[r.look] ? r.look : null,
     words: wordsOf(r.words)
   };
   if (out.start !== 'like') out.like = null;
@@ -103,7 +107,8 @@ export function sentence(r, { likeName = null, gameName = null } = {}){
     ? `Like ${likeName}${r.action ? `, but you ${ACTIONS[r.action].does(thing)}` : r.thing ? `, but with ${thing}` : ''}${place}.`
     : `A ${r.view === 'character' ? 'third-person' : 'first-person'} ${r.action ? ACTIONS[r.action].label.toLowerCase() : ''} game: you ${r.action ? ACTIONS[r.action].does(thing) : 'play'}${place}.`;
   return [head.replace('  ', ' '), extra.length ? `${extra.join('; ').replace(/^./, c => c.toUpperCase())}.` : '',
-    `For ages ${ages}, ${r.energy}, about ${r.minutes} minutes, ${r.players === 1 ? 'one player' : 'one or two players'}.`].filter(Boolean).join(' ');
+    `For ages ${ages}, ${r.energy}, about ${r.minutes} minutes, ${r.players === 1 ? 'one player' : 'one or two players'}.`,
+    r.look ? `The look: ${LOOKS[r.look]}.` : ''].filter(Boolean).join(' ');
 }
 
 /* The prompt for Claude Code, from the request. The person's own words are
@@ -122,7 +127,7 @@ Make just that change and keep everything else about the game the same. Leave it
     : 'First person: the players don\'t see themselves; their hands are glowing mitts on the screen - like Pop Party.';
   return `Read CLAUDE.md first, then make ${r.start === 'like' && likeName ? `game.js (it's ${likeName} now) into this game` : 'this game in game.js'}, for Orlis Play.
 
-The game: ${sum}${r.view ? `\n\nHow it's seen: ${view}` : ''}${r.action ? `\n\nThe main thing you do: ${ACTIONS[r.action].label}.${ACTIONS[r.action].like ? ` (Orlis Play's ${ACTIONS[r.action].like} does something similar, if it helps to think of it.)` : ''}` : ''}${r.name ? `\n\nIts name: ${r.name}.` : ''}${quote(r.words)}
+The game: ${sum}${r.view ? `\n\nHow it's seen: ${view}` : ''}${r.action ? `\n\nThe main thing you do: ${ACTIONS[r.action].label}.${ACTIONS[r.action].like ? ` (Orlis Play's ${ACTIONS[r.action].like} does something similar, if it helps to think of it.)` : ''}` : ''}${r.name ? `\n\nIts name: ${r.name}.` : ''}${r.look ? `\n\nThe look and feel: ${LOOKS[r.look]} - the colours and mood of its world and its icon.` : ''}${quote(r.words)}
 
 Keep it simple and fun for the ages given, in Orlis Play's house style, with nothing to lose and nothing scary. Fill in orlis.json (a name, a blurb, about, the moves, and an icon). When it's done, the game must pass Orlis Play's checks.`;
 }

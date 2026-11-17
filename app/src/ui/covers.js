@@ -201,6 +201,19 @@ export function banner(g){
   };
 }
 
+/* A stand-in card for a game that isn't made yet (Create's builder): the
+   chosen look's colours, a big symbol for what you do, and the title in one of
+   the cover styles - so it reads like the real thing will. */
+export function previewCover(canvas, { name = 'Your game', cols = ['#8b7cff', '#4cc3e8'], glyph = '' } = {}){
+  const c = canvas.getContext && canvas.getContext('2d'); if (!c) return;
+  const W = canvas.width, H = canvas.height;
+  const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, cols[0]); g.addColorStop(1, cols[1]); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(255,255,255,.16)';
+  for (const [x, y, r] of [[0.15, 0.25, 0.22], [0.82, 0.18, 0.16], [0.7, 0.78, 0.28], [0.3, 0.9, 0.12]]){ c.beginPath(); c.arc(W * x, H * y, H * r, 0, TAU); c.fill(); }
+  if (glyph){ c.save(); c.font = `${H * 0.42}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.globalAlpha = 0.95; c.fillText(glyph, W * 0.68, H * 0.42); c.restore(); }
+  TITLES.tilt(c, W, H, String(name || 'Your game').slice(0, 40), cols[1]);
+}
+
 export function makeCover(g, { still = null, accent = '#6d5efc', w = 960, h = 600 } = {}){
   if (typeof document === 'undefined') return null;
   const art = document.createElement('canvas'); art.width = w; art.height = h;

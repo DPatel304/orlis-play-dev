@@ -117,11 +117,11 @@ try {
 
   console.log('\n6. Their first game');
   await pg.click('.sbtn >> text=Make a game');
-  await pg.waitForSelector('.reqpop', { timeout: 20000 }); await wait(600);
-  check((await pg.textContent('.reqpop h2')).trim() === 'Make a game', 'Create opens on Make a game');
+  await pg.waitForSelector('.builder', { timeout: 20000 }); await wait(600);
+  check((await pg.textContent('.builder .bwhere')).trim() === 'Make a game', 'Create opens on Make a game');
   await pg.click('.reqtile >> text=Surprise me'); await wait(500);
   await pg.click('.reqfoot .btn.go >> text=Send request');
-  await pg.waitForSelector('.reqpop >> text=Sent!', { timeout: 8000 });
+  await pg.waitForSelector('.builder >> text=Sent!', { timeout: 8000 });
   await pg.click('.reqfoot .btn.go >> text=OK'); await wait(1200);
   const page = await body();
   check(/Your games/.test(page) && /Asked/.test(page), 'it’s in Your games: Asked');
