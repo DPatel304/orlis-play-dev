@@ -36,7 +36,7 @@ test('the closed beta: a page with one box; the owner approves; the email goes; 
   const dataDir = mkdtempSync(join(tmpdir(), 'orlis-beta-'));
   const said = [];
   const mail = mailer({ dataDir, connect: () => net.connect(smtp.port, '127.0.0.1') });
-  const s = await start({ dataDir, port: 0, discoveryPort: false, approveJoins: true, tailscaleJoin: () => false, mail, notify: (t, x) => said.push([t, x]),
+  const s = await start({ dataDir, port: 0, discoveryPort: false, approveJoins: true, betaPage: true, tailscaleJoin: () => false, mail, notify: (t, x) => said.push([t, x]),
     downloadUrl: 'https://example.com/Orlis-Play-Setup.exe' });
   const base = `http://127.0.0.1:${s.port}`;
   const call = async (method, path, body, token, manage) => {
@@ -98,4 +98,17 @@ test('the closed beta: a page with one box; the owner approves; the email goes; 
     const hist = (await call('GET', '/api/history', null, null, true)).history.map(x => x.what);
     for (const w of ['beta-requested', 'beta-approved', 'beta-declined']) assert.ok(hist.includes(w), w);
   } finally { await s.close(); smtp.close(); }
+});
+
+test('the closed beta\'s page is off unless the owner turns it on: the address shows nothing, and nobody can ask', async () => {
+  const s = await start({ dataDir: mkdtempSync(join(tmpdir(), 'orlis-beta-off-')), port: 0, discoveryPort: false, tailscaleJoin: () => false });
+  const base = `http://127.0.0.1:${s.port}`;
+  try {
+    assert.equal((await fetch(base + '/')).status, 404);
+    assert.equal((await fetch(base + '/beta')).status, 404);
+    const ask = await fetch(base + '/api/beta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'sam@example.com' }) });
+    assert.equal(ask.status, 404);
+    /* (the owner's side still works: they can approve an email themselves) */
+    assert.equal((await fetch(base + '/api/beta')).status, 401);
+  } finally { await s.close(); }
 });

@@ -5,7 +5,7 @@
    They install Orlis Play and make an account with that email - and since
    it's approved, they're straight in (api.js), no waiting.
 
-     beta(db, { mail, log, notify, downloadUrl })   .routes(owner) .approved(email) .joined(email) */
+     beta(db, { mail, log, notify, downloadUrl, open })   .routes(owner) .approved(email) .joined(email) */
 import { Fail, Page } from './http.js';
 import { history } from './history.js';
 
@@ -13,7 +13,7 @@ const EMAIL = /^[^\s@<>"]{1,64}@[^\s@<>"]{1,190}\.[^\s@<>"]{2,}$/;
 export const LIMITS = { perHour: 30, waiting: 500 };
 const now = () => new Date().toISOString();
 
-export function beta(db, { mail, log = history(db), notify = () => {}, downloadUrl }){
+export function beta(db, { mail, log = history(db), notify = () => {}, downloadUrl, open = false }){
   const q = (sql) => db.prepare(sql);
   const tidy = (e) => String(e || '').trim().toLowerCase();
 
@@ -49,10 +49,12 @@ export function beta(db, { mail, log = history(db), notify = () => {}, downloadU
     welcome,
     routes: (owner) => [
       /* the page anyone sees at the family's address */
-      ['GET', '/', () => new Page(page())],
-      ['GET', '/beta', () => new Page(page())],
+      /* (only when the owner has turned the page on: otherwise the address shows nothing) */
+      ['GET', '/', () => { if (!open) throw new Fail(404, 'not_found', 'Nothing here.'); return new Page(page()); }],
+      ['GET', '/beta', () => { if (!open) throw new Fail(404, 'not_found', 'Nothing here.'); return new Page(page()); }],
       /* asking to join the beta: an email, nothing else */
       ['POST', '/api/beta', ({ body }) => {
+        if (!open) throw new Fail(404, 'not_found', 'Nothing here.');
         const e = tidy(body && body.email);
         if (!EMAIL.test(e)) throw new Fail(400, 'email', 'That doesn’t look like an email address.');
         if (q('SELECT COUNT(*) AS n FROM beta WHERE created_at > ?').get(new Date(Date.now() - 3600e3).toISOString()).n >= LIMITS.perHour

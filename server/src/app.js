@@ -37,7 +37,7 @@ const BACKUP_LOOK = 60 * 60 * 1000, QUIET = 2 * 60 * 1000;
 /* restart(): how to start this server again (to finish a restore) - given
    when something's there to do it. status.update: what the updater last
    found, for the owner's page. */
-export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, approveJoins = false, downloadUrl = 'https://github.com/DPatel304/orlis-play-dev/releases/download/beta/Orlis-Play-Beta-Setup.exe', publicUrl = null, mail = null, internetPort = null, files = null, notify = null } = {}){
+export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, approveJoins = false, betaPage = false, downloadUrl = 'https://github.com/DPatel304/orlis-play-dev/releases/download/beta/Orlis-Play-Beta-Setup.exe', publicUrl = null, mail = null, internetPort = null, files = null, notify = null } = {}){
   mkdirSync(dataDir, { recursive: true });
   const safe = backups(dataDir, { version: VERSION });
   /* a restore the owner asked for, done before anything is opened */
@@ -64,7 +64,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const asked = requests(db, keep, shop, sent, log, tell);
   info.tell = tell;              /* (someone asking to join: a note by the clock) */
   /* the closed beta: its page, its requests, and the email that says you're in */
-  const club = beta(db, { mail: mail || mailer({ dataDir }), log, notify: tell, downloadUrl });
+  const club = beta(db, { mail: mail || mailer({ dataDir }), log, notify: tell, downloadUrl, open: betaPage });
   info.beta = club;
   /* who sees which game in the Store (db.js, step 9) */
   const reach = {

@@ -62,8 +62,12 @@ Wi-Fi can't just make an account.
 
 ## The closed beta
 
-With Funnel on (below), your address (`https://orlis.<your-tailnet>.ts.net/`)
-shows a small page: **Orlis Play - closed beta**, with one box for an email.
+The page is **off** unless you turn it on (`"betaPage": true` in
+`settings.json`, or `ORLIS_BETA_PAGE=1`): your public address shows nothing,
+and nobody can ask. Add people yourself under **Add someone's email** below.
+With it on and Funnel on (below), your address
+(`https://orlis.<your-tailnet>.ts.net/`) shows a small page:
+**Orlis Play - closed beta**, with one box for an email.
 
 1. Someone asks there. A note pops up by the clock, and they're under
    **Approvals > Closed beta** on the management page.
