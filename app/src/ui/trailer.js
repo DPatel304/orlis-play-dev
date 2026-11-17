@@ -148,3 +148,39 @@ function lkpTrailer(game){
   fresh(); warm(self, 2);
   return self;
 }
+
+/* ---------- a still, for a game's tile ----------
+   One picture of the game itself: its trailer a moment in, or - for a game
+   without one - the game's own world after a few seconds, two pretend
+   players reaching about. A canvas (16:10), or null if it can't (a
+   downloaded game draws in its sandbox: its still comes from the banner). */
+export function still(game, w = 1152, h = 720){
+  if (!game || game.sandboxed || typeof document === 'undefined') return null;
+  const film = document.createElement('canvas'); film.width = 1440; film.height = 810;
+  const fc = film.getContext && film.getContext('2d'); if (!fc) return null;
+  try {
+    const tr = trailer(game);
+    if (tr){ tr.step(1 / 30, 1440, 810); tr.draw(fc, 1440, 810); if (tr.close) tr.close(); }
+    else {
+      const fake = { players: fakePlayers(), mouse: { active: true, x: 0.5, y: 0.5 } };
+      fake.players[0].present = fake.players[1].present = true;
+      const inst = sandbox(fake, () => game.create(2));
+      /* (long enough for something to happen: a sky half painted, a pile begun) */
+      for (let k = 0; k < 360; k++){
+        const t = k / 30;
+        fake.players.slice(0, 2).forEach((p, i) => {
+          const x = 0.3 + i * 0.4 + Math.sin(t * 1.1 + i) * 0.22, y = 0.42 + Math.sin(t * 1.7 + i * 2) * 0.28;
+          p.hands.right = { x: x + 0.05, y, vx: 0, vy: 0, speed: 0.5 }; p.hands.left = { x: x - 0.05, y: y + 0.05, vx: 0, vy: 0, speed: 0.4 };
+          p.centre = { x, y: 0.6 };
+        });
+        sandbox(fake, () => inst.step(1 / 30, 1440, 810));
+      }
+      sandbox(fake, () => inst.draw(fc, 1440, 810));
+    }
+  } catch (e){ return null; }
+  const out = document.createElement('canvas'); out.width = w; out.height = h;
+  const oc = out.getContext('2d');
+  const sw = 810 * w / h;
+  oc.drawImage(film, (1440 - sw) / 2, 0, sw, 810, 0, 0, w, h);
+  return out;
+}

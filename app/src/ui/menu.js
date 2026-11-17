@@ -13,6 +13,7 @@ import { account } from './account.js';
 import { week } from './week.js';
 import { library } from './library.js';
 import { toast } from './toast.js';
+import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -145,7 +146,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   /* this week's featured, from Discover: a game already here as itself;
      one to get as a stand-in that knows its Discover entry */
   const featured = waiting ? [] : week.featured().map(e => (library.installed.has(e.id) && GAMES.find(x => x.id === e.id))
-    || { id: e.id, name: e.name, accent: (e.icon && e.icon.cols && e.icon.cols[0]) || '#6d5efc', store: { icon: e.icon, blurb: e.blurb }, discover: e });
+    || { id: e.id, name: e.name, accent: (e.icon && e.icon.cols && e.icon.cols[0]) || '#6d5efc', store: { icon: e.icon, blurb: e.blurb, version: e.version }, discover: e });
   const ROWS = pool.length ? playRows(pool, recent(), featured) : [];
   /* (one picture and one trailer per game, wherever it shows up) */
   const paints = new Map(), trailers = new Map();
@@ -194,6 +195,9 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     rows.push({ sec, row, ns: list.map(({ n }) => n) });
     for (const { it, n } of list) items[n].rowAt = rows.length - 1;
   }
+  /* a tile's picture: a still of the game itself, once there is one (else
+     its colours and icon) */
+  const picture = (pic, g) => { const url = shotOf(g); if (url){ pic.style.backgroundImage = `url(${url})`; pic.classList.add('shot'); } };
   /* a game's card: its art, and its name under it, big enough to read
      from the sofa (no icon - the art says it - and no small print) */
   const gameCard = (it) => {
@@ -201,6 +205,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     card.style.setProperty('--accent', it.accent);
     const L = looks({ id: it.g.id, icon: it.g.store && it.g.store.icon });
     const pic = L.art('sthumb');
+    picture(pic, it.g);
     const meta = h('div', 'smeta', '<div class="stxt"><div class="nm"></div></div>');
     meta.querySelector('.nm').textContent = it.name;
     card.insertBefore(pic, card.firstChild);
@@ -229,6 +234,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     const last = rows[rows.length - 1].row;
     last.appendChild(extraTile('<span class="gridglyph"><i></i><i></i><i></i><i></i></span>', 'See all', () => allGames()));
     if (nav.store) last.appendChild(extraTile('+', 'Get more games', () => nav.store()));
+    /* (and for grown-ups, making one: Create) */
+    if (nav.create && !account.isKid) last.appendChild(extraTile('<svg class="tileglyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5L9 20H4v-5z"/><path d="M12.5 6.5l5 5"/></svg>', 'Make a game', () => nav.create()));
   }
 
   /* this week's family challenges, just above All: goals everyone works
@@ -332,8 +339,13 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   /* this week's featured and challenges, fresh from the server (shown
      again if they changed - not mid-pick) */
   if (onFresh) week.refresh().then(changed => { if (changed && !going && !getting) onFresh(); }, () => {});
+  /* the pictures still to make (one at a time, between frames) */
+  const pictured = (g) => cards.forEach(c => { if (c.it.g.id === g.id) picture(c.pic, g); });
+  const stopShots = makeShots([...new Map(items.map(it => [it.g.id, it.g])).values()], pictured);
+  let onBanner = 0;
 
   return {
+    leave(){ stopShots(); },
     get focus(){ return focus; },
     tick(dt){
       t += dt;
@@ -360,6 +372,10 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
         if (cd.hot >= HOVER_FOCUS){ cd.hot = 0; move(n); }
       }
       bar.tick(dt);
+      /* a downloaded game's picture: from its banner, once it's been playing a moment */
+      onBanner = items[focus] && items[focus].trailer ? onBanner + dt : 0;
+      const on = items[focus];
+      if (onBanner > 2.5 && (on.g.sandboxed || on.g.discover) && !shotOf(on.g) && keepShot(on.g, heroPic)) pictured(on.g);
       /* the banner's trailer: the picked game, playing itself */
       const it = items[focus];
       if (it.trailer === undefined){
@@ -383,7 +399,11 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       /* the banner's living picture; the tiles' still ones */
       const it = items[focus];
       if (it.trailer) paint(heroPic, (c, w, hh) => cover(c, w, hh, it.trailer), t, 1);
-      else paint(heroPic, it.paint, t);
+      else {
+        /* no trailer: the game's still, else its poster */
+        const im = shotImage(it.g);
+        paint(heroPic, im ? (c, w, hh) => { const k = Math.max(w / im.width, hh / im.height); c.drawImage(im, (w - im.width * k) / 2, (hh - im.height * k) * 0.4, im.width * k, im.height * k); } : it.paint, t);
+      }
       if (going){ c.fillStyle = `rgba(13,11,26,${Math.min(1, going.t / LAUNCH)})`; c.fillRect(0, 0, W, H); }
     }
   };

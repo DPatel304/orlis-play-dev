@@ -10,6 +10,10 @@ const S = 'http://127.0.0.1:47871';
 const fail = [], log = console.log;
 const check = (ok, what) => { log((ok ? '  ✓ ' : '  ✗ ') + what); if (!ok) fail.push(what); };
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+/* (one page: Play, Discover and Create are reached from the corner menu) */
+const goTo = async (pg, t) => { await pg.keyboard.press('Escape').catch(() => {}); await pg.click('.burger'); await pg.waitForTimeout(350); const it = await pg.$(`.popitem >> text=${t}`); if (it) await it.click(); else await pg.keyboard.press('Escape'); };
+const menuItems = async (pg) => { await pg.click('.burger'); await pg.waitForTimeout(350); const r = await pg.$$eval('.popitem .pn', e => e.map(x => x.textContent)); await pg.keyboard.press('Escape'); return r; };
 const api = async (m, p, b) => { const r = await fetch(S + p, { method: m, headers: { 'Content-Type': 'application/json' }, body: b ? JSON.stringify(b) : undefined }); return r.json(); };
 /* the PC: Claude Code not there; the buttons "install" it and "sign in" (a moment later) */
 const TAURI = `window.__claude = { installed: false, signedIn: false }; window.__asked = [];
@@ -36,7 +40,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await pg.goto(appUrl + '?debug');
   await pg.waitForSelector('.tvtop', { timeout: 25000 });
   await pg.waitForTimeout(1000);
-  await pg.click('.tvtab >> text=Create'); await pg.waitForTimeout(1800);
+  await goTo(pg, 'Create'); await pg.waitForTimeout(1800);
 
   log('\n1. The owner (who has the Dev Kit), no Claude Code yet: Make a game, and Dev Kit');
   await pg.waitForTimeout(1500);

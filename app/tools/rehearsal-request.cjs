@@ -14,6 +14,10 @@ const log = (...a) => console.log(...a);
 const fail = [];
 const check = (ok, what) => { log((ok ? '  ✓ ' : '  ✗ ') + what); if (!ok) fail.push(what); };
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+/* (one page: Play, Discover and Create are reached from the corner menu) */
+const goTo = async (pg, t) => { await pg.keyboard.press('Escape').catch(() => {}); await pg.click('.burger'); await pg.waitForTimeout(350); const it = await pg.$(`.popitem >> text=${t}`); if (it) await it.click(); else await pg.keyboard.press('Escape'); };
+const menuItems = async (pg) => { await pg.click('.burger'); await pg.waitForTimeout(350); const r = await pg.$$eval('.popitem .pn', e => e.map(x => x.textContent)); await pg.keyboard.press('Escape'); return r; };
 let KEY = null;
 const api = async (m, p, b, t, raw) => {
   const r = await fetch(S + p, { method: m, headers: { 'Content-Type': raw ? 'application/octet-stream' : 'application/json', ...(t ? { Authorization: 'Bearer ' + t } : {}), ...(KEY ? { 'X-Orlis-Manage': KEY } : {}) }, body: raw || (b ? JSON.stringify(b) : undefined) });
@@ -46,8 +50,8 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(35
   await pg.waitForSelector('.tvtop', { timeout: 25000 });
   await pg.waitForTimeout(1200);
   const toCreate = async () => { await pg.keyboard.press('Escape').catch(() => {});
-    if (await pg.$('.tvtab.on >> text=Create')){ await pg.click('.tvtab >> text=Discover'); await pg.waitForTimeout(1200); }
-    await pg.click('.tvtab >> text=Create'); await pg.waitForTimeout(1800); };
+    await goTo(pg, 'Discover'); await pg.waitForTimeout(1200);
+    await goTo(pg, 'Create'); await pg.waitForTimeout(1800); };
   await toCreate();
 
   log('\n1. A grown-up who isn\'t a creator: Create has Request a game (and nothing to make or send)');

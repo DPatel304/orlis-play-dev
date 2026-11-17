@@ -20,7 +20,10 @@ const MENU_ICON = {
   family: LINE('<path d="M3.5 11L12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>'),
   update: LINE('<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/>'),
   signout: LINE('<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/>'),
-  exit: LINE('<path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>')
+  exit: LINE('<path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>'),
+  play: LINE('<path d="M7 5l12 7-12 7z"/>'),
+  discover: LINE('<circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>'),
+  create: LINE('<path d="M14.5 4.5l5 5L9 20H4v-5z"/><path d="M12.5 6.5l5 5"/>')
 };
 const item = (icon, label) => `<span class="pi">${MENU_ICON[icon]}</span><span class="pn">${label}</span>`;
 
@@ -62,21 +65,23 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
   if (who && onWho){
     brand.appendChild(withFace(onPick(button(`<span class="av">${AVATARS[who.avatar] || AVATARS.cube}</span><span class="nm">${who.name.replace(/[&<>]/g, '')}</span>`, 'whochip'), () => { sfx.select(); onWho(); }), who, 64));
   }
+  /* One page: Play has no tabs - Discover and Create are reached from its
+     rows and the corner menu; on those, one way back to Play. */
   const tabs = h('nav', 'tvtabs');
-  /* (a child playing sees Home and the Store; Create is for grown-ups) */
-  const shown = TABS.filter(([id]) => id !== 'create' || !account.isKid);
-  for (const [id, name] of shown){
-    if (id === page){ tabs.appendChild(h('span', 'tvtab on', name)); continue; }
-    const t = onPick(button(name, 'tvtab'), () => { if (isBusy()) return; sfx.nav(); keepBanner(top); nav[id] && nav[id](); });
-    tabs.appendChild(t);
+  const shown = [];
+  if (page !== 'home' && nav.home){
+    tabs.appendChild(onPick(button('\u2190 Play', 'tvtab back'), () => { if (isBusy()) return; sfx.back?.(); keepBanner(top); nav.home(); }));
   }
+  /* where the corner menu can go (a child playing: Discover, not Create) */
+  const places = TABS.filter(([id]) => id !== page && nav[id] && (id !== 'create' || !account.isKid))
+    .map(([id, name]) => ({ id, name, go: () => { if (isBusy()) return; keepBanner(top); nav[id](); } }));
   /* (no camera light here: the camera's off on these pages on purpose, and
      Home says so plainly if there's no camera at all) */
   const clock = h('span', 'clock', '');
   let menuOpen = null;
   const burger = onPick(button('<span class="bars"><i></i><i></i><i></i></span>', 'burger'), () => {
     if (menuOpen || isBusy()) return;
-    menuOpen = cornerMenu({ onRecalibrate, onFamily: nav.family && account.signedIn ? nav.family : null, onClosed: () => { menuOpen = null; } });
+    menuOpen = cornerMenu({ onRecalibrate, places, onFamily: nav.family && account.signedIn ? nav.family : null, onClosed: () => { menuOpen = null; } });
   });
   const sys = h('div', 'tvsys'); sys.append(clock, burger);
   top.append(brand, tabs, sys);
@@ -130,13 +135,16 @@ function appWindow(){
 }
 
 /* The corner menu: a little card under the button - Settings, Family, a newer version, signing out, and Exit. A click outside it closes it (or Escape). */
-export function cornerMenu({ onRecalibrate, onFamily = null, onClosed } = {}){
+export function cornerMenu({ onRecalibrate, onFamily = null, onClosed, places = [] } = {}){
   sfx.select();
   const open = screen('dim popmenu'); open.style.zIndex = 5;
   const card = h('div', 'popcard');
   const esc = (e) => { if (e.key === 'Escape'){ e.preventDefault(); sfx.back(); shut(); } };
   const shut = () => { if (!open.isConnected) return; open.remove(); removeEventListener('keydown', esc, true); onClosed && onClosed(); };
   addEventListener('keydown', esc, true);
+  /* the other places: Play, Discover, Create */
+  for (const p of places) card.appendChild(onPick(button(item(p.id === 'home' ? 'play' : p.id === 'store' ? 'discover' : 'create', p.name), 'popitem'), () => { sfx.select(); shut(); p.go(); }));
+  if (places.length) card.appendChild(h('div', 'popline'));
   card.appendChild(onPick(button(item('settings', 'Settings'), 'popitem'), () => {
     sfx.select(); shut(); openSettings(onRecalibrate);
   }));

@@ -22,6 +22,10 @@ const fail = [];
 const check = (ok, what) => { log((ok ? '  ✓ ' : '  ✗ ') + what); if (!ok) fail.push(what); };
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
+/* (one page: Play, Discover and Create are reached from the corner menu) */
+const goTo = async (pg, t) => { await pg.keyboard.press('Escape').catch(() => {}); await pg.click('.burger'); await pg.waitForTimeout(350); const it = await pg.$(`.popitem >> text=${t}`); if (it) await it.click(); else await pg.keyboard.press('Escape'); };
+const menuItems = async (pg) => { await pg.click('.burger'); await pg.waitForTimeout(350); const r = await pg.$$eval('.popitem .pn', e => e.map(x => x.textContent)); await pg.keyboard.press('Escape'); return r; };
+
 /* the Windows app, standing in: game folders kept (across restarts), Claude Code
    "opened", and the Wi-Fi: at home (no server), or at your house (and where). */
 const TAURI = `window.__fs = JSON.parse(localStorage.getItem('test.fs') || '{}'); const keep = () => localStorage.setItem('test.fs', JSON.stringify(__fs));
@@ -74,7 +78,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
 const shot = (pg, n) => pg.screenshot({ path: `${out}-${n}.png` });
 /* the app closed and opened again */
 async function restart(pg){ await pg.reload(); await pg.waitForSelector('.tvtop', { timeout: 25000 }); await pg.waitForTimeout(1500); }
-async function tab(pg, t){ await pg.keyboard.press('Escape').catch(() => {}); await pg.click(`.tvtab >> text=${t}`); await pg.waitForTimeout(t === 'Create' ? 2000 : 1500); }
+async function tab(pg, t){ await pg.keyboard.press('Escape').catch(() => {}); await goTo(pg, t); await pg.waitForTimeout(t === 'Create' ? 2000 : 1500); }
 const fsOf = (pg, folder) => pg.evaluate((f) => window.__fs[f], folder);
 const setFiles = (pg, folder, files) => pg.evaluate(([f, x]) => { Object.assign(window.__fs[f], x, { at: Date.now() }); localStorage.setItem('test.fs', JSON.stringify(window.__fs)); }, [folder, files]);
 
@@ -85,7 +89,7 @@ async function join(pg, code, email, name){
   await pg.waitForSelector('text=Make an account', { timeout: 10000 }); await pg.waitForTimeout(300);
   const inputs = await pg.$$('form input:not([type=hidden]):not([type=checkbox])');
   for (const [i, v] of [code, 'correct horse', name].entries()) await inputs[i].fill(v);
-  await pg.check('form input[type=checkbox]');
+  /* (no grown-up tick box: making the account says so) */
   await pg.click('form .btn.go');
   /* (someone new: "You're in!" - then Later, for now) */
   await pg.waitForSelector('text=You’re in!', { timeout: 20000 }); await pg.waitForTimeout(500);
@@ -167,7 +171,7 @@ function claude(files, prompt){
   const dadAcct = await join(dad, invD.code, 'dad@example.com', 'Grandpa');
   check(broAcct.account.role === 'creator' && dadAcct.account.role === 'creator', 'both are creators');
   check(broAcct.server.id && broAcct.server.id.length === 18, 'the app keeps the server\'s id');
-  check((await bro.$$eval('.tvtabs .tvtab', t => t.map(x => x.textContent))).includes('Create'), 'the Create tab is there');
+  check((await menuItems(bro)).includes('Create'), 'the Create tab is there');
 
   log('\n4. They go home (no server there) and restart the app');
   bro.net.away = dad.net.away = true;

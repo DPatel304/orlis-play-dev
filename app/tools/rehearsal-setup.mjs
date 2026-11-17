@@ -24,6 +24,10 @@ const [appUrl, out] = process.argv.slice(2);
 const fail = [];
 const check = (ok, what) => { console.log((ok ? '  ✓ ' : '  ✗ ') + what); if (!ok) fail.push(what); };
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+/* (one page: Play, Discover and Create are reached from the corner menu) */
+const goTo = async (pg, t) => { await pg.keyboard.press('Escape').catch(() => {}); await pg.click('.burger'); await pg.waitForTimeout(350); const it = await pg.$(`.popitem >> text=${t}`); if (it) await it.click(); else await pg.keyboard.press('Escape'); };
+const menuItems = async (pg) => { await pg.click('.burger'); await pg.waitForTimeout(350); const r = await pg.$$eval('.popitem .pn', e => e.map(x => x.textContent)); await pg.keyboard.press('Escape'); return r; };
 const s = await start({ dataDir: mkdtempSync(join(tmpdir(), 'orlis-setup-')), port: 47871, discoveryPort: 0, name: "The family's Orlis", approveJoins: true, tailscaleJoin: () => false, internetPort: 0 });
 const S = 'http://127.0.0.1:47871', DOOR = `http://127.0.0.1:${s.internetPort}`;
 const api = async (m, p, b, extra = {}) => { const r = await fetch(S + p, { method: m, headers: { 'Content-Type': 'application/json', ...extra }, body: b ? JSON.stringify(b) : undefined }); return r.json(); };
@@ -94,12 +98,12 @@ try {
   check(['Pop Party', 'Sky Painter'].every(n => home.includes(n)), 'Home has Pop Party and Sky Painter');
   check(!['Sleepy Bear', 'Leaf Pile', 'Stack It High', 'Last Known Position'].some(n => home.includes(n)), 'and only those, for now');
   await shot('4-starters');
-  await pg.click('.tvtab >> text=Discover'); await wait(1200);
+  await goTo(pg, 'Discover'); await wait(1200);
   check((await body()).includes('Pending account approval'), 'the Store: Pending account approval');
-  await pg.click('.tvtab >> text=Create'); await wait(1200);
+  await goTo(pg, 'Create'); await wait(1200);
   check((await body()).includes('Pending account approval'), 'Create: the same');
   await shot('4-create-pending');
-  await pg.click('.tvtab >> text=Play'); await wait(1200);
+  await goTo(pg, 'Play'); await wait(1200);
 
   console.log('\n5. The owner lets them in: it says so, and everything opens');
   await api('POST', `/api/joins/${joins[0].id}/approve`, null, M);
@@ -109,7 +113,7 @@ try {
   const after = await body();
   check(after.includes('Leaf Pile'), 'Home has all the games now');
   await shot('5-in');
-  await pg.click('.tvtab >> text=Create'); await wait(1500);
+  await goTo(pg, 'Create'); await wait(1500);
 
   console.log('\n6. Their first game');
   await pg.click('.sbtn >> text=Make a game');

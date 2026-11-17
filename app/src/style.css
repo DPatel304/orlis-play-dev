@@ -1371,3 +1371,11 @@ body.remote .btn.slock.kfocus .sthumb{ transform:translateY(-.8vh) scale(1.05); 
 .chcard.done{ box-shadow:0 0 0 .4vh #ffd166, 0 1vh 2.4vh rgba(30,40,90,.1); }
 .chcard.done .chbar i{ background:linear-gradient(90deg, #ffb703, #ffd166); }
 .chcard.done .chfoot span:last-child{ color:#a16207; }
+/* the tiles at the end of All */
+.btn.slock.addtile .tileglyph{ width:6vh; height:6vh; color:#9aa0b8; }
+.btn.slock.addtile:hover .tileglyph, .btn.slock.addtile.focus .tileglyph, body.remote .btn.slock.addtile.kfocus .tileglyph{ color:#6d5efc; }
+/* one page: on Discover and Create, the way back to Play */
+.tvtabs .btn.tvtab.back{ padding-left:1.4em; padding-right:1.6em; }
+/* a tile with a still of the game itself: the picture, and no icon over it */
+.sthumb.shot{ background-size:cover; background-position:center; }
+.sthumb.shot .g{ display:none; }
