@@ -161,17 +161,15 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const hero = h('section', 'shero');
   const heroPic = document.createElement('canvas'); heroPic.className = 'sheropic shown';
   const hname = h('h1', ''), hblurb = h('p', ''), hmoves = h('div', 'schips');
-  const play = onPick(button('<span class="tri"></span>Play', 'sbtn play'), () => choose(focus));
-  const btns = h('div', 'sbtns'); btns.appendChild(play);
-  const htext = h('div', 'shtext'); htext.append(h('div', 'skicker', 'Ready to play'), hname, hblurb, hmoves, btns);
+  /* (no Play button: picking a tile plays it - the banner shows the one you're on) */
+  const btns = h('div', 'sbtns');
+  const htext = h('div', 'shtext'); htext.append(hname, hblurb, hmoves, btns);
   hero.append(heroPic, h('div', 'shshade'), htext);
   s.appendChild(hero);
 
   /* no games yet (a new install: they come from the Store) - a way there */
   if (!items.length){
-    htext.querySelector('.skicker').textContent = 'Welcome';
     hname.textContent = 'Get your first game'; hblurb.textContent = 'Pop Party is waiting for you in Discover.';
-    play.remove();
     if (nav.store) btns.appendChild(onPick(button('Open Discover', 'sbtn play'), () => { sfx.select(); nav.store(); }));
     ambience.start();
     return {

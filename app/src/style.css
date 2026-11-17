@@ -1381,3 +1381,6 @@ body.remote .btn.slock.kfocus .sthumb{ transform:translateY(-.8vh) scale(1.05); 
 .sthumb.shot .g{ display:none; }
 /* a cover has the game's name on it: no second one under it */
 .btn.slock.covered .smeta{ position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+/* Play's banner: the name and a line about it (no kicker, no button) */
+.homepage .shtext{ top:13vh; }
+.homepage .shtext h1{ margin-top:0; }
