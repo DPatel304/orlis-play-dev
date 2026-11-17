@@ -1414,3 +1414,9 @@ body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
 }
 .btn.burger.cubebtn:hover::after, .btn.burger.cubebtn.hot::after, body.remote .btn.burger.cubebtn.kfocus::after{ opacity:1; transform:translate(-50%, .4vh); }
 @media (prefers-reduced-motion: reduce){ .mblink{ animation:none; } }
+/* (the row sits a little lower, so the bigger cube has room above it and
+   the chip and "← Play" line up with its middle) */
+.tvtop{ top:4.5vh; height:8vh; }
+.tvhome .tvtop::before{ top:-4.5vh; bottom:-1vh; }
+/* (the menu drops down from under the cube, not over it) */
+.popcard{ top:16vh; }
