@@ -219,36 +219,23 @@ export function discoverCoverUrl(){
   return discoverUrl;
 }
 
-/* The See all tile on Play's My games row, drawn in the same style as the
-   covers: a mosaic of your own covers, with its words in the cover lettering.
-   Given the covers to use (data: URLs), it gives a picture back (kept by what
-   went into it, so the same ones are drawn once). */
-const tileMade = new Map();
-export function tileUrl(kind, urls = []){
-  const key = kind + '|' + urls.join('|').length + '|' + urls.map(u => u.slice(-24)).join('');
-  if (tileMade.has(key)) return Promise.resolve(tileMade.get(key));
-  if (typeof document === 'undefined') return Promise.resolve(null);
-  return new Promise((ok) => {
-    const W = 960, H = 540, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    const c = cv.getContext && cv.getContext('2d'); if (!c) return ok(null);
-    const done = () => { let u = null; try { u = cv.toDataURL('image/jpeg', 0.85); } catch (e){} tileMade.set(key, u); ok(u); };
-    /* 'all': a mosaic of covers (as many as there are, up to four) */
-    const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#e7e4ff'); g.addColorStop(1, '#cfeeff'); c.fillStyle = g; c.fillRect(0, 0, W, H);
-    const loads = urls.slice(0, 4).map(u => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = u; }));
-    Promise.all(loads).then((ims) => {
-      const spots = [[0.27, 0.3, -0.07], [0.7, 0.26, 0.06], [0.3, 0.64, 0.05], [0.72, 0.62, -0.05]];
-      ims.forEach((im, i) => {
-        const [x, y, a] = spots[i], w = W * 0.4, h = H * 0.4;
-        c.save(); c.translate(W * x, H * y); c.rotate(a); c.shadowColor = 'rgba(20,24,50,.35)'; c.shadowBlur = 22; c.shadowOffsetY = 8;
-        c.beginPath(); c.roundRect(-w / 2, -h / 2, w, h, 22); c.fillStyle = '#fff'; c.fill(); c.shadowColor = 'transparent';
-        c.beginPath(); c.roundRect(-w / 2 + 6, -h / 2 + 6, w - 12, h - 12, 18); c.clip();
-        if (im) c.drawImage(im, -w / 2 + 6, -h / 2 + 6, w - 12, h - 12); else { c.fillStyle = ['#a78bfa', '#38bdf8', '#fbbf24', '#34d399'][i]; c.fill(); }
-        c.restore();
-      });
-      try { TITLES.tilt(c, W, H, 'SEE ALL', '#6d5efc'); } catch (e){}
-      done();
-    });
-  });
+/* The See all tile on Play's My games row: a grid of soft tiles (one lit) on
+   the app's purple and blue, with SEE ALL in the cover lettering - one
+   picture, made once. */
+let seeAllUrl = null;
+export function seeAllCoverUrl(){
+  if (seeAllUrl || typeof document === 'undefined') return seeAllUrl;
+  const W = 960, H = 540, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const c = cv.getContext && cv.getContext('2d'); if (!c) return null;
+  const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#6d5efc'); g.addColorStop(1, '#38bdf8'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const cw = 150, gap = 26, x0 = W * 0.5 - (3 * cw + 2 * gap) / 2, y0 = 70;
+  for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++){
+    c.save(); c.globalAlpha = r === 0 && k === 1 ? 0.95 : 0.34; c.fillStyle = '#fff';
+    c.beginPath(); c.roundRect(x0 + k * (cw + gap), y0 + r * (cw * 0.78 + gap), cw, cw * 0.78, 26); c.fill(); c.restore();
+  }
+  try { TITLES.tilt(c, W, H, 'SEE ALL', '#4a2fb0'); } catch (e){}
+  try { seeAllUrl = cv.toDataURL('image/jpeg', 0.9); } catch (e){ seeAllUrl = null; }
+  return seeAllUrl;
 }
 
 /* A stand-in card for a game that isn't made yet (Create's builder): the

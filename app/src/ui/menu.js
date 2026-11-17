@@ -15,7 +15,7 @@ import { library } from './library.js';
 import { toast } from './toast.js';
 import { splashWanted, showChallenges } from './challenges.js';
 import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
-import { banner as wideBanner, discoverCoverUrl, tileUrl } from './covers.js';
+import { banner as wideBanner, discoverCoverUrl, seeAllCoverUrl } from './covers.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -255,26 +255,14 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       fr.row.appendChild(t);
     }
   }
-  /* the end of My games: every game at once (a mosaic of the covers) */
-  const picTile = (kind, name, fn) => {
-    const t = extraTile('', name, fn);
-    t.classList.add('pictile', 'covered');
-    t.querySelector('.sthumb').innerHTML = '';
-    return t;
-  };
-  let seeAll = null;
+  /* the end of My games: every game at once - a tile drawn like the covers */
   if (rows.length){
-    const last = rows[rows.length - 1].row;
-    seeAll = picTile('all', 'See all', () => allGames());
-    last.appendChild(seeAll);
+    const seeAll = extraTile('', 'See all', () => allGames());
+    seeAll.classList.add('pictile', 'covered');
+    const th = seeAll.querySelector('.sthumb'); th.innerHTML = '';
+    const pic = seeAllCoverUrl(); if (pic) th.style.backgroundImage = `url(${pic})`;
+    rows[rows.length - 1].row.appendChild(seeAll);
   }
-  /* the See all mosaic: the first few covers there are - and again as more are made */
-  const mosaic = () => {
-    if (!seeAll) return;
-    const urls = ROWS[ROWS.length - 1].games.map(g => shotOf(g)).filter(Boolean).slice(0, 4);
-    tileUrl('all', urls).then(u => { if (u && seeAll.isConnected) seeAll.querySelector('.sthumb').style.backgroundImage = `url(${u})`; });
-  };
-  mosaic();
 
   /* this week's family challenges: three big cards on arriving (once each time the
      app starts), then a pill in the top bar (challenges.js) */
@@ -375,7 +363,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
      again if they changed - not mid-pick) */
   if (onFresh) week.refresh().then(changed => { if (changed && !going && !getting) onFresh(); }, () => {});
   /* the pictures still to make (one at a time, between frames) */
-  const pictured = (g) => { cards.forEach(c => { if (c.it.g.id === g.id) picture(c.pic, g); }); mosaic(); };
+  const pictured = (g) => cards.forEach(c => { if (c.it.g.id === g.id) picture(c.pic, g); });
   const stopShots = makeShots([...new Map(items.map(it => [it.g.id, it.g])).values()], pictured);
   let onBanner = 0;
 
