@@ -83,7 +83,7 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
   /* the menu: the cube, with its face - it winks when you point at it */
   const burger = onPick(button(`<span class="mark">${mark(true)}</span>`, 'burger cubebtn'), () => {
     if (menuOpen || isBusy()) return;
-    menuOpen = cornerMenu({ onRecalibrate, onFamily: nav.family && account.signedIn ? nav.family : null, onClosed: () => { menuOpen = null; } });
+    menuOpen = cornerMenu({ onRecalibrate, onClosed: () => { menuOpen = null; } });
   });
   burger.title = 'Menu'; burger.setAttribute('aria-label', 'Menu');
   /* (a wink as the page comes in, like the end of the intro) */
@@ -125,16 +125,14 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
   };
 }
 
-/* Seconds a first pick of Exit waits for the second. */
-const EXIT_SURE = 4;
 /* The Windows app's own window, when the game is running inside it. */
 function appWindow(){
   const w = typeof window !== 'undefined' && window.__TAURI__ && window.__TAURI__.window;
   return w && w.getCurrentWindow ? w.getCurrentWindow() : null;
 }
 
-/* The corner menu: a little card under the button - Settings, Family, a newer version, signing out, and Exit. A click outside it closes it (or Escape). */
-export function cornerMenu({ onRecalibrate, onFamily = null, onClosed } = {}){
+/* The corner menu: a little card under the button - Settings, a newer version, signing out, and Exit (the family's page is on its own screen: pick your picture at the top). A click outside it closes it (or Escape). */
+export function cornerMenu({ onRecalibrate, onClosed } = {}){
   sfx.select();
   const open = screen('dim popmenu'); open.style.zIndex = 5;
   const card = h('div', 'popcard');
@@ -143,10 +141,6 @@ export function cornerMenu({ onRecalibrate, onFamily = null, onClosed } = {}){
   addEventListener('keydown', esc, true);
   card.appendChild(onPick(button(item('settings', 'Settings'), 'popitem'), () => {
     sfx.select(); shut(); openSettings(onRecalibrate);
-  }));
-  /* the family's page (and, for the owner, the server's) */
-  if (onFamily) card.appendChild(onPick(button(item('family', 'Family'), 'popitem'), () => {
-    sfx.select(); shut(); onFamily();
   }));
   /* In the Windows app: a newer version, now (picked once it checks,
      picked again it installs and restarts on it); and signing out. */
@@ -174,20 +168,9 @@ export function cornerMenu({ onRecalibrate, onFamily = null, onClosed } = {}){
   if (account.signedIn){
     card.appendChild(onPick(button(item('signout', 'Sign out'), 'popitem'), () => { sfx.back(); account.signOut(); location.reload(); }));
   }
-  /* In the Windows app, a way out. Picked once it asks; picked again
-     (within a few seconds) it closes - so a hand resting there by
-     accident doesn't end the evening. */
+  /* In the Windows app, a way out: picked, it closes. */
   const app = appWindow();
-  if (app){
-    let sure = 0;
-    const ex = onPick(button(item('exit', 'Exit'), 'popitem exit'), () => {
-      if (performance.now() - sure < EXIT_SURE * 1000){ sfx.back(); app.close(); return; }
-      sure = performance.now(); sfx.select();
-      ex.querySelector('.pn').textContent = 'Exit? Pick again';
-      setTimeout(() => { if (ex.isConnected) ex.querySelector('.pn').textContent = 'Exit'; }, EXIT_SURE * 1000);
-    });
-    card.appendChild(ex);
-  }
+  if (app) card.appendChild(onPick(button(item('exit', 'Exit'), 'popitem exit'), () => { sfx.back(); app.close(); }));
   /* small print: the version, and who's signed in */
   const bits = [appInfo ? `Orlis Play ${appInfo.label ? appInfo.label() : appInfo.version}` : '', account.signedIn ? account.state.account.email : ''].filter(Boolean);
   if (bits.length) card.appendChild(h('div', 'popfoot', bits.join(' · ').replace(/[&<>]/g, '')));

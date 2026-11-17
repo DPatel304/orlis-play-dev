@@ -12,7 +12,7 @@ test('Play\'s rows: Jump back in (newest first), Featured (Discover games first)
   assert.deepEqual(rows.map(r => r.title), ['Jump back in', 'Featured', 'All']);
   assert.deepEqual(rows[0].games.map(x => x.id), ['leaf-pile', 'pop-party'], 'what was played lately, skipping games no longer here');
   assert.equal(rows[1].games[0].id, 'bubble', 'a game from Discover leads Featured');
-  assert.ok(rows[1].games.length <= 6);
+  assert.ok(rows[1].games.length <= 3);
   assert.deepEqual(rows[2].games.map(x => x.name), [...POOL.map(x => x.name)].sort((a, b) => a.localeCompare(b)));
 });
 

@@ -20,7 +20,7 @@ export function weekStart(now = new Date()){
 export const weekIndex = (now = new Date()) => Math.round(weekStart(now).getTime() / (7 * DAY));
 
 /* This week's featured ids, of the games given: pins first, then turns. */
-export function featuredIds(ids, pins = [], now = new Date(), n = 6){
+export function featuredIds(ids, pins = [], now = new Date(), n = 3){
   const pinned = pins.filter(id => ids.includes(id));
   const rest = ids.filter(id => !pinned.includes(id)).sort();
   const k = rest.length ? (weekIndex(now) * 3) % rest.length : 0;

@@ -147,7 +147,7 @@ async function hello(url){
    One overlay at a time, swapped in place: finding the server, then signing
    in or joining (or, on a brand-new server, setting up as the owner), then
    "Who's playing?". done() once a profile's picked. */
-export function welcome(done, { auto = true, glide = false } = {}){
+export function welcome(done, { auto = true, glide = false, onBack = null, onFamily = null } = {}){
   clearUI();
   const s = screen('dim account');
   /* the cube resting on the left (drawn behind - front.js), and everything
@@ -385,7 +385,16 @@ export function welcome(done, { auto = true, glide = false } = {}){
       }), p, 220));
     }
     if ((account.state.profiles || []).length < 8) tiles.appendChild(onPick(button('<span class="av">+</span><span class="nm">Add a child</span>', 'who add'), () => { sfx.select(); addKid(); }));
-    show(h('h2', '', 'Who\'s playing?'), tiles, msg);
+    /* the family's name is the title (no "Who's playing?": the faces say it) */
+    const fam = account.state.household && account.state.household.name;
+    const nodes = [
+      /* opened from inside the app: a way back (Escape does it too, through the Back key) */
+      onBack ? corner('←', 'back close', 'Back', () => { sfx.back?.(); onBack(); }) : null,
+      h('h2', '', esc(fam || 'Who\u2019s playing?')), tiles,
+      /* looking after the family: its grown-ups, its kids, an invite */
+      onFamily && !account.isKid ? onPick(button('Manage family', 'link famlink'), () => { sfx.select(); onFamily(); }) : null,
+      msg].filter(Boolean);
+    show(...nodes);
   }
   function addKid(){
     let pick = 'rocket';

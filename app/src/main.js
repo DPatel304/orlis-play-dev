@@ -114,8 +114,11 @@ function toCreate(){
    if the server's in reach. */
 function toWho(arrive, glide = false){
   account.refresh();
+  /* (asked for from a page: Back, or Escape, goes to that page again) */
+  const PAGES = { menu: () => toMenu(false), store: toStore, create: toCreate, family: toFamily };
+  const back = !arrive && PAGES[mode] ? PAGES[mode] : null;
   /* (a new creator who picked "Make my first game": straight to Create, where it's made) */
-  go('who', () => welcome(() => (account.state && account.state.firstGame ? toCreate() : toMenu(arrive)), { auto: arrive, glide }));
+  go('who', () => welcome(() => (account.state && account.state.firstGame ? toCreate() : toMenu(arrive)), { auto: arrive, glide, onBack: back, onFamily: toFamily }));
 }
 
 function toCalibration(){

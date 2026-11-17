@@ -90,6 +90,8 @@ export function looks(g){
 }
 
 
+/* The pick made this session ({ id, row }): coming back (from a game, or another page) it's still the one. A fresh start picks the first Featured game. */
+let sessionPick = null;
 /* Games kept off the home screen for now (still there, just not shown). */
 export const HIDDEN = new Set(['uncle-bs-boat', 'dance-party', 'castle-defense']);
 /* What was picked last - kept between launches, by game. */
@@ -111,10 +113,10 @@ export function playRows(pool, lately = recent(), featured = []){
   const byId = new Map(pool.map(g => [g.id, g])), rows = [];
   const back = lately.map(id => byId.get(id)).filter(Boolean).slice(0, 6);
   if (back.length) rows.push({ id: 'back', title: 'Jump back in', games: back });
-  if (featured.length) rows.push({ id: 'featured', title: 'Featured this week', games: featured.slice(0, 6) });
+  if (featured.length) rows.push({ id: 'featured', title: 'Featured this week', games: featured.slice(0, 3) });
   else if (pool.length > 3){
     const feat = [...pool.filter(g => g.store), ...FEATURED.map(id => byId.get(id)).filter(Boolean)];
-    rows.push({ id: 'featured', title: 'Featured', games: feat.filter((g, i) => feat.indexOf(g) === i).slice(0, 6) });
+    rows.push({ id: 'featured', title: 'Featured', games: feat.filter((g, i) => feat.indexOf(g) === i).slice(0, 3) });
   }
   rows.push({ id: 'all', title: 'All', games: [...pool].sort((a, b) => a.name.localeCompare(b.name)) });
   return rows;
@@ -299,7 +301,10 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
 
   let scrollY = 0;
   /* (by game, not place: the rows change as games are played) */
-  lastFocus = Math.max(0, items.findIndex(it => it.g.id === remembered()));
+  const rowOf = (it) => (ROWS[it.shelf] || {}).id;
+  const fromSession = sessionPick ? items.findIndex(it => it.g.id === sessionPick.id && rowOf(it) === sessionPick.row) : -1;
+  const firstFeatured = items.findIndex(it => rowOf(it) === 'featured');
+  lastFocus = fromSession >= 0 ? fromSession : firstFeatured >= 0 ? firstFeatured : Math.max(0, items.findIndex(it => it.g.id === remembered()));
   let focus = Math.min(lastFocus, items.length - 1), t = 0, going = null, flown = !arrive;
   /* After the remote's used, pointing takes over again only once a hand (or
      the mouse) actually moves - not because the rows slid under one that's
@@ -327,7 +332,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   function move(to){
     to = Math.max(0, Math.min(items.length - 1, to));
     if (to === focus) return;
-    focus = to; lastFocus = to; remember(items[to].g.id); sfx.nav(); ambience.lift(); show();
+    focus = to; lastFocus = to; remember(items[to].g.id); sessionPick = { id: items[to].g.id, row: (ROWS[items[to].shelf] || {}).id }; sfx.nav(); ambience.lift(); show();
   }
   /* A pick goes straight in - one from Discover is got first. */
   let getting = false;

@@ -1468,3 +1468,5 @@ body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
 .ybody .cask .csent{ display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; font-size:.9em; }
 .ybody .cask b{ display:block; font-size:1.1em; margin-bottom:.3vh; }
 .ybody .cend{ margin-top:1.4vh; justify-content:space-between; flex-wrap:wrap; }
+/* the family's name on the profile screen, and its way to the family page */
+.acctcard .btn.famlink{ display:block; margin:2.2vh auto 0; font-size:2vh; color:#5b4ce6; }
