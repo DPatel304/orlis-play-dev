@@ -1662,9 +1662,27 @@ textarea.btype.bwords{ width:62vw; height:26vh; border-radius:3vh; padding:2.4vh
 .btn.bst.todo .bdot{ color:#c8cde0; font-size:2.4vh; }
 
 /* the steps still to come: soft tiles with the step's picture faded back, like the rest of the UI (no dashes) */
-.btn.bst.todo .bdot{ border:0; background:#eef0f6; font-size:3vh; box-shadow:none; filter:grayscale(1); opacity:.55; }
+.btn.bst.todo .bdot{ border:0; background:#eef0f6; font-size:2.6vh; box-shadow:none; filter:grayscale(1); opacity:.55; }
 .btn.bst.todo .bt{ color:#aab0c4; }
 .bsteps:before{ background:#eceef5; z-index:0; }
 .bmain .btyped{ align-items:center; gap:2vh; }
 .bmain .btyped .btn.bpill{ margin:0; height:7vh; padding:0 4vh; font-size:2.6vh; }
 .bmain > .btn.bpill{ align-self:flex-start; margin-top:3vh; height:7vh; padding:0 4vh; font-size:2.6vh; }
+
+/* up and down, at the top of the game panel (no Skip: every question is answered or moved past with the arrows) */
+.bsidetop{ display:flex; align-items:center; justify-content:space-between; margin-bottom:1.4vh; }
+.bsidetop .bsidehead{ margin:0; }
+.barrows{ display:flex; gap:1vh; }
+.btn.barrow{ width:5.2vh; height:5.2vh; min-width:0; padding:0; border-radius:50%; border:0; background:#f1f2f7; color:#3b3e4d; font-size:2.6vh; font-weight:700; box-shadow:none; }
+.btn.barrow .lbl{ display:grid; place-items:center; }
+.btn.barrow:hover, .btn.barrow.hot{ background:#6d5efc; color:#fff; transform:none; }
+.btn.barrow:disabled{ opacity:.3; pointer-events:none; }
+/* (everything in the game panel fits on a TV, arrows and all) */
+.bside{ padding:2.2vh 2vw 1.6vh; top:3vh; }
+.bblue{ aspect-ratio:2/1; }
+.bsteps{ margin-top:1.6vh; }
+.btn.bst{ height:5.5vh; margin-bottom:.4vh; }
+.bdot{ width:5.3vh; height:5.3vh; font-size:2.6vh; border-radius:1.6vh; }
+.bsteps:before{ left:2.65vh; }
+.bt{ font-size:2vh; }
+.bt small{ font-size:1.55vh; }

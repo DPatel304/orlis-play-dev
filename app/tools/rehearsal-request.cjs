@@ -82,10 +82,9 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   check(!(await txt(pg, '.createpage')).includes('Where is it'), 'no "where is it"');
   await shot(pg, '03-thing');
   await pg.fill('.btype', 'a friendly dragon');
-  check((await txt(pg, '.bpill')) === 'Next', 'typed something: the pill says Next');
   await pg.keyboard.press('Enter'); await pg.waitForTimeout(500);
   check((await txt(pg, '.bh')) === 'What does it look like?', 'the look');
-  check((await txt(pg, '.bpill')) === 'Skip', 'optional: Skip');
+  check(!(await pg.$('.bpill:not(.big)')), 'no Skip button: the arrows do the moving');
   check((await pg.$$('.bst.ok')).length === 3, 'three bricks built');
   await tap(pg, '.bcard >> text=Cozy');
   check((await txt(pg, '.bh')) === 'How long is it?', 'how long');
@@ -97,7 +96,7 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   await pg.fill('.btype', 'Firefly Jar');
   check((await txt(pg, '.bcount')) === '11 of 24 letters', 'letters counted: ' + (await txt(pg, '.bcount')));
   await shot(pg, '04-name');
-  await tap(pg, '.bpill');
+  await tap(pg, '.bdown');
   check((await txt(pg, '.bh')) === 'Anything else?', 'anything else');
   await pg.fill('.bwords', 'Catch the fireflies in a jar. When the jar is full it glows and they all fly free.');
   check((await txt(pg, '.bcount')) === '18 of 500 words', 'words counted: ' + (await txt(pg, '.bcount')));
@@ -105,12 +104,12 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   /* up one, and on again */
   await tap(pg, '.bst.ok:has-text("Its name")');
   check((await txt(pg, '.bh')) === 'What’s it called?', 'tapping a brick goes back to that question');
-  await tap(pg, '.bpill');
+  await tap(pg, '.bdown');
   /* away to Play and back: the draft keeps */
   await goTo(pg, 'Play'); await pg.waitForTimeout(1500);
   await goTo(pg, 'Create'); await pg.waitForSelector('.builder'); await pg.waitForTimeout(1200);
   check((await pg.inputValue('.bwords').catch(() => '')).includes('jar is full'), 'back on Create: it carries on where it was, words and all');
-  await tap(pg, '.bpill');
+  await tap(pg, '.bdown');
   check((await txt(pg, '.bh')) === 'Ready?', 'review');
   check((await txt(pg, '.reqquote')).includes('jar is full'), 'their words, shown back');
   await shot(pg, '06-review');
@@ -120,7 +119,7 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   await tap(pg, '.bcard >> text=Night');
   check((await txt(pg, '.bh')) === 'How long is it?', 'and carries on down');
   await tap(pg, '.bcard >> text=Short');
-  await tap(pg, '.bpill'); await tap(pg, '.bpill');
+  await tap(pg, '.bdown'); await tap(pg, '.bdown');
   check((await txt(pg, '.bh')) === 'Ready?', 'back at the review');
   check((await txt(pg, '.bsum .bnote')).includes('starry night'), 'the change is there');
   check((await pg.$$('.bst.ok')).length === 7, 'every brick built, only Ready left');
@@ -181,11 +180,11 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   check(!!(await pg.$('.bcard >> text=Firefly Jar')), 'Firefly Jar is one to pick');
   await tap(pg, '.bcard >> text=Firefly Jar');
   check((await txt(pg, '.bh')) === 'Anything different?', 'anything different (optional)');
-  check((await txt(pg, '.bpill')) === 'Skip', 'Skip is fine without a pick');
-  await tap(pg, '.bpill');
+  check(!(await pg.isDisabled('.bdown')), 'down is fine without a pick');
+  await tap(pg, '.bdown');
   await pg.fill('.btype', 'snowflakes');
-  await tap(pg, '.bpill');
-  await tap(pg, '.bcard >> text=Sunny'); await tap(pg, '.bcard >> text=Short'); await tap(pg, '.bpill'); await tap(pg, '.bpill');
+  await tap(pg, '.bdown');
+  await tap(pg, '.bcard >> text=Sunny'); await tap(pg, '.bcard >> text=Short'); await tap(pg, '.bdown'); await tap(pg, '.bdown');
   check((await txt(pg, '.bsum .bnote')).startsWith('Like Firefly Jar, but with snowflakes.'), 'the sentence: ' + (await txt(pg, '.bsum .bnote')).slice(0, 60));
   await shot(pg, '12-like');
 

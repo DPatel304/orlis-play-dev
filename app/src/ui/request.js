@@ -215,7 +215,13 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   const panel = () => {
     const o = order(), i = o.indexOf(step);
     const side = h('div', 'bside');
-    side.append(h('h2', 'bsidehead', 'Your game'), blueprint());
+    const head = h('div', 'bsidetop');
+    const arrows = h('div', 'barrows');
+    const arrow = (cls, text, label, fn, off) => { const b = button(text, 'barrow ' + cls); b.title = label; b.setAttribute('aria-label', label); onPick(b, () => { if (!b.disabled) fn(); }); if (off) b.disabled = true; arrows.appendChild(b); return b; };
+    arrow('bup', '↑', 'Up one question', () => { if (!busy){ sfx.back?.(); up(); } }, i <= 0);
+    arrow('bdown', '↓', 'Down one question', () => { if (!busy && ready(step) && step !== 'review') next(); }, !ready(step) || step === 'review');
+    head.append(h('h2', 'bsidehead', 'Your game'), arrows);
+    side.append(head, blueprint());
     const list = h('div', 'bsteps');
     o.forEach((s, k) => {
       const state = s === step ? 'now' : k <= reach && k < i ? 'ok' : k <= reach ? 'ok' : 'todo';
@@ -270,13 +276,6 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     root.append(main, side || panel());
     landed = null;
     await fill(step, body);
-    /* Skip (nothing picked) or Next (something typed): beside the box you type in, else under the cards */
-    if (optional(step) && step !== 'review'){
-      const p = button(answered(step) ? 'Next' : 'Skip', 'bpill ' + (answered(step) ? 'go' : 'skip'));
-      onPick(p, next);
-      const typed = body.querySelector('.btyped');
-      (typed || main).appendChild(p); root._pill = p;
-    }
     onOpen();
   }
 
@@ -298,7 +297,8 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     return input;
   };
   /* (typing: the Skip pill turns into Next without drawing it all again) */
-  const pillNow = (s) => { const p = root._pill; if (p){ const a = answered(s); p.querySelector('.lbl').textContent = a ? 'Next' : 'Skip'; p.classList.toggle('go', a); p.classList.toggle('skip', !a); } };
+  const pillNow = (s) => { const d = root.querySelector('.bdown'); if (d) d.disabled = !ready(s) || s === 'review';
+     const p = root._pill; if (p){ const a = answered(s); p.querySelector('.lbl').textContent = a ? 'Next' : 'Skip'; p.classList.toggle('go', a); p.classList.toggle('skip', !a); } };
 
   /* what's inside the open question */
   async function fill(s, body){
