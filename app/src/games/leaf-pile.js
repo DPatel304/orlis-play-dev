@@ -39,7 +39,7 @@ export default {
   create(n){ return new LeafPile(n); }
 };
 
-const AUTUMN = {
+export const AUTUMN = {
   ground: {
     hills: ['#c8c07c', '#b9b06a', '#a8a05c'].map(rgbOf),
     leaf: rgbOf('#d9853b'), leafLit: rgbOf('#ecb35a'), leafShade: rgbOf('#a9522f'), trunk: rgbOf('#6e5644'),

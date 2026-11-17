@@ -1,9 +1,12 @@
-/* Each game's picture for its tile (and its banner, if it has no trailer):
-   a still of the game itself, made once and kept - in memory, and between
-   launches (by game and version, so a new version gets a new picture). */
+/* Each game's cover for its tile - its own art (covers.js) or, for a game
+   without any, a picture of it playing - with its title on; and the art
+   alone, for its banner when it has no trailer. Made once and kept (in
+   memory, and between launches; by game and version, so a new version gets
+   a new cover). */
 import { still } from './trailer.js';
+import { makeCover, hasArt } from './covers.js';
 
-const KEY = 'orlis.shots', MAX = 24;
+const KEY = 'orlis.covers', MAX = 24;
 const V = typeof __BUILD__ === 'string' ? __BUILD__ : 'dev';
 const keyOf = (g) => `${g.id}@${(g.store && g.store.version) || V}`;
 let saved = null;
@@ -11,29 +14,26 @@ const load = () => { if (saved) return saved; try { saved = JSON.parse(localStor
 const keep = () => { try { const ks = Object.keys(saved); while (ks.length > MAX) delete saved[ks.shift()]; localStorage.setItem(KEY, JSON.stringify(saved)); } catch {} };
 const images = new Map();
 
-/* the picture's address (a data: URL), if there is one yet */
-export function shotOf(g){ return load()[keyOf(g)] || null; }
-/* the picture as an image, for painting a banner */
+/* the cover (title on), as a data: URL, if there is one yet */
+export function shotOf(g){ const s = load()[keyOf(g)]; return (s && s.cover) || null; }
+/* the art alone, as an image, for painting a banner */
 export function shotImage(g){
-  const url = shotOf(g); if (!url) return null;
+  const s = load()[keyOf(g)], url = s && s.art; if (!url) return null;
   if (!images.has(url)){ const im = new Image(); im.src = url; images.set(url, im); }
   const im = images.get(url);
   return im.complete && im.naturalWidth ? im : null;
 }
-/* keep a picture (a canvas, any size: cut to 16:10 from the middle) */
-export function keepShot(g, canvas){
+function put(g, made, withArt){
   try {
-    let src = canvas;
-    const w = canvas.width, h = canvas.height, want = 1.6;
-    if (Math.abs(w / h - want) > 0.02){
-      const cw = Math.min(w, h * want), ch = cw / want;
-      src = document.createElement('canvas'); src.width = 1152; src.height = 720;
-      src.getContext('2d').drawImage(canvas, (w - cw) / 2, (h - ch) / 2, cw, ch, 0, 0, 1152, 720);
-    }
-    load()[keyOf(g)] = src.toDataURL('image/jpeg', 0.72);
+    load()[keyOf(g)] = { cover: made.cover.toDataURL('image/jpeg', 0.8), art: withArt ? made.art.toDataURL('image/jpeg', 0.75) : null };
     keep();
     return true;
   } catch { return false; }
+}
+/* a cover from a picture of the game playing (a downloaded game's banner) */
+export function keepShot(g, canvas){
+  const made = makeCover(g, { still: canvas, accent: g.accent });
+  return !!made && put(g, made, false);
 }
 /* Make the missing ones, one at a time, between frames; onShot(game) as
    each is ready. Gives back a stop(). */
@@ -43,10 +43,10 @@ export function makeShots(games, onShot){
   const next = () => {
     if (stopped || !todo.length) return;
     const g = todo.shift();
-    const c = still(g);
-    if (c && keepShot(g, c)) onShot(g);
+    const made = hasArt(g.id) ? makeCover(g) : (() => { const s = still(g); return s && makeCover(g, { still: s, accent: g.accent }); })();
+    if (made && put(g, made, true)) onShot(g);
     setTimeout(next, 120);
   };
-  setTimeout(next, 600);
+  setTimeout(next, 400);
   return () => { stopped = true; };
 }

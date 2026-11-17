@@ -1379,3 +1379,5 @@ body.remote .btn.slock.kfocus .sthumb{ transform:translateY(-.8vh) scale(1.05); 
 /* a tile with a still of the game itself: the picture, and no icon over it */
 .sthumb.shot{ background-size:cover; background-position:center; }
 .sthumb.shot .g{ display:none; }
+/* a cover has the game's name on it: no second one under it */
+.btn.slock.covered .smeta{ position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }

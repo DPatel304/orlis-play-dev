@@ -228,7 +228,7 @@ const PALETTE = {
 };
 
 /* the sky behind every picture: a soft wash, hills, a few clouds */
-function background(c, W, H, pic){
+export function background(c, W, H, pic){
   const g = c.createLinearGradient(0, 0, 0, H * 0.85);
   const top = pic === 'butterfly' ? '#b9d7c4' : pic === 'balloon' ? '#a9c9e6' : '#9fc8e6';
   g.addColorStop(0, top); g.addColorStop(1, '#f6ead2');
@@ -275,7 +275,7 @@ function cel(c, path, col, shade = 'rgba(58,51,96,.2)', ox = 0.6, oy = 0.5, r = 
   c.save(); path(); c.clip(); c.fillStyle = shade; c.beginPath(); c.ellipse(ox, oy, r, r, 0, 0, 6.2832); c.fill(); c.restore();
 }
 
-function whale(c, x, y, s, outline, t){
+export function whale(c, x, y, s, outline, t){
   const body = () => { c.beginPath(); c.ellipse(x, y, 260 * s, 120 * s, -0.08, 0, 6.2832); };
   const tail = () => { c.beginPath(); c.moveTo(x - 240 * s, y - 10 * s); c.lineTo(x - 380 * s, y - 110 * s); c.lineTo(x - 350 * s, y + 20 * s); c.lineTo(x - 390 * s, y + 110 * s); c.closePath(); };
   if (outline){ body(); c.stroke(); tail(); c.stroke(); return; }
@@ -291,7 +291,7 @@ function whale(c, x, y, s, outline, t){
   for (const [dx, dy, r] of [[0, -150, 16], [-30, -185, 12], [30, -185, 12], [-50, -215, 9], [50, -215, 9]]){ c.beginPath(); c.arc(x + 60 * s + dx * s, y + dy * s - Math.abs(Math.sin(t * 2)) * 10 * s, r * s, 0, 6.2832); c.fill(); }
 }
 
-function hotAir(c, x, y, s, outline){
+export function hotAir(c, x, y, s, outline){
   const env = () => { c.beginPath(); c.moveTo(x, y + 180 * s); c.bezierCurveTo(x - 260 * s, y + 20 * s, x - 200 * s, y - 230 * s, x, y - 230 * s); c.bezierCurveTo(x + 200 * s, y - 230 * s, x + 260 * s, y + 20 * s, x, y + 180 * s); c.closePath(); };
   const basket = () => { c.beginPath(); c.roundRect(x - 50 * s, y + 250 * s, 100 * s, 70 * s, 10 * s); };
   if (outline){ env(); c.stroke(); basket(); c.stroke(); return; }

@@ -263,7 +263,7 @@ class SleepyBear {
 
 /* the bear: asleep (eye 0), one eye peeking (eye 1), grumbling (frown),
    wide awake and waving goodbye at the end (wake) */
-function bearHead(c, x, y, s, b, t){
+export function bearHead(c, x, y, s, b, t){
   const fur = '#8a5a3b', dark = '#6e452c', muzzle = '#d9b48c', ink = '#33322e';
   for (const d of [-1, 1]){ c.fillStyle = fur; c.beginPath(); c.arc(x + d * 95 * s, y - 85 * s, 42 * s, 0, Math.PI * 2); c.fill(); c.fillStyle = '#c99a72'; c.beginPath(); c.arc(x + d * 95 * s, y - 85 * s, 22 * s, 0, Math.PI * 2); c.fill(); }
   const head = () => { c.beginPath(); c.ellipse(x, y, 140 * s, 120 * s, 0, 0, Math.PI * 2); };

@@ -197,7 +197,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   }
   /* a tile's picture: a still of the game itself, once there is one (else
      its colours and icon) */
-  const picture = (pic, g) => { const url = shotOf(g); if (url){ pic.style.backgroundImage = `url(${url})`; pic.classList.add('shot'); } };
+  const picture = (pic, g) => { const url = shotOf(g); if (url){ pic.style.backgroundImage = `url(${url})`; pic.classList.add('shot'); pic.closest('.slock')?.classList.add('covered'); } };
   /* a game's card: its art, and its name under it, big enough to read
      from the sofa (no icon - the art says it - and no small print) */
   const gameCard = (it) => {
@@ -210,6 +210,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     meta.querySelector('.nm').textContent = it.name;
     card.insertBefore(pic, card.firstChild);
     card.querySelector('.lbl').replaceWith(meta);
+    if (pic.classList.contains('shot')) card.classList.add('covered');
     return { card, pic };
   };
   const cards = items.map((it, n) => {
@@ -375,7 +376,12 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       /* a downloaded game's picture: from its banner, once it's been playing a moment */
       onBanner = items[focus] && items[focus].trailer ? onBanner + dt : 0;
       const on = items[focus];
-      if (onBanner > 2.5 && (on.g.sandboxed || on.g.discover) && !shotOf(on.g) && keepShot(on.g, heroPic)) pictured(on.g);
+      if (onBanner > 2.5 && (on.g.sandboxed || on.g.discover) && !shotOf(on.g)){
+        /* (the whole frame, not the banner's slice of it) */
+        const film = document.createElement('canvas'); film.width = 1440; film.height = 810;
+        try { on.trailer.draw(film.getContext('2d'), 1440, 810); } catch (e){}
+        if (keepShot(on.g, film)) pictured(on.g);
+      }
       /* the banner's trailer: the picked game, playing itself */
       const it = items[focus];
       if (it.trailer === undefined){
