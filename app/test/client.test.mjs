@@ -116,6 +116,7 @@ test('Home, the Store and Create are pages under the same tabs; the corner menu 
   assert.ok(!/\\u\{1F/.test(tabs), 'the corner menu has line icons, not emoji');
   assert.ok(tabs.includes("id !== 'create' || !account.isKid"), 'a child playing sees Home and the Store, not Create');
   assert.ok(!/Store<\/span>|Create<\/span>/.test(tabs), 'Store and Create are tabs now, not in the corner menu');
+  assert.ok(!tabs.includes('places'), 'the menu has no Play / Discover / Create items: those are the tabs');
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   assert.match(main, /go\('store'/); assert.match(main, /go\('create'/);
   assert.match(main, /const HOMEY = new Set\(\['menu', 'store', 'create', 'family', 'who'\]\)/);

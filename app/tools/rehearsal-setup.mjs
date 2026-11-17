@@ -26,8 +26,8 @@ const check = (ok, what) => { console.log((ok ? '  ✓ ' : '  ✗ ') + what); if
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
 /* (one page: Play, Discover and Create are reached from the corner menu) */
-const goTo = async (pg, t) => { await pg.keyboard.press('Escape').catch(() => {}); await pg.click('.burger'); await pg.waitForTimeout(350); const it = await pg.$(`.popitem >> text=${t}`); if (it) await it.click(); else await pg.keyboard.press('Escape'); };
-const menuItems = async (pg) => { await pg.click('.burger'); await pg.waitForTimeout(350); const r = await pg.$$eval('.popitem .pn', e => e.map(x => x.textContent)); await pg.keyboard.press('Escape'); return r; };
+const goTo = async (pg, t) => { await pg.keyboard.press('Escape').catch(() => {}); const it = await pg.$(`.tvtab:not(.on) >> text="${t}"`); if (it) await it.click(); };
+const menuItems = async (pg) => pg.$$eval('.tvtab', e => e.map(x => x.textContent));
 const s = await start({ dataDir: mkdtempSync(join(tmpdir(), 'orlis-setup-')), port: 47871, discoveryPort: 0, name: "The family's Orlis", approveJoins: true, tailscaleJoin: () => false, internetPort: 0 });
 const S = 'http://127.0.0.1:47871', DOOR = `http://127.0.0.1:${s.internetPort}`;
 const api = async (m, p, b, extra = {}) => { const r = await fetch(S + p, { method: m, headers: { 'Content-Type': 'application/json', ...extra }, body: b ? JSON.stringify(b) : undefined }); return r.json(); };

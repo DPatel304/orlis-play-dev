@@ -1,6 +1,6 @@
-/* The top bar every page shares - Play, the Store and Create, like the Apple
-   TV's: the Orlis Play name (and who's playing) on the left, the three tabs
-   in the middle, and who's playing and the corner menu on the right.
+/* The top bar every page shares - Play, Discover and Create, like the Apple
+   TV's: the three tabs in the middle, and who's playing and the corner menu
+   (the cube) on the right.
 
    topBar(page, nav, opts) gives { el, tick() }: put el on the page and call
    tick() each frame. nav has home(), store() and
@@ -58,7 +58,7 @@ function keepBanner(top){
 export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false } = {}){
   const top = h('div', 'tvtop');
   const from = lastTab; lastTab = page;
-  /* (the brand is the menu button now - the cube with its face, top right) */
+  /* (the menu is the cube with its face, top right; the brand div stays empty) */
   const brand = h('div', 'brand');
   /* who's playing (in the Windows app): their picture and name, and picking
      it goes back to "Who's playing?" */
@@ -68,16 +68,14 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
     /* (on the right, beside the menu) */
     whoChip = (withFace(onPick(button(`<span class="av">${AVATARS[who.avatar] || AVATARS.cube}</span><span class="nm">${who.name.replace(/[&<>]/g, '')}</span>`, 'whochip'), () => { sfx.select(); onWho(); }), who, 64));
   }
-  /* One page: Play has no tabs - Discover and Create are reached from its
-     rows and the corner menu; on those, one way back to Play. */
+  /* the three tabs (a child playing sees Play and Discover; Create is for
+     grown-ups). The one you're on is just a label. */
   const tabs = h('nav', 'tvtabs');
-  const shown = [];
-  if (page !== 'home' && nav.home){
-    tabs.appendChild(onPick(button('\u2190 Play', 'tvtab back'), () => { if (isBusy()) return; sfx.back?.(); keepBanner(top); nav.home(); }));
+  const shown = TABS.filter(([id]) => nav[id] && (id !== 'create' || !account.isKid));
+  for (const [id, name] of shown){
+    if (id === page){ tabs.appendChild(h('span', 'tvtab on', name)); continue; }
+    tabs.appendChild(onPick(button(name, 'tvtab'), () => { if (isBusy()) return; sfx.nav(); keepBanner(top); nav[id](); }));
   }
-  /* where the corner menu can go (a child playing: Discover, not Create) */
-  const places = TABS.filter(([id]) => id !== page && nav[id] && (id !== 'create' || !account.isKid))
-    .map(([id, name]) => ({ id, name, go: () => { if (isBusy()) return; keepBanner(top); nav[id](); } }));
   /* (no camera light here: the camera's off on these pages on purpose, and
      Home says so plainly if there's no camera at all) */
   /* (no clock: who's playing sits there instead) */
@@ -85,7 +83,7 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
   /* the menu: the cube, with its face - it winks when you point at it */
   const burger = onPick(button(`<span class="mark">${mark(true)}</span>`, 'burger cubebtn'), () => {
     if (menuOpen || isBusy()) return;
-    menuOpen = cornerMenu({ onRecalibrate, places, onFamily: nav.family && account.signedIn ? nav.family : null, onClosed: () => { menuOpen = null; } });
+    menuOpen = cornerMenu({ onRecalibrate, onFamily: nav.family && account.signedIn ? nav.family : null, onClosed: () => { menuOpen = null; } });
   });
   burger.title = 'Menu'; burger.setAttribute('aria-label', 'Menu');
   /* (a wink as the page comes in, like the end of the intro) */
@@ -136,16 +134,13 @@ function appWindow(){
 }
 
 /* The corner menu: a little card under the button - Settings, Family, a newer version, signing out, and Exit. A click outside it closes it (or Escape). */
-export function cornerMenu({ onRecalibrate, onFamily = null, onClosed, places = [] } = {}){
+export function cornerMenu({ onRecalibrate, onFamily = null, onClosed } = {}){
   sfx.select();
   const open = screen('dim popmenu'); open.style.zIndex = 5;
   const card = h('div', 'popcard');
   const esc = (e) => { if (e.key === 'Escape'){ e.preventDefault(); sfx.back(); shut(); } };
   const shut = () => { if (!open.isConnected) return; open.remove(); removeEventListener('keydown', esc, true); onClosed && onClosed(); };
   addEventListener('keydown', esc, true);
-  /* the other places: Play, Discover, Create */
-  for (const p of places) card.appendChild(onPick(button(item(p.id === 'home' ? 'play' : p.id === 'store' ? 'discover' : 'create', p.name), 'popitem'), () => { sfx.select(); shut(); p.go(); }));
-  if (places.length) card.appendChild(h('div', 'popline'));
   card.appendChild(onPick(button(item('settings', 'Settings'), 'popitem'), () => {
     sfx.select(); shut(); openSettings(onRecalibrate);
   }));

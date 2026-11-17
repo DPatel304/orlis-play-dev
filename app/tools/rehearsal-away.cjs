@@ -23,8 +23,8 @@ const check = (ok, what) => { log((ok ? '  ✓ ' : '  ✗ ') + what); if (!ok) f
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
 /* (one page: Play, Discover and Create are reached from the corner menu) */
-const goTo = async (pg, t) => { await pg.keyboard.press('Escape').catch(() => {}); await pg.click('.burger'); await pg.waitForTimeout(350); const it = await pg.$(`.popitem >> text=${t}`); if (it) await it.click(); else await pg.keyboard.press('Escape'); };
-const menuItems = async (pg) => { await pg.click('.burger'); await pg.waitForTimeout(350); const r = await pg.$$eval('.popitem .pn', e => e.map(x => x.textContent)); await pg.keyboard.press('Escape'); return r; };
+const goTo = async (pg, t) => { await pg.keyboard.press('Escape').catch(() => {}); const it = await pg.$(`.tvtab:not(.on) >> text="${t}"`); if (it) await it.click(); };
+const menuItems = async (pg) => pg.$$eval('.tvtab', e => e.map(x => x.textContent));
 
 /* the Windows app, standing in: game folders kept (across restarts), Claude Code
    "opened", and the Wi-Fi: at home (no server), or at your house (and where). */

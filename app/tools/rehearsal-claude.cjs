@@ -12,8 +12,8 @@ const check = (ok, what) => { log((ok ? '  ✓ ' : '  ✗ ') + what); if (!ok) f
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
 /* (one page: Play, Discover and Create are reached from the corner menu) */
-const goTo = async (pg, t) => { await pg.keyboard.press('Escape').catch(() => {}); await pg.click('.burger'); await pg.waitForTimeout(350); const it = await pg.$(`.popitem >> text=${t}`); if (it) await it.click(); else await pg.keyboard.press('Escape'); };
-const menuItems = async (pg) => { await pg.click('.burger'); await pg.waitForTimeout(350); const r = await pg.$$eval('.popitem .pn', e => e.map(x => x.textContent)); await pg.keyboard.press('Escape'); return r; };
+const goTo = async (pg, t) => { await pg.keyboard.press('Escape').catch(() => {}); const it = await pg.$(`.tvtab:not(.on) >> text="${t}"`); if (it) await it.click(); };
+const menuItems = async (pg) => pg.$$eval('.tvtab', e => e.map(x => x.textContent));
 const api = async (m, p, b) => { const r = await fetch(S + p, { method: m, headers: { 'Content-Type': 'application/json' }, body: b ? JSON.stringify(b) : undefined }); return r.json(); };
 /* the PC: Claude Code not there; the buttons "install" it and "sign in" (a moment later) */
 const TAURI = `window.__claude = { installed: false, signedIn: false }; window.__asked = [];
