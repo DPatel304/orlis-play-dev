@@ -1,6 +1,6 @@
-// The modes, against a real server: with nothing said the app shows all four tabs (to build and test
-// them); as the Creator app (?mode=creator, which a Creator build sets for itself) it has only Create and
-// Create Pro, can't play, and has no volume or camera in Settings; as the Player app it has no Create Pro.
+// The modes, against a real server: with nothing said the app is the Creator app (for now): only Create
+// and Create Pro, it can't play, and has no volume or camera in Settings; as the Player app
+// (?mode=player) it has Play, Discover and Create and no Create Pro.
 // Create Pro is the Dev Kit - the Windows app is pretend here (the folders are kept in memory).
 //   cd app && npx vite --port 5191 &
 //   NODE_PATH=$(npm root -g) node tools/rehearsal-creator.cjs http://localhost:5191/ /tmp/creator ../server
@@ -45,16 +45,27 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
     return pg;
   };
 
-  log('\n1. Nothing said: all four tabs, to build and test them');
+  log('\n1. Nothing said: the Creator app, for now');
   let pg = await open('');
-  check((await tabsOf(pg)).join('|') === 'Play|Discover|Create|Create Pro', 'Play, Discover, Create, Create Pro: ' + (await tabsOf(pg)).join(', '));
-  check(!!(await pg.$('.tvtab.on >> text=Play')), 'it opens on Play');
+  check((await tabsOf(pg)).join('|') === 'Create|Create Pro' && !!(await pg.$('.createpage')), 'Create and Create Pro, opening on Create: ' + (await tabsOf(pg)).join(', '));
   await pg.context().close();
 
-  log('\n2. The Player app: no Create Pro');
+  log('\n1b. Switching, for testing: Settings has a Mode switch');
+  pg = await open('');
+  await pg.keyboard.press('Escape'); await wait(900);
+  await pg.click('.burger'); await wait(400); await pg.click('.popitem >> text=Settings'); await wait(500);
+  check((await pg.$$eval('.setname', e => e.map(x => x.textContent))).includes('Mode'), 'Settings has a Mode row');
+  await pg.click('.seg .setbtn >> text=Player'); await wait(1800);
+  check((await tabsOf(pg)).join('|') === 'Play|Discover|Create' && !!(await pg.$('.tvtab.on >> text=Play')), 'Player: Play, Discover, Create, on Play: ' + (await tabsOf(pg)).join(', '));
+  await pg.click('.burger'); await wait(400); await pg.click('.popitem >> text=Settings'); await wait(500);
+  await pg.click('.seg .setbtn >> text=Creator'); await wait(1800);
+  check((await tabsOf(pg)).join('|') === 'Create|Create Pro', 'and back to Creator: ' + (await tabsOf(pg)).join(', '));
+  await pg.context().close();
+
+  log('\n2. The Player app: Play, Discover and Create, no Create Pro');
   pg = await open('&mode=player');
   const fam = await tabsOf(pg);
-  check(fam.includes('Discover') && fam.includes('Create') && !fam.includes('Create Pro'), 'Play, Discover, Create: ' + fam.join(', '));
+  check(fam.join('|') === 'Play|Discover|Create' && !!(await pg.$('.tvtab.on >> text=Play')), 'Play, Discover, Create, opening on Play: ' + fam.join(', '));
   await pg.context().close();
 
   log('\n3. The Creator app: only Create and Create Pro; it cannot play');

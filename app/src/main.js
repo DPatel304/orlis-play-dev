@@ -129,6 +129,11 @@ addEventListener('orlisletin', () => {
 function toCreate(){
   go('create', () => createPage({ nav: tabs(), onPlay: toGame, onWho: () => toWho(false), onRecalibrate: toCalibration }));
 }
+/* the mode was switched (Settings, in a testing build): that mode's first page */
+addEventListener('orlismode', (e) => {
+  if (e.detail === 'creator') toCreate(); else toMenu(false);
+  toast(e.detail === 'creator' ? 'Creator app' : 'Player app', { ms: 2500 });
+});
 /* Create Pro: making games with Claude Code */
 function toPro(){
   go('pro', () => createPage({ pro: true, nav: tabs(), onPlay: toGame, onWho: () => toWho(false), onRecalibrate: toCalibration }));

@@ -574,6 +574,21 @@ function settings(onRecalibrate){
     row('Updates', up, h('span', 'keyhint', `Orlis Play ${appInfo.label ? appInfo.label() : appInfo.version}`));
   }
 
+  /* the mode, for testing (a build that was told its mode has no switch) */
+  if (appMode.canSwitch()){
+    const seg = h('div', 'seg');
+    const modes = [['player', 'Player'], ['creator', 'Creator']];
+    const mark = () => modes.forEach(([m], i) => seg.children[i].classList.toggle('chosen', appMode.get() === m));
+    for (const [m, name] of modes){
+      seg.appendChild(small(name, () => {
+        if (appMode.get() === m) return;
+        sfx.select(); appMode.set(m); s.remove();
+      }, 'mode'));
+    }
+    mark();
+    row('Mode', seg, h('span', 'keyhint', 'testing only'));
+  }
+
   /* the screen: in the Windows app, a window or Big Picture (full screen,
      for the TV), kept for next time; in a browser, its own full screen */
   const display = typeof window !== 'undefined' && window.orlisDisplay;

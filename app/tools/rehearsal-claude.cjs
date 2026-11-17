@@ -37,7 +37,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   const pg = await ctx.newPage();
   const errs = [];
   pg.on('pageerror', e => { if (!/sandboxed/.test(e.message)) errs.push(e.message); });
-  await pg.goto(appUrl + '?debug&splash=0&fx=0');
+  await pg.goto(appUrl + '?debug&splash=0&fx=0&mode=player');
   await pg.waitForSelector('.tvtop', { timeout: 25000 });
   await pg.waitForTimeout(1000);
   await goTo(pg, 'Create'); await pg.waitForTimeout(1800);

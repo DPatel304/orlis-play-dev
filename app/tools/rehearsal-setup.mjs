@@ -61,7 +61,7 @@ const body = async () => ((await pg.textContent('body').catch(() => '')) || '').
 const seenText = [];
 try {
   console.log('\n1. First time opening Orlis Play, at home - offline just now');
-  await pg.goto(appUrl + '?debug&splash=0&fx=0');
+  await pg.goto(appUrl + '?debug&splash=0&fx=0&mode=player');
   await pg.waitForSelector('text=Can’t reach your Orlis server', { timeout: 30000 });
   check(true, 'it says it can’t reach the server, plainly');
   seenText.push(await body());

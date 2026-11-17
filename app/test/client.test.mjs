@@ -157,16 +157,17 @@ test('a game waiting for the owner\'s OK is played before it can be approved: th
   assert.ok(readFileSync(new URL('../src/ui/store.js', import.meta.url), 'utf8').includes('game.trial = g.submission'), 'Try it marks the game');
 });
 
-test('one app, modes by install: Player has Create, Creator has Create and Create Pro, and for now everything shows', async () => {
+test('one app, modes by install: Player has Play, Discover and Create; Creator has Create and Create Pro; unset is Creator', async () => {
   const { MODES, appMode } = await import('../src/ui/mode.js');
   assert.deepEqual(MODES.player, ['home', 'store', 'create']);
   assert.deepEqual(MODES.creator, ['create', 'pro']);
-  assert.deepEqual(MODES.all, ['home', 'store', 'create', 'pro']);
-  assert.equal(appMode.get(), 'all', 'unset, it shows all four tabs, to build and test them');
+  assert.equal(Object.keys(MODES).length, 2);
+  assert.equal(appMode.get(), 'creator', 'for now, unset is the Creator app');
+  assert.equal(appMode.canSwitch(), true, 'a testing build (no mode told, no release label) can be switched');
   const tabs = readFileSync(new URL('../src/ui/tabs.js', import.meta.url), 'utf8');
   assert.ok(tabs.includes('appMode.tabs().includes(id)'), 'the tab bar follows the mode');
   const menu = readFileSync(new URL('../src/ui/menu.js', import.meta.url), 'utf8');
-  assert.ok(!menu.includes("row('Mode'"), 'nothing in the app lets anyone switch');
+  assert.ok(menu.includes("row('Mode'") && menu.includes('appMode.canSwitch()'), 'testing builds can switch in Settings; a build told its mode cannot');
   const rust = readFileSync(new URL('../client/src-tauri/src/main.rs', import.meta.url), 'utf8');
-  assert.ok(rust.includes('option_env!("ORLIS_MODE")') && rust.includes('window.ORLIS_MODE'), 'the build says which mode it is');
+  assert.ok(rust.includes('option_env!("ORLIS_MODE").unwrap_or("")') && rust.includes('window.ORLIS_MODE'), 'the build says which mode it is, if it was told');
 });

@@ -191,8 +191,8 @@ The plan for creating (decided):
   Mode 2, *Creator*, is for a grown-up's laptop or phone: only Create and Create Pro, and it
   can't play games (no Try it - send the game, then try it on the TV). The build decides the
   mode (`ORLIS_MODE=player|creator`, read by `src/ui/mode.js`; `?mode=` in a browser), and
-  nothing in the app switches it. **For now it's `all`: all four tabs show, to build and test
-  them.** Create Pro is the old Dev Kit (Claude Code connect, build, Check and send). Still to
+  nothing in the app switches it. **A build that is told its mode is locked to it; one that isn't (the Beta, a browser)
+  has a Mode switch in Settings, for testing, and starts as `creator`.** Create Pro is the old Dev Kit (Claude Code connect, build, Check and send). Still to
   do:
   - **Phone sign-in.** A QR code on the "Sign in to Claude" step, so a grown-up can sign in on
     their phone. Check first what Claude Code's sign-in actually hands back (it may only return

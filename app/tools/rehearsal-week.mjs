@@ -56,7 +56,7 @@ const shot = (n) => pg.screenshot({ path: `${out}-${n}.png` });
 const titles = () => pg.$$eval('.shelf h3', e => e.map(x => x.firstChild.textContent));
 try {
   console.log('\n1. Play: this week\'s featured from Discover, and the challenges');
-  await pg.goto(appUrl + '?debug&fx=0');
+  await pg.goto(appUrl + '?debug&fx=0&mode=player');
   /* the challenges come up first, as three big cards */
   await pg.waitForSelector('.chsplash .chbig', { timeout: 20000 });
   const big = await pg.$$eval('.chbig', e => e.map(x => x.querySelector('.chtt').textContent + ' ' + x.querySelector('.chft span').textContent));

@@ -62,7 +62,7 @@ async function page(b, state, name){
   pg.errs = [];
   pg.on('pageerror', e => { if (!/sandboxed/.test(e.message)) pg.errs.push(name + ': ' + e.message); });
   await pg.addInitScript(TAURI + FAKE + (state ? `localStorage.setItem('orlis.account', ${JSON.stringify(JSON.stringify(state))});` : ''));
-  await pg.goto(appUrl + '?debug&splash=0&fx=0');
+  await pg.goto(appUrl + '?debug&splash=0&fx=0&mode=player');
   return pg;
 }
 const stateOf = (me) => ({ server: { url: S, name: 'Home' }, token: me.token, account: me.account, household: me.household, profiles: me.profiles, current: me.profiles[0].id });
