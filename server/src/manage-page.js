@@ -18,12 +18,27 @@ export function managePage(){
 *{ box-sizing:border-box }
 body{ margin:0; background:var(--paper); color:var(--ink); font:16px/1.45 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif; }
 header{ display:flex; align-items:center; gap:16px; padding:20px 32px; }
-header h1{ font-size:22px; margin:0; font-weight:650; }
+header h1{ font-size:22px; margin:0; font-weight:650; display:flex; align-items:center; gap:10px; }
+header h1 svg{ width:34px; height:34px; flex:none; filter:drop-shadow(0 3px 6px rgba(20,20,60,.2)); }
 header h1 i{ font-style:normal; font-weight:400; background:linear-gradient(90deg,#2bb6c9,#5b8cf5,#a66bf5); -webkit-background-clip:text; background-clip:text; color:transparent; }
 nav{ display:flex; gap:4px; margin-left:auto; padding:4px; border-radius:999px; background:#fff; box-shadow:0 2px 10px rgba(20,24,50,.08); }
 nav button{ border:0; background:transparent; font:inherit; font-weight:600; color:#3b3e4d; padding:8px 18px; border-radius:999px; cursor:pointer; }
 nav button.on{ background:var(--ink); color:#fff; }
 main{ max-width:880px; margin:8px auto 60px; padding:0 24px; }
+main.wide{ max-width:1120px; }
+.cols{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; align-items:start; }
+.cols > div > .card:last-child{ margin-bottom:0; }
+@media (max-width:860px){ .cols{ grid-template-columns:1fr; } }
+.need{ display:flex; align-items:center; gap:14px; padding:13px 0; border-top:1px solid var(--line); }
+.need:first-of-type{ border-top:0; }
+.need .n{ flex:none; min-width:34px; height:34px; padding:0 8px; border-radius:999px; background:var(--violet); color:#fff; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+.need .t{ flex:1; } .need .t small{ display:block; color:var(--faint); font-size:13.5px; }
+.caught{ display:flex; align-items:center; gap:12px; padding:6px 0 2px; color:var(--dim); }
+.caught b{ color:#15803d; font-size:17px; }
+.caught i{ font-style:normal; width:30px; height:30px; border-radius:50%; background:#dcfce7; color:#15803d; display:inline-flex; align-items:center; justify-content:center; font-weight:700; }
+.shot{ flex:none; width:112px; aspect-ratio:16/9; border-radius:10px; position:relative; overflow:hidden; margin-right:14px; box-shadow:0 3px 10px rgba(20,24,50,.16); }
+.shot svg{ position:absolute; left:50%; top:50%; height:62%; width:auto; transform:translate(-50%,-50%); opacity:.55; }
+.tag.star{ background:#ede9fe; color:#5b4ce6; } .tag.new{ background:#dcfce7; color:#15803d; }
 .steps{margin:6px 0 10px 20px;line-height:1.55}.steps li{margin:4px 0}.card{ background:var(--card); border-radius:18px; padding:22px 24px; box-shadow:0 6px 22px rgba(20,24,50,.07); margin-bottom:18px; }
 .card h2{ margin:0 0 6px; font-size:19px; }
 .row{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-top:1px solid var(--line); }
@@ -64,7 +79,7 @@ button:disabled{ opacity:.55; cursor:not-allowed; } .tag.declined{ background:#f
 .empty{ text-align:center; color:var(--dim); padding:60px 20px; font-size:18px; }
 </style></head>
 <body>
-<header><h1>Orlis <i>Server</i></h1>
+<header><h1><svg viewBox="-1 -1.1 2 2.2" aria-hidden="true"><defs><linearGradient id="cT" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9fbff"/><stop offset="1" stop-color="#f3e8ff"/></linearGradient><linearGradient id="cL" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#60a5fa"/></linearGradient><linearGradient id="cR" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#c084fc"/></linearGradient></defs><path d="M-.866 -.5 L0 0 L0 1 L-.866 .5Z" fill="url(#cL)"/><path d="M0 0 L.866 -.5 L.866 .5 L0 1Z" fill="url(#cR)"/><path d="M-.866 -.5 L0 -1 L.866 -.5 L0 0Z" fill="url(#cT)"/><g transform="matrix(.866 -.5 0 1 0 0)"><ellipse cx=".3" cy=".38" rx=".085" ry=".125" fill="#1e1b4b"/><ellipse cx=".7" cy=".38" rx=".085" ry=".125" fill="#1e1b4b"/><ellipse cx=".276" cy=".34" rx=".026" ry=".034" fill="#fff" opacity=".9"/><ellipse cx=".676" cy=".34" rx=".026" ry=".034" fill="#fff" opacity=".9"/><path d="M.32 .58 Q.5 .76 .68 .58" stroke="#1e1b4b" stroke-width=".055" fill="none" stroke-linecap="round"/></g></svg><span>Orlis <i>Server</i></span></h1>
 <nav id="tabs"><button data-t="overview" class="on">Overview</button><button data-t="approvals">Approvals<span id="waiting"></span></button><button data-t="families">Families</button><button data-t="store">Discover</button><button data-t="backups">Backups</button><button data-t="history">History</button></nav></header>
 <main id="main"></main>
 <script>
@@ -82,7 +97,10 @@ var TRY = ${TRY_SECS};
       .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw new Error(d.message || 'That didn\\u2019t work.'); return d; }); });
   }
   function h(html){ var d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild; }
-  function card(title){ var c = h('<section class="card"><h2>' + esc(title) + '</h2></section>'); main.appendChild(c); return c; }
+  function card(title, into){ var c = h('<section class="card"><h2>' + esc(title) + '</h2></section>'); (into || main).appendChild(c); return c; }
+  /* two columns (for the Overview): where the cards go */
+  function cols(){ var g = h('<div class="cols"><div></div><div></div></div>'); main.appendChild(g); return [g.children[0], g.children[1]]; }
+  function go(t){ tab = t; show(); }
   function row(c, left, right){ var r = h('<div class="row"><div>' + left + '</div><div></div></div>'); (right || []).forEach(function(x){ r.lastChild.appendChild(x); }); c.appendChild(r); return r; }
   function btn(label, cls, fn){ var b = document.createElement('button'); b.className = 'b ' + (cls || ''); b.textContent = label; b.onclick = function(){ fn(b); }; return b; }
   /* a button that asks first: picked once it asks, picked again it does it */
@@ -90,13 +108,13 @@ var TRY = ${TRY_SECS};
   function note(c, t, cls){ var p = document.createElement('p'); p.className = cls || 'muted'; p.textContent = t; c.appendChild(p); return p; }
   function fail(c){ return function(e){ note(c, e.message, 'err'); }; }
 
-  var UPDATE = { 'up to date': ['Up to date', 'ok'], ready: ['A newer version is ready - it switches at a quiet moment', ''], offline: ['Couldn\\u2019t check for updates just now', ''], waiting: ['Checking for updates soon', ''], off: ['Updates only in the Windows exe', ''] };
+  var UPDATE = { 'up to date': ['Up to date', 'ok'], ready: ['A newer version is ready - it switches at a quiet moment', ''], offline: ['Couldn\\u2019t check for updates just now', ''], waiting: ['Checking for updates soon', ''], off: ['This copy doesn\\u2019t update itself - the Windows app does', ''] };
   var KINDS = { daily: 'Daily', update: 'Before an update', manual: 'Made by you', 'before-restore': 'Before a restore' };
 
   /* Game requests: each read here - its sentence, their words, the prompt
      Claude gets (changeable) - then Make this game, or Decline with a note.
      They're made on this laptop with its Claude Code (the maker). */
-  var MAKER = { ready: '', making: 'Making one now on this laptop…', 'no-claude': 'Claude Code isn’t on this laptop yet, so requests can’t be made here. Install it (code.claude.com/docs/en/setup), sign in once, then restart Orlis Server.', off: 'Making games is switched off on this server ("maker": false).' };
+  var MAKER = { ready: '', making: 'Making one now on this laptop…', 'no-claude': 'Claude Code isn’t on this laptop yet, so requests can’t be made here. Install it (code.claude.com/docs/en/setup), sign in once, then restart Orlis Server.', off: 'Making games from requests is switched off on this server. To turn it on, set "maker" to true in settings.json (in the server\u2019s data folder), then restart it.' };
   function requestsCard(list, maker){
     var waiting = list.filter(function(x){ return x.state === 'waiting' || x.state === 'making'; });
     var done = list.filter(function(x){ return x.state !== 'waiting' && x.state !== 'making'; });
@@ -137,20 +155,23 @@ var TRY = ${TRY_SECS};
     approvals: function(){
       /* the closed beta: people who asked on the beta page */
       return call('GET', '/api/beta').then(function(r){
-        var c = card('Closed beta');
+        var c = card('Let someone in');
         var asked = r.beta.filter(function(x){ return x.status === 'requested'; });
         var link = function(res){ if (res && !res.sent && res.link){ var n = note(c, (res.why ? res.why + ' ' : '') + 'Their download link: ' + res.link); n.className = 'warn'; } };
+        note(c, 'Type the email of someone you want in (family, say). Once approved they install Orlis Play and make an account with that email - straight in.');
         if (!r.mail) note(c, 'Email isn\\u2019t set up yet (Overview \\u203a Email), so approving shows the download link for you to send.');
-        if (!asked.length) note(c, 'Nobody waiting. People ask on your beta page: ' + location.origin.replace('127.0.0.1', 'your address') + '/');
+        /* someone you'd like in already (your family): approve their email straight away */
+        var add = h('<form class="addbeta"><input type="email" placeholder="Add someone\\u2019s email" required><button class="b go">Approve</button></form>');
+        add.onsubmit = function(ev){ ev.preventDefault(); var v = add.querySelector('input').value; call('POST', '/api/beta/approve', { email: v }).then(function(res){ add.querySelector('input').value = ''; if (res.sent) note(c, 'Sent ' + res.email + ' the download link.'); link(res); }, fail(c)); };
+        c.appendChild(add);
+        /* people who asked on the beta page (only if that page is on, or they asked while it was) */
+        if (r.page && !asked.length) note(c, 'Nobody waiting. People ask on your beta page: ' + location.origin.replace('127.0.0.1', 'your address') + '/');
+        if (asked.length) note(c, 'Asked on the beta page:', 'muted');
         asked.forEach(function(x){
           row(c, '<b>' + esc(x.email) + '</b><small>asked ' + esc(when(x.createdAt)) + '</small>',
             [btn('Approve', 'go', function(b){ b.textContent = 'Sending\\u2026'; call('POST', '/api/beta/approve', { email: x.email }).then(function(res){ link(res); if (res.sent) show(); else b.textContent = 'Approved'; }, fail(c)); }),
              sure('Decline', 'Decline? Click again', 'danger', function(){ call('POST', '/api/beta/decline', { email: x.email }).then(show, fail(c)); })]);
         });
-        /* someone you'd like in already (your family): approve their email straight away */
-        var add = h('<form class="addbeta"><input type="email" placeholder="Add someone\\u2019s email" required><button class="b go">Approve</button></form>');
-        add.onsubmit = function(ev){ ev.preventDefault(); var v = add.querySelector('input').value; call('POST', '/api/beta/approve', { email: v }).then(function(res){ add.querySelector('input').value = ''; if (res.sent) note(c, 'Sent ' + res.email + ' the download link.'); link(res); }, fail(c)); };
-        c.appendChild(add);
         var inn = r.beta.filter(function(x){ return x.status === 'approved' || x.status === 'joined'; });
         if (inn.length) note(c, 'In the beta: ' + inn.map(function(x){ return x.email + (x.status === 'joined' ? ' (joined)' : x.sentAt ? ' (emailed)' : ''); }).join(', '));
       }).then(function(){ return call('GET', '/api/joins'); }).then(function(r){
@@ -188,32 +209,65 @@ var TRY = ${TRY_SECS};
       });
     },
     overview: function(){
-      return call('GET', '/api/mail').then(function(m){
-        var c = card('Email');
-        if (m.ready) row(c, 'Sends from <b>' + esc(m.user) + '</b><small>The closed beta\\u2019s \\u201cyou\\u2019re in\\u201d emails, with the download link.</small>',
-          [btn('Send a test', '', function(b){ b.textContent = 'Sending\\u2026'; call('POST', '/api/mail/test').then(function(r){ b.textContent = 'Sent to ' + r.to; }, function(e){ b.textContent = 'Send a test'; fail(c)(e); }); }),
-           sure('Turn off', 'Turn off? Click again', 'danger', function(){ call('POST', '/api/mail', { user: '', pass: '' }).then(show, fail(c)); })]);
-        else {
-          note(c, 'To email people their download link: your Gmail address, and an app password (Google Account \\u203a Security \\u203a App passwords - make one called Orlis). It stays on this laptop.');
-          var f = h('<form class="mailset"><input type="email" placeholder="you@gmail.com" required><input type="password" placeholder="App password (16 letters)" required><button class="b go">Save</button></form>');
-          f.onsubmit = function(ev){ ev.preventDefault(); var i = f.querySelectorAll('input'); call('POST', '/api/mail', { user: i[0].value, pass: i[1].value }).then(show, fail(c)); };
-          c.appendChild(f);
-        }
-      }).catch(function(){}).then(function(){ return call('GET', '/api/server'); }).then(function(s){
-        var c = card('This server');
+      main.className = 'wide';
+      var left = cols(), right = left[1]; left = left[0];
+      var got = {};
+      /* what needs you: asked to join, game requests, games waiting for your OK */
+      return Promise.all([
+        call('GET', '/api/beta').catch(function(){ return { beta: [], mail: false }; }),
+        call('GET', '/api/joins').catch(function(){ return { joins: [] }; }),
+        call('GET', '/api/requests').catch(function(){ return { requests: [] }; }),
+        call('GET', '/api/submissions').catch(function(){ return { submissions: [] }; }),
+        call('GET', '/api/server')
+      ]).then(function(r){
+        got = { beta: r[0], joins: r[1].joins || [], requests: r[2].requests || [], subs: r[3].submissions || [], server: r[4] };
+        var asked = got.beta.beta.filter(function(x){ return x.status === 'requested'; }).length;
+        var joins = got.joins.length;
+        var reqs = got.requests.filter(function(x){ return x.state === 'waiting'; }).length;
+        var subs = got.subs.filter(function(x){ return x.state === 'waiting'; }).length;
+        var c = card('Needs you', left);
+        var items = [
+          [asked, asked === 1 ? 'Someone asked for the beta' : asked + ' people asked for the beta', 'Approve them and they get the download link', 'Review'],
+          [joins, joins === 1 ? 'Someone wants to join' : joins + ' people want to join', 'Let them in, or not', 'Review'],
+          [reqs, reqs === 1 ? 'A game request' : reqs + ' game requests', 'Read it, then make it or decline', 'Read'],
+          [subs, subs === 1 ? 'A game is waiting for your OK' : subs + ' games are waiting for your OK', 'Play it first, then approve', 'Open']
+        ].filter(function(x){ return x[0] > 0; });
+        if (!items.length) c.appendChild(h('<div class="caught"><i>✓</i><span><b>All caught up</b><br>Nothing is waiting for you. New things show up here, and by the clock.</span></div>'));
+        items.forEach(function(x){
+          var r2 = h('<div class="need"><span class="n">' + x[0] + '</span><span class="t"><b>' + esc(x[1]) + '</b><small>' + esc(x[2]) + '</small></span></div>');
+          r2.appendChild(btn(x[3], 'go', function(){ go('approvals'); }));
+          c.appendChild(r2);
+        });
+        return call('GET', '/api/mail').catch(function(){ return null; });
+      }).then(function(m){
+        /* this server */
+        var s = got.server;
+        var c = card('This server', right);
         var u = UPDATE[s.update && s.update.state] || ['', ''];
-        row(c, '<div class="big">' + esc(s.name) + '</div><small>Orlis Server ' + esc(s.version) + ' \\u00b7 the name families see</small>',
+        row(c, '<div class="big">' + esc(s.name) + '</div><small>Orlis Server ' + esc(s.version) + ' · the name families see</small>',
           [btn('Rename', '', function(){ var n = prompt('Its name, as families see it:', s.name); if (n && n.trim()) call('POST', '/api/server/name', { name: n }).then(show, fail(c)); })]);
         row(c, '<span class="' + u[1] + '">' + esc(u[0]) + '</span>');
-        row(c, 'Making requested games<small>' + esc({ ready: 'Ready - with this laptop\u2019s Claude Code', making: 'Making one now', 'no-claude': 'Claude Code isn\u2019t on this laptop yet', off: 'Switched off' }[(s.maker || {}).state] || 'Switched off') + '</small>');
+        row(c, 'Making games from requests<small>' + esc({ ready: 'Ready - with this laptop’s Claude Code', making: 'Making one now', 'no-claude': 'Claude Code isn’t on this laptop yet', off: 'Switched off (see Approvals > Game requests)' }[(s.maker || {}).state] || 'Switched off') + '</small>');
         row(c, 'Last backup<small>' + (s.backups[0] ? esc(when(s.backups[0].at)) : 'None yet - one is made each day') + '</small>');
         if (s.addresses && s.addresses.length) row(c, 'Its address on the home Wi-Fi<small>' + esc(s.addresses.join('  or  ')) + ' - Orlis Play finds it by itself; this is in case it ever asks</small>');
         if (s.restoring) note(c, 'A restore is waiting: it happens as the server next starts.', 'warn');
         /* people who live elsewhere: Tailscale */
-        var t = card('Family who live elsewhere');
-        note(t, 'They ask on your beta page (Approvals \\u203a Closed beta), or you add their email there. Once approved, they install Orlis Play and make an account with that email - straight in. Anyone else who signs up waits for you (Approvals \\u203a Waiting to join).');
-        note(t, 'Your page and the app reach this laptop through Tailscale Funnel - see the README for turning it on.');
-        note(t, 'This laptop needs to be on, with Funnel running, for them to join or reach Discover.');
+        var t = card('Family who live elsewhere', right);
+        if (got.beta.page) note(t, 'They ask on your beta page (' + location.origin.replace('127.0.0.1', 'your address') + '/), or you add their email under Approvals › Let someone in. Once approved, they install Orlis Play and make an account with that email - straight in.');
+        else note(t, 'Add their email under Approvals › Let someone in. Once approved, they install Orlis Play and make an account with that email - straight in. (Your public address shows nothing, so nobody can ask on their own.)');
+        note(t, 'Anyone else who signs up waits for you (Approvals › Waiting to join).');
+        note(t, 'Your page and the app reach this laptop through Tailscale Funnel - see the README for turning it on. This laptop needs to be on, with Funnel running, for them to join or reach Discover.');
+        /* email: set up once, so it's down here */
+        var e = card('Email', left);
+        if (m && m.ready) row(e, 'Sends from <b>' + esc(m.user) + '</b><small>The “you’re in” emails, with the download link.</small>',
+          [btn('Send a test', '', function(b){ b.textContent = 'Sending…'; call('POST', '/api/mail/test').then(function(r){ b.textContent = 'Sent to ' + r.to; }, function(er){ b.textContent = 'Send a test'; fail(e)(er); }); }),
+           sure('Turn off', 'Turn off? Click again', 'danger', function(){ call('POST', '/api/mail', { user: '', pass: '' }).then(show, fail(e)); })]);
+        else if (m) {
+          note(e, 'To email people their download link: your Gmail address, and an app password (Google Account › Security › App passwords - make one called Orlis). It stays on this laptop. Until then, approving shows you the link to send yourself.');
+          var f = h('<form class="mailset"><input type="email" placeholder="you@gmail.com" required><input type="password" placeholder="App password (16 letters)" required><button class="b go">Save</button></form>');
+          f.onsubmit = function(ev){ ev.preventDefault(); var i = f.querySelectorAll('input'); call('POST', '/api/mail', { user: i[0].value, pass: i[1].value }).then(show, fail(e)); };
+          e.appendChild(f);
+        }
       });
     },
     families: function(){
@@ -286,12 +340,14 @@ var TRY = ${TRY_SECS};
         var st = both[0], ok = {};
         /* (each game's latest approval: who made it, and who said OK when) */
         both[1].history.forEach(function(x){ if (x.what === 'approved' && !ok[x.gameId]) ok[x.gameId] = x; });
-        var c = card('Discover\\u2019s games');
+        var c = card('Games in Discover');
         if (!st.games || !st.games.length) note(c, 'Nothing in Discover yet. Games your creators send in come here once you\u2019ve approved them.');
         (st.games || []).forEach(function(g){
           var cols = (g.icon && g.icon.cols) || ['#6d5efc', '#6d5efc'];
           var glyph = g.icon && g.icon.glyph && !/<\\s*script|on\\w+\\s*=|javascript:|href/i.test(g.icon.glyph) ? g.icon.glyph : '';
-          row(c, '<span class="who"><span class="icon" style="background:linear-gradient(135deg,' + esc(cols[0]) + ',' + esc(cols[1] || cols[0]) + ')"><svg viewBox="0 0 100 100">' + glyph + '</svg></span><span><b>' + esc(g.name) + '</b><small>' + (g.reach === 'family' ? '<b>Their family only</b> \\u00b7 ' : '') + 'Version ' + esc(g.version) + (g.by ? ' \\u00b7 ' + esc(g.by) : '') + ' \\u00b7 ' + size(g.bytes) + (ok[g.id] ? '<br>' + esc(ok[g.id].note.split(' \\u00b7 ')[0]) + ' \\u00b7 approved ' + esc(when(ok[g.id].at)) + ' by ' + esc(ok[g.id].who) : '') + '</small></span></span>',
+          var inWeek = (st.featured || []).indexOf(g.id) >= 0, fresh = ok[g.id] && Date.now() - Date.parse(ok[g.id].at) < 14 * 864e5;
+          var tags = (g.pinned ? ' <span class="tag star">Featured</span>' : inWeek ? ' <span class="tag star">Featured this week</span>' : '') + (fresh ? ' <span class="tag new">New</span>' : '');
+          row(c, '<span class="who"><span class="shot" style="background:linear-gradient(135deg,' + esc(cols[0]) + ',' + esc(cols[1] || cols[0]) + ')"><svg viewBox="0 0 100 100">' + glyph + '</svg></span><span><b>' + esc(g.name) + '</b>' + tags + '<small>' + (g.reach === 'family' ? '<b>Their family only</b> \\u00b7 ' : '') + 'Version ' + esc(g.version) + (g.by ? ' \\u00b7 ' + esc(g.by) : '') + ' \\u00b7 ' + size(g.bytes) + (ok[g.id] ? '<br>' + esc(ok[g.id].note.split(' \\u00b7 ')[0]) + ' \\u00b7 approved ' + esc(when(ok[g.id].at)) + ' by ' + esc(ok[g.id].who) : '') + '</small></span></span>',
             [/* this week's featured, on everyone's Play page: pinned ones always, the rest take turns */
              btn(g.pinned ? 'Featured \u2605' : (st.featured || []).indexOf(g.id) >= 0 ? 'Feature (this week\u2019s turn)' : 'Feature', g.pinned ? 'go' : '', function(){ call('POST', '/api/store/' + encodeURIComponent(g.id) + '/feature', { on: !g.pinned }).then(show, fail(c)); }),
              g.reach === 'family'
@@ -321,9 +377,16 @@ var TRY = ${TRY_SECS};
     }
   };
   /* how many are waiting, on the tab */
-  function count(){ Promise.all([call('GET', '/api/submissions'), call('GET', '/api/joins').catch(function(){ return { joins: [] }; })]).then(function(r){ var n = r[0].submissions.filter(function(x){ return x.state === 'waiting'; }).length + r[1].joins.length; document.getElementById('waiting').textContent = n ? n : ''; }, function(){}); }
+  function count(){
+    var none = function(k){ return function(){ return k; }; };
+    Promise.all([call('GET', '/api/submissions'), call('GET', '/api/joins').catch(none({ joins: [] })), call('GET', '/api/requests').catch(none({ requests: [] })), call('GET', '/api/beta').catch(none({ beta: [] }))]).then(function(r){
+      var n = r[0].submissions.filter(function(x){ return x.state === 'waiting'; }).length + r[1].joins.length
+        + r[2].requests.filter(function(x){ return x.state === 'waiting'; }).length + r[3].beta.filter(function(x){ return x.status === 'requested'; }).length;
+      document.getElementById('waiting').textContent = n ? n : '';
+    }, function(){});
+  }
   function show(){
-    main.innerHTML = '';
+    main.innerHTML = ''; main.className = '';
     if (key) count();
     [].forEach.call(document.querySelectorAll('#tabs button'), function(b){ b.className = b.dataset.t === tab ? 'on' : ''; });
     if (!key){ main.innerHTML = '<p class="empty">Open this page from the Orlis cube by the clock:<br>right-click it, then <b>Manage Orlis Server</b>.</p>'; return; }

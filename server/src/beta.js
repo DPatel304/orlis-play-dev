@@ -72,7 +72,7 @@ export function beta(db, { mail, log = history(db), notify = () => {}, downloadU
       ['GET', '/api/beta', ({ headers, ip }) => {
         owner(headers, ip);
         return { beta: q("SELECT email, status, created_at AS createdAt, decided_at AS decidedAt, sent_at AS sentAt FROM beta ORDER BY (status = 'requested') DESC, created_at DESC LIMIT 300").all().map(r => ({ ...r })),
-          mail: mail.ready, link: downloadUrl };
+          mail: mail.ready, link: downloadUrl, page: open };
       }],
       ['POST', '/api/beta/approve', async ({ headers, ip, body }) => approve(owner(headers, ip), body && body.email)],
       ['POST', '/api/beta/decline', ({ headers, ip, body }) => {
