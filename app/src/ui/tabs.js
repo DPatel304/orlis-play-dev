@@ -88,6 +88,8 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
     menuOpen = cornerMenu({ onRecalibrate, places, onFamily: nav.family && account.signedIn ? nav.family : null, onClosed: () => { menuOpen = null; } });
   });
   burger.title = 'Menu'; burger.setAttribute('aria-label', 'Menu');
+  /* (a wink as the page comes in, like the end of the intro) */
+  burger.classList.add('hello'); setTimeout(() => burger.classList.remove('hello'), 1400);
   const sys = h('div', 'tvsys'); if (whoChip) sys.append(whoChip); sys.append(burger);
   top.append(brand, tabs, sys);
 

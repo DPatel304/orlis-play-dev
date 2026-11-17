@@ -1400,3 +1400,17 @@ body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
 .btn.burger.cubebtn{ overflow:visible; border-radius:0; }
 .btn.burger.cubebtn .fill{ display:none; }
 .onhero:not(.scrolled) .btn.burger.cubebtn, .btn.burger.cubebtn:hover{ background:transparent; }
+/* the cube menu: 1.5x, a blink every so often, a wink as the page comes in,
+   and "Menu" under it when you point at it */
+.btn.burger.cubebtn{ width:12.6vh; height:12.6vh; position:relative; }
+.mblink{ transform-box:fill-box; transform-origin:center; animation:cubeblink 6.5s ease-in-out infinite; }
+@keyframes cubeblink{ 0%, 92%, 100%{ transform:none } 95%{ transform:scaleY(.1) } }
+.btn.burger.cubebtn.hello .meye{ display:none; }
+.btn.burger.cubebtn.hello .mwink{ display:inline; }
+.btn.burger.cubebtn::after{
+  content:'Menu'; position:absolute; left:50%; top:100%; transform:translate(-50%, -.4vh); opacity:0; pointer-events:none;
+  font:600 1.8vh/1 var(--sys); color:#16161d; background:rgba(255,255,255,.95); padding:.5vh 1.2vh; border-radius:999px;
+  box-shadow:0 .4vh 1.2vh rgba(20,24,50,.18); transition:opacity .15s, transform .15s; white-space:nowrap;
+}
+.btn.burger.cubebtn:hover::after, .btn.burger.cubebtn.hot::after, body.remote .btn.burger.cubebtn.kfocus::after{ opacity:1; transform:translate(-50%, .4vh); }
+@media (prefers-reduced-motion: reduce){ .mblink{ animation:none; } }
