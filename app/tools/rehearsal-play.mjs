@@ -58,7 +58,7 @@ const onPlay = () => pg.waitForSelector('.screen.tvhome .slock', { timeout: 1500
 const title = () => pg.$eval('.acctcard h2', e => e.textContent).catch(() => '');
 try {
   console.log('\n1. A fresh start: the Featured row is the one selected, with three games');
-  await pg.goto(appUrl + '?debug');
+  await pg.goto(appUrl + '?debug&splash=0');
   /* (two profiles: it opens on who's playing - the family's name, and nothing to go back to) */
   await pg.waitForSelector('.acctcard .who', { timeout: 15000 });
   check((await title()) === 'The Patels', 'on a fresh start it opens on the family\'s name: ' + (await title()));
@@ -101,7 +101,7 @@ try {
   for (let i = 0; i < 14; i++){ await pg.keyboard.press('ArrowRight'); await wait(100); }
   await wait(800);
   const last = await pg.$eval('.pictile.kfocus .nm', e => e.textContent).catch(() => '(none)');
-  check(last === 'Make a game', 'the keys reach the last tile: ' + last);
+  check(last === 'See all', 'the keys reach the last tile: ' + last);
   const inView = await pg.$eval('.pictile.kfocus', e => { const r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; }).catch(() => false);
   check(inView, 'and it has slid into view');
   await shot('2c-end');

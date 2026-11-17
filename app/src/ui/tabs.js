@@ -12,6 +12,8 @@ import { mark } from './boot.js';
 import { account, AVATARS } from './account.js';
 import { withFace } from './avatar-maker.js';
 import { openSettings } from './menu.js';
+import { week } from './week.js';
+import { challengePill } from './challenges.js';
 
 /* The corner menu's icons: simple line drawings, like the rest of the app's. */
 const LINE = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -88,7 +90,10 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
   burger.title = 'Menu'; burger.setAttribute('aria-label', 'Menu');
   /* (a wink as the page comes in, like the end of the intro) */
   burger.classList.add('hello'); setTimeout(() => burger.classList.remove('hello'), 1400);
-  const sys = h('div', 'tvsys'); if (whoChip) sys.append(whoChip); sys.append(burger);
+  /* this week's challenges, as a small pill (the cards open from it) */
+  const ch = week.challenges;
+  const pill = account.signedIn && !account.waiting && ch && ch.challenges && ch.challenges.length ? challengePill(ch) : null;
+  const sys = h('div', 'tvsys'); if (pill) sys.append(pill); if (whoChip) sys.append(whoChip); sys.append(burger);
   top.append(brand, tabs, sys);
 
   /* the highlight, one pill under the tabs, sliding from the last one */
@@ -119,7 +124,7 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
   }
 
   return {
-    el: top,
+    el: top, pill,
     get menuOpen(){ return !!menuOpen; },
     tick(){}
   };

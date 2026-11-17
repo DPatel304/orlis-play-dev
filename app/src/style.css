@@ -1485,3 +1485,31 @@ body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
 .btn.slock.pictile:hover .sthumb, .btn.slock.pictile.focus .sthumb, body.remote .btn.slock.pictile.kfocus .sthumb{ border:0; box-shadow:0 0 0 .5vh #fff, 0 2.6vh 5vh rgba(20,24,50,.3); }
 .btn.slock.pictile .plus{ display:none; }
 .btn.slock.pictile.kfocus, body.remote .btn.slock.pictile.kfocus{ box-shadow:none; outline:none; background:transparent; }
+
+/* ---- This week's challenges: the pill, and the big cards ---- */
+.btn.chpill{ display:inline-flex; align-items:center; gap:.7vh; font-size:2.1vh; padding:.9vh 1.8vh; border-radius:999px; background:rgba(255,255,255,.92); color:#16161d; box-shadow:0 .4vh 1.6vh rgba(20,24,50,.18); border:none; font-weight:600; }
+.btn.chpill .lbl{ display:inline-flex; align-items:center; gap:.7vh; }
+.btn.chpill b{ color:#5b4ce6; font-weight:700; } .btn.chpill i{ font-style:normal; color:#6b6f80; font-weight:500; }
+.btn.chpill.alldone{ background:#fff4d6; } .btn.chpill.alldone b{ color:#a16207; }
+.btn.chpill:hover, .btn.chpill.hot{ transform:none; box-shadow:0 .4vh 1.6vh rgba(20,24,50,.18), 0 0 0 .4vh #6d5efc; }
+.btn.chpill.pop{ animation:chpop .7s cubic-bezier(.3,1.6,.4,1) both; }
+@keyframes chpop{ 0%{ transform:scale(1) } 40%{ transform:scale(1.22) } 100%{ transform:scale(1) } }
+.screen.chsplash{ display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(236,238,248,.66); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); transition:background .5s ease, backdrop-filter .5s ease; animation:fadein .35s ease both; }
+.screen.chsplash.leaving{ background:rgba(236,238,248,0); backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); pointer-events:none; }
+.chsplash h2{ margin:0 0 .6vh; font-size:5.4vh; letter-spacing:-.02em; color:#16161d; transition:opacity .3s; }
+.chsplash .chsub{ margin:0 0 5vh; font-size:2.6vh; color:#5b5f6e; transition:opacity .3s; }
+.chsplash.leaving h2, .chsplash.leaving .chsub, .chsplash.leaving .chhint, .chsplash.leaving .chgo{ opacity:0; }
+.chsplash .chtrophies{ margin-left:1vh; padding:.3vh 1.2vh; border-radius:99px; background:#fff4d6; color:#a16207; font-size:.85em; font-weight:600; }
+.chbigrow{ display:flex; gap:3vw; }
+.chbig{ width:26vw; background:#fff; border-radius:4vh; padding:4vh 3.4vh 3.4vh; box-shadow:0 2vh 6vh rgba(40,30,110,.22); display:flex; flex-direction:column; gap:2.4vh; animation:chin .6s cubic-bezier(.2,.9,.3,1.15) calc(var(--i) * 110ms + 150ms) both; }
+.chbig:nth-child(1){ rotate:-1.6deg; } .chbig:nth-child(3){ rotate:1.6deg; }
+@keyframes chin{ from{ opacity:0; transform:translateY(7vh) scale(.92); } to{ opacity:1; transform:none; } }
+.chbig .chic{ width:9vh; height:9vh; border-radius:28%; display:flex; align-items:center; justify-content:center; font-size:5vh; box-shadow:0 1vh 2.4vh rgba(20,24,50,.2); }
+.chbig .chtt{ font-size:3.6vh; font-weight:750; line-height:1.15; color:#16161d; min-height:8.4vh; }
+.chbarbig{ height:1.8vh; border-radius:99px; background:#eceef5; overflow:hidden; } .chbarbig i{ display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#6d5efc,#38bdf8); }
+.chbig .chft{ display:flex; justify-content:space-between; align-items:center; gap:1.4vh; font-size:2.4vh; color:#5b5f6e; font-weight:600; }
+.chbig .chtr{ font-size:2.1vh; padding:.5vh 1.4vh; border-radius:99px; background:#fff4d6; color:#a16207; white-space:nowrap; } .chbig .chtr.got{ background:#dcfce7; color:#15803d; }
+.chbig.done .chbarbig i{ background:linear-gradient(90deg,#22c55e,#86efac); }
+.chsplash .chhint{ margin:4.4vh 0 0; font-size:2.2vh; color:#6b6f80; transition:opacity .3s; }
+.chsplash .btn.chgo{ position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+@media (prefers-reduced-motion: reduce){ .chbig{ animation:none; } .btn.chpill.pop{ animation:none; } }

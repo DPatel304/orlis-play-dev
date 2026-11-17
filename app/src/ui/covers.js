@@ -219,11 +219,10 @@ export function discoverCoverUrl(){
   return discoverUrl;
 }
 
-/* The other tiles on Play's My games row, drawn in the same style as the
-   covers: 'all' (See all) is a mosaic of your own covers, 'make' (Make a
-   game) a warm sparkle - each with its words in the cover lettering. Given
-   the covers to use (data: URLs), it gives a picture back (kept by what went
-   into it, so the same ones are drawn once). */
+/* The See all tile on Play's My games row, drawn in the same style as the
+   covers: a mosaic of your own covers, with its words in the cover lettering.
+   Given the covers to use (data: URLs), it gives a picture back (kept by what
+   went into it, so the same ones are drawn once). */
 const tileMade = new Map();
 export function tileUrl(kind, urls = []){
   const key = kind + '|' + urls.join('|').length + '|' + urls.map(u => u.slice(-24)).join('');
@@ -233,20 +232,6 @@ export function tileUrl(kind, urls = []){
     const W = 960, H = 540, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
     const c = cv.getContext && cv.getContext('2d'); if (!c) return ok(null);
     const done = () => { let u = null; try { u = cv.toDataURL('image/jpeg', 0.85); } catch (e){} tileMade.set(key, u); ok(u); };
-    if (kind === 'make'){
-      const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#ff8a3d'); g.addColorStop(1, '#ec4899'); c.fillStyle = g; c.fillRect(0, 0, W, H);
-      c.fillStyle = 'rgba(255,255,255,.15)';
-      for (const [x, y, r] of [[0.18, 0.25, 0.2], [0.86, 0.7, 0.26], [0.55, 0.08, 0.1]]){ c.beginPath(); c.arc(W * x, H * y, H * r, 0, TAU); c.fill(); }
-      /* a pencil, slanting across, and a sparkle */
-      c.save(); c.translate(W * 0.64, H * 0.4); c.rotate(-0.7); c.lineJoin = 'round';
-      c.fillStyle = '#fff'; c.beginPath(); c.roundRect(-H * 0.07, -H * 0.36, H * 0.14, H * 0.56, H * 0.03); c.fill();
-      c.fillStyle = '#ffd77a'; c.beginPath(); c.moveTo(-H * 0.07, H * 0.2); c.lineTo(H * 0.07, H * 0.2); c.lineTo(0, H * 0.36); c.closePath(); c.fill();
-      c.fillStyle = '#4a2fb0'; c.beginPath(); c.roundRect(-H * 0.07, -H * 0.36, H * 0.14, H * 0.1, H * 0.03); c.fill();
-      c.restore();
-      c.fillStyle = '#fff'; c.beginPath(); for (let k = 0; k < 8; k++){ const an = k * Math.PI / 4 - Math.PI / 2, q = k % 2 ? H * 0.034 : H * 0.1; c.lineTo(W * 0.84 + Math.cos(an) * q, H * 0.2 + Math.sin(an) * q); } c.closePath(); c.fill();
-      try { TITLES.stack(c, W, H, 'MAKE A GAME', '#b4306e'); } catch (e){}
-      return done();
-    }
     /* 'all': a mosaic of covers (as many as there are, up to four) */
     const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#e7e4ff'); g.addColorStop(1, '#cfeeff'); c.fillStyle = g; c.fillRect(0, 0, W, H);
     const loads = urls.slice(0, 4).map(u => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = u; }));

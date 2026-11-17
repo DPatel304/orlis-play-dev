@@ -41,6 +41,8 @@ const s = await start({ dataDir: mkdtempSync(join(tmpdir(), 'orlis-week-')), por
 const S = `http://127.0.0.1:${s.port}`;
 const api = async (m, p, b, tok, extra = {}) => { const r = await fetch(S + p, { method: m, headers: { 'Content-Type': 'application/json', ...(tok ? { Authorization: `Bearer ${tok}` } : {}), ...extra }, body: b ? JSON.stringify(b) : undefined }); return r.json(); };
 const me = await api('POST', '/api/signup', { email: 'deep@example.com', password: 'correct horse', name: 'Deep', adult: true });
+/* (three different games already played this week: the round in the test makes the fourth, and finishes a challenge) */
+for (const g of ['pop-party', 'sky-painter', 'leaf-pile']) await api('POST', '/api/plays', { gameId: g, value: 10, secs: 60, players: 1 }, me.token);
 const state = { server: { url: S, name: 'Orlis' }, token: me.token, account: me.account, household: me.household, profiles: me.profiles, current: me.profiles[0].id };
 const TAURI = `window.__TAURI__ = { core: { invoke: async (c) => c === 'find_servers' ? [] : null }, window: { getCurrentWindow: () => ({ close(){}, minimize(){}, toggleMaximize(){} }) } };`;
 
@@ -55,16 +57,27 @@ const titles = () => pg.$$eval('.shelf h3', e => e.map(x => x.firstChild.textCon
 try {
   console.log('\n1. Play: this week\'s featured from Discover, and the challenges');
   await pg.goto(appUrl + '?debug');
-  await pg.waitForSelector('.screen.tvhome .slock', { timeout: 30000 });
+  /* the challenges come up first, as three big cards */
+  await pg.waitForSelector('.chsplash .chbig', { timeout: 20000 });
+  const big = await pg.$$eval('.chbig', e => e.map(x => x.querySelector('.chtt').textContent + ' ' + x.querySelector('.chft span').textContent));
+  check(big.length === 3, 'three big challenge cards on arriving: ' + big.join(' / '));
+  await wait(900); await shot('1a-cards');
+  await pg.keyboard.press('Space'); await wait(1500);
+  check(!(await pg.$('.chsplash')), 'any key skips them: they fly away');
+  const pill = (await pg.$eval('.chpill', e => e.textContent).catch(() => '')).replace(/\s+/g, ' ').trim();
+  check(/0 of 3/.test(pill), 'and settle into a pill by the name: ' + pill);
+  check(await pg.$('.shelf.challenges') === null, 'the challenges row is gone from the page');
+  await pg.click('.chpill'); await pg.waitForSelector('.chsplash .chbig', { timeout: 5000 });
+  check(true, 'the pill shows them again');
+  await pg.keyboard.press('Escape'); await wait(1500);
+  check(!(await pg.$('.chsplash')), 'Escape closes them');
+  await pg.waitForSelector('.screen.tvhome .slock', { timeout: 15000 });
   await pg.waitForFunction(() => [...document.querySelectorAll('.shelf h3')].some(h => /Featured this week/.test(h.textContent)), null, { timeout: 15000 });
-  await wait(1500);
+  await wait(800);
   const t1 = await titles();
-  check(t1.includes('Featured this week'), 'a Featured this week row: ' + t1.join(' | '));
-  check(t1.some(t => /challenges/.test(t)), 'this week\'s challenges');
-  const feat = await pg.$$eval('.shelf', secs => { const s = secs.find(x => /Featured this week/.test(x.querySelector('h3').textContent)); return [...s.querySelectorAll('.slock:not(.addtile)')].map(c => ({ name: c.querySelector('.nm').textContent, get: !!c.querySelector('.getpill') })); });
+  check(t1.includes('Featured this week') && t1.includes('My games') && !t1.some(t => /challenges/.test(t)), 'the page: ' + t1.join(' | '));
+  const feat = await pg.$$eval('.shelf', secs => { const s = secs.find(x => /Featured this week/.test(x.querySelector('h3').textContent)); return [...s.querySelectorAll('.slock:not(.pictile)')].map(c => ({ name: c.querySelector('.nm').textContent, get: !!c.querySelector('.getpill') })); });
   check(feat.length === 3 && feat.every(f => f.get), 'the three Discover games, each with Get: ' + feat.map(f => f.name).join(', '));
-  const cards = await pg.$$eval('.chcard', e => e.map(x => x.querySelector('.chtitle').textContent + ' ' + x.querySelector('.chfoot span').textContent));
-  check(cards.length === 3, 'three challenges: ' + cards.join(' / '));
   check(await pg.$('.shelf h3 .rowlink') === null, 'no Discover link in the Featured heading');
   check(await pg.$('.shelf.fr .slock.discovertile') !== null, 'the Discover tile ends the Featured row');
   const chip = await pg.$eval('.discovertile .newchip', e => e.textContent).catch(() => '');
@@ -85,7 +98,10 @@ try {
   await pg.evaluate(() => window.__finish());
   /* (its ending plays, then the scores) */
   await pg.waitForFunction(() => [...document.querySelectorAll('.btn')].some(x => /All games/.test(x.textContent)), null, { timeout: 30000 });
-  await shot('3-results'); await wait(1000);
+  await shot('3-results');
+  await pg.waitForFunction(() => /Challenge done: Play 4 different games/.test((document.querySelector('.toast') || {}).textContent || ''), null, { timeout: 12000 });
+  check(true, 'a toast says so: ' + (await pg.textContent('.toast')).trim());
+  await wait(1000);
   const plays = await api('GET', '/api/challenges', null, me.token);
   check(plays.challenges.find(c => c.kind === 'different').have >= 1, 'the round counted (Play 4 different games: ' + plays.challenges.find(c => c.kind === 'different').have + ')');
   await pg.evaluate(() => { const b = [...document.querySelectorAll('.btn')].find(x => /All games/.test(x.textContent)); b && b.click(); });

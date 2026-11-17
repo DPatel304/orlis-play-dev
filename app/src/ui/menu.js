@@ -13,6 +13,7 @@ import { account } from './account.js';
 import { week } from './week.js';
 import { library } from './library.js';
 import { toast } from './toast.js';
+import { splashWanted, showChallenges } from './challenges.js';
 import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
 import { banner as wideBanner, discoverCoverUrl, tileUrl } from './covers.js';
 
@@ -254,7 +255,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       fr.row.appendChild(t);
     }
   }
-  /* the end of My games: every game at once (a mosaic of the covers), and for grown-ups, making one - tiles drawn like the covers */
+  /* the end of My games: every game at once (a mosaic of the covers) */
   const picTile = (kind, name, fn) => {
     const t = extraTile('', name, fn);
     t.classList.add('pictile', 'covered');
@@ -266,12 +267,6 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     const last = rows[rows.length - 1].row;
     seeAll = picTile('all', 'See all', () => allGames());
     last.appendChild(seeAll);
-    /* (and for grown-ups, making one: Create) */
-    if (nav.create && !account.isKid){
-      const mk = picTile('make', 'Make a game', () => nav.create());
-      last.appendChild(mk);
-      tileUrl('make').then(u => { if (u) mk.querySelector('.sthumb').style.backgroundImage = `url(${u})`; });
-    }
   }
   /* the See all mosaic: the first few covers there are - and again as more are made */
   const mosaic = () => {
@@ -281,23 +276,12 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   };
   mosaic();
 
-  /* this week's family challenges, just above All: goals everyone works
-     on together, new every Monday (and a trophy for each one done) */
+  /* this week's family challenges: three big cards on arriving (once each time the
+     app starts), then a pill in the top bar (challenges.js) */
+  let splashTimer = null;
   const ch = week.challenges;
-  /* (not while waiting to be let in: they'd name games not here yet) */
-  if (!waiting && ch && ch.challenges && ch.challenges.length && rows.length){
-    const sec = h('section', 'shelf challenges');
-    const head = h('h3', '', 'This week\u2019s challenges');
-    head.appendChild(h('span', 'chmore', `${ch.trophies ? `\u{1F3C6} ${ch.trophies} \u00b7 ` : ''}New every Monday`));
-    const row = h('div', 'chrow');
-    for (const c of ch.challenges){
-      const d = h('div', 'chcard' + (c.done ? ' done' : ''),
-        `<div class="chtitle"></div><div class="chbar"><i style="width:${Math.round(100 * c.have / c.need)}%"></i></div><div class="chfoot"><span>${c.have} / ${c.need}</span><span>${c.done ? '\u{1F3C6} Done!' : ''}</span></div>`);
-      d.querySelector('.chtitle').textContent = c.title;
-      row.appendChild(d);
-    }
-    sec.append(head, row);
-    wrap.insertBefore(sec, rows[rows.length - 1].sec);
+  if (!waiting && ch && ch.challenges && ch.challenges.length && splashWanted()){
+    splashTimer = setTimeout(() => { splashTimer = null; if (!going) showChallenges(ch, { auto: true, from: bar.pill }); }, 350);
   }
 
   /* All games: a grid of every game, with a filter along the top */
@@ -396,7 +380,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   let onBanner = 0;
 
   return {
-    leave(){ stopShots(); },
+    leave(){ stopShots(); clearTimeout(splashTimer); },
     get focus(){ return focus; },
     tick(dt){
       t += dt;

@@ -34,9 +34,11 @@ export const week = {
   },
 
   /* a round's over: which game, its best score, how long, how many played */
-  played(round){
-    if (!account.needed || !account.signedIn) return;
-    account.call('POST', '/api/plays', round).catch(() => {});
-    this.at = 0;
+  async played(round){
+    if (!account.needed || !account.signedIn) return [];
+    const was = new Set(((this.challenges && this.challenges.challenges) || []).filter(c => c.done).map(c => c.id));
+    try { await account.call('POST', '/api/plays', round); } catch { return []; }
+    await this.refresh({ force: true }).catch(() => {});
+    return ((this.challenges && this.challenges.challenges) || []).filter(c => c.done && !was.has(c.id));
   }
 };
