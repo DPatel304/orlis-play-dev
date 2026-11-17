@@ -531,6 +531,22 @@ function settings(onRecalibrate){
 
   /* the camera: which one (when there's a choice), and finding everyone again */
   const camCtl = row('Camera', small('Re-calibrate', () => { s.remove(); onRecalibrate(); }));
+  /* the camera's cost: a sharper picture, or tracking off the main thread */
+  if (pose.reason !== 'debug'){
+    const flag = (key, label, on, off, note) => {
+      const get = () => { try { return localStorage.getItem(key) === '1'; } catch (e){ return false; } };
+      const b = small(get() ? on : off, () => {
+        const v = !get();
+        try { localStorage.setItem(key, v ? '1' : '0'); } catch (e){}
+        b.querySelector('.lbl').textContent = v ? on : off;
+        b.classList.toggle('chosen', v);
+      }, 'mode');
+      b.classList.toggle('chosen', get());
+      row(label, b, h('span', 'keyhint', note));
+    };
+    flag('orlis_camsharp', 'Camera detail', 'Sharper', 'Standard', 'next game');
+    flag('orlis_trackworker', 'Smoother tracking', 'On', 'Off', 'experimental · next game');
+  }
   if (pose.reason !== 'debug'){
     pose.cameras().then(list => {
       if (list.length < 2) return;

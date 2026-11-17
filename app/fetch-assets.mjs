@@ -17,4 +17,6 @@ if (!existsSync('public/models/pose_landmarker_lite.task')){
 } else console.log('model already here');
 
 await cp('node_modules/@mediapipe/tasks-vision/wasm', 'public/wasm', { recursive: true });
+/* (the same library as a plain script, for the tracker's worker) */
+await cp('node_modules/@mediapipe/tasks-vision/vision_bundle.js', 'public/wasm/vision_bundle.js');
 console.log('wasm copied — Orlis Play will now run offline');

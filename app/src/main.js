@@ -3,6 +3,7 @@ import { week } from './ui/week.js';
 import { launch } from './ui/launch.js';
 import { toast } from './ui/toast.js';
 import { pose } from './tracking/pose.js';
+import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
 import { menu, toggleFullscreen, openSettings, played as playedLately } from './ui/menu.js';
 import { remote, typing } from './ui/remote.js';
@@ -33,8 +34,8 @@ const oc = over.getContext('2d');
 
 let W = 0, H = 0, dpr = 1;
 function resize(){
-  dpr = Math.min(2, devicePixelRatio || 1);
   W = innerWidth; H = innerHeight;
+  dpr = renderScale(W, H, devicePixelRatio || 1);
   stage.width = Math.round(W * dpr); stage.height = Math.round(H * dpr);
   c.setTransform(dpr, 0, 0, dpr, 0, 0);
   over.width = stage.width; over.height = stage.height;
@@ -62,6 +63,8 @@ const INTO_GAME = new Set(['starting', 'lineup', 'play']);
 /* (?fx=0 turns the page fades off - the rehearsals read the page, and two pages at once would confuse them) */
 const NOFX = /[?&]fx=0\b/.test(location.search);
 function go(next, build){
+  /* (looking for everyone again, except in a round, which looks for its players) */
+  if (next !== 'play') pose.look();
   /* (a page with something to tidy away first - the Store's previews) */
   if (scene && scene.leave) scene.leave();
   const was = mode;
@@ -205,6 +208,7 @@ function startRound(){
   inst = game.create(players);
   /* A game where squatting is a move keeps players who crouch or sit. */
   pose.keepSitters = !!game.keepSitters;
+  pose.look(players);
   /* An endless game has no clock: it runs until it says it's over. */
   roundLeft = game.endless ? Infinity : game.secs;
   played = 0;
@@ -363,6 +367,7 @@ function tick(now){
   const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
   last = now;
 
+  pose.paused = !!paused;
   if (!away && !CALM.has(mode)) pose.update(now, dt);
 
   /* paper, under the menus; dark under a game while it loads */

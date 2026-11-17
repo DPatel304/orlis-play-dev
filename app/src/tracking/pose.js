@@ -1,4 +1,5 @@
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
+import { CAM, HD, posesWanted, nextSkip, isIdle, IDLE_EVERY_MS } from './budget.js';
 
 /* (the names of the body's points, the skeleton, and the players' colours:
    in pose-shared.js, which games can carry without the camera engine) */
@@ -137,6 +138,19 @@ export const pose = {
      three numbers and nothing else, so the app has to be able to answer it on
      whatever machine it is sitting on. */
   fps:0, inferMs:0, _hits:0, _since:0,
+  /* What the camera costs (see budget.js): look at every Nth frame when a look
+     is slow; look only now and then when nobody is there; not at all while the
+     pause screen is up. `wanted` is how many people to look for. */
+  skip:1, paused:false, wanted:SEEN_MAX, _n:0, _acc:0, _emptyFor:0, _idleAt:0,
+  worker:null, _wbusy:false, _wres:null,
+  look(players){
+    const n = players == null ? SEEN_MAX : posesWanted(players, SEEN_MAX);
+    if (n === this.wanted) return;
+    this.wanted = n;
+    const options = { numPoses:n };
+    try { if (this.lm) this.lm.setOptions(options); } catch (e){}
+    try { if (this.worker) this.worker.postMessage({ t:'opts', options }); } catch (e){}
+  },
 
   /* Mouse stands in for a body when there is no camera: the whole interface is
      hover-driven, so a pointer can reach everything a hand can. Without it the
@@ -172,7 +186,7 @@ export const pose = {
       this.enableMouse();
       return false;
     }
-    if (!this.lm){
+    if (!this.lm && !this.worker){
       /* Local copies if `npm run offline` has been run, otherwise the CDN. A
          living-room box should not need the internet, but nobody should have to
          download 40MB before they can try it either.
@@ -194,11 +208,17 @@ export const pose = {
          blocked or offline, the app used to sit on "Starting the camera…"
          forever with the camera light on and nothing to show for it. Give it a
          deadline and say what went wrong instead. */
+      /* (the opt-in smoother way first; if it can't start, the usual way) */
+      if (this.smoother() && !this.worker && typeof Worker !== 'undefined' && await this._startWorker(wasmDir, model)){
+        this.reason = ''; this.mouse.active = false;
+        this.ready = true; this.usingCamera = true; this.on = true;
+        return this._want ? true : (this._close(), false);
+      }
       try {
         const files = await withTimeout(FilesetResolver.forVisionTasks(wasmDir), 25000);
         this.lm = await withTimeout(PoseLandmarker.createFromOptions(files, {
           baseOptions:{ modelAssetPath: model, delegate:'GPU' },
-          runningMode:'VIDEO', numPoses:SEEN_MAX,
+          runningMode:'VIDEO', numPoses:this.wanted,
           minPoseDetectionConfidence:0.5, minPosePresenceConfidence:0.5, minTrackingConfidence:0.5
         }), 40000);
       } catch (e){
@@ -223,12 +243,19 @@ export const pose = {
     this._close();
     for (const p of this.players){ p.lm = null; p.present = false; p.lostFor = 99; }
     this.personCount = 0; this.seenCount = 0; this.fps = 0;
+    this.skip = 1; this._n = 0; this._acc = 0; this._emptyFor = 0; this._wbusy = false;
   },
+  /* Settings can ask for the sharper (and costlier) picture, or for the
+     tracker to work off the main thread. Kept as plain flags so nothing here
+     breaks when storage is unavailable. */
+  sharp(){ try { return localStorage.getItem('orlis_camsharp') === '1'; } catch (e){ return false; } },
+  smoother(){ try { return localStorage.getItem('orlis_trackworker') === '1'; } catch (e){ return false; } },
   async _open(deviceId, exact){
     this._want = true;
     const stream = await navigator.mediaDevices.getUserMedia({
       video: Object.assign(
-        { width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:30} },
+        (() => { const c = this.sharp() ? HD : CAM;
+                 return { width:{ideal:c.width}, height:{ideal:c.height}, frameRate:{ideal:c.frameRate} }; })(),
         /* Ask for the remembered camera by id. The moment a second one exists -
            a phone running Camo, a USB webcam beside the laptop's built-in -
            whatever Windows calls default is as likely to be the wrong one, and
@@ -309,16 +336,71 @@ export const pose = {
     if (v.currentTime === this._lastT) { this._decay(dt); return; }
     this._lastT = v.currentTime;
 
+    /* The pause screen has no use for bodies. */
+    if (this.paused){ this._decay(dt); return; }
+    /* Nobody there for a few seconds: look a few times a second, not thirty. */
+    this._acc += dt;
+    if (isIdle(this._emptyFor)){
+      if (wall - this._idleAt < IDLE_EVERY_MS){ return; }
+      this._idleAt = wall;
+    } else if (this.skip > 1 && (++this._n % this.skip) !== 0){
+      return;
+    }
+    const step = this._acc; this._acc = 0;
+
+    if (this.worker) return this._viaWorker(v, nowMs, step);
+
     let res;
     const t0 = performance.now();
     try { res = this.lm.detectForVideo(v, nowMs); }
     catch (e){ return; }
+    this._took(performance.now() - t0, res, step);
+  },
+  /* One look finished (here or in the worker): the timing, the pacing, the people. */
+  _took(ms, res, step){
     /* Smoothed, because a single inference tells you nothing useful. */
-    this.inferMs += (performance.now() - t0 - this.inferMs) * 0.1;
+    this.inferMs += (ms - this.inferMs) * 0.1;
     this._hits++;
+    this.skip = nextSkip(this.skip, this.inferMs);
 
     const found = (res && res.landmarks) ? res.landmarks : [];
-    this._assign(found.map(lm => lm.map(k => ({ x: 1 - k.x, y: k.y, z: k.z, v: k.visibility }))), dt);
+    this._emptyFor = found.length ? 0 : this._emptyFor + step;
+    this._assign(found.map(lm => lm.map(k => ({ x: 1 - k.x, y: k.y, z: k.z, v: k.visibility }))), step);
+  },
+  /* The off-the-main-thread way: hand over a bitmap of this frame, and take
+     whatever came back from the last one (a frame behind - fine for a body). */
+  _viaWorker(v, nowMs, step){
+    if (this._wres){
+      const r = this._wres; this._wres = null;
+      this._took(r.ms, { landmarks:r.landmarks }, step);
+    }
+    if (this._wbusy) return;
+    this._wbusy = true;
+    createImageBitmap(v).then(bmp => {
+      if (!this.worker){ try { bmp.close(); } catch (e){} this._wbusy = false; return; }
+      this.worker.postMessage({ t:'frame', bmp, ts:nowMs }, [bmp]);
+    }).catch(() => { this._wbusy = false; });
+  },
+  /* Start the worker, or say why not; the caller falls back to the main thread. */
+  _startWorker(wasmDir, model){
+    return new Promise(resolve => {
+      let w;
+      try { w = new Worker(new URL('pose-worker.js', location.href)); }
+      catch (e){ resolve(false); return; }
+      const fail = () => { try { w.terminate(); } catch (e){} resolve(false); };
+      const timer = setTimeout(fail, 15000);
+      w.onerror = () => { clearTimeout(timer); fail(); };
+      w.onmessage = (e) => {
+        const m = e.data;
+        if (m.t === 'ready'){ clearTimeout(timer); this.worker = w; resolve(true); }
+        else if (m.t === 'error' && m.on === 'init'){ clearTimeout(timer); fail(); }
+        else if (m.t === 'result'){ this._wbusy = false; this._wres = m; }
+        else if (m.t === 'error'){ this._wbusy = false; }
+      };
+      w.postMessage({ t:'init', bundle:new URL(wasmDir.replace(/\/wasm$/, '') + (wasmDir === '/wasm' ? '/wasm/vision_bundle.js' : '/vision_bundle.js'), location.href).href,
+                      wasmDir:new URL(wasmDir, location.href).href.replace(/\/$/, ''),
+                      model:new URL(model, location.href).href, numPoses:this.wanted });
+    });
   },
 
   /* Who's who. Landmarks arrive mirrored, so screen left is the player's own
