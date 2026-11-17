@@ -20,6 +20,7 @@ import { account } from './account.js';
 import { library } from './library.js';
 import { looks, cover, paint } from './menu.js';
 import { trailer } from './trailer.js';
+import { coverFor } from './shots.js';
 import { topBar } from './tabs.js';
 import { byId } from '../games/index.js';
 import { PAPER } from './boot.js';
@@ -216,6 +217,9 @@ export function storePage({ nav = {}, onPlay, onChange = () => {}, onWho, onReca
     const L = looks(g);
     const b = button('', 'slock');
     const thumb = L.art('sthumb');
+    /* its cover (the title's on the art), when there is one yet */
+    const cv = coverFor(g);
+    if (cv){ thumb.style.backgroundImage = `url(${cv})`; thumb.classList.add('shot'); b.classList.add('covered'); }
     thumb.insertAdjacentHTML('beforeend', badge(g));
     const meta = h('div', 'smeta');
     meta.append(L.icon('sicon'), h('div', 'stxt', `<div class="nm">${esc(g.name)}</div><div class="sub">${esc(KIND(g))}</div>`));

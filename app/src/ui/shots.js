@@ -35,6 +35,17 @@ export function keepShot(g, canvas){
   const made = makeCover(g, { still: canvas, accent: g.accent });
   return !!made && put(g, made, false);
 }
+/* A Discover entry's cover, for its tile: one already made (it's been here
+   before, or played), else made now if there's art for it. null: no cover
+   yet (a community game not on this PC: its tile keeps its icon art). */
+export function coverFor(entry){
+  const g = { id: entry.id, name: entry.name, accent: entry.icon && entry.icon.cols && entry.icon.cols[0], store: { version: entry.version } };
+  const had = shotOf(g);
+  if (had) return had;
+  if (!hasArt(g.id)) return null;
+  const made = makeCover(g);
+  return made && put(g, made, true) ? shotOf(g) : null;
+}
 /* Make the missing ones, one at a time, between frames; onShot(game) as
    each is ready. Gives back a stop(). */
 export function makeShots(games, onShot){
