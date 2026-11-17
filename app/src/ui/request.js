@@ -17,10 +17,18 @@ import { sfx } from '../audio/sound.js';
 import { previewCover } from './covers.js';
 
 export const ACTIONS = {
-  pop:   { label: 'Pop',            icon: '\u{1F388}', line: 'like Pop Party',              does: (t) => `pop ${t} by touching them`, things: ['bubbles', 'balloons', 'fireworks', 'soap bubbles', 'popcorn', 'lollipops', 'jellybeans', 'confetti', 'party poppers', 'pumpkins', 'snowballs', 'stars'] },
-  steer: { label: 'Fly or steer',   icon: '\u{1F681}', line: 'lean to steer something',     does: (t) => `lean to steer ${t}`, things: ['a little plane', 'a sailboat', 'a dragon', 'a hot-air balloon', 'a fish', 'a rocket', 'a magic carpet', 'a kite', 'a submarine', 'a whale', 'a bumblebee', 'a cloud'] },
-  copy:  { label: 'Copy the moves', icon: '\u{1F483}', line: 'dance and follow the leader', does: (t) => `copy the moves of ${t}`, things: ['a dancing monkey', 'a robot', 'a penguin', 'a superhero', 'a frog', 'a dinosaur', 'a cat', 'a bear', 'a unicorn', 'a pirate', 'a ninja', 'an astronaut'] },
-  paint: { label: 'Paint',          icon: '\u{1F3A8}', line: 'like Sky Painter',            does: (t) => `paint the sky with ${t}`, things: ['rainbows', 'stars', 'colours', 'glitter', 'clouds', 'flowers', 'fireworks', 'bubbles', 'butterflies', 'sunsets', 'waves', 'snowflakes'] }
+  pop:   { label: 'Pop',            short: 'Pop',   icon: '\u{1F388}', line: 'like Pop Party',              does: (t) => `pop ${t} by touching them`, things: ['soap bubbles', 'balloons', 'fireworks', 'popcorn', 'lollipops', 'jellybeans', 'confetti', 'party poppers', 'pumpkins', 'snowballs', 'stars', 'cupcakes'] },
+  steer: { label: 'Fly or steer',   short: 'Fly',   icon: '\u{1F681}', line: 'lean to steer something',     does: (t) => `lean to steer ${t}`, things: ['a plane', 'a sailboat', 'a dragon', 'a hot-air balloon', 'a fish', 'a rocket', 'a UFO', 'a kite', 'a helicopter', 'a whale', 'a bumblebee', 'a cloud'] },
+  copy:  { label: 'Copy the moves', short: 'Copy',  icon: '\u{1F483}', line: 'dance and follow the leader', does: (t) => `copy the moves of ${t}`, things: ['a dancing monkey', 'a robot', 'a penguin', 'a superhero', 'a frog', 'a dinosaur', 'a cat', 'a bear', 'a unicorn', 'a pirate', 'a ninja', 'an astronaut'] },
+  paint: { label: 'Paint',          short: 'Paint', icon: '\u{1F3A8}', line: 'like Sky Painter',            does: (t) => `paint the sky with ${t}`, things: ['rainbows', 'stars', 'colours', 'glitter', 'clouds', 'flowers', 'fireworks', 'raindrops', 'butterflies', 'sunsets', 'waves', 'snowflakes'] }
+};
+/* a picture for each thing on offer (an emoji: it's big on its card) */
+const EMOJI = {
+  'soap bubbles': '\u{1F9FC}', balloons: '\u{1F388}', fireworks: '\u{1F386}', popcorn: '\u{1F37F}', lollipops: '\u{1F36D}', jellybeans: '\u{1F36C}', confetti: '\u{1F38A}', 'party poppers': '\u{1F389}', pumpkins: '\u{1F383}', snowballs: '☃️', stars: '⭐', cupcakes: '\u{1F9C1}',
+  'a plane': '✈️', 'a sailboat': '⛵', 'a dragon': '\u{1F409}', 'a hot-air balloon': '\u{1F388}', 'a fish': '\u{1F41F}', 'a rocket': '\u{1F680}', 'a UFO': '\u{1F6F8}', 'a kite': '\u{1FA81}', 'a helicopter': '\u{1F681}', 'a whale': '\u{1F40B}', 'a bumblebee': '\u{1F41D}', 'a cloud': '☁️',
+  'a dancing monkey': '\u{1F412}', 'a robot': '\u{1F916}', 'a penguin': '\u{1F427}', 'a superhero': '\u{1F9B8}', 'a frog': '\u{1F438}', 'a dinosaur': '\u{1F996}', 'a cat': '\u{1F431}', 'a bear': '\u{1F43B}', 'a unicorn': '\u{1F984}', 'a pirate': '\u{1F3F4}‍☠️', 'a ninja': '\u{1F977}', 'an astronaut': '\u{1F468}‍\u{1F680}',
+  rainbows: '\u{1F308}', colours: '\u{1F3A8}', glitter: '✨', clouds: '☁️', flowers: '\u{1F338}', raindrops: '\u{1F4A7}', butterflies: '\u{1F98B}', sunsets: '\u{1F305}', waves: '\u{1F30A}', snowflakes: '❄️',
+  fireflies: '✨', fish: '\u{1F41F}'
 };
 /* a game is short (about 3 minutes) or long (about 10); a name fits on its card */
 export const SHORT = 3, LONG = 10, NAME_MAX = 24;
@@ -70,13 +78,10 @@ function layer(cls){
   wrap.addEventListener('pointerdown', (e) => { if (e.target === wrap) wrap.dispatchEvent(new CustomEvent('closeme')); });
   return { wrap, card };
 }
-const tile = (html, cls, fn) => { const b = button(html, 'reqtile ' + cls); onPick(b, fn); return b; };
+const tile = (html, cls, fn) => { const b = button(html, cls); onPick(b, fn); return b; };
 const chip = (label, on, fn) => { const b = button(esc(label), 'reqchip' + (on ? ' on' : '')); b.type = 'button'; onPick(b, fn); return b; };
 
 /* ---------- the builder ---------- */
-
-/* the steps, and what each is called where it's listed */
-const STEP_NAME = { start: 'How to start', like: 'Which game', action: 'What you do', thing: 'What’s in it', look: 'The look', length: 'How long', name: 'Its name', words: 'In your words', review: 'Ready?' };
 
 /* Suggestions come three at a time, and a refresh brings three more: the pool
    is shuffled once, then walked through, wrapping round at the end. */
@@ -101,12 +106,19 @@ export function nameIdeas(r){
   return [...new Set(all)].filter(n => n.length <= NAME_MAX);
 }
 
-/* The builder: Make a game, piece by piece, on the Create page itself. The
-   page keeps moving down: each answer stays above, small, and the next
-   question comes in underneath. The arrows at the top right go up and down
-   a question, and the x closes it. host is where it goes; it keeps a draft;
-   onDone() when it's closed or sent. */
-export function gameBuilder({ host, store = async () => [], send, onDone = () => {}, onOpen = () => {} }){
+/* A picture for a thing (a big emoji on the card); what you do's own icon for one they typed. */
+export const artOf = (thing, action) => EMOJI[thing] || (action && ACTIONS[action] ? ACTIONS[action].icon : '✨');
+/* the colours behind a card, one pair per place in the row */
+const HUES = [['#7be0a0', '#2fa8d8'], ['#6bc8ff', '#3b6fe0'], ['#ffb86b', '#ff6b8f'], ['#c79bff', '#6b7bff'], ['#ffd86b', '#ff9f6b'], ['#6be0d0', '#3b8fe0']];
+/* a short word for each look, for the little chips at the top */
+const LOOK_WORD = { sunny: 'Sunny', cozy: 'Cozy', night: 'Night', candy: 'Candy', ocean: 'Ocean' };
+
+/* The builder: Make a game, one big picture question at a time, on the Create
+   page itself. A row of little chips at the top shows the answers so far (tap
+   one to go back to it); the round arrow top-left goes up one question. host
+   is where it goes; it keeps a draft; onDone() when they're finished with it
+   (after sending), onPlay() to go and see it on Play. */
+export function gameBuilder({ host, store = async () => [], send, onDone = () => {}, onOpen = () => {}, onPlay = null }){
   let r = load(), games = null, step = 'start', reach = 0, round = { thing: 0, name: 0 };
   const root = h('section', 'builder'); host.prepend(root);
   const close = () => { root.remove(); onDone(); };
@@ -118,9 +130,11 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   /* the order of the steps, for how they started */
   const order = () => ['start', r.start === 'like' ? 'like' : null, 'action', 'thing', 'look', 'length', 'name', 'words', 'review'].filter(Boolean);
   const ready = (s) => s === 'start' ? !!r.start : s === 'like' ? !!r.like : s === 'action' ? (r.start === 'like' || !!r.action) : s === 'length' ? !!r.minutes : true;
+  /* the ones that can be skipped, and whether they've been answered (else the pill says Skip) */
+  const optional = (s) => ['thing', 'look', 'name', 'words'].includes(s) || (s === 'action' && r.start === 'like');
+  const answered = (s) => s === 'thing' ? !!r.thing.trim() : s === 'look' ? !!r.look : s === 'name' ? !!r.name.trim() : s === 'words' ? !!r.words.trim() : s === 'action' ? !!r.action : true;
   if (r.start){ const o = order(); step = o.includes(r.at) && r.at !== 'start' ? r.at : o[1]; reach = o.indexOf(step); }
-  let seen = reach;   /* (how far the stack went the last time it was drawn: only a new card slides in) */
-  const go = (s) => { step = s; reach = Math.max(reach, order().indexOf(s)); set({ at: s }); sfx.select?.(); draw(); };
+  const go = (s, quiet) => { step = s; reach = Math.max(reach, order().indexOf(s)); set({ at: s }); if (!quiet) sfx.select?.(); draw(); };
   const next = () => { const o = order(); go(o[Math.min(o.length - 1, o.indexOf(step) + 1)]); };
   const up = () => { const o = order(), i = o.indexOf(step); if (i > 0) go(o[i - 1]); };
 
@@ -132,162 +146,161 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     go('review');
   }
 
-  /* what each step's answer says, for the cards above and the list at the end */
-  const says = (s) => ({
-    start: { new: 'Something new', like: 'Like a game I know', surprise: 'A surprise' }[r.start] || '',
-    like: likeName() || '',
-    action: r.action ? ACTIONS[r.action].label : (r.start === 'like' ? 'Same as it is' : ''),
-    thing: r.thing || 'Nothing in particular',
-    look: r.look ? LOOKS[r.look] : 'Let it be a surprise',
-    length: r.minutes >= LONG ? 'Long · about 10 minutes' : 'Short · about 3 minutes',
-    name: r.name.trim() || 'Claude picks one',
-    words: r.words.trim() ? (r.words.trim().length > 90 ? r.words.trim().slice(0, 90) + '…' : r.words.trim()) : 'Nothing more'
-  }[s]);
-  /* the question each step asks */
+  /* the question each step asks, and the picture and word its chip shows */
   const question = (s) => s === 'start' ? 'How do you want to start?'
     : s === 'like' ? 'Which game is it like?'
-    : s === 'action' ? (r.start === 'like' ? 'Anything different? (optional)' : 'What do you do?')
-    : s === 'thing' ? ({ pop: 'What do you pop?', steer: 'What do you fly or steer?', copy: 'Who do you copy?', paint: 'What do you paint with?' }[r.action] || 'What’s in it?')
-    : s === 'look' ? 'What does it look like? (optional)'
+    : s === 'action' ? (r.start === 'like' ? 'Anything different?' : 'What do you do?')
+    : s === 'thing' ? ({ pop: 'What do you pop?', steer: 'What do you fly?', copy: 'Who do you copy?', paint: 'What do you paint with?' }[r.action] || 'What’s in it?')
+    : s === 'look' ? 'What does it look like?'
     : s === 'length' ? 'How long is it?'
-    : s === 'name' ? 'What is it called? (optional)'
-    : s === 'words' ? 'Anything else? (optional)'
+    : s === 'name' ? 'What’s it called?'
+    : s === 'words' ? 'Anything else?'
     : 'Ready?';
+  const chipOf = (s) => ({
+    start: [{ new: '✨', like: '\u{1F3AE}', surprise: '\u{1F3B2}' }[r.start] || '✨', { new: 'New', like: 'Like', surprise: 'Surprise' }[r.start] || 'Start'],
+    like: ['\u{1F3AE}', (likeName() || 'Game').slice(0, 14)],
+    action: [r.action ? ACTIONS[r.action].icon : '\u{1F3AF}', r.action ? ACTIONS[r.action].short : 'Same'],
+    thing: [r.thing.trim() ? artOf(r.thing, r.action) : '✏️', r.thing.trim() ? titled(r.thing).slice(0, 14) : 'Anything'],
+    look: [r.look ? LOOK_ICON[r.look] : '\u{1F3A8}', r.look ? LOOK_WORD[r.look] : 'Surprise'],
+    length: [r.minutes >= LONG ? '\u{1F3D4}️' : '⏱️', r.minutes >= LONG ? 'Long' : 'Short'],
+    name: ['\u{1F3F7}️', r.name.trim() ? r.name.trim().slice(0, 14) : 'Any name'],
+    words: ['\u{1F4AC}', r.words.trim() ? 'Notes' : 'No notes'],
+    review: ['\u{1F680}', 'Ready']
+  }[s]);
 
-  /* the card on the side: it fills in as they choose */
-  function sideCard(){
-    const side = h('div', 'bside');
-    const cv = document.createElement('canvas'); cv.width = 640; cv.height = 400; cv.className = 'bcard';
-    const cols = LOOK_COLS[r.look] || LOOK_COLS.none;
-    try { previewCover(cv, { name: r.name.trim() || 'Your game', cols, glyph: r.action ? ACTIONS[r.action].icon : (r.look ? LOOK_ICON[r.look] : '✨') }); } catch (e){}
-    side.appendChild(cv);
-    const facts = h('div', 'bfacts');
-    for (const t of [r.action && ACTIONS[r.action].label, r.look && LOOKS[r.look]].filter(Boolean))
-      facts.appendChild(h('span', 'bfact', esc(t)));
-    side.appendChild(facts);
-    if (step !== 'start') side.appendChild(h('p', 'reqsum', esc(sentence(r, { likeName: likeName() }))));
-    return side;
-  }
+  /* a picture card: art on a colour, one or two words */
+  const card = (cls, art, label, cols, fn) => {
+    const t = tile(`<span class="bart">${art}</span><span class="blb">${esc(label)}</span>`, 'bcard ' + cls, fn);
+    t.style.setProperty('--c1', cols[0]); t.style.setProperty('--c2', cols[1]);
+    return t;
+  };
+  /* a game's cover, drawn big, for the name ideas and the review */
+  const coverCanvas = (name, cls = '') => {
+    const cv = document.createElement('canvas'); cv.width = 720; cv.height = 720; cv.className = 'bcover ' + cls;
+    const cols = LOOK_COLS[r.look] || (r.action ? HUES[Object.keys(ACTIONS).indexOf(r.action) % HUES.length] : LOOK_COLS.none);
+    try { previewCover(cv, { name: name || 'Your game', cols, glyph: r.action ? artOf(r.thing, r.action) : '✨' }); } catch (e){}
+    return cv;
+  };
 
   async function draw(){
+    const was = root.querySelector('.bq');
     root.innerHTML = '';
     const o = order(), i = o.indexOf(step);
-    /* the top: where they are, and the way up, down and out */
-    const head = h('div', 'bhead');
-    head.append(h('div', 'bwhere', esc(STEP_NAME[step] || '')),
-      h('div', 'reqsteps', o.slice(1).map((s, k) => `<span class="${k + 1 <= reach ? 'on' : ''}"></span>`).join('')));
-    const ctl = h('div', 'bctl');
-    const arrow = (label, text, fn, off) => { const b = button(text, 'barrow'); b.title = label; b.setAttribute('aria-label', label); onPick(b, fn); if (off) b.disabled = true; ctl.appendChild(b); return b; };
-    arrow('Up one question', '↑', up, i <= 0);
-    const down = arrow('Down one question', '↓', () => { if (ready(step) && i < o.length - 1) next(); }, !ready(step) || i >= o.length - 1);
-    const x = arrow('Close', '✕', () => { sfx.back?.(); close(); });
-    x.classList.add('bx');
-    head.appendChild(ctl);
-    root.appendChild(head);
-    const main = h('div', 'bmain');
-    const stack = h('div', 'bstack');
-    main.appendChild(stack);
-    root.appendChild(main);
-    main.appendChild(sideCard());
-
-    /* one card per question so far: the ones above are small, the one they're on is open */
-    o.slice(0, reach + 1).forEach((s, k) => {
-      const card = h('div', 'bq' + (s === step ? ' cur' : ' done') + (k > seen ? ' fresh' : ''));
-      if (s !== step){
-        const head = h('div', 'bqhead');
-        head.append(h('h3', '', esc(question(s).replace(' (optional)', ''))), h('span', 'bans', esc(says(s) || '')));
-        card.appendChild(head);
-        onPick(card, () => go(s));
-        stack.appendChild(card);
-        return;
-      }
-      stack.appendChild(card);
-      const body = h('div', 'reqbody bstep');
-      card.appendChild(body);
-      body.append(h('h2', '', esc(question(s))));
-      fill(s, body, down);
+    /* the way up, and the answers so far */
+    if (i > 0){
+      const back = button('‹', 'bback'); back.title = 'Back'; back.setAttribute('aria-label', 'Back one question');
+      onPick(back, () => { sfx.back?.(); up(); });
+      root.appendChild(back);
+    }
+    const trail = h('div', 'btrail');
+    o.slice(0, Math.max(reach, i) + 1).forEach((s) => {
+      const [ico, word] = chipOf(s);
+      const c = button(`<i>${ico}</i>${esc(word)}`, 'bchip' + (s === step ? ' now' : ''));
+      if (s !== step) onPick(c, () => go(s));
+      trail.appendChild(c);
     });
-    seen = reach;
-    /* the page keeps moving down: the open question comes to the middle, the last one still above it */
-    const cur = stack.querySelector('.cur');
-    if (cur) setTimeout(() => { try { cur.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e){} }, 30);
+    root.appendChild(trail);
+    const body = h('div', 'bq' + (was ? ' in' : ''));
+    root.appendChild(body);
+    body.append(h('h1', 'bh', esc(question(step))));
+    await fill(step, body);
+    /* the pill at the bottom right: Skip (nothing picked) or Next (something typed) */
+    if (optional(step) && step !== 'review'){
+      const p = button(answered(step) ? 'Next' : 'Skip', 'bpill ' + (answered(step) ? 'go' : 'skip'));
+      onPick(p, next); root.appendChild(p); root._pill = p;
+    }
+    onOpen();
   }
 
+  /* three picture cards, a refresh for three more, and a place to type your own */
+  function suggest(body, three, pick, again, { cover = false, current = '', placeholder, max, input }){
+    const grid = h('div', 'bgrid n3');
+    three.forEach((t, k) => grid.appendChild(cover ? coverTile(t, current === t, () => pick(t)) : card(current === t ? 'on' : '', artOf(t, r.action), titled(t) ? t.replace(/^./, c => c.toUpperCase()) : t, HUES[(k + round.thing * 3) % HUES.length], () => pick(t))));
+    const re = button('↻', 'bmore'); re.title = 'Three more ideas'; re.setAttribute('aria-label', 'Three more ideas');
+    onPick(re, () => { sfx.select?.(); again(); });
+    grid.appendChild(re);
+    body.appendChild(grid);
+    const typed = h('div', 'btyped'); typed.appendChild(input); body.appendChild(typed);
+  }
+  const coverTile = (name, on, fn) => { const t = tile('', 'bcard cover' + (on ? ' on' : ''), fn); t.querySelector('.lbl').replaceWith(coverCanvas(name)); t.setAttribute('aria-label', name); return t; };
+  const typer = (value, placeholder, max, onType, onEnter) => {
+    const input = Object.assign(document.createElement('input'), { className: 'btype', maxLength: max, value, placeholder });
+    input.addEventListener('input', () => onType(input.value));
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); onEnter(); } });
+    return input;
+  };
+  /* (typing: the Skip pill turns into Next without drawing it all again) */
+  const pillNow = (s) => { const p = root._pill; if (p){ const a = answered(s); p.querySelector('.lbl').textContent = a ? 'Next' : 'Skip'; p.classList.toggle('go', a); p.classList.toggle('skip', !a); } };
+
   /* what's inside the open question */
-  async function fill(s, body, down){
-    const refreshDown = () => { down.disabled = !ready(s) || order().indexOf(s) >= order().length - 1; };
+  async function fill(s, body){
     if (s === 'start'){
-      const grid = h('div', 'reqgrid three');
+      const grid = h('div', 'bgrid n3');
       grid.append(
-        tile('<span class="ri">✨</span><b>Make something new</b><small>From scratch</small>', r.start === 'new' ? 'on' : '', () => { set({ start: 'new', like: null }); next(); }),
-        tile('<span class="ri">\u{1F3AE}</span><b>Like a game I know</b><small>Then change it</small>', r.start === 'like' ? 'on' : '', () => { set({ start: 'like' }); next(); }),
-        tile('<span class="ri">\u{1F3B2}</span><b>Surprise me</b><small>We pick it all</small>', '', surprise));
+        card(r.start === 'new' ? 'on' : '', '✨', 'Make something new', HUES[0], () => { set({ start: 'new', like: null }); next(); }),
+        card(r.start === 'like' ? 'on' : '', '\u{1F3AE}', 'Like a game I know', HUES[1], () => { set({ start: 'like' }); next(); }),
+        card('', '\u{1F3B2}', 'Surprise me', HUES[2], surprise));
       body.appendChild(grid);
-      if (r.action || r.words){ const b = button('Start over', 'link'); onPick(b, () => { drop(); r = blank(); reach = 0; seen = 0; round = { thing: 0, name: 0 }; draw(); }); body.appendChild(b); }
     }
     if (s === 'like'){
-      if (games === null){ body.append(h('p', 'reqlede', 'Looking in Discover…')); games = await store(); return draw(); }
-      if (!games.length) body.append(h('p', 'reqlede', 'Discover’s out of reach right now.'));
-      const grid = h('div', 'reqgrid');
-      for (const g of games) grid.appendChild(tile(`<b>${esc(g.name)}</b><small>${esc(g.blurb || '')}</small>`, r.like === g.id ? 'on' : '', () => { set({ like: g.id }); next(); }));
+      if (games === null){ body.append(h('p', 'bnote', 'Looking in Discover…')); games = await store(); return draw(); }
+      if (!games.length) body.append(h('p', 'bnote', 'Discover’s out of reach right now.'));
+      const grid = h('div', 'bgrid n4');
+      games.slice(0, 8).forEach((g, k) => {
+        const cols = (g.icon && g.icon.cols) || HUES[k % HUES.length];
+        const t = card(r.like === g.id ? 'on' : '', '', g.name, cols, () => { set({ like: g.id }); next(); });
+        const art = t.querySelector('.bart'); art.textContent = (g.name || '?')[0];
+        grid.appendChild(t);
+      });
       body.appendChild(grid);
     }
     if (s === 'action'){
-      const grid = h('div', 'reqgrid four');
-      for (const [id, a] of Object.entries(ACTIONS)) grid.appendChild(tile(`<span class="ri">${a.icon}</span><b>${a.label}</b><small>${a.line}</small>`, r.action === id ? 'on' : '', () => { set({ action: r.action === id && r.start === 'like' ? null : id, thing: r.action === id ? r.thing : '' }); if (r.action) next(); else draw(); }));
+      const grid = h('div', 'bgrid n4');
+      Object.entries(ACTIONS).forEach(([id, a], k) => grid.appendChild(card(r.action === id ? 'on' : '', a.icon, a.label, HUES[[2, 1, 3, 4][k % 4]], () => { set({ action: r.action === id && r.start === 'like' ? null : id, thing: r.action === id ? r.thing : '' }); if (r.action) next(); else draw(); })));
       body.appendChild(grid);
     }
     if (s === 'thing'){
       const pool = r.action ? poolFor(r.action) : ['fireflies', 'balloons', 'fish', 'a dragon', 'snowflakes', 'stars'];
-      const input = Object.assign(document.createElement('input'), { className: 'finput', maxLength: 60, value: r.thing, placeholder: 'Type your own, or tap one' });
-      input.addEventListener('input', () => { set({ thing: input.value }); refresh(); });
-      input.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); next(); } });
-      suggest(body, ideas(pool, round.thing), (t) => { set({ thing: t }); next(); }, () => { round.thing++; draw(); }, r.thing);
-      body.append(input);
+      const input = typer(r.thing, 'Or type your own…', 60, (v) => { set({ thing: v }); pillNow('thing'); refreshSide(); }, next);
+      suggest(body, ideas(pool, round.thing), (t) => { set({ thing: t }); next(); }, () => { round.thing++; draw(); }, { current: r.thing, input });
     }
     if (s === 'look'){
-      const grid = h('div', 'reqgrid five');
-      for (const [id, label] of Object.entries(LOOKS)){
-        const cols = LOOK_COLS[id];
-        const t = tile(`<span class="ri">${LOOK_ICON[id]}</span><b>${esc(label.replace(/^./, c => c.toUpperCase()))}</b>`, r.look === id ? 'on' : '', () => { set({ look: r.look === id ? null : id }); r.look ? next() : draw(); });
-        t.style.setProperty('--lk1', cols[0]); t.style.setProperty('--lk2', cols[1]); t.classList.add('lk');
-        grid.appendChild(t);
-      }
+      const grid = h('div', 'bgrid n5');
+      Object.entries(LOOKS).forEach(([id, label]) => grid.appendChild(card(r.look === id ? 'on' : '', LOOK_ICON[id], LOOK_WORD[id], LOOK_COLS[id], () => { set({ look: r.look === id ? null : id }); r.look ? next() : draw(); })));
       body.appendChild(grid);
     }
     if (s === 'length'){
-      const grid = h('div', 'reqgrid two');
+      const grid = h('div', 'bgrid n2');
       grid.append(
-        tile('<span class="ri">⏱️</span><b>Short</b><small>About 3 minutes</small>', r.minutes === SHORT ? 'on' : '', () => { set({ minutes: SHORT }); next(); }),
-        tile('<span class="ri">\u{1F3D4}️</span><b>Long</b><small>About 10 minutes</small>', r.minutes === LONG ? 'on' : '', () => { set({ minutes: LONG }); next(); }));
+        card(r.minutes === SHORT ? 'on' : '', '⏱️', 'Short', HUES[0], () => { set({ minutes: SHORT }); next(); }),
+        card(r.minutes === LONG ? 'on' : '', '\u{1F3D4}️', 'Long', HUES[3], () => { set({ minutes: LONG }); next(); }));
+      grid.querySelectorAll('.bcard').forEach((t, k) => t.appendChild(h('span', 'bsub', k ? '10 minutes' : '3 minutes')));
       body.appendChild(grid);
     }
-    if (s === 'name') {
-      const input = Object.assign(document.createElement('input'), { className: 'finput reqname', maxLength: NAME_MAX, value: r.name, placeholder: 'Or type your own' });
-      const left = h('p', 'reqcount', '');
-      const tally = () => { left.textContent = `${input.value.length} of ${NAME_MAX} letters`; };
-      input.addEventListener('input', () => { set({ name: input.value }); tally(); refresh(); });
-      input.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); next(); } });
-      tally();
-      suggest(body, ideas(nameIdeas(r), round.name), (t) => { set({ name: t }); next(); }, () => { round.name++; draw(); }, r.name);
-      body.append(input, left);
-      setTimeout(() => input.focus({ preventScroll: true }), 400);
+    if (s === 'name'){
+      const left = h('p', 'bcount', '');
+      const tally = (n) => { left.textContent = `${n} of ${NAME_MAX} letters`; };
+      const input = typer(r.name, 'Or type your own…', NAME_MAX, (v) => { set({ name: v }); tally(v.length); pillNow('name'); refreshSide(); }, next);
+      tally(r.name.length);
+      suggest(body, ideas(nameIdeas(r), round.name), (t) => { set({ name: t }); next(); }, () => { round.name++; draw(); }, { cover: true, current: r.name, input });
+      body.appendChild(left);
     }
     if (s === 'words'){
-      const words = Object.assign(document.createElement('textarea'), { className: 'finput reqwords', value: r.words, placeholder: 'How it starts, what’s funny, how you win…' });
-      const left = h('p', 'reqcount', '');
+      const words = Object.assign(document.createElement('textarea'), { className: 'btype bwords', value: r.words, placeholder: 'How it starts, what’s funny, how you win…' });
+      const left = h('p', 'bcount', '');
       const tally = () => { const n = count(words.value); left.textContent = `${n} of ${WORDS} words`; left.classList.toggle('over', n > WORDS); };
-      words.addEventListener('input', () => { set({ words: words.value }); tally(); refresh(); });
+      words.addEventListener('input', () => { set({ words: words.value }); tally(); pillNow('words'); });
       tally();
-      body.append(words, left, h('p', 'reqtip', 'Tip: Windows key + H to speak instead.'));
+      body.append(words, left, h('p', 'bnote', 'Tip: Windows key + H to speak instead.'));
     }
     if (s === 'review'){
-      body.append(h('p', 'reqlede', 'This is your game. Tap any question above to change it, then send it.'));
-      body.append(h('p', 'reqsum', esc(sentence(r, { likeName: likeName() }))));
-      if (r.words) body.append(h('blockquote', 'reqquote', esc(r.words)));
+      const stage = h('div', 'breview');
+      stage.appendChild(coverCanvas(r.name.trim() || 'Your game', 'big'));
+      const side = h('div', 'bsum');
+      side.append(h('p', 'bnote', esc(sentence(r, { likeName: likeName() }))));
+      if (r.words) side.append(h('blockquote', 'reqquote', esc(r.words)));
       const err = h('p', 'ferr', '');
-      body.appendChild(err);
-      const go_ = button('Send request', 'go');
+      const go_ = button('Send it', 'bpill go big');
       onPick(go_, async () => {
         if (go_.classList.contains('busy')) return;
         go_.classList.add('busy'); err.textContent = '';
@@ -296,26 +309,24 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
           drop(); sfx.gold?.(); sent();
         } catch (e){ go_.classList.remove('busy'); err.textContent = e.message || 'That didn’t send.'; }
       });
-      const f = h('div', 'reqfoot'); f.appendChild(go_); body.appendChild(f);
+      side.append(err, go_);
+      stage.appendChild(side);
+      body.appendChild(stage);
     }
-    /* (typing changes the side card without drawing it all again) */
-    function refresh(){ const was = root.querySelector('.bside'); if (was) was.replaceWith(sideCard()); refreshDown(); }
   }
+  /* (typing the name: the cards' own lettering is the typed one on the review, nothing to redraw here) */
+  const refreshSide = () => {};
 
-  /* three suggestions and a little refresh for three more */
-  function suggest(body, three, pick, again, current){
-    const row = h('div', 'reqchips big bideas');
-    for (const t of three) row.appendChild(chip(t, current === t, () => pick(t)));
-    const re = button('↻', 'barrow brefresh'); re.title = 'Three more ideas'; re.setAttribute('aria-label', 'Three more ideas');
-    onPick(re, () => { sfx.select?.(); again(); });
-    row.appendChild(re);
-    body.appendChild(row);
-  }
   function sent(){
     root.innerHTML = '';
-    root.append(h('h2', '', 'Sent!'), h('p', 'reqlede', 'You’ll see it below when it’s ready.'));
-    const ok = button('OK', 'go'); onPick(ok, () => { sfx.select?.(); close(); });
-    const f = h('div', 'reqfoot'); f.appendChild(ok); root.appendChild(f);
+    const done = h('div', 'bq bsent');
+    done.append(h('div', 'bigemoji', '\u{1F6A7}'), h('h1', 'bh', 'On its way!'), h('p', 'bnote', 'You’ll find it under construction on Play.'));
+    const row = h('div', 'bbtns');
+    const again = button('Make another', 'bpill go'); onPick(again, () => { sfx.select?.(); close(); });
+    row.appendChild(again);
+    if (onPlay){ const see = button('See it on Play', 'bpill skip'); onPick(see, () => { sfx.select?.(); onPlay(); }); row.appendChild(see); }
+    done.appendChild(row);
+    root.appendChild(done);
   }
   onOpen();
   draw();

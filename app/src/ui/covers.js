@@ -251,6 +251,35 @@ export function previewCover(canvas, { name = 'Your game', cols = ['#8b7cff', '#
   TITLES.tilt(c, W, H, String(name || 'Your game').slice(0, 40), cols[1]);
 }
 
+/* A game on its way: the card it'll be (its colours, its name), under hazard
+   stripes with a construction sign, a pill saying how it's going and a bar
+   along the bottom. For Play's Under construction row - nothing to pick. */
+const buildingMade = new Map();
+export function buildingCoverUrl({ name = 'Your game', cols = ['#8b7cff', '#4cc3e8'], label = 'Building…', pct = 50 } = {}){
+  if (typeof document === 'undefined') return null;
+  const key = JSON.stringify([name, cols, label, pct]);
+  if (buildingMade.has(key)) return buildingMade.get(key);
+  const W = 960, H = 540, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const c = cv.getContext && cv.getContext('2d'); if (!c) return null;
+  try { previewCover(cv, { name, cols, glyph: '\u{1F6A7}' }); } catch (e){ return null; }
+  c.save(); c.globalAlpha = 0.11; c.fillStyle = '#000';
+  for (let x = -H; x < W + H; x += 84){ c.beginPath(); c.moveTo(x, H); c.lineTo(x + 42, H); c.lineTo(x + 42 + H, 0); c.lineTo(x + H, 0); c.closePath(); c.fill(); }
+  c.restore();
+  /* the pill, top left (Get is top right on the others) */
+  c.font = `800 ${H * 0.09}px ${FONT}`;
+  const pw = c.measureText(label).width + H * 0.15, ph = H * 0.15;
+  c.fillStyle = 'rgba(255,255,255,.94)'; c.beginPath(); c.roundRect(H * 0.05, H * 0.05, pw, ph, ph / 2); c.fill();
+  c.fillStyle = INK; c.textBaseline = 'middle'; c.fillText(label, H * 0.05 + H * 0.075, H * 0.05 + ph / 2 + 1);
+  /* the bar */
+  if (pct > 0){
+    c.fillStyle = 'rgba(0,0,0,.28)'; c.fillRect(0, H - H * 0.035, W, H * 0.035);
+    c.fillStyle = '#fff'; c.fillRect(0, H - H * 0.035, W * Math.min(1, pct / 100), H * 0.035);
+  }
+  let url = null; try { url = cv.toDataURL('image/jpeg', 0.9); } catch (e){}
+  buildingMade.set(key, url);
+  return url;
+}
+
 /* A creator's cover (an SVG picture, no words) as an image to draw. Loaded
    as a picture, so nothing in it can run; checked first all the same. */
 const UNSAFE_COVER = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*image|<\s*style|<\s*text|<\s*tspan|<\s*use\b|url\(\s*['"]?(?!#)/i;

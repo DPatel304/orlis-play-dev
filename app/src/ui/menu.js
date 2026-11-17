@@ -16,7 +16,8 @@ import { toast } from './toast.js';
 import { splashWanted, showChallenges } from './challenges.js';
 import { launch } from './launch.js';
 import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
-import { banner as wideBanner, discoverCoverUrl, seeAllCoverUrl } from './covers.js';
+import { banner as wideBanner, discoverCoverUrl, seeAllCoverUrl, buildingCoverUrl } from './covers.js';
+import { looksOf } from './request.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -265,6 +266,32 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     rows[rows.length - 1].row.appendChild(seeAll);
   }
 
+  /* Under construction: the games asked for and not here yet - at the very end, out of the way
+     (nothing to do about one while it's being made, so nothing to pick, and no stop on the way down) */
+  let tail = null;
+  const made = !waiting && rows.length ? week.building() : [];
+  if (made.length){
+    tail = h('section', 'shelf building');
+    const trow = h('div', 'shelfrow');
+    tail.append(h('h3', '', 'Under construction'), trow);
+    const STATE = { waiting: ['In line', 15], making: ['Building…', 55], made: ['Waiting for OK', 90], ready: ['Waiting for OK', 90], declined: ['Not this time', 0] };
+    for (const x of made){
+      const [label, pct] = STATE[x.state] || ['Building…', 50];
+      const recipe = x.recipe || {};
+      const name = (recipe.name || '').trim() || (x.game && x.game.name) || 'Your game';
+      const t = button('', 'slock pictile covered buildingtile ' + x.state);
+      const th = h('div', 'sthumb');
+      const pic = buildingCoverUrl({ name, cols: looksOf(recipe).cols, label, pct }); if (pic) th.style.backgroundImage = `url(${pic})`;
+      t.insertBefore(th, t.firstChild);
+      t.querySelector('.lbl').replaceWith(h('div', 'smeta', ''));
+      t.setAttribute('aria-label', `${name}: ${label}`);
+      if (x.state === 'declined' && x.note) onPick(t, () => { sfx.select(); toast(`${name}: “${x.note}”`, { ms: 6000 }); });
+      t.tabIndex = -1;
+      trow.appendChild(t);
+    }
+    wrap.appendChild(tail);
+  }
+
   /* this week's family challenges: three big cards on arriving (once each time the
      app starts), then a pill in the top bar (challenges.js) */
   const ch = week.challenges;
@@ -326,7 +353,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     const r = rows[it.rowAt];
     /* (up only as far as it takes to see the whole row - with everything on
        screen, not at all) */
-    const top = r.sec.offsetTop - rows[0].sec.offsetTop, bottom = top + r.sec.offsetHeight, view = shelves.clientHeight - rows[0].sec.offsetTop;
+    const top = r.sec.offsetTop - rows[0].sec.offsetTop, bottom = (tail && it.rowAt === rows.length - 1 ? tail.offsetTop + tail.offsetHeight : r.sec.offsetTop + r.sec.offsetHeight) - rows[0].sec.offsetTop, view = shelves.clientHeight - rows[0].sec.offsetTop;
     if (top < scrollY) scrollY = top;
     else if (bottom > scrollY + view) scrollY = Math.min(top, bottom - view);
     wrap.style.transform = `translateY(${-scrollY}px)`;

@@ -28,13 +28,12 @@ import { unpack, check, build, pack, nextVersion } from './creator-kit.js';
 import { newer } from './store.js';
 import { library } from './library.js';
 import { PAPER } from './boot.js';
+import { week } from './week.js';
 import { gameBuilder, changePop, looksOf } from './request.js';
 import { previewCover } from './covers.js';
 import { coverFor } from './shots.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-/* how a requested game is going, as whoever asked sees it */
-const ASKED = { waiting: ['Asked', 'wait'], making: ['Being made', 'make'], made: ['Waiting for OK', 'check'], ready: ['Waiting for OK', 'check'], 'in-store': ['In Discover', 'ok'], declined: ['Not this time', 'no'] };
 const STATE = { waiting: ['Waiting for OK', ''], approved: ['In Discover', 'ok'], declined: ['Not this time', 'no'] };
 
 /* Create's banner: the same banner as Home's and the Store's, with its own
@@ -85,11 +84,9 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     return scene;
   }
 
-  const { hero, text } = banner('Create', 'Make a game', 'Tap here to make one.');
-  const btns = h('div', 'sbtns');
-  text.append(btns);
-  scroll.appendChild(hero);
-  /* where Make a game builds, between the banner and the rest (the banner shrinks while it's open) */
+  /* the page is the flow: no banner, straight into the first question */
+  s.classList.add('flow'); s.classList.remove('onhero');
+  /* where Make a game builds */
   const buildHost = h('div', 'cbuild');
   scroll.appendChild(buildHost);
   const body = h('div', 'cbody');
@@ -103,7 +100,6 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   let said = '', bad = false;
   let mine = [];                 /* the games being made on this PC */
   let pop = null;
-  let moving = false;            /* a request on its way: keep how it's going up to date */
 
   /* a small card in the middle, over the page (as on Family) */
   function popup(...parts){
@@ -359,27 +355,25 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   }
 
   /* Request a game: the wizard, then back here to see it listed */
-  const sendAsk = (recipe) => account.call('POST', '/api/requests', recipe).then((r) => { said = 'Sent!'; return r; });
+  const sendAsk = (recipe) => account.call('POST', '/api/requests', recipe).then((r) => { said = 'Sent!'; week.refresh({ force: true }).catch(() => {}); return r; });
   const store_ = async () => { try { return (await account.call('GET', '/api/store')).games || []; } catch { return []; } };
   let slots = null;              /* { used, total } game slots (none for the owner) */
   let building = null;           /* the builder, while it's open */
   let autoOpened = false;            /* it opened by itself, once */
-  /* closed, the banner is the way back in */
-  hero.classList.add('again'); hero.addEventListener('click', () => { if (!building && !pop) askPop(); });
   function askPop(quiet){
     if (quiet !== true) sfx.select();
     closePop();
+    if (building) return;
     if (slots && slots.used >= slots.total){
-      if (quiet === true) return;
-      const card = popup(h('h2', '', 'No slots left'), h('p', '', `All ${slots.total} game slots are used. Ask the owner for more.`), h('div', 'fbtns'));
-      card.lastChild.append(btn('OK', () => { sfx.select(); closePop(); }, 'go'));
+      buildHost.innerHTML = '';
+      const full = h('section', 'builder');
+      full.append(h('div', 'bq bsent', `<div class="bigemoji">\u{1F6A7}</div><h1 class="bh">No game slots left</h1><p class="bnote">All ${slots.total} are used. Ask the owner for more.</p>`));
+      buildHost.appendChild(full);
       return;
     }
-    if (building) { scroll.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     building = gameBuilder({
-      host: buildHost, store: store_, send: sendAsk,
-      onOpen: () => { hero.classList.add('mini'); s.classList.add('building'); scroll.scrollTo({ top: 0, behavior: 'smooth' }); },
-      onDone: () => { building = null; hero.classList.remove('mini'); s.classList.remove('building'); draw(); }
+      host: buildHost, store: store_, send: sendAsk, onPlay: () => nav.home && nav.home(),
+      onDone: () => { building = null; draw(); setTimeout(() => { if (s.isConnected) askPop(true); }, 0); }
     });
   }
 
@@ -396,57 +390,17 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     /* everything it needs first; then, if a newer draw started meanwhile,
        leave it to that one - so overlapping draws never double anything */
     const me = ++drawing;
-    const [waiting, sent, asked, ok, shop] = await Promise.all([kit ? outbox.list() : [], kit ? outbox.sent() : [],
+    const [waiting, sent, , ok, shop] = await Promise.all([kit ? outbox.list() : [], kit ? outbox.sent() : [],
       account.call('GET', '/api/requests').then(r => { slots = r.slots || null; return r.requests || []; }, () => null),
       kit && making.available && claudeOk === null ? setup.status().then(claudeConnected) : claudeOk,
       store_()]);
     if (me !== drawing) return;
     if (ok !== null) claudeOk = ok;
-    btns.innerHTML = '';
-    if (slots) btns.append(h('span', 'cslots', `${Math.max(0, slots.total - slots.used)} of ${slots.total} left`));
-    if (waiting.length) btns.append(sbtn('Send now', () => { sfx.select(); send(); }, 'ghost'));
     if (said){ toast(said, { bad }); said = ''; bad = false; }
     body.innerHTML = '';
     /* the page opens straight into making a game (but not on the way back from Try it, or setup's own first game) */
     if (!autoOpened){ autoOpened = true; if (!lastTry && !(account.state && account.state.firstGame === true)) askPop(true); }
 
-    moving = !!(asked && asked.some(x => ['waiting', 'making', 'made', 'ready'].includes(x.state)));
-    /* the games they've asked for, and how each is going */
-    if (asked === null || asked.length || !kit){
-      const sec = row('Your games', '');
-      if (asked === null) sec.appendChild(h('p', 'cempty', 'Can’t reach the Orlis server right now.'));
-      else if (!asked.length) sec.appendChild(h('p', 'cempty', 'None yet.'));
-      else {
-        const list = h('div', 'ygrid');
-        for (const x of asked.filter(x => x.state !== 'withdrawn')){
-          const [label, cls] = ASKED[x.state] || [x.state, ''];
-          const recipe = x.recipe || {};
-          const name = (x.game && x.game.name) || (recipe.name || '').trim() || 'Your game';
-          /* its cover: the real one once it's in Discover with one; until then, the card it'll be - the look they chose, what you do, its name */
-          const entry = x.gameId ? shop.find(g => g.id === x.gameId) : null;
-          const cover = h('div', 'ycover');
-          const dress = (url) => { cover.style.backgroundImage = `url(${url})`; };
-          const real = entry ? coverFor(entry, dress) : null;
-          if (real) dress(real);
-          else {
-            const cv = document.createElement('canvas'); cv.width = 640; cv.height = 400;
-            try { const lk = looksOf(recipe); previewCover(cv, { name, cols: lk.cols, glyph: lk.glyph }); dress(cv.toDataURL('image/jpeg', 0.85)); } catch (e){}
-          }
-          const r = h('div', 'citem ycard');
-          const when = new Date(x.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
-          const body_ = h('div', 'ybody');
-          body_.append(h('div', 'cask', `${x.game ? `<b>${esc(x.game.name)}</b> ` : ''}<span class="csent">${esc(x.sentence)}</span><small>${esc(when)}${x.note ? ` · “${esc(x.note)}”` : ''}</small>`));
-          const end = h('div', 'cend');
-          if (x.state === 'waiting') end.appendChild(btn('Take back', async () => { try { await account.call('DELETE', `/api/requests/${x.id}`); said = 'Taken back.'; } catch (e){ said = e.message; bad = true; } draw(); }, 'quiet'));
-          if (x.state === 'in-store' && x.gameId && x.game) end.appendChild(btn('Change it', () => { sfx.select(); changePop({ game: { id: x.gameId, name: x.game.name }, send: sendAsk, onDone: () => draw() }); }, 'quiet'));
-          end.appendChild(h('span', `cstate ${cls}`, esc(label)));
-          body_.appendChild(end);
-          r.append(cover, body_);
-          list.appendChild(r);
-        }
-        sec.appendChild(list);
-      }
-    }
     if (!kit) return;
 
     /* games they've built themselves (Dev Kit), as the Store's cards */
@@ -503,11 +457,6 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   draw();
   send();
   refreshMine();
-  /* while a request's on its way, how it's going keeps itself up to date */
-  const watch = setInterval(() => {
-    if (!s.isConnected) return clearInterval(watch);
-    if (!pop && !document.querySelector('.reqwrap') && moving) draw();
-  }, 15000);
 
   /* (leaving: no card left over the next page) */
   for (const k of Object.keys(nav)){ const go = nav[k]; nav[k] = () => { closePop(); go(); }; }

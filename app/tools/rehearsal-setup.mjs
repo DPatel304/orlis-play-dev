@@ -117,13 +117,13 @@ try {
 
   console.log('\n6. Their first game');
   await pg.waitForSelector('.builder', { timeout: 20000 }); await wait(600);
-  check((await pg.textContent('.builder h2')).trim() === 'How do you want to start?', 'Create opens straight into making a game');
-  await pg.click('.reqtile >> text=Surprise me'); await wait(500);
-  await pg.click('.reqfoot .btn.go >> text=Send request');
-  await pg.waitForSelector('.builder >> text=Sent!', { timeout: 8000 });
-  await pg.click('.reqfoot .btn.go >> text=OK'); await wait(1200);
+  check((await pg.textContent('.builder .bh')).trim() === 'How do you want to start?', 'Create opens straight into making a game');
+  await pg.click('.bcard >> text=Surprise me'); await wait(500);
+  await pg.click('.bpill >> text=Send it');
+  await pg.waitForSelector('.bsent', { timeout: 8000 });
+  await pg.click('.bpill >> text=See it on Play'); await wait(2500);
   const page = await body();
-  check(/Your games/.test(page) && /Asked/.test(page), 'it’s in Your games: Asked');
+  check(/Under construction/.test(page), 'it’s on Play, under construction');
   await shot('5-asked');
 
   console.log('\n7. Signed out, and back: an email with an account asks for its password');
