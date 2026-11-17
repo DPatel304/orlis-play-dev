@@ -1420,3 +1420,6 @@ body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
 .tvhome .tvtop::before{ top:-4.5vh; bottom:-1vh; }
 /* (the menu drops down from under the cube, not over it) */
 .popcard{ top:16vh; }
+/* "Discover ›" beside the Featured this week title */
+.shelf h3 .btn.rowlink{ margin-left:1.4vw; padding:.5vh 1.6vh; font-size:1.9vh; font-weight:600; border-radius:999px; background:rgba(109,94,252,.1); color:#5446e0; border:none; box-shadow:none; vertical-align:middle; }
+.shelf h3 .btn.rowlink:hover, .shelf h3 .btn.rowlink.hot{ background:rgba(109,94,252,.2); transform:none; }

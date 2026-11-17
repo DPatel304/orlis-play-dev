@@ -188,7 +188,13 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     if (!list.length) continue;
     const sec = h('section', 'shelf');
     const row = h('div', 'shelfrow');
-    sec.append(h('h3', '', ROWS[k].title), row);
+    const head = h('h3', '', ROWS[k].title);
+    /* (this week's Discover games: a way to the rest of Discover, from the title) */
+    if (ROWS[k].id === 'featured' && featured.length && nav.store){
+      head.appendChild(onPick(button('Discover \u203a', 'rowlink'), () => { if (!going) { sfx.select(); nav.store(); } }));
+      rows.discoverRow = true;
+    }
+    sec.append(head, row);
     wrap.appendChild(sec);
     rows.push({ sec, row, ns: list.map(({ n }) => n) });
     for (const { it, n } of list) items[n].rowAt = rows.length - 1;
@@ -228,6 +234,12 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     onPick(t, () => { if (going) return; sfx.select(); fn(); });
     return t;
   };
+  /* the end of Featured this week: more like these, in Discover */
+  const fi = ROWS.findIndex(r => r.id === 'featured');
+  if (fi >= 0 && rows.discoverRow){
+    const fr = rows.find(r => r.ns.length && items[r.ns[0]].shelf === fi);
+    if (fr) fr.row.appendChild(extraTile('<svg class="tileglyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>', 'See more', () => nav.store()));
+  }
   /* the end of All: every game at once, with filters - and more, in Discover */
   if (rows.length){
     const last = rows[rows.length - 1].row;

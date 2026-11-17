@@ -61,11 +61,17 @@ try {
   const t1 = await titles();
   check(t1.includes('Featured this week'), 'a Featured this week row: ' + t1.join(' | '));
   check(t1.some(t => /challenges/.test(t)), 'this week\'s challenges');
-  const feat = await pg.$$eval('.shelf', secs => { const s = secs.find(x => /Featured this week/.test(x.querySelector('h3').textContent)); return [...s.querySelectorAll('.slock')].map(c => ({ name: c.querySelector('.nm').textContent, get: !!c.querySelector('.getpill') })); });
+  const feat = await pg.$$eval('.shelf', secs => { const s = secs.find(x => /Featured this week/.test(x.querySelector('h3').textContent)); return [...s.querySelectorAll('.slock:not(.addtile)')].map(c => ({ name: c.querySelector('.nm').textContent, get: !!c.querySelector('.getpill') })); });
   check(feat.length === 3 && feat.every(f => f.get), 'the three Discover games, each with Get: ' + feat.map(f => f.name).join(', '));
   const cards = await pg.$$eval('.chcard', e => e.map(x => x.querySelector('.chtitle').textContent + ' ' + x.querySelector('.chfoot span').textContent));
   check(cards.length === 3, 'three challenges: ' + cards.join(' / '));
+  check(await pg.$('.shelf h3 .rowlink') !== null, 'a Discover link beside the Featured title');
+  const more = await pg.$$eval('.shelf', secs => { const f = secs.find(x => /Featured this week/.test(x.querySelector('h3').textContent)); return [...f.querySelectorAll('.addtile .nm')].map(x => x.textContent); });
+  check(more.join() === 'See more', 'and a See more tile at the end of the row: ' + more.join());
   await shot('1-play');
+  await pg.click('.shelf h3 .rowlink'); await wait(1500);
+  check(await pg.$('.tvtab.on >> text=Discover') !== null, 'the link goes to Discover');
+  await pg.click('.tvtab >> text=Play'); await pg.waitForSelector('.screen.tvhome .slock', { timeout: 15000 }); await wait(1500);
 
   console.log('\n2. Get one from Featured: it downloads and starts');
   await pg.click('.slock:has(.getpill) >> nth=0');
