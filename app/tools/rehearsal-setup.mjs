@@ -94,7 +94,7 @@ try {
   check(['Pop Party', 'Sky Painter'].every(n => home.includes(n)), 'Home has Pop Party and Sky Painter');
   check(!['Sleepy Bear', 'Leaf Pile', 'Stack It High', 'Last Known Position'].some(n => home.includes(n)), 'and only those, for now');
   await shot('4-starters');
-  await pg.click('.tvtab >> text=Store'); await wait(1200);
+  await pg.click('.tvtab >> text=Discover'); await wait(1200);
   check((await body()).includes('Pending account approval'), 'the Store: Pending account approval');
   await pg.click('.tvtab >> text=Create'); await wait(1200);
   check((await body()).includes('Pending account approval'), 'Create: the same');
@@ -104,7 +104,7 @@ try {
   console.log('\n5. The owner lets them in: it says so, and everything opens');
   await api('POST', `/api/joins/${joins[0].id}/approve`, null, M);
   await pg.waitForSelector('.toast', { timeout: 25000 });
-  check((await pg.textContent('.toast')).includes('You\u2019re in!'), 'You\u2019re in! The Store and Create are open.');
+  check((await pg.textContent('.toast')).includes('You\u2019re in!'), 'You\u2019re in! Discover and Create are open.');
   await wait(1500);
   const after = await body();
   check(after.includes('Leaf Pile'), 'Home has all the games now');

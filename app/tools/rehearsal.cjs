@@ -192,7 +192,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   own.on('request', r => { if (/submissions/.test(r.url())) log('    app -> ' + r.method() + ' ' + r.url().replace(S, '')); });
   own.on('response', async r => { if (/tried/.test(r.url())) log('    tried -> ' + r.status() + ' ' + (await r.text().catch(() => ''))); });
   await own.waitForSelector('.tvtop', { timeout: 20000 }); await own.waitForTimeout(1000);
-  await own.click('.tvtab >> text=Store'); await own.waitForTimeout(2500);
+  await own.click('.tvtab >> text=Discover'); await own.waitForTimeout(2500);
   check((await txt(own, 'body')).includes('Waiting for your OK'), 'the Store shows "Waiting for your OK"');
   await own.screenshot({ path: out + '-09-store.png' });
   const keyFile = path.join(data, 'manage.key'), key = fs.readFileSync(keyFile, 'utf8').trim();
@@ -232,7 +232,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   check(cousin.account && cousin.account.role === 'creator', 'they join as creators too (everyone does, for now)');
   const cz = await page(b, stateOf(cousin), 'cousin');
   await cz.waitForSelector('.tvtop', { timeout: 20000 }); await cz.waitForTimeout(1000);
-  await cz.click('.tvtab >> text=Store'); await cz.waitForTimeout(2500);
+  await cz.click('.tvtab >> text=Discover'); await cz.waitForTimeout(2500);
   check(!(await txt(cz, 'body')).includes('Waiting for your OK'), 'they never see games waiting for approval');
   await cz.screenshot({ path: out + '-11-store.png', fullPage: true });
   log('    store: ' + (await txt(cz, 'body')).slice(0, 500));

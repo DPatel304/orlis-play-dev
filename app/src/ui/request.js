@@ -123,8 +123,8 @@ export function requestWizard({ store = async () => [], send, onDone = () => {} 
     if (step === 'like'){
       body.append(h('h2', '', 'Which game is it like?'));
       const grid = h('div', 'reqgrid');
-      if (games === null){ body.append(h('p', 'reqlede', 'Looking in the Store…')); games = await store(); return draw(); }
-      if (!games.length) body.append(h('p', 'reqlede', 'The Store’s out of reach right now.'));
+      if (games === null){ body.append(h('p', 'reqlede', 'Looking in Discover…')); games = await store(); return draw(); }
+      if (!games.length) body.append(h('p', 'reqlede', 'Discover’s out of reach right now.'));
       for (const g of games) grid.appendChild(tile(`<b>${esc(g.name)}</b><small>${esc(g.blurb || '')}</small>`, r.like === g.id ? 'on' : '', () => { set({ like: g.id }); next(); }));
       body.appendChild(grid);
     }

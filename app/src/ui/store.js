@@ -163,7 +163,7 @@ export function storePage({ nav = {}, onPlay, onChange = () => {}, onWho, onReca
     lay = layout(games);
     /* (nothing in the Store yet, but something waiting: that, in the banner) */
     if (!lay.featured.length && waiting.length){ lay.featured = waiting.slice(0, 1); if (lay.rows.length === 1 && !lay.rows[0].list.length) lay.rows = []; }
-    if (!lay.featured.length){ say('Nothing in the Store yet. Games the family adds to the Orlis server show up here.'); return; }
+    if (!lay.featured.length){ say('Nothing in Discover yet. Games the family adds to the Orlis server show up here.'); return; }
     /* the banner */
     const hero = h('section', 'shero');
     const art = h('div', 'sheroart');
@@ -235,7 +235,7 @@ export function storePage({ nav = {}, onPlay, onChange = () => {}, onWho, onReca
     const left = h('div', 'spleft');
     const facts = h('div', 'sfacts');
     p.append(bg, pic, h('div', 'spshade'), left, facts);
-    const back = onPick(button('← Store', 'sbtn back'), () => { sfx.back?.(); close(); });
+    const back = onPick(button('← Discover', 'sbtn back'), () => { sfx.back?.(); close(); });
     p.appendChild(back);
     function fill(){
       left.innerHTML = '';
@@ -271,8 +271,8 @@ export function storePage({ nav = {}, onPlay, onChange = () => {}, onWho, onReca
   function leave(){ if (left) return; left = true; if (page) page.close(); closeFilms(); if (changed) onChange(); }
 
   async function load(){
-    if (!account.needed){ say('The Store is in the Orlis Play app for Windows.'); return; }
-    if (!account.signedIn){ say('Sign in to see the Store.'); return; }
+    if (!account.needed){ say('Discover is in the Orlis Play app for Windows.'); return; }
+    if (!account.signedIn){ say('Sign in to see Discover.'); return; }
     const by = account.state && account.state.token;
     if (by !== seenBy){ seen = null; seenBy = by; }
     /* what it showed last time, straight away (so going to the Store is as

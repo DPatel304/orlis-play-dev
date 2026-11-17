@@ -224,7 +224,7 @@ function claude(files, prompt){
   const own = await pc(b, 'owner', stateOf(await api('POST', '/api/signin', { email: 'deep@example.com', password: 'correct horse' })));
   await own.waitForSelector('.tvtop', { timeout: 20000 });
   async function ownerTries(){
-    await tab(own, 'Store'); await own.waitForTimeout(1000);
+    await tab(own, 'Discover'); await own.waitForTimeout(1000);
     await own.click('.slock >> text=Firefly Jar >> nth=0'); await own.waitForTimeout(800);
     await own.click('.sbtn >> text=Try it'); await own.waitForTimeout(2500);
     await own.evaluate(() => window.__fakeOn()); await own.waitForTimeout(32000);
@@ -238,14 +238,14 @@ function claude(files, prompt){
   /* you share it with everyone (the management page's Share with everyone) */
   check((await api('POST', `/api/store/${ok1.game.id}/reach`, { everyone: true }, null, M)).reach === 'everyone', 'you share it with everyone');
   await restart(bro); await tab(bro, 'Create');
-  check(/Approved|In the Store/i.test(await txt(bro, 'body')), 'his Create tab says approved, while he\'s still here');
+  check(/Approved|In Discover/i.test(await txt(bro, 'body')), 'his Create tab says approved, while he\'s still here');
 
   log('\n11. Another family gets it');
   const invC = await api('POST', '/api/invites', { household: 'new' }, owner.token);
   const cousin = await api('POST', '/api/signup', { email: 'cousin@example.com', password: 'correct horse', name: 'Aunt Mo', adult: true, invite: invC.code });
   const cz = await pc(b, 'cousin', stateOf(cousin));
   await cz.waitForSelector('.tvtop', { timeout: 20000 });
-  await tab(cz, 'Store');
+  await tab(cz, 'Discover');
   await cz.click('.sbtn >> text=Get >> nth=0'); await cz.waitForTimeout(3000);
   const have = () => cz.evaluate((gid) => window.__library.installed.get(gid), id);
   check(await have() === '0.2', 'they have version 0.2');
@@ -267,7 +267,7 @@ function claude(files, prompt){
   bro.net.away = true;
   await restart(bro); await tab(bro, 'Create');
   const away = await txt(bro, 'body');
-  check(/As of /.test(away) && /Approved|In the Store/i.test(away), 'away, Create still shows how they went, as of his visit');
+  check(/As of /.test(away) && /Approved|In Discover/i.test(away), 'away, Create still shows how they went, as of his visit');
   await shot(bro, '13-away-sent');
   await setFiles(bro, folder, claude(await fsOf(bro, folder), 'When the jar is full, make a big rainbow arc across the sky as the fireflies fly out.'));
   said = await sendIt(bro, 'Firefly Jar');
@@ -286,7 +286,7 @@ function claude(files, prompt){
   check(ok3.ok && ok3.game.version === '0.3', 'approved: 0.3 is in the Store');
 
   log('\n15. The other family is offered the update');
-  await restart(cz); await tab(cz, 'Store');
+  await restart(cz); await tab(cz, 'Discover');
   const hero = await txt(cz, 'body');
   check(hero.includes('Update to 0.3'), 'the Store says "Update to 0.3"');
   await shot(cz, '15-update');

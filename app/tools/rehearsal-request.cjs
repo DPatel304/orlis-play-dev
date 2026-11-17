@@ -46,7 +46,7 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(35
   await pg.waitForSelector('.tvtop', { timeout: 25000 });
   await pg.waitForTimeout(1200);
   const toCreate = async () => { await pg.keyboard.press('Escape').catch(() => {});
-    if (await pg.$('.tvtab.on >> text=Create')){ await pg.click('.tvtab >> text=Store'); await pg.waitForTimeout(1200); }
+    if (await pg.$('.tvtab.on >> text=Create')){ await pg.click('.tvtab >> text=Discover'); await pg.waitForTimeout(1200); }
     await pg.click('.tvtab >> text=Create'); await pg.waitForTimeout(1800); };
   await toCreate();
 
@@ -137,7 +137,7 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(35
   await api('POST', `/api/submissions/${sub.id}/tried`, { secs: 30 });
   await api('POST', `/api/submissions/${sub.id}/approve`);
   await toCreate();
-  check((await txt(pg, '.createpage')).includes('In the Store'), 'In the Store');
+  check((await txt(pg, '.createpage')).includes('In Discover'), 'In Discover');
   await shot(pg, '10-in-store');
 
   log('\n5. Ask for a change');

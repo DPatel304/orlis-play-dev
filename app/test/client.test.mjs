@@ -111,7 +111,7 @@ test('updates: the Update button and a slow check both show "Updating"; the beta
 
 test('Home, the Store and Create are pages under the same tabs; the corner menu keeps Settings, updates, sign out and Exit', () => {
   const tabs = readFileSync(new URL('../src/ui/tabs.js', import.meta.url), 'utf8');
-  assert.match(tabs, /\['home', 'Play'\], \['store', 'Store'\], \['create', 'Create'\]/);
+  assert.match(tabs, /\['home', 'Play'\], \['store', 'Discover'\], \['create', 'Create'\]/);
   for (const w of ["'Settings'", "'Check for updates'", "'Sign out'", "'Exit'"]) assert.ok(tabs.includes(`item(`) && tabs.includes(w), w);
   assert.ok(!/\\u\{1F/.test(tabs), 'the corner menu has line icons, not emoji');
   assert.ok(tabs.includes("id !== 'create' || !account.isKid"), 'a child playing sees Home and the Store, not Create');

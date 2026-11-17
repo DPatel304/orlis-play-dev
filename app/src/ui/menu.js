@@ -100,7 +100,7 @@ const FLY = 0.7, FLY_STAGGER = 0.05;   /* arriving: each tile's flight, one afte
 /* What Create is, until it's here. */
 export const CREATE_SOON = {
   icon: '\u{1F58C}\u{FE0F}', name: 'Create', line: 'Make your own games',
-  about: 'Build your own movement games, then play them by moving. Share the ones you like with the family through the Store.'
+  about: 'Build your own movement games, then play them by moving. Share the ones you like with the family in Discover.'
 };
 
 /* nav: { home(), store(), create() } - the tabs in the top bar. */
@@ -132,9 +132,9 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
   /* no games yet (a new install: they come from the Store) - a way there */
   if (!items.length){
     htext.querySelector('.skicker').textContent = 'Welcome';
-    hname.textContent = 'Get your first game'; hblurb.textContent = 'Pop Party is waiting for you in the Store.';
+    hname.textContent = 'Get your first game'; hblurb.textContent = 'Pop Party is waiting for you in Discover.';
     play.remove();
-    if (nav.store) btns.appendChild(onPick(button('Open the Store', 'sbtn play'), () => { sfx.select(); nav.store(); }));
+    if (nav.store) btns.appendChild(onPick(button('Open Discover', 'sbtn play'), () => { sfx.select(); nav.store(); }));
     ambience.start();
     return {
       focus: 0,
@@ -178,7 +178,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
   if (nav.store && rows.length){
     const more = button('', 'slock addtile');
     more.insertBefore(h('div', 'sthumb', '<span class="plus">+</span>'), more.firstChild);
-    more.querySelector('.lbl').replaceWith(h('div', 'smeta', '<div class="stxt"><div class="nm">Get more games</div><div class="sub">Opens the Store</div></div>'));
+    more.querySelector('.lbl').replaceWith(h('div', 'smeta', '<div class="stxt"><div class="nm">Get more games</div><div class="sub">Opens Discover</div></div>'));
     onPick(more, () => { if (going) return; sfx.select(); nav.store(); });
     rows[0].row.appendChild(more);
   }

@@ -65,7 +65,7 @@ button:disabled{ opacity:.55; cursor:not-allowed; } .tag.declined{ background:#f
 </style></head>
 <body>
 <header><h1>Orlis <i>Server</i></h1>
-<nav id="tabs"><button data-t="overview" class="on">Overview</button><button data-t="approvals">Approvals<span id="waiting"></span></button><button data-t="families">Families</button><button data-t="store">Store</button><button data-t="backups">Backups</button><button data-t="history">History</button></nav></header>
+<nav id="tabs"><button data-t="overview" class="on">Overview</button><button data-t="approvals">Approvals<span id="waiting"></span></button><button data-t="families">Families</button><button data-t="store">Discover</button><button data-t="backups">Backups</button><button data-t="history">History</button></nav></header>
 <main id="main"></main>
 <script>
 var TRY = ${TRY_SECS};
@@ -128,7 +128,7 @@ var TRY = ${TRY_SECS};
     });
     if (done.length){
       var d = card('Requests lately');
-      var SAY = { made: 'Made - waiting for your OK', ready: 'Made - waiting for your OK', 'in-store': 'In the Store', declined: 'Declined' };
+      var SAY = { made: 'Made - waiting for your OK', ready: 'Made - waiting for your OK', 'in-store': 'In Discover', declined: 'Declined' };
       done.forEach(function(x){ row(d, '<b>' + esc(x.sentence) + '</b> <span class="tag ' + (x.state === 'in-store' ? 'approved' : x.state === 'declined' ? 'declined' : '') + '">' + esc(SAY[x.state] || x.state) + '</span><small>' + esc(x.family) + (x.note ? ' · “' + esc(x.note) + '”' : '') + '</small>'); });
     }
   }
@@ -177,13 +177,13 @@ var TRY = ${TRY_SECS};
             }),
             /* (only once it's been played: in Orlis Play, Try it) */
             x.tried ? btn('Approve', 'go', function(b){ b.textContent = 'Approving\u2026'; call('POST', '/api/submissions/' + encodeURIComponent(x.id) + '/approve').then(show, fail(c)); })
-              : (function(){ var b = btn('Play it first', '', function(){}); b.disabled = true; b.title = 'Approve comes on once you\u2019ve played this version in Orlis Play (the Store, Waiting for your OK, Try it).'; return b; })()
+              : (function(){ var b = btn('Play it first', '', function(){}); b.disabled = true; b.title = 'Approve comes on once you\u2019ve played this version in Orlis Play (Discover, Waiting for your OK, Try it).'; return b; })()
           ]);
         });
-        if (waiting.length) note(c, 'Every game is played before it\u2019s approved: open Orlis Play, then the Store - games waiting for your OK are at the top (only you see them). Press Try it and play for at least ' + TRY + ' seconds; Approve comes on here.');
+        if (waiting.length) note(c, 'Every game is played before it\u2019s approved: open Orlis Play, then Discover - games waiting for your OK are at the top (only you see them). Press Try it and play for at least ' + TRY + ' seconds; Approve comes on here.');
         if (done.length){
           var d = card('Lately');
-          done.forEach(function(x){ row(d, '<b>' + esc(x.name) + '</b> <span class="tag ' + esc(x.state) + '">' + (x.state === 'approved' ? 'In the Store' : 'Declined') + '</span><small>' + esc(x.family) + ' \u00b7 ' + esc(when(x.decidedAt)) + (x.note ? ' \u00b7 \u201c' + esc(x.note) + '\u201d' : '') + '</small>'); });
+          done.forEach(function(x){ row(d, '<b>' + esc(x.name) + '</b> <span class="tag ' + esc(x.state) + '">' + (x.state === 'approved' ? 'In Discover' : 'Declined') + '</span><small>' + esc(x.family) + ' \u00b7 ' + esc(when(x.decidedAt)) + (x.note ? ' \u00b7 \u201c' + esc(x.note) + '\u201d' : '') + '</small>'); });
         }
       });
     },
@@ -213,7 +213,7 @@ var TRY = ${TRY_SECS};
         var t = card('Family who live elsewhere');
         note(t, 'They ask on your beta page (Approvals \\u203a Closed beta), or you add their email there. Once approved, they install Orlis Play and make an account with that email - straight in. Anyone else who signs up waits for you (Approvals \\u203a Waiting to join).');
         note(t, 'Your page and the app reach this laptop through Tailscale Funnel - see the README for turning it on.');
-        note(t, 'This laptop needs to be on, with Funnel running, for them to join or reach the Store.');
+        note(t, 'This laptop needs to be on, with Funnel running, for them to join or reach Discover.');
       });
     },
     families: function(){
@@ -260,7 +260,7 @@ var TRY = ${TRY_SECS};
             row(c, '&nbsp;&nbsp;' + esc(a.email), right);
           });
         });
-        note(c, 'Creators can make games with Create in Orlis Play; you approve them before they\\u2019re in the Store.');
+        note(c, 'Creators can make games with Create in Orlis Play; you approve them before they\\u2019re in Discover.');
         var inv = card('Invite a new family');
         r[1].invites.filter(function(i){ return !i.usedAt && i.kind === 'new'; }).forEach(function(i){
           row(inv, '<span class="code">' + esc(i.code) + '</span><small>Made ' + esc(when(i.createdAt)) + '</small>', [sure('Remove', 'Remove? Click again', '', function(){ call('DELETE', '/api/invites/' + encodeURIComponent(i.code)).then(show, fail(inv)); })]);
@@ -272,7 +272,7 @@ var TRY = ${TRY_SECS};
       return call('GET', '/api/history').then(function(r){
         var c = card('What happened to the family\\u2019s games');
         if (!r.history.length) note(c, 'Nothing yet. Every game sent, played, approved, declined or taken out is kept here, and every grown-up made a creator or not.');
-        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of the Store', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed', 'asked-to-join': 'Asked to join', 'join-approved': 'Let in', 'join-declined': 'Not let in', 'beta-requested': 'Asked for the beta', 'beta-approved': 'Approved for the beta', 'beta-declined': 'Beta request declined', 'password-set': 'Given a new password' };
+        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of Discover', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed', 'asked-to-join': 'Asked to join', 'join-approved': 'Let in', 'join-declined': 'Not let in', 'beta-requested': 'Asked for the beta', 'beta-approved': 'Approved for the beta', 'beta-declined': 'Beta request declined', 'password-set': 'Given a new password' };
         r.history.forEach(function(x){
           row(c, '<span class="tag ' + (x.what === 'approved' ? 'ok' : x.what === 'declined' || x.what === 'removed' ? 'declined' : '') + '">' + esc(SAY[x.what] || x.what) + '</span> ' +
             (x.name ? '<b>' + esc(x.name) + '</b>' + (x.version ? ' <span class="tag">version ' + esc(x.version) + '</span>' : '') : '') +
@@ -286,8 +286,8 @@ var TRY = ${TRY_SECS};
         var st = both[0], ok = {};
         /* (each game's latest approval: who made it, and who said OK when) */
         both[1].history.forEach(function(x){ if (x.what === 'approved' && !ok[x.gameId]) ok[x.gameId] = x; });
-        var c = card('The Store\\u2019s games');
-        if (!st.games || !st.games.length) note(c, 'Nothing in the Store yet. Games your creators send in come here once you\u2019ve approved them.');
+        var c = card('Discover\\u2019s games');
+        if (!st.games || !st.games.length) note(c, 'Nothing in Discover yet. Games your creators send in come here once you\u2019ve approved them.');
         (st.games || []).forEach(function(g){
           var cols = (g.icon && g.icon.cols) || ['#6d5efc', '#6d5efc'];
           var glyph = g.icon && g.icon.glyph && !/<\\s*script|on\\w+\\s*=|javascript:|href/i.test(g.icon.glyph) ? g.icon.glyph : '';
@@ -297,13 +297,13 @@ var TRY = ${TRY_SECS};
               : (g.by && !g.starter ? btn('Family only', '', function(){ call('POST', '/api/store/' + encodeURIComponent(g.id) + '/reach', { everyone: false }).then(show, fail(c)); }) : h('<span></span>')),
              sure('Take out', 'Take it out? Click again', 'danger', function(){ call('DELETE', '/api/store/' + encodeURIComponent(g.id)).then(show, fail(c)); })]);
         });
-        note(c, 'Taking a game out of the Store leaves it on any PC that already downloaded it.');
+        note(c, 'Taking a game out of Discover leaves it on any PC that already downloaded it.');
       });
     },
     backups: function(){
       return call('GET', '/api/server').then(function(s){
         var c = card('Backups');
-        row(c, 'One is made every day, and before each update.<small>The accounts, kids\\u2019 profiles, the Store\\u2019s games, games waiting for your OK, and the history. (Each PC keeps its own downloads, scores and settings.)</small>', [btn('Back up now', 'go', function(b){ b.textContent = 'Backing up\\u2026'; call('POST', '/api/backups').then(show, fail(c)); })]);
+        row(c, 'One is made every day, and before each update.<small>The accounts, kids\\u2019 profiles, Discover\\u2019s games, games waiting for your OK, and the history. (Each PC keeps its own downloads, scores and settings.)</small>', [btn('Back up now', 'go', function(b){ b.textContent = 'Backing up\\u2026'; call('POST', '/api/backups').then(show, fail(c)); })]);
         s.backups.forEach(function(b){
           var what = [b.accounts != null ? b.accounts + ' account' + (b.accounts === 1 ? '' : 's') : '', b.profiles != null ? b.profiles + ' profile' + (b.profiles === 1 ? '' : 's') : '', b.games + ' game' + (b.games === 1 ? '' : 's'), size(b.bytes)].filter(Boolean).join(' \\u00b7 ');
           row(c, '<b>' + esc(when(b.at)) + '</b><small>' + esc(KINDS[b.reason] || b.reason) + ' \\u00b7 ' + esc(what) + '</small>', [sure('Restore', 'Restore it? Click again', '', function(x){

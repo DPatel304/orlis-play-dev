@@ -32,8 +32,8 @@ import { requestWizard, changePop } from './request.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* how a requested game is going, as whoever asked sees it */
-const ASKED = { waiting: ['Asked', 'wait'], making: ['Being made', 'make'], made: ['Waiting for OK', 'check'], ready: ['Waiting for OK', 'check'], 'in-store': ['In the Store', 'ok'], declined: ['Not this time', 'no'] };
-const STATE = { waiting: ['Waiting for OK', ''], approved: ['In the Store', 'ok'], declined: ['Not this time', 'no'] };
+const ASKED = { waiting: ['Asked', 'wait'], making: ['Being made', 'make'], made: ['Waiting for OK', 'check'], ready: ['Waiting for OK', 'check'], 'in-store': ['In Discover', 'ok'], declined: ['Not this time', 'no'] };
+const STATE = { waiting: ['Waiting for OK', ''], approved: ['In Discover', 'ok'], declined: ['Not this time', 'no'] };
 
 /* Create's banner: the same banner as Home's and the Store's, with its own
    picture - a sparkle on purple and teal. */

@@ -95,7 +95,7 @@ function toStore(){
 setInterval(() => { if (account.waiting) account.refresh(); }, 15000);
 addEventListener('orlisletin', () => {
   sfx.gold?.();
-  toast('You’re in! The Store and Create are open.', { ms: 5000 });
+  toast('You’re in! Discover and Create are open.', { ms: 5000 });
   if (mode === 'menu') toMenu(false); else if (mode === 'store') toStore(); else if (mode === 'create') toCreate();
 });
 

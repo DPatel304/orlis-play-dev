@@ -24,7 +24,7 @@ const MENU_ICON = {
 };
 const item = (icon, label) => `<span class="pi">${MENU_ICON[icon]}</span><span class="pn">${label}</span>`;
 
-export const TABS = [['home', 'Play'], ['store', 'Store'], ['create', 'Create']];
+export const TABS = [['home', 'Play'], ['store', 'Discover'], ['create', 'Create']];
 
 /* The tab you were on last: going to another, its highlight slides over
    and the page comes in from that side - the bar itself stays put. */
