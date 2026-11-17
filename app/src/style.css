@@ -1470,3 +1470,13 @@ body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
 .ybody .cend{ margin-top:1.4vh; justify-content:space-between; flex-wrap:wrap; }
 /* the family's name on the profile screen, and its way to the family page */
 .acctcard .btn.famlink{ display:block; margin:2.2vh auto 0; font-size:2vh; color:#5b4ce6; }
+
+/* ---- Play: the Featured row is big; it ends with the Discover tile ---- */
+.homepage .shelf.fr .btn.slock{ width:21.2vw; }
+.homepage .shelf.fr .shelfrow{ gap:1.6vw; }
+.homepage .shelf.fr h3{ font-size:3.2vh; }
+.btn.slock .getpill{ left:auto; right:1.2vh; }
+.btn.slock.discovertile .sthumb{ border:0; background:#5b3fd6 center/cover no-repeat; box-shadow:0 1vh 2.6vh rgba(20,24,50,.16); display:block; }
+.btn.slock.discovertile:hover .sthumb, .btn.slock.discovertile.focus .sthumb, body.remote .btn.slock.discovertile.kfocus .sthumb{ border:0; background-color:#5b3fd6; box-shadow:0 0 0 .5vh #fff, 0 2.6vh 5vh rgba(20,24,50,.3); }
+.newchip{ position:absolute; top:1.3vh; left:1.4vh; z-index:3; padding:.5vh 1.4vh; border-radius:999px; background:rgba(20,18,60,.42); color:#fff; font:700 1.9vh/1.1 var(--sys); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+.btn.slock .getpill.low{ top:auto; bottom:1.2vh; }

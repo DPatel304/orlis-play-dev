@@ -201,6 +201,23 @@ export function banner(g){
   };
 }
 
+/* The Discover tile on Play: the Create banner's purple and teal, a big
+   sparkle, and DISCOVER in the cover lettering - one picture, made once. */
+let discoverUrl = null;
+export function discoverCoverUrl(){
+  if (discoverUrl || typeof document === 'undefined') return discoverUrl;
+  const W = 960, H = 540, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const c = cv.getContext && cv.getContext('2d'); if (!c) return null;
+  const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#5b3fd6'); g.addColorStop(1, '#06b6d4'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(255,255,255,.14)';
+  for (const [x, y, r] of [[0.15, 0.2, 0.2], [0.85, 0.75, 0.26], [0.6, 0.1, 0.1]]){ c.beginPath(); c.arc(W * x, H * y, H * r, 0, TAU); c.fill(); }
+  const star = (x, y, r, a) => { c.save(); c.globalAlpha = a; c.fillStyle = '#fff'; c.beginPath(); for (let k = 0; k < 8; k++){ const an = k * Math.PI / 4 - Math.PI / 2, q = k % 2 ? r * 0.34 : r; c.lineTo(x + Math.cos(an) * q, y + Math.sin(an) * q); } c.closePath(); c.fill(); c.restore(); };
+  star(W * 0.66, H * 0.4, H * 0.34, 0.95); star(W * 0.88, H * 0.16, H * 0.09, 0.9); star(W * 0.42, H * 0.22, H * 0.06, 0.8);
+  try { TITLES.deep(c, W, H, 'DISCOVER', '#4a2fb0'); } catch (e){}
+  try { discoverUrl = cv.toDataURL('image/jpeg', 0.85); } catch (e){ discoverUrl = null; }
+  return discoverUrl;
+}
+
 /* A stand-in card for a game that isn't made yet (Create's builder): the
    chosen look's colours, a big symbol for what you do, and the title in one of
    the cover styles - so it reads like the real thing will. */

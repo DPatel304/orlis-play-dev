@@ -14,7 +14,7 @@ import { week } from './week.js';
 import { library } from './library.js';
 import { toast } from './toast.js';
 import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
-import { banner as wideBanner } from './covers.js';
+import { banner as wideBanner, discoverCoverUrl, styleOf } from './covers.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -118,7 +118,7 @@ export function playRows(pool, lately = recent(), featured = []){
     const feat = [...pool.filter(g => g.store), ...FEATURED.map(id => byId.get(id)).filter(Boolean)];
     rows.push({ id: 'featured', title: 'Featured', games: feat.filter((g, i) => feat.indexOf(g) === i).slice(0, 3) });
   }
-  rows.push({ id: 'all', title: 'All', games: [...pool].sort((a, b) => a.name.localeCompare(b.name)) });
+  rows.push({ id: 'all', title: 'My games', games: [...pool].sort((a, b) => a.name.localeCompare(b.name)) });
   return rows;
 }
 const HOVER_FOCUS = 0.05;      /* seconds of a hand on a tile to pick it (the cursor's already sticky) */
@@ -192,11 +192,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     const sec = h('section', 'shelf');
     const row = h('div', 'shelfrow');
     const head = h('h3', '', ROWS[k].title);
-    /* (this week's Discover games: a way to the rest of Discover, from the title) */
-    if (ROWS[k].id === 'featured' && featured.length && nav.store){
-      head.appendChild(onPick(button('Discover \u203a', 'rowlink'), () => { if (!going) { sfx.select(); nav.store(); } }));
-      rows.discoverRow = true;
-    }
+    /* (the Featured row has big tiles, and ends with the Discover tile) */
+    if (ROWS[k].id === 'featured') sec.classList.add('fr');
     sec.append(head, row);
     wrap.appendChild(sec);
     rows.push({ sec, row, ns: list.map(({ n }) => n) });
@@ -223,7 +220,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const cards = items.map((it, n) => {
     const { card, pic } = gameCard(it);
     /* (one from Discover, not on this PC yet) */
-    if (it.g.discover) card.insertAdjacentHTML('beforeend', '<span class="getpill">\u2193 Get</span>');
+    /* (the Get pill goes in the corner the title isn't: the 'pop' lettering is top left, the rest are along the bottom) */
+    if (it.g.discover) card.insertAdjacentHTML('beforeend', `<span class="getpill${styleOf(it.g.id) === 'pop' ? ' low' : ''}">\u2193 Get</span>`);
     onPick(card, () => choose(n));
     card.addEventListener('mouseenter', () => { if (!going && !bar.menuOpen) move(n); });
     card.addEventListener('remotefocus', () => move(n));
@@ -237,17 +235,27 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     onPick(t, () => { if (going) return; sfx.select(); fn(); });
     return t;
   };
-  /* the end of Featured this week: more like these, in Discover */
+  /* the end of Featured: the Discover tile - the rest of Discover, with how many are new this week (or to get) */
   const fi = ROWS.findIndex(r => r.id === 'featured');
-  if (fi >= 0 && rows.discoverRow){
+  if (fi >= 0 && nav.store){
     const fr = rows.find(r => r.ns.length && items[r.ns[0]].shelf === fi);
-    if (fr) fr.row.appendChild(extraTile('<svg class="tileglyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>', 'See more', () => nav.store()));
+    if (fr){
+      const t = extraTile('', 'Discover', () => nav.store());
+      t.classList.add('discovertile', 'covered');
+      const th = t.querySelector('.sthumb'); th.innerHTML = '';
+      const pic = discoverCoverUrl(); if (pic) th.style.backgroundImage = `url(${pic})`;
+      const games = (week.store && week.store.games) || [];
+      const toGet = games.filter(g => !library.installed.has(g.id));
+      const fresh = toGet.filter(g => g.added && Date.now() - Date.parse(g.added) < 7 * 864e5).length;
+      const chip = fresh ? `${fresh} new this week` : toGet.length ? `${toGet.length} to get` : '';
+      if (chip) th.appendChild(h('span', 'newchip', chip));
+      fr.row.appendChild(t);
+    }
   }
   /* the end of All: every game at once, with filters - and more, in Discover */
   if (rows.length){
     const last = rows[rows.length - 1].row;
     last.appendChild(extraTile('<span class="gridglyph"><i></i><i></i><i></i><i></i></span>', 'See all', () => allGames()));
-    if (nav.store) last.appendChild(extraTile('+', 'Get more games', () => nav.store()));
     /* (and for grown-ups, making one: Create) */
     if (nav.create && !account.isKid) last.appendChild(extraTile('<svg class="tileglyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5L9 20H4v-5z"/><path d="M12.5 6.5l5 5"/></svg>', 'Make a game', () => nav.create()));
   }
@@ -278,7 +286,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     const close = onPick(button('←', 'cardicon close allback'), () => { sfx.back?.(); g.remove(); remote.mark(cards[focus].card); });
     close.title = 'Back'; close.setAttribute('aria-label', 'Back');
     g.append(h('div', 'allhead'), chips, grid);
-    g.firstChild.append(close, h('h2', '', 'All games'));
+    g.firstChild.append(close, h('h2', '', 'My games'));
     const allRow = ROWS.length - 1;
     const sets = [['All', ROWS[allRow].games], ...ROWS.slice(0, allRow).map(r => [r.title, r.games])];
     const fill = (k) => {
