@@ -58,8 +58,8 @@ function keepBanner(top){
 export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false } = {}){
   const top = h('div', 'tvtop');
   const from = lastTab; lastTab = page;
-  /* just the cube: the name's on the intro, signing in and the window's title */
-  const brand = h('div', 'brand', `<span class="mark" role="img" aria-label="Orlis Play" title="Orlis Play">${mark()}</span>`);
+  /* (the brand is the menu button now - the cube with its face, top right) */
+  const brand = h('div', 'brand');
   /* who's playing (in the Windows app): their picture and name, and picking
      it goes back to "Who's playing?" */
   const who = account.current;
@@ -82,10 +82,12 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
      Home says so plainly if there's no camera at all) */
   /* (no clock: who's playing sits there instead) */
   let menuOpen = null;
-  const burger = onPick(button('<span class="bars"><i></i><i></i><i></i></span>', 'burger'), () => {
+  /* the menu: the cube, with its face - it winks when you point at it */
+  const burger = onPick(button(`<span class="mark">${mark(true)}</span>`, 'burger cubebtn'), () => {
     if (menuOpen || isBusy()) return;
     menuOpen = cornerMenu({ onRecalibrate, places, onFamily: nav.family && account.signedIn ? nav.family : null, onClosed: () => { menuOpen = null; } });
   });
+  burger.title = 'Menu'; burger.setAttribute('aria-label', 'Menu');
   const sys = h('div', 'tvsys'); if (whoChip) sys.append(whoChip); sys.append(burger);
   top.append(brand, tabs, sys);
 

@@ -198,8 +198,11 @@ export function tagline(c, x, y, size, a = 1){
 /* (each copy its own colour names: two on a page sharing one name, and the
    browser can paint a face from the copy that's hidden - or not at all) */
 let marks = 0;
-export const mark = () => { const n = ++marks; return `<svg viewBox="-1 -1.1 2 2.2" aria-hidden="true"><defs>
+/* (face: its eyes and smile on the right side, as in the intro; the right
+   eye winks on hover) */
+const FACE = `<g transform="matrix(.866 -.5 0 1 0 0)" class="mface"><ellipse cx=".3" cy=".38" rx=".085" ry=".125" fill="#1e1b4b"/><ellipse cx=".276" cy=".34" rx=".026" ry=".034" fill="#fff" opacity=".9"/><g class="meye"><ellipse cx=".7" cy=".38" rx=".085" ry=".125" fill="#1e1b4b"/><ellipse cx=".676" cy=".34" rx=".026" ry=".034" fill="#fff" opacity=".9"/></g><rect class="mwink" x=".58" y=".36" width=".22" height=".05" rx=".025" fill="#1e1b4b"/><path d="M.32 .58 Q.5 .76 .68 .58" stroke="#1e1b4b" stroke-width=".055" fill="none" stroke-linecap="round"/></g>`;
+export const mark = (face = false) => { const n = ++marks; return `<svg viewBox="-1 -1.1 2 2.2" aria-hidden="true"><defs>
 <linearGradient id="mcT${n}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${FACES.top[0]}"/><stop offset="1" stop-color="${FACES.top[1]}"/></linearGradient>
 <linearGradient id="mcL${n}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${FACES.left[0]}"/><stop offset="1" stop-color="${FACES.left[1]}"/></linearGradient>
 <linearGradient id="mcR${n}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${FACES.right[0]}"/><stop offset="1" stop-color="${FACES.right[1]}"/></linearGradient></defs>
-<path d="M-.866 -.5 L0 0 L0 1 L-.866 .5Z" fill="url(#mcL${n})"/><path d="M0 0 L.866 -.5 L.866 .5 L0 1Z" fill="url(#mcR${n})"/><path d="M-.866 -.5 L0 -1 L.866 -.5 L0 0Z" fill="url(#mcT${n})"/></svg>`; };
+<path d="M-.866 -.5 L0 0 L0 1 L-.866 .5Z" fill="url(#mcL${n})"/><path d="M0 0 L.866 -.5 L.866 .5 L0 1Z" fill="url(#mcR${n})"/><path d="M-.866 -.5 L0 -1 L.866 -.5 L0 0Z" fill="url(#mcT${n})"/>${face ? FACE : ''}</svg>`; };

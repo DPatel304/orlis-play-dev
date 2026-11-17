@@ -1388,3 +1388,15 @@ body.remote .btn.slock.kfocus .sthumb{ transform:translateY(-.8vh) scale(1.05); 
 .tvtop .brand .mark{ width:1.6em; height:1.6em; filter:drop-shadow(0 .3vh .8vh rgba(0,0,0,.18)); }
 /* who's playing, top right beside the menu (where the clock was) */
 .tvsys .btn.whochip{ margin-left:0; font-size:2.1vh; }
+/* the menu button: the cube with its face, no circle, bigger */
+.btn.burger.cubebtn{ width:8.4vh; height:8.4vh; background:transparent; border:none; box-shadow:none; border-radius:50%; margin-left:.6vw; }
+.btn.burger.cubebtn .mark{ display:block; width:100%; height:100%; filter:drop-shadow(0 .5vh 1.2vh rgba(20,20,60,.28)); transition:transform .2s ease; }
+.btn.burger.cubebtn .mark svg{ width:100%; height:100%; display:block; }
+.btn.burger.cubebtn:hover .mark, .btn.burger.cubebtn.hot .mark, body.remote .btn.burger.cubebtn.kfocus .mark{ transform:scale(1.1) rotate(-6deg); }
+body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
+.mface .mwink{ display:none; }
+.btn.burger.cubebtn:hover .meye, .btn.burger.cubebtn.hot .meye, body.remote .btn.burger.cubebtn.kfocus .meye{ display:none; }
+.btn.burger.cubebtn:hover .mwink, .btn.burger.cubebtn.hot .mwink, body.remote .btn.burger.cubebtn.kfocus .mwink{ display:inline; }
+.btn.burger.cubebtn{ overflow:visible; border-radius:0; }
+.btn.burger.cubebtn .fill{ display:none; }
+.onhero:not(.scrolled) .btn.burger.cubebtn, .btn.burger.cubebtn:hover{ background:transparent; }
