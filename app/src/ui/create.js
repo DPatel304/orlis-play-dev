@@ -289,9 +289,9 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
       h('p', 'fnote', `Version ${esc(g.manifest.version || '0.1')} · changed ${esc(new Date(g.changed).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}`),
       h('div', 'cacts'), h('div', 'fbtns'));
     card.querySelector('.cacts').append(
-      ...(appMode.studio() ? [] : [btn('<span class="tri"></span>Try it', () => tryIt(g, card), 'go cbig')]),
-      btn('Check and send', () => sendIt(g, card), appMode.studio() ? 'go cbig' : 'cbig'));
-    if (appMode.studio()) card.insertBefore(h('p', 'fnote', 'The Studio can’t play a game: send it, then try it on the TV.'), card.querySelector('.cacts'));
+      ...(appMode.creator() ? [] : [btn('<span class="tri"></span>Try it', () => tryIt(g, card), 'go cbig')]),
+      btn('Check and send', () => sendIt(g, card), appMode.creator() ? 'go cbig' : 'cbig'));
+    if (appMode.creator()) card.insertBefore(h('p', 'fnote', 'The Creator app can’t play a game: send it, then try it on the TV.'), card.querySelector('.cacts'));
     card.querySelector('.fbtns').append(
       btn('Show the folder', () => making.show(g.folder).catch(problem(card))),
       btn('Open in Claude Code', async () => {
@@ -325,7 +325,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
   /* (a new grown-up who picked "Make a game" on joining: straight into it) */
   else if (account.state && account.state.firstGame === 'make'){ account.set({ firstGame: false }); autoOpened = true; setTimeout(askPop, 300); }
   /* (someone new with the Dev Kit who picked "Make my first game" in setup) */
-  else if (account.state && account.state.firstGame === true && making.available && !appMode.studio()) firstGame();
+  else if (account.state && account.state.firstGame === true && making.available && !appMode.creator()) firstGame();
 
   /* Their first game: the starter (Star Catch), made in a moment with no
      Claude needed, and straight on to trying it - so the first thing they
@@ -402,7 +402,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
       return;
     }
     building = gameBuilder({
-      host: buildHost, store: store_, send: sendAsk, onPlay: nav.home && !appMode.studio() ? () => nav.home() : null,
+      host: buildHost, store: store_, send: sendAsk, onPlay: nav.home && !appMode.creator() ? () => nav.home() : null,
       onDone: () => { building = null; draw(); setTimeout(() => { if (s.isConnected) askPop(true); }, 0); }
     });
   }
@@ -428,8 +428,8 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     if (ok !== null) claudeOk = ok;
     if (said){ toast(said, { bad }); said = ''; bad = false; }
     body.innerHTML = '';
-    /* (in the Studio there's no Play: what's on its way is here, under the questions) */
-    if (appMode.studio() && !pro){ await week.refresh({ force: true }).catch(() => {}); if (me !== drawing) return; const row_ = buildingRow(week.building()); if (row_) body.appendChild(row_); }
+    /* (in the Creator app there's no Play: what's on its way is here, under the questions) */
+    if (appMode.creator() && !pro){ await week.refresh({ force: true }).catch(() => {}); if (me !== drawing) return; const row_ = buildingRow(week.building()); if (row_) body.appendChild(row_); }
     /* the page opens straight into making a game (but not on the way back from Try it, or setup's own first game) */
     if (!pro && !autoOpened){ autoOpened = true; if (!lastTry && !(account.state && account.state.firstGame === true)) askPop(true); }
     if (pro){

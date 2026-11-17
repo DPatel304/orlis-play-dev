@@ -525,8 +525,8 @@ function settings(onRecalibrate){
   head.append(h('h2', '', 'Settings'), onPick(button('✕', 'setclose'), close));
   card.appendChild(head);
   /* one setting a row: its name on the left, its control on the right */
-  /* (the Studio can't play: no volume or camera to set) */
-  const NOPLAY = appMode.studio() ? new Set(['Volume', 'Camera', 'Camera detail', 'Smoother tracking']) : new Set();
+  /* (the Creator app can't play: no volume or camera to set) */
+  const NOPLAY = appMode.creator() ? new Set(['Volume', 'Camera', 'Camera detail', 'Smoother tracking']) : new Set();
   const row = (name, ...ctl) => {
     if (NOPLAY.has(name)){ const none = h('div', 'setctl'); return none; }
     const r = h('div', 'setrow');

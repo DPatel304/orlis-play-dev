@@ -1,4 +1,4 @@
-/* Games on their way: the "Under construction" row - on Play, at the end, and in the Studio, under
+/* Games on their way: the "Under construction" row - on Play, at the end, and in the Creator app, under
    the questions. Each is the card it'll be (its name, its colours) under construction stripes, with how
    it's going. Nothing to pick, except that a declined one says why. */
 import { button, onPick } from './cursor.js';

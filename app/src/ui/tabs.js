@@ -94,7 +94,7 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
   burger.classList.add('hello'); setTimeout(() => burger.classList.remove('hello'), 1400);
   /* this week's challenges, as a small pill (the cards open from it) */
   const ch = week.challenges;
-  const pill = !appMode.studio() && account.signedIn && !account.waiting && ch && ch.challenges && ch.challenges.length ? challengePill(ch) : null;
+  const pill = !appMode.creator() && account.signedIn && !account.waiting && ch && ch.challenges && ch.challenges.length ? challengePill(ch) : null;
   const sys = h('div', 'tvsys'); if (pill) sys.append(pill); if (whoChip) sys.append(whoChip); sys.append(burger);
   top.append(brand, tabs, sys);
 

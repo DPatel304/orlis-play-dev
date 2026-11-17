@@ -1,13 +1,13 @@
 // The modes, against a real server: with nothing said the app shows all four tabs (to build and test
-// them); as the Studio (?mode=studio, which a Studio build sets for itself) it has only Create and
-// Create Pro, can't play, and has no volume or camera in Settings; as Family it has no Create Pro.
+// them); as the Creator app (?mode=creator, which a Creator build sets for itself) it has only Create and
+// Create Pro, can't play, and has no volume or camera in Settings; as the Player app it has no Create Pro.
 // Create Pro is the Dev Kit - the Windows app is pretend here (the folders are kept in memory).
 //   cd app && npx vite --port 5191 &
-//   NODE_PATH=$(npm root -g) node tools/rehearsal-studio.cjs http://localhost:5191/ /tmp/studio ../server
+//   NODE_PATH=$(npm root -g) node tools/rehearsal-creator.cjs http://localhost:5191/ /tmp/creator ../server
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os');
 const [appUrl, out, serverDir] = process.argv.slice(2);
-const data = fs.mkdtempSync(path.join(os.tmpdir(), 'orlis-studio-'));
+const data = fs.mkdtempSync(path.join(os.tmpdir(), 'orlis-creator-'));
 const srv = cp.spawn(process.execPath, ['--no-warnings', 'src/main.js'], { cwd: serverDir,
   env: { ...process.env, ORLIS_DATA: data, ORLIS_NAME: 'Home', ORLIS_MAKER: 'false', ORLIS_NO_TRAY: '1', ORLIS_NO_UPDATE: '1' } });
 const S = 'http://127.0.0.1:47871';
@@ -51,14 +51,14 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   check(!!(await pg.$('.tvtab.on >> text=Play')), 'it opens on Play');
   await pg.context().close();
 
-  log('\n2. Family: no Create Pro');
-  pg = await open('&mode=family');
+  log('\n2. The Player app: no Create Pro');
+  pg = await open('&mode=player');
   const fam = await tabsOf(pg);
   check(fam.includes('Discover') && fam.includes('Create') && !fam.includes('Create Pro'), 'Play, Discover, Create: ' + fam.join(', '));
   await pg.context().close();
 
-  log('\n3. The Studio: only Create and Create Pro; it cannot play');
-  pg = await open('&mode=studio');
+  log('\n3. The Creator app: only Create and Create Pro; it cannot play');
+  pg = await open('&mode=creator');
   check(!!(await pg.$('.createpage')), 'it opens on Create, not Play');
   check((await pg.$$('.shelf')).length === 0 && !(await pg.$('.shero .sbtn.play')), 'no games on show');
   await pg.keyboard.press('Escape'); await pg.waitForTimeout(900);
@@ -66,7 +66,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   check(st.join('|') === 'Create|Create Pro' && !!(await pg.$('.tvtab.on >> text=Create')), 'the tabs are Create and Create Pro: ' + st.join(', '));
   check(!(await pg.$('.challengepill, .chpill')), 'no weekly challenges');
   await pg.mouse.move(800, 20); await wait(300);
-  await pg.screenshot({ path: out + '-studio-create.png' });
+  await pg.screenshot({ path: out + '-creator-create.png' });
   /* Settings: nothing about volume or the camera */
   await pg.click('.burger'); await wait(400);
   await pg.click('.popitem >> text=Settings'); await wait(500);
@@ -84,7 +84,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await pg.click('.bpill >> text=Make another'); await wait(1500);
   check(!!(await pg.$('.shelf.building .buildingtile')), 'what is on its way is shown under the questions');
   await pg.$eval('.shelf.building', e => e.scrollIntoView({ block: 'center' })).catch(() => {});
-  await pg.screenshot({ path: out + '-studio-below.png' });
+  await pg.screenshot({ path: out + '-creator-below.png' });
 
   log('\n4. Create Pro: the Dev Kit');
   await pg.keyboard.press('Escape'); await wait(900);

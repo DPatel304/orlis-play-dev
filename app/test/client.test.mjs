@@ -157,10 +157,10 @@ test('a game waiting for the owner\'s OK is played before it can be approved: th
   assert.ok(readFileSync(new URL('../src/ui/store.js', import.meta.url), 'utf8').includes('game.trial = g.submission'), 'Try it marks the game');
 });
 
-test('one app, modes by install: Family has Create, Studio has Create and Create Pro, and for now everything shows', async () => {
+test('one app, modes by install: Player has Create, Creator has Create and Create Pro, and for now everything shows', async () => {
   const { MODES, appMode } = await import('../src/ui/mode.js');
-  assert.deepEqual(MODES.family, ['home', 'store', 'create']);
-  assert.deepEqual(MODES.studio, ['create', 'pro']);
+  assert.deepEqual(MODES.player, ['home', 'store', 'create']);
+  assert.deepEqual(MODES.creator, ['create', 'pro']);
   assert.deepEqual(MODES.all, ['home', 'store', 'create', 'pro']);
   assert.equal(appMode.get(), 'all', 'unset, it shows all four tabs, to build and test them');
   const tabs = readFileSync(new URL('../src/ui/tabs.js', import.meta.url), 'utf8');

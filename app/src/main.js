@@ -96,8 +96,8 @@ function go(next, build){
 /* The menus are quiet: music belongs to playing, so it starts when a game is
    picked and fades away on the way back out. */
 function toMenu(arrive = false){
-  /* (the Studio has no Play: its first page is Create) */
-  if (appMode.studio()) return toCreate();
+  /* (the Creator app has no Play: its first page is Create) */
+  if (appMode.creator()) return toCreate();
   music.stop();
   /* and anything still being said - Nova mid-sentence, lines waiting their
      turn - stops too: the game's over, its voice goes with it */
@@ -111,7 +111,7 @@ function toMenu(arrive = false){
 /* The tabs along the top: Home, the Store, Create. */
 function tabs(){ return { home: () => toMenu(false), store: toStore, create: toCreate, pro: toPro }; }
 function toStore(){
-  if (appMode.studio()) return toCreate();
+  if (appMode.creator()) return toCreate();
   music.stop(); voice.hush();
   go('store', () => storePage({ nav: tabs(), onPlay: toGame, onChange: () => {}, onWho: () => toWho(false), onRecalibrate: toCalibration }));
 }
@@ -156,8 +156,8 @@ function toCalibration(){
    child can step in partway through, and anyone can step out, without
    anything stopping. */
 function toGame(g){
-  /* (the Studio can't play games) */
-  if (appMode.studio()) return;
+  /* (the Creator app can't play games) */
+  if (appMode.creator()) return;
   game = g;
   playedLately(g.id);
   ambience.stop();

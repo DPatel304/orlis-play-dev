@@ -186,26 +186,26 @@ The plan for creating (decided):
 - Publishing gates, later: a minimum number of play hours before
   publishing, one published game first, more once it reaches a threshold.
 
-- **One app, modes by install: Family and Studio (started).** Mode 1, *Family*, plays
+- **One app, modes by install: Player and Creator (started).** Mode 1, *Player*, plays
   on the TV (Play, Discover, Create) and is what a hardware box would be locked to.
-  Mode 2, *Studio*, is for a grown-up's laptop or phone: only Create and Create Pro, and it
+  Mode 2, *Creator*, is for a grown-up's laptop or phone: only Create and Create Pro, and it
   can't play games (no Try it - send the game, then try it on the TV). The build decides the
-  mode (`ORLIS_MODE=family|studio`, read by `src/ui/mode.js`; `?mode=` in a browser), and
+  mode (`ORLIS_MODE=player|creator`, read by `src/ui/mode.js`; `?mode=` in a browser), and
   nothing in the app switches it. **For now it's `all`: all four tabs show, to build and test
   them.** Create Pro is the old Dev Kit (Claude Code connect, build, Check and send). Still to
   do:
   - **Phone sign-in.** A QR code on the "Sign in to Claude" step, so a grown-up can sign in on
     their phone. Check first what Claude Code's sign-in actually hands back (it may only return
     a code to type); keep the plain button as the fallback.
-  - **A real Studio build.** Its own installer/workflow with `ORLIS_MODE=studio` (and a phone
+  - **A real Creator build.** Its own installer/workflow with `ORLIS_MODE=creator` (and a phone
     version - a web app or a native one - which can't run Claude Code locally, so it would use
     Claude's remote control or the web); its own update channel; Mac and Linux, since Play is
     Windows-only today.
-  - **Lock Family.** The hardware build sets `ORLIS_MODE=family` (it can't be overridden).
-  - **Try it from the Studio.** Send to Orlis Play and try it on the TV (the owner's Try it
+  - **Lock Player.** The hardware build sets `ORLIS_MODE=player` (it can't be overridden).
+  - **Try it from the Creator app.** Send to Orlis Play and try it on the TV (the owner's Try it
     flow exists); a local preview with the laptop's webcam later. Ties in with "Try it on the TV".
-  - **Studio details:** a profile screen for sign-out only (no "who's playing"); first-run setup
-    for the Dev Kit.
+  - **Creator app details:** a profile screen for sign-out only (no "who's playing"); first-run
+    setup for the Dev Kit.
 
 ## The app
 
