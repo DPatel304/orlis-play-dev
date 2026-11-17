@@ -85,7 +85,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     return scene;
   }
 
-  const { hero, text } = banner('Create', 'Make a game', 'Describe it. We’ll make it.');
+  const { hero, text } = banner('Create', 'Make a game', 'Tap here to make one.');
   const btns = h('div', 'sbtns');
   text.append(btns);
   scroll.appendChild(hero);
@@ -296,7 +296,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   /* (back from Try it) */
   if (lastTry) refreshMine().then(afterTry);
   /* (a new grown-up who picked "Make a game" on joining: straight into it) */
-  else if (account.state && account.state.firstGame === 'make'){ account.set({ firstGame: false }); setTimeout(askPop, 300); }
+  else if (account.state && account.state.firstGame === 'make'){ account.set({ firstGame: false }); autoOpened = true; setTimeout(askPop, 300); }
   /* (someone new with the Dev Kit who picked "Make my first game" in setup) */
   else if (account.state && account.state.firstGame === true && making.available) firstGame();
 
@@ -363,9 +363,14 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   const store_ = async () => { try { return (await account.call('GET', '/api/store')).games || []; } catch { return []; } };
   let slots = null;              /* { used, total } game slots (none for the owner) */
   let building = null;           /* the builder, while it's open */
-  function askPop(){
-    sfx.select(); closePop();
+  let autoOpened = false;            /* it opened by itself, once */
+  /* closed, the banner is the way back in */
+  hero.classList.add('again'); hero.addEventListener('click', () => { if (!building && !pop) askPop(); });
+  function askPop(quiet){
+    if (quiet !== true) sfx.select();
+    closePop();
     if (slots && slots.used >= slots.total){
+      if (quiet === true) return;
       const card = popup(h('h2', '', 'No slots left'), h('p', '', `All ${slots.total} game slots are used. Ask the owner for more.`), h('div', 'fbtns'));
       card.lastChild.append(btn('OK', () => { sfx.select(); closePop(); }, 'go'));
       return;
@@ -398,12 +403,12 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     if (me !== drawing) return;
     if (ok !== null) claudeOk = ok;
     btns.innerHTML = '';
-    btns.append(sbtn('<span class="plus">+</span>Make a game', askPop, 'get'));
     if (slots) btns.append(h('span', 'cslots', `${Math.max(0, slots.total - slots.used)} of ${slots.total} left`));
-    if (kit) btns.append(sbtn('Dev Kit', kitPop, 'ghost'));
     if (waiting.length) btns.append(sbtn('Send now', () => { sfx.select(); send(); }, 'ghost'));
     if (said){ toast(said, { bad }); said = ''; bad = false; }
     body.innerHTML = '';
+    /* the page opens straight into making a game (but not on the way back from Try it, or setup's own first game) */
+    if (!autoOpened){ autoOpened = true; if (!lastTry && !(account.state && account.state.firstGame === true)) askPop(true); }
 
     moving = !!(asked && asked.some(x => ['waiting', 'making', 'made', 'ready'].includes(x.state)));
     /* the games they've asked for, and how each is going */

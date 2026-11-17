@@ -116,9 +116,8 @@ try {
   await goTo(pg, 'Create'); await wait(1500);
 
   console.log('\n6. Their first game');
-  await pg.click('.sbtn >> text=Make a game');
   await pg.waitForSelector('.builder', { timeout: 20000 }); await wait(600);
-  check((await pg.textContent('.builder .bwhere')).trim() === 'Make a game', 'Create opens on Make a game');
+  check((await pg.textContent('.builder h2')).trim() === 'How do you want to start?', 'Create opens straight into making a game');
   await pg.click('.reqtile >> text=Surprise me'); await wait(500);
   await pg.click('.reqfoot .btn.go >> text=Send request');
   await pg.waitForSelector('.builder >> text=Sent!', { timeout: 8000 });

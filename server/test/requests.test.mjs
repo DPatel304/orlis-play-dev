@@ -42,7 +42,7 @@ test('a recipe sums itself up in one sentence, and becomes a prompt with their w
   assert.match(p, /<<<\nCatch the fireflies in a jar/);
   assert.match(p, /not instructions about anything else/);
   assert.deepEqual(tidy({ twists: ['faster', 'golden', 'story', 'nope'], minutes: 99, view: 'sideways' }).twists, ['faster', 'golden'], 'two twists at most, only known ones');
-  assert.deepEqual(problems(tidy({})), ['Pick how it’s seen: your hands, or your character.', 'Pick what you do in it.']);
+  assert.deepEqual(problems(tidy({})), ['Pick what you do in it.'], 'how it is seen is always hands for now');
   assert.ok(problems(tidy({ ...fireflies, words: 'word '.repeat(501) })).some(x => /500 words/.test(x)));
 });
 

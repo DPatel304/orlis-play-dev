@@ -7,9 +7,9 @@
 
    A request's recipe (what the app sends):
      { start: 'new' | 'like' | 'surprise', like: a Store game's id (start: 'like'),
-       name: optional, view: 'hands' | 'character', action: one of ACTIONS,
+       name: optional, view: 'hands' (always, for now), action: one of ACTIONS (the app offers pop, steer, copy, paint),
        thing, place, twists: up to two of TWISTS, ages: '2-3' | '4-6' | '7+',
-       energy: 'calm' | 'bouncy' | 'wild', minutes: 2 | 5 | 10, players: 1 | 2,
+       energy: 'calm' | 'bouncy' | 'wild', minutes: 3 (short) | 10 (long), players: 1 | 2,
        look: optional, one of LOOKS (the colours and feel),
        words: their own description, up to 500 words }
    A change: { change: a game id of theirs in the Store, chips: of CHIPS, words }
@@ -26,12 +26,12 @@ import { readOrlis, manifestOf } from './orlis-file.js';
 
 export const ACTIONS = {
   catch:   { label: 'Catch',             does: (t) => `catch ${t} as they fall or fly by`, like: null },
-  pop:     { label: 'Pop or tap',        does: (t) => `pop ${t} by touching them`, like: 'Pop Party' },
+  pop:     { label: 'Pop',               does: (t) => `pop ${t} by touching them`, like: 'Pop Party' },
   dodge:   { label: 'Dodge',             does: (t) => `lean and jump past ${t}`, like: 'Last Known Position' },
   collect: { label: 'Collect and carry', does: (t) => `collect ${t} and carry them to a place`, like: null },
   sweep:   { label: 'Sweep or push',     does: (t) => `sweep ${t} into a big pile`, like: 'Leaf Pile' },
   stack:   { label: 'Stack and build',   does: (t) => `stack ${t} into a tall tower`, like: 'Stack It High' },
-  paint:   { label: 'Paint and draw',    does: (t) => `paint the sky with ${t}`, like: 'Sky Painter' },
+  paint:   { label: 'Paint',             does: (t) => `paint the sky with ${t}`, like: 'Sky Painter' },
   freeze:  { label: 'Freeze',            does: (t) => `dance, then freeze when ${t} looks`, like: 'Sleepy Bear' },
   copy:    { label: 'Copy the moves',    does: (t) => `copy the moves of ${t}`, like: null },
   steer:   { label: 'Fly or steer',      does: (t) => `lean to steer ${t}`, like: null }
@@ -46,7 +46,7 @@ export const CHIPS = {
   easier: 'make it easier', harder: 'make it harder', slower: 'make it slower', faster: 'make it faster', sillier: 'make it sillier',
   longer: 'make it last longer', two: 'add a second player', colours: 'use different colours'
 };
-export const LIMITS = { words: 500, chars: 4000, waiting: 5, thing: 60, place: 60, name: 40, perDay: 3 };
+export const LIMITS = { words: 500, chars: 4000, waiting: 5, thing: 60, place: 60, name: 24, perDay: 3 };
 
 const text = (v, max) => (typeof v === 'string' ? v : '').replace(/\s+/g, ' ').trim().slice(0, max);
 const wordsOf = (v) => (typeof v === 'string' ? v : '').trim().slice(0, LIMITS.chars);
@@ -69,7 +69,7 @@ export function tidy(r = {}){
     twists: [...new Set((Array.isArray(r.twists) ? r.twists : []).filter(t => TWISTS[t]))].slice(0, 2),
     ages: oneOf(r.ages, ['2-3', '4-6', '7+'], '4-6'),
     energy: oneOf(r.energy, ['calm', 'bouncy', 'wild'], 'bouncy'),
-    minutes: [2, 5, 10].includes(Number(r.minutes)) ? Number(r.minutes) : 5,
+    minutes: [2, 3, 5, 10].includes(Number(r.minutes)) ? Number(r.minutes) : 3,
     players: [1, 2].includes(Number(r.players)) ? Number(r.players) : 2,
     look: LOOKS[r.look] ? r.look : null,
     words: wordsOf(r.words)
@@ -85,7 +85,6 @@ export function problems(r, { likeName = null } = {}){
     if (!r.chips.length && !r.words) p.push('Say what to change: tap one of the ideas, or say it in your own words.');
   } else {
     if (r.start === 'like' && !likeName) p.push('Pick the game it’s like.');
-    if (r.start !== 'like' && !r.view) p.push('Pick how it’s seen: your hands, or your character.');
     if (r.start !== 'like' && !r.action) p.push('Pick what you do in it.');
   }
   if (count(r.words) > LIMITS.words) p.push(`That’s more than ${LIMITS.words} words - say it a little shorter.`);

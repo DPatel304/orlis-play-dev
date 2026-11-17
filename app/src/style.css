@@ -1553,3 +1553,30 @@ body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
 .screen.chsplash.first.leaving{ background:rgba(243,244,247,0); }
 /* (every screen fades in by itself; this one mustn't - Play would show through while it did) */
 #ui > .screen.chsplash.first{ animation:none; }
+
+/* Make a game as a page that keeps moving down: answered questions stay above, small; the open one is full; arrows at the top right */
+.reqgrid.four{ grid-template-columns:repeat(4, 1fr); }
+.reqgrid.four .btn.reqtile{ text-align:center; }
+.reqgrid.four .btn.reqtile .lbl{ align-items:center; }
+@media (max-width: 800px){ .reqgrid.four{ grid-template-columns:repeat(2, 1fr); } }
+.builder .bhead{ position:sticky; top:0; z-index:3; background:#fff; padding:.4vh 0 1.2vh; margin-bottom:1vh; border-radius:2vh; }
+.bctl{ display:flex; gap:1vh; margin-left:auto; }
+.btn.barrow{ width:5.2vh; height:5.2vh; min-width:0; padding:0; border-radius:50%; border:1px solid #e3e5ec; background:#fff; box-shadow:none; font-size:2.4vh; font-weight:700; color:#3b3e4d; }
+.btn.barrow .lbl{ justify-content:center; align-items:center; }
+.btn.barrow:disabled{ opacity:.35; }
+.btn.barrow.bx{ background:#f1f2f6; }
+.btn.barrow.brefresh{ align-self:center; }
+.bstack{ display:flex; flex-direction:column; gap:1.4vh; }
+.bq.done{ border:1px solid #eef0f4; border-radius:2vh; padding:1.3vh 2vh; background:#fafbfd; cursor:pointer; opacity:.85; transition:opacity .2s, border-color .2s; }
+.bq.done:hover{ opacity:1; border-color:#6d5efc; }
+.bqhead{ display:flex; align-items:baseline; gap:2vh; }
+.bqhead h3{ margin:0; flex:none; font-size:1.7vh; color:#6b7080; font-weight:700; }
+.bqhead .bans{ flex:1; font-size:2vh; font-weight:700; color:#16161d; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bq.cur{ padding:1.4vh 0 3vh; }
+.bq.fresh{ animation:bqin .5s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes bqin{ from{ opacity:0; transform:translateY(5vh); } to{ opacity:1; transform:none; } }
+.bideas{ align-items:center; margin-bottom:1.6vh; }
+.bq .finput{ margin-top:.6vh; }
+.createpage .shero.again{ cursor:pointer; }
+.createpage .builder{ margin-bottom:9vh; }
+.builder .bhead{ top:14vh; }
