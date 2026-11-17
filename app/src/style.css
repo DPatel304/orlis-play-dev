@@ -1479,4 +1479,9 @@ body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
 .btn.slock.discovertile .sthumb{ border:0; background:#5b3fd6 center/cover no-repeat; box-shadow:0 1vh 2.6vh rgba(20,24,50,.16); display:block; }
 .btn.slock.discovertile:hover .sthumb, .btn.slock.discovertile.focus .sthumb, body.remote .btn.slock.discovertile.kfocus .sthumb{ border:0; background-color:#5b3fd6; box-shadow:0 0 0 .5vh #fff, 0 2.6vh 5vh rgba(20,24,50,.3); }
 .newchip{ position:absolute; top:1.3vh; left:1.4vh; z-index:3; padding:.5vh 1.4vh; border-radius:999px; background:rgba(20,18,60,.42); color:#fff; font:700 1.9vh/1.1 var(--sys); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
-.btn.slock .getpill.low{ top:auto; bottom:1.2vh; }
+
+/* ---- Play: the Discover, See all and Make a game tiles, drawn like the covers ---- */
+.btn.slock.pictile .sthumb{ border:0; background:#e7e4ff center/cover no-repeat; box-shadow:0 1vh 2.6vh rgba(20,24,50,.16); display:block; }
+.btn.slock.pictile:hover .sthumb, .btn.slock.pictile.focus .sthumb, body.remote .btn.slock.pictile.kfocus .sthumb{ border:0; box-shadow:0 0 0 .5vh #fff, 0 2.6vh 5vh rgba(20,24,50,.3); }
+.btn.slock.pictile .plus{ display:none; }
+.btn.slock.pictile.kfocus, body.remote .btn.slock.pictile.kfocus{ box-shadow:none; outline:none; background:transparent; }

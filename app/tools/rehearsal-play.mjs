@@ -96,6 +96,17 @@ try {
   await shot('2b-family');
   await pg.click('.tvtab >> text=Play'); await onPlay(); await wait(600);
 
+  console.log('\n2c. The end of My games: reachable with the keys, and the row slides to show it');
+  await pg.keyboard.press('ArrowDown'); await wait(400);
+  for (let i = 0; i < 14; i++){ await pg.keyboard.press('ArrowRight'); await wait(100); }
+  await wait(800);
+  const last = await pg.$eval('.pictile.kfocus .nm', e => e.textContent).catch(() => '(none)');
+  check(last === 'Make a game', 'the keys reach the last tile: ' + last);
+  const inView = await pg.$eval('.pictile.kfocus', e => { const r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; }).catch(() => false);
+  check(inView, 'and it has slid into view');
+  await shot('2c-end');
+  await pg.keyboard.press('ArrowUp'); await wait(300);
+
   console.log('\n3. The corner menu: no Family; Exit exits at once');
   await pg.click('.burger'); await wait(500);
   const items = await pg.$$eval('.popitem .pn', e => e.map(x => x.textContent));

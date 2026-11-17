@@ -14,7 +14,7 @@ import { week } from './week.js';
 import { library } from './library.js';
 import { toast } from './toast.js';
 import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
-import { banner as wideBanner, discoverCoverUrl, styleOf } from './covers.js';
+import { banner as wideBanner, discoverCoverUrl, tileUrl } from './covers.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -220,8 +220,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const cards = items.map((it, n) => {
     const { card, pic } = gameCard(it);
     /* (one from Discover, not on this PC yet) */
-    /* (the Get pill goes in the corner the title isn't: the 'pop' lettering is top left, the rest are along the bottom) */
-    if (it.g.discover) card.insertAdjacentHTML('beforeend', `<span class="getpill${styleOf(it.g.id) === 'pop' ? ' low' : ''}">\u2193 Get</span>`);
+    /* (Get is always top right: no title lettering goes there - the 'pop' one is kept short of it) */
+    if (it.g.discover) card.insertAdjacentHTML('beforeend', '<span class="getpill">\u2193 Get</span>');
     onPick(card, () => choose(n));
     card.addEventListener('mouseenter', () => { if (!going && !bar.menuOpen) move(n); });
     card.addEventListener('remotefocus', () => move(n));
@@ -233,6 +233,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     t.insertBefore(h('div', 'sthumb', `<span class="plus">${glyph}</span>`), t.firstChild);
     t.querySelector('.lbl').replaceWith(h('div', 'smeta', `<div class="stxt"><div class="nm">${name}</div></div>`));
     onPick(t, () => { if (going) return; sfx.select(); fn(); });
+    /* (reached with the remote or keys: the row slides to show it, and the games lose their highlight) */
+    t.addEventListener('remotefocus', () => { cards.forEach(c => c.card.classList.remove('focus')); slideRow(t); });
     return t;
   };
   /* the end of Featured: the Discover tile - the rest of Discover, with how many are new this week (or to get) */
@@ -241,7 +243,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     const fr = rows.find(r => r.ns.length && items[r.ns[0]].shelf === fi);
     if (fr){
       const t = extraTile('', 'Discover', () => nav.store());
-      t.classList.add('discovertile', 'covered');
+      t.classList.add('discovertile', 'pictile', 'covered');
       const th = t.querySelector('.sthumb'); th.innerHTML = '';
       const pic = discoverCoverUrl(); if (pic) th.style.backgroundImage = `url(${pic})`;
       const games = (week.store && week.store.games) || [];
@@ -252,13 +254,32 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       fr.row.appendChild(t);
     }
   }
-  /* the end of All: every game at once, with filters - and more, in Discover */
+  /* the end of My games: every game at once (a mosaic of the covers), and for grown-ups, making one - tiles drawn like the covers */
+  const picTile = (kind, name, fn) => {
+    const t = extraTile('', name, fn);
+    t.classList.add('pictile', 'covered');
+    t.querySelector('.sthumb').innerHTML = '';
+    return t;
+  };
+  let seeAll = null;
   if (rows.length){
     const last = rows[rows.length - 1].row;
-    last.appendChild(extraTile('<span class="gridglyph"><i></i><i></i><i></i><i></i></span>', 'See all', () => allGames()));
+    seeAll = picTile('all', 'See all', () => allGames());
+    last.appendChild(seeAll);
     /* (and for grown-ups, making one: Create) */
-    if (nav.create && !account.isKid) last.appendChild(extraTile('<svg class="tileglyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5L9 20H4v-5z"/><path d="M12.5 6.5l5 5"/></svg>', 'Make a game', () => nav.create()));
+    if (nav.create && !account.isKid){
+      const mk = picTile('make', 'Make a game', () => nav.create());
+      last.appendChild(mk);
+      tileUrl('make').then(u => { if (u) mk.querySelector('.sthumb').style.backgroundImage = `url(${u})`; });
+    }
   }
+  /* the See all mosaic: the first few covers there are - and again as more are made */
+  const mosaic = () => {
+    if (!seeAll) return;
+    const urls = ROWS[ROWS.length - 1].games.map(g => shotOf(g)).filter(Boolean).slice(0, 4);
+    tileUrl('all', urls).then(u => { if (u && seeAll.isConnected) seeAll.querySelector('.sthumb').style.backgroundImage = `url(${u})`; });
+  };
+  mosaic();
 
   /* this week's family challenges, just above All: goals everyone works
      on together, new every Monday (and a trophy for each one done) */
@@ -334,8 +355,13 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     if (top < scrollY) scrollY = top;
     else if (bottom > scrollY + view) scrollY = Math.min(top, bottom - view);
     wrap.style.transform = `translateY(${-scrollY}px)`;
-    const tile = cards[focus].card, over = tile.offsetLeft + tile.offsetWidth - r.row.clientWidth + tile.offsetWidth * 0.3;
-    r.row.style.transform = `translateX(${-Math.max(0, over)}px)`;
+    slideRow(cards[focus].card);
+  }
+  /* slide a row along so the tile (and a little past it) is in view */
+  function slideRow(tile){
+    const row = tile.closest('.shelfrow'); if (!row) return;
+    const over = tile.offsetLeft + tile.offsetWidth - row.clientWidth + tile.offsetWidth * 0.3;
+    row.style.transform = `translateX(${-Math.max(0, over)}px)`;
   }
   function move(to){
     to = Math.max(0, Math.min(items.length - 1, to));
@@ -365,7 +391,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
      again if they changed - not mid-pick) */
   if (onFresh) week.refresh().then(changed => { if (changed && !going && !getting) onFresh(); }, () => {});
   /* the pictures still to make (one at a time, between frames) */
-  const pictured = (g) => cards.forEach(c => { if (c.it.g.id === g.id) picture(c.pic, g); });
+  const pictured = (g) => { cards.forEach(c => { if (c.it.g.id === g.id) picture(c.pic, g); }); mosaic(); };
   const stopShots = makeShots([...new Map(items.map(it => [it.g.id, it.g])).values()], pictured);
   let onBanner = 0;
 

@@ -162,7 +162,8 @@ export const TITLES = {
   /* 5: top left, tipped the other way, with a sparkle */
   pop(c, W, H, name, col){
     const g = c.createLinearGradient(0, 0, 0, H * 0.5); g.addColorStop(0, 'rgba(12,10,30,.5)'); g.addColorStop(1, 'rgba(12,10,30,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H);
-    const ls = lines(name, 11), size = fit(c, ls, H * 0.17, W * 0.74, 'italic');
+    /* (kept short of the top right, where the Get pill goes) */
+    const ls = lines(name, 11), size = fit(c, ls, H * 0.17, W * 0.52, 'italic');
     c.save(); c.translate(W * 0.06, H * 0.08 + size * 0.85); c.rotate(0.04);
     c.font = `italic 900 ${size}px ${FONT}`; c.textBaseline = 'alphabetic';
     ls.forEach((l, i) => word(c, l, 0, i * size * 0.9, size, col));
@@ -216,6 +217,53 @@ export function discoverCoverUrl(){
   try { TITLES.deep(c, W, H, 'DISCOVER', '#4a2fb0'); } catch (e){}
   try { discoverUrl = cv.toDataURL('image/jpeg', 0.85); } catch (e){ discoverUrl = null; }
   return discoverUrl;
+}
+
+/* The other tiles on Play's My games row, drawn in the same style as the
+   covers: 'all' (See all) is a mosaic of your own covers, 'make' (Make a
+   game) a warm sparkle - each with its words in the cover lettering. Given
+   the covers to use (data: URLs), it gives a picture back (kept by what went
+   into it, so the same ones are drawn once). */
+const tileMade = new Map();
+export function tileUrl(kind, urls = []){
+  const key = kind + '|' + urls.join('|').length + '|' + urls.map(u => u.slice(-24)).join('');
+  if (tileMade.has(key)) return Promise.resolve(tileMade.get(key));
+  if (typeof document === 'undefined') return Promise.resolve(null);
+  return new Promise((ok) => {
+    const W = 960, H = 540, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const c = cv.getContext && cv.getContext('2d'); if (!c) return ok(null);
+    const done = () => { let u = null; try { u = cv.toDataURL('image/jpeg', 0.85); } catch (e){} tileMade.set(key, u); ok(u); };
+    if (kind === 'make'){
+      const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#ff8a3d'); g.addColorStop(1, '#ec4899'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+      c.fillStyle = 'rgba(255,255,255,.15)';
+      for (const [x, y, r] of [[0.18, 0.25, 0.2], [0.86, 0.7, 0.26], [0.55, 0.08, 0.1]]){ c.beginPath(); c.arc(W * x, H * y, H * r, 0, TAU); c.fill(); }
+      /* a pencil, slanting across, and a sparkle */
+      c.save(); c.translate(W * 0.64, H * 0.4); c.rotate(-0.7); c.lineJoin = 'round';
+      c.fillStyle = '#fff'; c.beginPath(); c.roundRect(-H * 0.07, -H * 0.36, H * 0.14, H * 0.56, H * 0.03); c.fill();
+      c.fillStyle = '#ffd77a'; c.beginPath(); c.moveTo(-H * 0.07, H * 0.2); c.lineTo(H * 0.07, H * 0.2); c.lineTo(0, H * 0.36); c.closePath(); c.fill();
+      c.fillStyle = '#4a2fb0'; c.beginPath(); c.roundRect(-H * 0.07, -H * 0.36, H * 0.14, H * 0.1, H * 0.03); c.fill();
+      c.restore();
+      c.fillStyle = '#fff'; c.beginPath(); for (let k = 0; k < 8; k++){ const an = k * Math.PI / 4 - Math.PI / 2, q = k % 2 ? H * 0.034 : H * 0.1; c.lineTo(W * 0.84 + Math.cos(an) * q, H * 0.2 + Math.sin(an) * q); } c.closePath(); c.fill();
+      try { TITLES.stack(c, W, H, 'MAKE A GAME', '#b4306e'); } catch (e){}
+      return done();
+    }
+    /* 'all': a mosaic of covers (as many as there are, up to four) */
+    const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#e7e4ff'); g.addColorStop(1, '#cfeeff'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+    const loads = urls.slice(0, 4).map(u => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = u; }));
+    Promise.all(loads).then((ims) => {
+      const spots = [[0.27, 0.3, -0.07], [0.7, 0.26, 0.06], [0.3, 0.64, 0.05], [0.72, 0.62, -0.05]];
+      ims.forEach((im, i) => {
+        const [x, y, a] = spots[i], w = W * 0.4, h = H * 0.4;
+        c.save(); c.translate(W * x, H * y); c.rotate(a); c.shadowColor = 'rgba(20,24,50,.35)'; c.shadowBlur = 22; c.shadowOffsetY = 8;
+        c.beginPath(); c.roundRect(-w / 2, -h / 2, w, h, 22); c.fillStyle = '#fff'; c.fill(); c.shadowColor = 'transparent';
+        c.beginPath(); c.roundRect(-w / 2 + 6, -h / 2 + 6, w - 12, h - 12, 18); c.clip();
+        if (im) c.drawImage(im, -w / 2 + 6, -h / 2 + 6, w - 12, h - 12); else { c.fillStyle = ['#a78bfa', '#38bdf8', '#fbbf24', '#34d399'][i]; c.fill(); }
+        c.restore();
+      });
+      try { TITLES.tilt(c, W, H, 'SEE ALL', '#6d5efc'); } catch (e){}
+      done();
+    });
+  });
 }
 
 /* A stand-in card for a game that isn't made yet (Create's builder): the

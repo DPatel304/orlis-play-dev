@@ -6,7 +6,7 @@
 import { still } from './trailer.js';
 import { makeCover, hasArt, svgImage } from './covers.js';
 
-const KEY = 'orlis.covers', MAX = 24;
+const KEY = 'orlis.covers2', MAX = 24;
 const V = typeof __BUILD__ === 'string' ? __BUILD__ : 'dev';
 const keyOf = (g) => `${g.id}@${(g.store && g.store.version) || V}`;
 let saved = null;
