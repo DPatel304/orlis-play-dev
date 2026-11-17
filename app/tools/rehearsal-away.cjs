@@ -292,7 +292,7 @@ function claude(files, prompt){
   await shot(cz, '15-update');
   await cz.click('.sbtn >> text=Update to 0.3'); await cz.waitForTimeout(3000);
   check(await have() === '0.3', 'they have 0.3 now');
-  await tab(cz, 'Home');
+  await tab(cz, 'Play');
   await cz.click('.slock >> text=Firefly Jar >> nth=0'); await cz.waitForTimeout(3000);
   await cz.evaluate(() => window.__fakeOn()); await cz.waitForTimeout(10000);
   const p3 = await cz.evaluate(() => { const i = window.__round && window.__round(); return i ? { failed: i.failed || null } : null; });

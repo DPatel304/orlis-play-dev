@@ -201,7 +201,7 @@ function showResults(){
   /* Bests are still kept - the menu tiles show them - just not announced. */
   scores.record(game.id, Math.max(1, joined.size), inst.value());
   /* (a game being tried goes back where it came from: Create) */
-  go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'Home'));
+  go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'All games'));
 }
 
 /* ---------- pause by gesture ----------
@@ -228,7 +228,7 @@ function openPause(){
   paused = pauseOverlay(game, game.endless ? null : roundLeft,
     () => { paused.remove(); paused = null; cursor.reset(); },
     () => { paused.remove(); paused = null; roundDone(); (game.back || toMenu)(); },
-    game.back ? 'Back to Create' : 'Home');
+    game.back ? 'Back to Create' : 'All games');
   /* who's who, to put right a mix-up */
   if (MAKING && crew.profiles.length >= 2) paused.querySelector('.gbtext').appendChild(whoRow(crew.profiles));
   sfx.whoosh();

@@ -1,4 +1,4 @@
-/* The top bar every page shares - Home, the Store and Create, like the Apple
+/* The top bar every page shares - Play, the Store and Create, like the Apple
    TV's: the Orlis Play name (and who's playing) on the left, the three tabs
    in the middle, and the clock and the corner menu on the right.
 
@@ -24,7 +24,7 @@ const MENU_ICON = {
 };
 const item = (icon, label) => `<span class="pi">${MENU_ICON[icon]}</span><span class="pn">${label}</span>`;
 
-export const TABS = [['home', 'Home'], ['store', 'Store'], ['create', 'Create']];
+export const TABS = [['home', 'Play'], ['store', 'Store'], ['create', 'Create']];
 
 /* The tab you were on last: going to another, its highlight slides over
    and the page comes in from that side - the bar itself stays put. */

@@ -99,7 +99,7 @@ try {
   await pg.click('.tvtab >> text=Create'); await wait(1200);
   check((await body()).includes('Pending account approval'), 'Create: the same');
   await shot('4-create-pending');
-  await pg.click('.tvtab >> text=Home'); await wait(1200);
+  await pg.click('.tvtab >> text=Play'); await wait(1200);
 
   console.log('\n5. The owner lets them in: it says so, and everything opens');
   await api('POST', `/api/joins/${joins[0].id}/approve`, null, M);

@@ -146,7 +146,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await bro.evaluate(([f, g, m]) => { window.__fs[f]['game.js'] = g; window.__fs[f]['orlis.json'] = m; window.__fs[f].at = Date.now(); }, [folder, game, manifest]);
 
   log('\n6. He tries it on his TV');
-  await bro.click('.tvtab >> text=Home').catch(() => {}); await bro.waitForTimeout(800);
+  await bro.click('.tvtab >> text=Play').catch(() => {}); await bro.waitForTimeout(800);
   await bro.click('.tvtab >> text=Create'); await bro.waitForTimeout(1500);
   await bro.click(`.slock >> text=${JSON.parse(manifest).name}`); await bro.waitForTimeout(600);
   await bro.click('.fpop .btn >> text=Try it'); await bro.waitForTimeout(2500);
@@ -165,7 +165,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
 
   log('\n7. A version with something it shouldn\'t do is stopped before it\'s sent');
   await bro.evaluate((f) => { window.__good = window.__fs[f]['game.js']; window.__fs[f]['game.js'] += '\nfetch("https://example.com/collect");\n'; }, folder);
-  await bro.click('.tvtab >> text=Home').catch(() => {}); await bro.waitForTimeout(600);
+  await bro.click('.tvtab >> text=Play').catch(() => {}); await bro.waitForTimeout(600);
   await bro.click('.tvtab >> text=Create'); await bro.waitForTimeout(1500);
   await bro.click(`.slock >> text=${JSON.parse(manifest).name}`); await bro.waitForTimeout(600);
   await bro.click('.fpop .btn >> text=Check and send'); await bro.waitForTimeout(1500);
@@ -177,7 +177,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await bro.keyboard.press('Escape').catch(() => {});
 
   log('\n8. He checks and sends the good one (on the home Wi-Fi: it goes straight away)');
-  await bro.click('.tvtab >> text=Home').catch(() => {}); await bro.waitForTimeout(600);
+  await bro.click('.tvtab >> text=Play').catch(() => {}); await bro.waitForTimeout(600);
   await bro.click('.tvtab >> text=Create'); await bro.waitForTimeout(1500);
   await bro.click(`.slock >> text=${JSON.parse(manifest).name}`); await bro.waitForTimeout(600);
   await bro.click('.fpop .btn >> text=Check and send'); await bro.waitForTimeout(3000);
@@ -239,8 +239,8 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   check((await txt(cz, 'body')).includes('Featured · Newest' + inStore.name), 'it is the featured, newest game');
   await cz.click('.sbtn >> text=Get >> nth=0'); await cz.waitForTimeout(3000);
   await cz.screenshot({ path: out + '-11-got.png' });
-  await cz.click('.tvtab >> text=Home').catch(() => {}); await cz.click('.sbtn.back').catch(() => {}); await cz.waitForTimeout(500);
-  await cz.click('.tvtab >> text=Home').catch(() => {}); await cz.waitForTimeout(1500);
+  await cz.click('.tvtab >> text=Play').catch(() => {}); await cz.click('.sbtn.back').catch(() => {}); await cz.waitForTimeout(500);
+  await cz.click('.tvtab >> text=Play').catch(() => {}); await cz.waitForTimeout(1500);
   check((await txt(cz, '.shelves')).includes(inStore.name), 'it is on their Home');
   await cz.click(`.slock >> text=${inStore.name}`); await cz.waitForTimeout(3000);
   await cz.evaluate(() => window.__fakeOn());
@@ -250,7 +250,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await cz.screenshot({ path: out + '-11-playing.png' });
 
   log('\n12. Back on the brother\'s Create tab: it says approved');
-  await bro.click('.tvtab >> text=Home').catch(() => {}); await bro.waitForTimeout(600);
+  await bro.click('.tvtab >> text=Play').catch(() => {}); await bro.waitForTimeout(600);
   await bro.click('.tvtab >> text=Create'); await bro.waitForTimeout(2500);
   const yours = await txt(bro, 'body');
   check(/approved|in the Store/i.test(yours), 'his Create tab shows it approved');
