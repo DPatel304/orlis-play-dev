@@ -1384,3 +1384,5 @@ body.remote .btn.slock.kfocus .sthumb{ transform:translateY(-.8vh) scale(1.05); 
 /* Play's banner: the name and a line about it (no kicker, no button) */
 .homepage .shtext{ top:13vh; }
 .homepage .shtext h1{ margin-top:0; }
+/* the top bar's brand: the cube alone, a touch bigger */
+.tvtop .brand .mark{ width:1.6em; height:1.6em; filter:drop-shadow(0 .3vh .8vh rgba(0,0,0,.18)); }

@@ -58,7 +58,8 @@ function keepBanner(top){
 export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false } = {}){
   const top = h('div', 'tvtop');
   const from = lastTab; lastTab = page;
-  const brand = h('div', 'brand', `<span class="mark">${mark()}</span><span>Orlis <i class="play">Play</i></span>`);
+  /* just the cube: the name's on the intro, signing in and the window's title */
+  const brand = h('div', 'brand', `<span class="mark" role="img" aria-label="Orlis Play" title="Orlis Play">${mark()}</span>`);
   /* who's playing (in the Windows app): their picture and name, and picking
      it goes back to "Who's playing?" */
   const who = account.current;
