@@ -1598,3 +1598,15 @@ textarea.btype.bwords{ width:62vw; height:26vh; border-radius:3vh; padding:2.4vh
 .btn.whoedit:hover, .btn.whoedit.hot{ opacity:1; transform:scale(1.08); }
 .btn.whoedit.title{ position:static; display:inline-block; vertical-align:middle; margin-left:1.4vh; width:4.8vh; height:4.8vh; box-shadow:none; background:transparent; opacity:.55; }
 .whotitle{ display:flex; align-items:center; justify-content:center; }
+
+/* ---- Play: cinema. On arriving the banner is a trailer filling most of the screen, only the
+   picked game's row along the bottom; moving about shrinks it, and a while of nothing brings it back ---- */
+.homepage .shero{ transition:height .7s cubic-bezier(.3,.8,.3,1); }
+.homepage .shelves{ transition:top .7s cubic-bezier(.3,.8,.3,1); }
+.homepage .shtext{ transition:top .7s cubic-bezier(.3,.8,.3,1); }
+.homepage .shtext h1{ transition:font-size .7s cubic-bezier(.3,.8,.3,1); }
+.homepage.cinema .shero{ height:72vh; }
+.homepage.cinema .shelves{ top:72vh; }
+.homepage.cinema .shtext{ top:49vh; }
+.homepage.cinema .shtext h1{ font-size:9.6vh; }
+.homepage.cinema .shtext p{ font-size:3vh; }

@@ -99,6 +99,8 @@ export const HIDDEN = new Set(['uncle-bs-boat', 'dance-party', 'castle-defense']
 /* What was picked last - kept between launches, by game. */
 const LAST = 'orlis.lastGame';
 let lastFocus = null;
+/* the Play page's big banner (cinema) carries over a refresh of the page, not a visit */
+let keepCinema = null;
 const remembered = () => { try { return localStorage.getItem(LAST); } catch { return null; } };
 const remember = (id) => { try { localStorage.setItem(LAST, id); } catch {} };
 /* What's been played lately, newest first (Jump back in). */
@@ -340,6 +342,18 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
      the mouse) actually moves - not because the rows slid under one that's
      resting. */
   let keySeen = remote.lastKey, anchor = null;
+  /* Cinema: on arriving, the banner is a trailer filling most of the screen, with just the row of the
+     picked game along the bottom. Moving about shrinks it to the usual size (the rows come up); stay
+     on one game a little while and it grows back. */
+  const CINEMA_AFTER = 7;       /* seconds of nothing, and the big banner returns */
+  const MOVED_ENOUGH = 0.22;    /* how far a hand or the mouse travels (screen widths) before it counts as moving about */
+  let cinema = ROWS.some(r => r.id === 'featured') && (keepCinema === null ? true : keepCinema);
+  keepCinema = null;
+  let idleT = 0, motion = 0, ringsAt = null;
+  s.classList.toggle('cinema', cinema);
+  const setCinema = (on) => { if (cinema === on) return; cinema = on; s.classList.toggle('cinema', on); idleT = 0; motion = 0; show(); };
+  const stir = () => { idleT = 0; };
+  s.addEventListener('pointerdown', stir); addEventListener('keydown', stir, true);
 
   function show(){
     const it = items[focus];
@@ -353,7 +367,9 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     /* (up only as far as it takes to see the whole row - with everything on
        screen, not at all) */
     const top = r.sec.offsetTop - rows[0].sec.offsetTop, bottom = (tail && it.rowAt === rows.length - 1 ? tail.offsetTop + tail.offsetHeight : r.sec.offsetTop + r.sec.offsetHeight) - rows[0].sec.offsetTop, view = shelves.clientHeight - rows[0].sec.offsetTop;
-    if (top < scrollY) scrollY = top;
+    /* (in cinema the row is all there is down there: its top at the shelves' top) */
+    if (cinema) scrollY = top;
+    else if (top < scrollY) scrollY = top;
     else if (bottom > scrollY + view) scrollY = Math.min(top, bottom - view);
     wrap.style.transform = `translateY(${-scrollY}px)`;
     slideRow(cards[focus].card);
@@ -367,6 +383,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   function move(to){
     to = Math.max(0, Math.min(items.length - 1, to));
     if (to === focus) return;
+    stir(); if (cinema) setCinema(false);
     focus = to; lastFocus = to; remember(items[to].g.id); sessionPick = { id: items[to].g.id, row: (ROWS[items[to].shelf] || {}).id }; sfx.nav(); ambience.lift(); show();
   }
   /* A pick goes straight in - one from Discover is got first. */
@@ -392,7 +409,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   ambience.start();
   /* this week's featured and challenges, fresh from the server (shown
      again if they changed - not mid-pick) */
-  if (onFresh) week.refresh().then(changed => { if (changed && !going && !getting && !holdArrive) onFresh(); }, () => {});
+  if (onFresh) week.refresh().then(changed => { if (changed && !going && !getting && !holdArrive){ keepCinema = cinema; onFresh(); } }, () => {});
   /* the pictures still to make (one at a time, between frames) */
   const pictured = (g) => cards.forEach(c => { if (c.it.g.id === g.id) picture(c.pic, g); });
   const stopShots = makeShots([...new Map(items.map(it => [it.g.id, it.g])).values()], pictured);
@@ -426,6 +443,17 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
         if (cd.hot >= HOVER_FOCUS){ cd.hot = 0; move(n); }
       }
       bar.tick(dt);
+      /* cinema: moving about (a hand, the mouse) shrinks the banner; a while of nothing brings it back */
+      const rings = cursor.rings.map(r => [r.x, r.y]);
+      if (ringsAt && rings.length === ringsAt.length){
+        const d = rings.reduce((a, r, i) => a + Math.hypot(r[0] - ringsAt[i][0], r[1] - ringsAt[i][1]), 0);
+        if (d > 3){ idleT = 0; if (cinema){ motion += d / innerWidth; if (motion > MOVED_ENOUGH) setCinema(false); } }
+      }
+      ringsAt = rings;
+      if (!going && !getting && !holdArrive && !bar.menuOpen && !document.querySelector('.dim')){
+        idleT += dt;
+        if (!cinema && idleT > CINEMA_AFTER && ROWS.some(r => r.id === 'featured')) setCinema(true);
+      } else idleT = 0;
       /* a downloaded game's picture: from its banner, once it's been playing a moment */
       onBanner = items[focus] && items[focus].trailer ? onBanner + dt : 0;
       const on = items[focus];

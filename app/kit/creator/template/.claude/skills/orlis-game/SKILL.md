@@ -97,7 +97,7 @@ Don't play a sound every frame - only when something happens.
   "players": [1, 4],
   "uses": "body",                           // "hands" or "body"
   "ages": 3,                                // the youngest it's easy for
-  "tags": ["Flying", "Together"],           // up to 6; "Together" puts it in Play together
+  "tags": ["Flying", "High energy"],        // up to 6. These sort it in Discover: "High energy", "Calm", "Music", "Dance", "Together"
   "howto": [ { "move": "wave", "title": "Flap", "line": "Flap your arms to fly up" } ],
   "icon": { "cols": ["#0ea5e9", "#6366f1"], "glyph": "<path d=\"...\" fill=\"#fff\"/>" },
   "cover": "<svg viewBox=\"0 0 160 100\" xmlns=\"http://www.w3.org/2000/svg\">...</svg>"

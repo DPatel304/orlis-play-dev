@@ -45,19 +45,27 @@ const KIND = (g) => [(g.tags || [])[0], USES[g.uses]].filter(Boolean).join(' · 
 const ages = (g) => g.ages ? `Ages ${g.ages}+` : '';
 const added = (g) => Date.parse(g.added || '') || 0;
 
-/* The rows, top to bottom; a row with nothing in it isn't shown. */
+/* The rows, top to bottom: how Discover is sorted. A row with nothing in it isn't shown, and
+   Discover only ever lists games that aren't on the home screen yet (store.js build()).
+   A game says what it is with its tags ("High energy", "Calm", "Music", "Dance", "Together") and the
+   rest is read from how it plays (full body, how many players, the age it's for). */
+const FORTNIGHT = 14 * 864e5;
+const tagged = (g, ...names) => (g.tags || []).some(t => names.includes(String(t).toLowerCase()));
 export const ROWS = [
-  { name: 'New for your family', sub: 'From your Orlis server', pick: (gs) => [...gs].sort((a, b) => added(b) - added(a)).slice(0, 12) },
-  { name: 'Great for little kids', pick: (gs) => gs.filter(g => g.ages && g.ages <= 5) },
-  { name: 'Get moving', sub: 'Full-body games', pick: (gs) => gs.filter(g => g.uses === 'body') },
-  { name: 'Play together', sub: 'Best with three or four', pick: (gs) => gs.filter(g => (g.tags || []).includes('Together')) },
-  { name: 'Made by family & friends', sub: 'From Create', pick: (gs) => gs.filter(g => g.by && g.by !== 'Orlis Play') }
+  { name: 'New', sub: 'Added in the last two weeks', pick: (gs, now) => [...gs].filter(g => now - added(g) < FORTNIGHT).sort((a, b) => added(b) - added(a)).slice(0, 12) },
+  { name: 'High energy', sub: 'Get your whole body moving', pick: (gs) => gs.filter(g => g.uses === 'body' || tagged(g, 'high energy', 'energetic')) },
+  { name: 'Music & dance', sub: 'Move to the beat', pick: (gs) => gs.filter(g => tagged(g, 'music', 'dance')) },
+  { name: 'Solo', sub: 'Just you', pick: (gs) => gs.filter(g => (g.players || [1, 4])[1] === 1) },
+  { name: 'Together', sub: 'Best with a crowd', pick: (gs) => gs.filter(g => tagged(g, 'together')) },
+  { name: 'Calm', sub: 'Slow and cozy', pick: (gs) => gs.filter(g => tagged(g, 'calm')) },
+  { name: 'Little kids', sub: 'Ages 5 and under', pick: (gs) => gs.filter(g => g.ages && g.ages <= 5) },
+  { name: 'From family & friends', sub: 'Made in Create', pick: (gs) => gs.filter(g => g.by && g.by !== 'Orlis Play') }
 ];
 /* What the page shows for a list of games: the featured ones, and rows. */
-export function layout(games){
+export function layout(games, now = Date.now()){
   const featured = [...games].sort((a, b) => added(b) - added(a)).slice(0, FEATURED);
   if (games.length < FEW) return { featured, rows: [{ name: 'All games', pick: () => [...games].sort((a, b) => a.name.localeCompare(b.name)), list: [...games].sort((a, b) => a.name.localeCompare(b.name)) }] };
-  return { featured, rows: ROWS.map(r => ({ ...r, list: r.pick(games) })).filter(r => r.list.length) };
+  return { featured, rows: ROWS.map(r => ({ ...r, list: r.pick(games, now) })).filter(r => r.list.length) };
 }
 
 /* The moves a game's page can picture. */
@@ -161,10 +169,13 @@ export function storePage({ nav = {}, onPlay, onChange = () => {}, onWho, onReca
   /* ---------- the page ---------- */
   function build(){
     scroll.innerHTML = '';
-    lay = layout(games);
-    /* (nothing in the Store yet, but something waiting: that, in the banner) */
-    if (!lay.featured.length && waiting.length){ lay.featured = waiting.slice(0, 1); if (lay.rows.length === 1 && !lay.rows[0].list.length) lay.rows = []; }
-    if (!lay.featured.length){ say('Nothing in Discover yet. Games the family adds to the Orlis server show up here.'); return; }
+    /* Discover is for what you haven't got: games already on the home screen aren't here (an update for one is, at the top) */
+    const have = library.installed;
+    const toUpdate = games.filter(g => have.has(g.id) && newer(g.version, have.get(g.id)));
+    lay = layout(games.filter(g => !have.has(g.id)));
+    /* (nothing new, but something to update or waiting: that, in the banner) */
+    if (!lay.featured.length && (toUpdate.length || waiting.length)){ lay.featured = (toUpdate.length ? toUpdate : waiting).slice(0, 1); if (lay.rows.length === 1 && !lay.rows[0].list.length) lay.rows = []; }
+    if (!lay.featured.length){ say(games.length ? 'You have every game in Discover. New ones show up here as your family adds them.' : 'Nothing in Discover yet. Games the family adds to the Orlis server show up here.'); return; }
     /* the banner */
     const hero = h('section', 'shero');
     const art = h('div', 'sheroart');
@@ -184,7 +195,7 @@ export function storePage({ nav = {}, onPlay, onChange = () => {}, onWho, onReca
     showFeat();
 
     /* the rows */
-    const rows = waiting.length ? [{ name: 'Waiting for your OK', sub: 'Only you see these \u00B7 play each one, then approve it on the management page', list: waiting }, ...lay.rows] : lay.rows;
+    const rows = [...(waiting.length ? [{ name: 'Waiting for your OK', sub: 'Only you see these \u00B7 play each one, then approve it on the management page', list: waiting }] : []), ...(toUpdate.length ? [{ name: 'Updates', sub: 'A newer version of a game you have', list: toUpdate }] : []), ...lay.rows];
     for (const r of rows){
       const sec = h('section', 'srow');
       sec.appendChild(h('h3', '', `${esc(r.name)}${r.sub ? ` <span>${esc(r.sub)}</span>` : ''}`));

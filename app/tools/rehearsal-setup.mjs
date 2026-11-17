@@ -128,8 +128,8 @@ try {
 
   console.log('\n7. Signed out, and back: an email with an account asks for its password');
   await pg.keyboard.press('Escape').catch(() => {});
-  await pg.click('.burger'); await wait(500);
-  await pg.click('.popitem >> text=Sign out');
+  await pg.click('.whochip'); await wait(800);
+  await pg.click('.acctcard .famlink >> text=Sign out');
   await pg.waitForSelector('.getin', { timeout: 20000 });
   await pg.fill('form input[type=email]', 'Sam@Example.com');
   await pg.click('form .go');
