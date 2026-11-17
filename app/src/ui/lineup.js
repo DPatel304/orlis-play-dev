@@ -21,7 +21,7 @@ import { WaveWatch, handsFrom } from '../tracking/wave.js';
 import { silhouette } from './avatars.js';
 import { portrait } from './avatar-art.js';
 import { faceOf } from './avatar-maker.js';
-import { crew, clothesOf } from './crew.js';
+import { crew } from './crew.js';
 
 /* seconds to wait for someone to wave before moving on to the next name */
 export const CALL_FOR = 9;
@@ -74,7 +74,7 @@ export function lineUp({ profiles, onDone }){
     tick(dt){
       if (done) return;
       t += dt; waited += dt;
-      crew.step(dt, present(), (i) => clothesOf(pose.video, pose.players[i].lm));
+      crew.step(dt, present());
       crew.popped();
       const hands = handsFrom(pose);
       for (const i of unseated()){

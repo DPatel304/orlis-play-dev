@@ -22,7 +22,7 @@ import { voice } from './audio/voice.js';
 import { scores } from './games/common.js';
 import { byId } from './games/index.js';
 import { PLAYER_COLORS, MAX_PLAYERS } from './tracking/pose.js';
-import { crew, clothesOf } from './ui/crew.js';
+import { crew } from './ui/crew.js';
 import { lineUp, whoRow, namePop } from './ui/lineup.js';
 import { MAKING } from './ui/avatar-maker.js';
 
@@ -195,7 +195,7 @@ function lineUpThenPlay(){
 /* Each frame of a game: the tracking keeps each child on their player, and
    someone coming back gets their name for a moment. */
 function crewTick(dt){
-  crew.step(dt, pose.players.map(p => !!p.present), (i) => clothesOf(pose.video, pose.players[i].lm));
+  crew.step(dt, pose.players.map(p => !!p.present));
   if (!crew.lined && crew.profiles.length === 1){
     const i = pose.players.findIndex(p => p.present);
     if (i >= 0){ crew.set(i, crew.profiles[0].id); crew.lined = true; }

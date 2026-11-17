@@ -1,12 +1,8 @@
 /* Who's here, across the top of the home screen - the way a console shows
    who's signed in. Everyone the camera has as a player gets a bubble in
-   their colour with their face in it (or a cartoon until their picture's
-   taken), popping in with a sound and a little wave as they walk up, and
+   their colour with their cartoon in it, popping in with a sound and a little wave as they walk up, and
    fading away when they step off. Taking part needs no signing in: being
-   there is it.
-
-   It keeps the faces coming, too: the pictures are snapped here, on the
-   home screen, so they're ready before the first game. */
+   there is it. */
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { FaceCam } from './faces.js';
 import { drawKid, KID_SKINS } from './kids.js';

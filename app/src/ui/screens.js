@@ -101,15 +101,9 @@ export function calibration(onDone){
         done();
       }
     },
-    /* The camera feed with the skeleton on top: proof it can see you, which is
-       the only thing this screen has to establish. */
+    /* The skeleton alone: proof it can see you, which is the only thing this
+       screen has to establish. The camera's picture is never shown. */
     draw(c, W, H){
-      if (pose.usingCamera && pose.video && pose.video.readyState >= 2){
-        c.save(); c.globalAlpha = 0.5;
-        c.translate(W, 0); c.scale(-1, 1);
-        c.drawImage(pose.video, 0, 0, W, H);
-        c.restore();
-      }
       drawSkeletons(c, W, H, 0.95);
     }
   };
