@@ -1,5 +1,4 @@
 import { GAMES, STARTER_GAMES } from '../games/index.js';
-import { scores } from '../games/common.js';
 import { button, onPick, cursor } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { audio, sfx, ambience } from '../audio/sound.js';
@@ -531,11 +530,38 @@ function settings(onRecalibrate){
   const sl = document.createElement('input');
   sl.type = 'range'; sl.min = 0; sl.max = 1; sl.step = 0.05; sl.value = audio.volume; sl.className = 'setslider';
   sl.addEventListener('input', () => audio.setVolume(+sl.value));
-  const mute = small(audio.muted ? 'Unmute' : 'Mute', () => {
+  /* the speaker beside the bar is the mute: crossed out when it's off */
+  const SPEAKER = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/>';
+  const speakerIcon = (muted) => SPEAKER + (muted ? '<path d="M17 9l5 6M22 9l-5 6"/>' : '<path d="M16.5 9a4 4 0 0 1 0 6"/><path d="M19 6.5a8 8 0 0 1 0 11"/>') + '</svg>';
+  const mute = small(speakerIcon(audio.muted), () => {
     const m = audio.toggleMute();
-    mute.querySelector('.lbl').textContent = m ? 'Unmute' : 'Mute';
-  });
-  row('Volume', sl, mute);
+    mute.querySelector('.lbl').innerHTML = speakerIcon(m);
+    mute.setAttribute('aria-label', m ? 'Unmute' : 'Mute'); sl.classList.toggle('off', m);
+  }, 'spk');
+  mute.title = 'Mute'; mute.setAttribute('aria-label', audio.muted ? 'Unmute' : 'Mute'); sl.classList.toggle('off', audio.muted);
+  row('Volume', mute, sl);
+
+  /* a newer version (the Windows app): picked once it checks, picked again it installs and restarts on it */
+  const appInfo = typeof window !== 'undefined' && window.orlisApp;
+  if (appInfo){
+    let next = null, busy = false;
+    const up = small('Check for updates', async () => {
+      if (busy) return;
+      const say = (t) => { up.querySelector('.lbl').textContent = t; };
+      busy = true; sfx.select();
+      try {
+        if (next){ say('Updating…'); await appInfo.installUpdate(); }
+        else {
+          say('Checking…');
+          const r = await appInfo.checkUpdate();
+          if (r.available){ next = r.version; say(`Update to ${appInfo.nameOf ? appInfo.nameOf(next) : next}`); }
+          else say('Up to date');
+        }
+      } catch (e){ next = null; say('Couldn\'t check - try later'); }
+      busy = false;
+    });
+    row('Updates', up, h('span', 'keyhint', `Orlis Play ${appInfo.label ? appInfo.label() : appInfo.version}`));
+  }
 
   /* the screen: in the Windows app, a window or Big Picture (full screen,
      for the TV), kept for next time; in a browser, its own full screen */
@@ -590,15 +616,6 @@ function settings(onRecalibrate){
       camCtl.prepend(seg);
     });
   }
-
-  /* scores: cleared only on a second pick */
-  let sure = 0;
-  const reset = small('Reset', () => {
-    if (performance.now() - sure > 4000){ sure = performance.now(); reset.querySelector('.lbl').textContent = 'Sure? Pick again'; return; }
-    scores.reset(); sure = 0;
-    reset.querySelector('.lbl').textContent = 'Cleared';
-  }, 'danger');
-  row('Scores', reset);
 
   s.appendChild(card);
   /* a click outside the card closes it */

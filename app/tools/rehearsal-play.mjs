@@ -1,6 +1,6 @@
 // The Play page's ways in and out, against a real server: the Featured row
 // (three games) selected on a fresh start; the profile screen with the family's
-// name, Back and Escape, and its way to the family page; no Family in the
+// name, Back and Escape, looked after right there (add a child, rename, remove) with Sign out; no Family in the
 // corner menu; Exit exits at once.
 //
 //   NODE_PATH=$(npm root -g) node tools/rehearsal-play.mjs http://localhost:5191/ <out-prefix>
@@ -55,7 +55,8 @@ const pg = await ctx.newPage();
 const errs = []; pg.on('pageerror', e => { if (!/sandboxed/.test(e.message)) errs.push(e.message); });
 const shot = (n) => pg.screenshot({ path: `${out}-${n}.png` });
 const onPlay = () => pg.waitForSelector('.screen.tvhome .slock', { timeout: 15000 });
-const title = () => pg.$eval('.acctcard h2', e => e.textContent).catch(() => '');
+const title = () => pg.$eval('.acctcard h2', e => e.firstChild.textContent).catch(() => '');
+const txt = (sel) => pg.textContent(sel).then(t => (t || '').replace(/\s+/g, ' ').trim()).catch(() => '');
 try {
   console.log('\n1. A fresh start: the Featured row is the one selected, with three games');
   await pg.goto(appUrl + '?debug&splash=0&fx=0');
@@ -77,7 +78,9 @@ try {
   console.log('\n2. Your picture: the family\'s name, and a way back');
   await pg.click('.whochip'); await wait(800);
   check((await title()) === 'The Patels', 'the title is the family\'s name: ' + (await title()));
-  check(!!(await pg.$('.acctcard .famlink')), 'Manage family is there');
+  check(!(await txt('.acctcard')).includes('Manage family') && !(await txt('.acctcard')).includes('Invite'), 'no Manage family, no invite a grown-up');
+  check((await txt('.acctcard .famlink')) === 'Sign out', 'Sign out is here, on the profile screen');
+  check((await pg.$$('.acctcard .whoedit')).length >= 2, 'a pencil on each profile, and one by the family\'s name');
   check(!!(await pg.$('.acctcard .cardicon.back')), 'and a back arrow');
   await shot('2-who');
   await pg.keyboard.press('Escape'); await wait(800);
@@ -91,9 +94,19 @@ try {
   check(!!(await pg.$('.tvtab.on >> text=Discover')), 'from Discover, back goes to Discover');
   await pg.click('.tvtab >> text=Play'); await onPlay(); await wait(600);
   await pg.click('.whochip'); await wait(800);
-  await pg.click('.famlink'); await wait(1500);
-  check(!!(await pg.$('.familypage')), 'Manage family opens the family page');
+  /* looking after the family, right here: add a child, change the family's name */
+  const before = (await pg.$$('.acctcard .whocell')).length;
+  await pg.click('.acctcard .who.add'); await wait(500);
+  await pg.fill('.fpop .finput', 'Zed'); await pg.click('.fpop .setbtn.go >> text=Add'); await wait(1500);
+  check((await pg.$$('.acctcard .whocell')).length === before + 1 && (await txt('.acctcard')).includes('Zed'), 'a child added on this screen');
   await shot('2b-family');
+  await pg.click('.acctcard h2 .whoedit'); await wait(400);
+  await pg.fill('.fpop .finput', 'The Patel Family'); await pg.click('.fpop .setbtn.go >> text=Save'); await wait(1500);
+  check((await title()) === 'The Patel Family', 'the family\'s name changed here: ' + (await title()));
+  await pg.click('.acctcard .whocell:has-text("Zed") .whoedit'); await wait(400);
+  await pg.click('.fpop .setbtn.danger'); await wait(300); await pg.click('.fpop .setbtn.danger'); await wait(1500);
+  check(!(await txt('.acctcard')).includes('Zed'), 'and a child removed');
+  await pg.keyboard.press('Escape'); await wait(800);
   await pg.click('.tvtab >> text=Play'); await onPlay(); await wait(600);
 
   console.log('\n2c. The end of My games: reachable with the keys, and the row slides to show it');

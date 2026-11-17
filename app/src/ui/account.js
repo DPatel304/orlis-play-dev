@@ -14,6 +14,7 @@ import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
 import { openMaker, withFace, MAKING } from './avatar-maker.js';
+import { editProfile, renameFamily } from './kid-editor.js';
 import { setup } from './setup.js';
 import { claudeChecklist } from './connect-claude.js';
 import { HOME_SERVER } from './home-server.js';
@@ -147,7 +148,7 @@ async function hello(url){
    One overlay at a time, swapped in place: finding the server, then signing
    in or joining (or, on a brand-new server, setting up as the owner), then
    "Who's playing?". done() once a profile's picked. */
-export function welcome(done, { auto = true, glide = false, onBack = null, onFamily = null } = {}){
+export function welcome(done, { auto = true, glide = false, onBack = null } = {}){
   clearUI();
   const s = screen('dim account');
   /* the cube resting on the left (drawn behind - front.js), and everything
@@ -379,43 +380,33 @@ export function welcome(done, { auto = true, glide = false, onBack = null, onFam
     if (auto && list.length === 1){ account.set({ current: list[0].id }); return done(list[0]); }
     auto = false;
     const tiles = h('div', 'whotiles');
+    /* the grown-up who made the account is the head of the family; everyone else is a family member (under 18) */
+    const head = (account.state.profiles || []).find(q => q.accountId === (account.state.account && account.state.account.id));
+    const grown = !account.isKid;
+    const changed = async () => { await account.refresh(); who(); };
     for (const p of account.state.profiles || []){
-      tiles.appendChild(withFace(onPick(button(`<span class="av">${AVATARS[p.avatar] || AVATARS.cube}</span><span class="nm">${esc(p.name)}</span>`, 'who'), () => {
+      const cell = h('div', 'whocell');
+      cell.appendChild(withFace(onPick(button(`<span class="av">${AVATARS[p.avatar] || AVATARS.cube}</span><span class="nm">${esc(p.name)}</span>`, 'who'), () => {
         sfx.select(); account.set({ current: p.id }); done(p);
       }), p, 220));
+      /* (a grown-up looks after the family right here: a pencil on each) */
+      if (grown){ const pen = onPick(button('✏️', 'whoedit'), () => { sfx.select(); editProfile(p, { self: p === head, onDone: changed }); }); pen.title = 'Change'; pen.setAttribute('aria-label', `Change ${p.name}`); cell.appendChild(pen); }
+      tiles.appendChild(cell);
     }
-    if ((account.state.profiles || []).length < 8) tiles.appendChild(onPick(button('<span class="av">+</span><span class="nm">Add a child</span>', 'who add'), () => { sfx.select(); addKid(); }));
+    if (grown && (account.state.profiles || []).length < 8) tiles.appendChild(onPick(button('<span class="av">+</span><span class="nm">Add a child</span>', 'who add'), () => { sfx.select(); editProfile(null, { onDone: changed }); }));
     /* the family's name is the title (no "Who's playing?": the faces say it) */
     const fam = account.state.household && account.state.household.name;
+    const title = h('h2', 'whotitle', esc(fam || 'Who\u2019s playing?'));
+    if (grown){ const pen = onPick(button('✏️', 'whoedit title'), () => { sfx.select(); renameFamily({ onDone: changed }); }); pen.title = 'The family’s name'; pen.setAttribute('aria-label', 'Change the family’s name'); title.appendChild(pen); }
     const nodes = [
       /* opened from inside the app: a way back (Escape does it too, through the Back key) */
       onBack ? corner('←', 'back close', 'Back', () => { sfx.back?.(); onBack(); }) : null,
-      h('h2', '', esc(fam || 'Who\u2019s playing?')), tiles,
-      /* looking after the family: its grown-ups, its kids, an invite */
-      onFamily && !account.isKid ? onPick(button('Manage family', 'link famlink'), () => { sfx.select(); onFamily(); }) : null,
+      title, tiles,
+      /* signing out lives here, with the family (a child playing doesn't see it) */
+      grown && account.signedIn ? onPick(button('Sign out', 'link famlink'), () => { sfx.back?.(); account.signOut(); location.reload(); }) : null,
       msg].filter(Boolean);
     show(...nodes);
   }
-  function addKid(){
-    let pick = 'rocket';
-    const grid = h('div', 'avatars');
-    const mark = () => [...grid.children].forEach(b => b.classList.toggle('chosen', b.dataset.av === pick));
-    for (const [id, em] of Object.entries(AVATARS)){
-      const b = onPick(button(em, 'av'), () => { pick = id; mark(); }); b.type = 'button'; b.dataset.av = id; grid.appendChild(b);
-    }
-    mark();
-    const f = form([['name', 'Their first name or a nickname', 'text']], 'Add', async ({ name }) => {
-      const p = await account.call('POST', '/api/profiles', { name, avatar: pick });
-      account.set({ profiles: [...(account.state.profiles || []), p] });
-      /* straight on to making their avatar (Cancel keeps the picture) */
-      if (MAKING) openMaker(p, { onDone: who });
-      who();
-    });
-    f.insertBefore(grid, f.lastChild);
-    show(corner('←', 'back', 'Back', () => { sfx.back?.(); who(); }),
-      h('h2', '', 'Add a child'), h('p', 'lede', 'Just a name and a picture.'), f, msg);
-  }
-
   /* (still waiting: straight on to the starter games - it lets them know when they're in) */
   if (account.signedIn) who(); else find();
   return frontScene({ glide });

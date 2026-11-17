@@ -32,11 +32,12 @@ test('display modes: a window or Big Picture, kept, with a default for new insta
   assert.ok(menu.includes("window.orlisDisplay") && menu.includes("'Big Picture'"), 'Settings offers both');
 });
 
-test('the corner menu can check for an update and install it now', () => {
+test('Settings can check for an update and install it now', () => {
   assert.ok(main.includes('generate_handler![set_display_mode, check_update, install_update'));
   assert.ok(main.includes('window.ORLIS_VERSION') && main.includes('window.orlisApp'));
-  const menu = readFileSync(new URL('../src/ui/tabs.js', import.meta.url), 'utf8');
-  assert.ok(menu.includes("item('update', 'Check for updates')") && menu.includes('installUpdate()') && menu.includes('checkUpdate()'));
+  const menu = readFileSync(new URL('../src/ui/menu.js', import.meta.url), 'utf8');
+  assert.ok(menu.includes("'Check for updates'") && menu.includes('installUpdate()') && menu.includes('checkUpdate()'));
+  assert.ok(!readFileSync(new URL('../src/ui/tabs.js', import.meta.url), 'utf8').includes('Check for updates'), 'no longer in the corner menu');
 });
 
 test('the music folder is the only place on disk the game can read', () => {
@@ -109,17 +110,18 @@ test('updates: the Update button and a slow check both show "Updating"; the beta
   assert.ok(wf.indexOf('upload "$TAG" "$UPD"') < wf.indexOf('upload "$TAG" latest.json'), 'the update file goes up last');
 });
 
-test('Home, the Store and Create are pages under the same tabs; the corner menu keeps Settings, updates, sign out and Exit', () => {
+test('Home, the Store and Create are pages under the same tabs; the corner menu keeps just Settings and Exit', () => {
   const tabs = readFileSync(new URL('../src/ui/tabs.js', import.meta.url), 'utf8');
   assert.match(tabs, /\['home', 'Play'\], \['store', 'Discover'\], \['create', 'Create'\]/);
-  for (const w of ["'Settings'", "'Check for updates'", "'Sign out'", "'Exit'"]) assert.ok(tabs.includes(`item(`) && tabs.includes(w), w);
+  for (const w of ["'Settings'", "'Exit'"]) assert.ok(tabs.includes(`item(`) && tabs.includes(w), w);
+  assert.ok(!tabs.includes("'Sign out'") && !tabs.includes("'Check for updates'"), 'signing out is on the profile screen, updates are in Settings');
   assert.ok(!/\\u\{1F/.test(tabs), 'the corner menu has line icons, not emoji');
   assert.ok(tabs.includes("id !== 'create' || !account.isKid"), 'a child playing sees Home and the Store, not Create');
   assert.ok(!/Store<\/span>|Create<\/span>/.test(tabs), 'Store and Create are tabs now, not in the corner menu');
   assert.ok(!tabs.includes('places'), 'the menu has no Play / Discover / Create items: those are the tabs');
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   assert.match(main, /go\('store'/); assert.match(main, /go\('create'/);
-  assert.match(main, /const HOMEY = new Set\(\['menu', 'store', 'create', 'family', 'who'\]\)/);
+  assert.match(main, /const HOMEY = new Set\(\['menu', 'store', 'create', 'who'\]\)/);
 });
 
 test('the title bar really goes in Big Picture: hidden beats its display:flex', () => {

@@ -1585,3 +1585,16 @@ textarea.btype.bwords{ width:62vw; height:26vh; border-radius:3vh; padding:2.4vh
 @keyframes buildsheen{ from{ background-position:120% 0; } to{ background-position:-120% 0; } }
 .createpage.flow .cbody{ padding-bottom:0; }
 .createpage.flow .builder{ padding-bottom:10vh; }
+/* Settings: the speaker beside the volume bar is the mute */
+.btn.setbtn.spk{ width:4.4vh; height:4.4vh; min-width:0; padding:0; border-radius:50%; border:none; background:transparent; color:#3b3e4d; }
+.btn.setbtn.spk .lbl{ display:grid; place-items:center; }
+.btn.setbtn.spk svg{ width:3vh; height:3vh; }
+.setslider.off{ opacity:.35; }
+
+/* The profile screen looks after the family itself: a pencil on each profile and by the family's name */
+.whocell{ position:relative; }
+.btn.whoedit{ position:absolute; top:-.8vh; right:-.8vh; width:4.4vh; height:4.4vh; min-width:0; padding:0; border-radius:50%; border:0; background:#fff; box-shadow:0 .6vh 1.8vh rgba(20,24,50,.18); font-size:2.2vh; opacity:.85; z-index:2; }
+.btn.whoedit .lbl{ display:grid; place-items:center; }
+.btn.whoedit:hover, .btn.whoedit.hot{ opacity:1; transform:scale(1.08); }
+.btn.whoedit.title{ position:static; display:inline-block; vertical-align:middle; margin-left:1.4vh; width:4.8vh; height:4.8vh; box-shadow:none; background:transparent; opacity:.55; }
+.whotitle{ display:flex; align-items:center; justify-content:center; }

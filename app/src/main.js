@@ -12,7 +12,6 @@ import { installTitlebar, titlebarPlaying } from './ui/titlebar.js';
 import { library } from './ui/library.js';
 import { storePage } from './ui/store.js';
 import { createPage } from './ui/create.js';
-import { familyPage } from './ui/family.js';
 import { outbox } from './ui/outbox.js';
 import { boot as bootShow } from './ui/boot.js';
 import { calibration, results, pauseOverlay, lostOverlay,
@@ -54,10 +53,10 @@ let paused = null, lost = null, handsUp = 0, empty = 0, joined = new Set();
 const CAMERA = new Set(['starting', 'lineup', 'play', 'outro', 'results', 'calibrate']);
 /* The pages that are the mouse's and the keyboard's: Home, the Store,
    Create, and signing in. */
-const HOMEY = new Set(['menu', 'store', 'create', 'family', 'who']);
+const HOMEY = new Set(['menu', 'store', 'create', 'who']);
 
 /* The pages that crossfade into each other (the tabs have their own slide) */
-const FADEY = new Set(['menu', 'store', 'create', 'family', 'who', 'results']);
+const FADEY = new Set(['menu', 'store', 'create', 'who', 'results']);
 const TABBY = new Set(['menu', 'store', 'create']);
 const INTO_GAME = new Set(['starting', 'lineup', 'play']);
 /* (?fx=0 turns the page fades off - the rehearsals read the page, and two pages at once would confuse them) */
@@ -107,7 +106,7 @@ function toMenu(arrive = false){
     onFresh: () => { if (mode === 'menu') toMenu(false); } }));
 }
 /* The tabs along the top: Home, the Store, Create. */
-function tabs(){ return { home: () => toMenu(false), store: toStore, create: toCreate, family: toFamily }; }
+function tabs(){ return { home: () => toMenu(false), store: toStore, create: toCreate }; }
 function toStore(){
   music.stop(); voice.hush();
   go('store', () => storePage({ nav: tabs(), onPlay: toGame, onChange: () => {}, onWho: () => toWho(false), onRecalibrate: toCalibration }));
@@ -123,9 +122,6 @@ addEventListener('orlisletin', () => {
   if (mode === 'menu') toMenu(false); else if (mode === 'store') toStore(); else if (mode === 'create') toCreate();
 });
 
-function toFamily(){
-  go('family', () => familyPage({ nav: tabs(), onWho: () => toWho(false), onRecalibrate: toCalibration }));
-}
 function toCreate(){
   go('create', () => createPage({ nav: tabs(), onPlay: toGame, onWho: () => toWho(false), onRecalibrate: toCalibration }));
 }
@@ -136,10 +132,10 @@ function toCreate(){
 function toWho(arrive, glide = false){
   account.refresh();
   /* (asked for from a page: Back, or Escape, goes to that page again) */
-  const PAGES = { menu: () => toMenu(false), store: toStore, create: toCreate, family: toFamily };
+  const PAGES = { menu: () => toMenu(false), store: toStore, create: toCreate };
   const back = !arrive && PAGES[mode] ? PAGES[mode] : null;
   /* (a new creator who picked "Make my first game": straight to Create, where it's made) */
-  go('who', () => welcome(() => (account.state && account.state.firstGame ? toCreate() : toMenu(arrive)), { auto: arrive, glide, onBack: back, onFamily: toFamily }));
+  go('who', () => welcome(() => (account.state && account.state.firstGame ? toCreate() : toMenu(arrive)), { auto: arrive, glide, onBack: back }));
 }
 
 function toCalibration(){
@@ -351,7 +347,7 @@ let last = 0;
 /* Seconds the owner plays a waiting game before it can be approved (the
    server's TRY_SECS). */
 const TRY_SECS = 20;
-const CALM = new Set(['boot', 'menu', 'store', 'create', 'family', 'who', 'starting']);
+const CALM = new Set(['boot', 'menu', 'store', 'create', 'who', 'starting']);
 const HOME_GAP = 1000 / 30 - 2, AWAY_GAP = 250;
 let lastFrame = 0, wasAway = false;
 function tick(now){

@@ -18,7 +18,7 @@ import { challengePill } from './challenges.js';
 /* The corner menu's icons: simple line drawings, like the rest of the app's. */
 const LINE = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const MENU_ICON = {
-  settings: LINE('<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/>'),
+  settings: LINE('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
   family: LINE('<path d="M3.5 11L12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>'),
   update: LINE('<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/>'),
   signout: LINE('<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/>'),
@@ -136,7 +136,7 @@ function appWindow(){
   return w && w.getCurrentWindow ? w.getCurrentWindow() : null;
 }
 
-/* The corner menu: a little card under the button - Settings, a newer version, signing out, and Exit (the family's page is on its own screen: pick your picture at the top). A click outside it closes it (or Escape). */
+/* The corner menu: a little card under the button - Settings and Exit (a newer version is in Settings; the family, and signing out, are on the screen you get to by picking your picture at the top). A click outside it closes it (or Escape). */
 export function cornerMenu({ onRecalibrate, onClosed } = {}){
   sfx.select();
   const open = screen('dim popmenu'); open.style.zIndex = 5;
@@ -147,35 +147,14 @@ export function cornerMenu({ onRecalibrate, onClosed } = {}){
   card.appendChild(onPick(button(item('settings', 'Settings'), 'popitem'), () => {
     sfx.select(); shut(); openSettings(onRecalibrate);
   }));
-  /* In the Windows app: a newer version, now (picked once it checks,
-     picked again it installs and restarts on it); and signing out. */
+  /* (a newer version is in Settings; signing out is on the screen you get to by picking your picture) */
   const appInfo = typeof window !== 'undefined' && window.orlisApp;
-  if (appInfo){
-    card.appendChild(h('div', 'popline'));
-    let next = null, busy = false;
-    const up = onPick(button(item('update', 'Check for updates'), 'popitem update'), async () => {
-      if (busy) return;
-      const say = (t) => { up.querySelector('.pn').textContent = t; };
-      busy = true; sfx.select();
-      try {
-        if (next){ say('Updating…'); await appInfo.installUpdate(); }
-        else {
-          say('Checking…');
-          const r = await appInfo.checkUpdate();
-          if (r.available){ next = r.version; say(`Update to ${appInfo.nameOf ? appInfo.nameOf(next) : next}`); }
-          else say('Up to date');
-        }
-      } catch (e){ next = null; say('Couldn\'t check - try later'); }
-      busy = false;
-    });
-    card.appendChild(up);
-  }
-  if (account.signedIn){
-    card.appendChild(onPick(button(item('signout', 'Sign out'), 'popitem'), () => { sfx.back(); account.signOut(); location.reload(); }));
-  }
   /* In the Windows app, a way out: picked, it closes. */
   const app = appWindow();
-  if (app) card.appendChild(onPick(button(item('exit', 'Exit'), 'popitem exit'), () => { sfx.back(); app.close(); }));
+  if (app){
+    card.appendChild(h('div', 'popline'));
+    card.appendChild(onPick(button(item('exit', 'Exit'), 'popitem exit'), () => { sfx.back(); app.close(); }));
+  }
   /* small print: the version, and who's signed in */
   const bits = [appInfo ? `Orlis Play ${appInfo.label ? appInfo.label() : appInfo.version}` : '', account.signedIn ? account.state.account.email : ''].filter(Boolean);
   if (bits.length) card.appendChild(h('div', 'popfoot', bits.join(' · ').replace(/[&<>]/g, '')));
