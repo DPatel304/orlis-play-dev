@@ -34,7 +34,7 @@ export const remote = {
   layer(){
     const ui = document.getElementById('ui');
     if (!ui) return null;
-    const all = [...ui.children].filter(e => e.classList && e.classList.contains('screen'));
+    const all = [...ui.children].filter(e => e.classList && e.classList.contains('screen') && !e.classList.contains('ghost'));
     return all.filter(e => e.classList.contains('dim') && !e.classList.contains('lost')).pop() || all.pop() || null;
   },
   buttons(layer){

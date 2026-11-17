@@ -14,6 +14,7 @@ import { week } from './week.js';
 import { library } from './library.js';
 import { toast } from './toast.js';
 import { splashWanted, showChallenges } from './challenges.js';
+import { launch } from './launch.js';
 import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
 import { banner as wideBanner, discoverCoverUrl, seeAllCoverUrl } from './covers.js';
 
@@ -123,7 +124,7 @@ export function playRows(pool, lately = recent(), featured = []){
   return rows;
 }
 const HOVER_FOCUS = 0.05;      /* seconds of a hand on a tile to pick it (the cursor's already sticky) */
-const LAUNCH = 0.5;            /* seconds of going in */
+const LAUNCH = launch.OPEN;    /* seconds of going in (the tile opening up) */
 const POINT_AGAIN = 0.04;      /* how far (of the screen) a hand moves to take over from the remote */
 const FLY = 0.7, FLY_STAGGER = 0.05;   /* arriving: each tile's flight, one after another */
 
@@ -266,10 +267,12 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
 
   /* this week's family challenges: three big cards on arriving (once each time the
      app starts), then a pill in the top bar (challenges.js) */
-  let splashTimer = null;
   const ch = week.challenges;
+  let holdArrive = false;
   if (!waiting && ch && ch.challenges && ch.challenges.length && splashWanted()){
-    splashTimer = setTimeout(() => { splashTimer = null; if (!going) showChallenges(ch, { auto: true, from: bar.pill }); }, 350);
+    /* (up at once, over a plain page: no glimpse of Play first; the tiles fly in as the cards leave) */
+    holdArrive = true;
+    showChallenges(ch, { auto: true, first: true, from: bar.pill, onLeave: () => { holdArrive = false; } });
   }
 
   /* All games: a grid of every game, with a filter along the top */
@@ -355,23 +358,25 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       getting = false;
     }
     going = { t: 0, g };
-    cards[n].card.classList.add('launch');
+    /* the tile opens up to fill the screen (its cover, title and all) and stays while the game gets ready */
+    const th = cards[n].card.querySelector('.sthumb') || cards[n].card;
+    launch.begin({ rect: th.getBoundingClientRect(), url: shotOf(g) || (items[n].g === g ? shotOf(items[n].g) : null), accent: items[n].accent, name: g.name });
   }
   show();
   ambience.start();
   /* this week's featured and challenges, fresh from the server (shown
      again if they changed - not mid-pick) */
-  if (onFresh) week.refresh().then(changed => { if (changed && !going && !getting) onFresh(); }, () => {});
+  if (onFresh) week.refresh().then(changed => { if (changed && !going && !getting && !holdArrive) onFresh(); }, () => {});
   /* the pictures still to make (one at a time, between frames) */
   const pictured = (g) => cards.forEach(c => { if (c.it.g.id === g.id) picture(c.pic, g); });
   const stopShots = makeShots([...new Map(items.map(it => [it.g.id, it.g])).values()], pictured);
   let onBanner = 0;
 
   return {
-    leave(){ stopShots(); clearTimeout(splashTimer); },
+    leave(){ stopShots(); },
     get focus(){ return focus; },
     tick(dt){
-      t += dt;
+      if (!holdArrive) t += dt;
       /* arriving: each tile flies out from the middle of the screen, where the cube was */
       if (!flown){
         flown = true;
@@ -433,7 +438,6 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
         const im = wide ? null : shotImage(it.g);
         paint(heroPic, wide ? wide : im ? (c, w, hh) => { const k = Math.max(w / im.width, hh / im.height); c.drawImage(im, (w - im.width * k) / 2, (hh - im.height * k) * 0.4, im.width * k, im.height * k); } : it.paint, t);
       }
-      if (going){ c.fillStyle = `rgba(13,11,26,${Math.min(1, going.t / LAUNCH)})`; c.fillRect(0, 0, W, H); }
     }
   };
 }

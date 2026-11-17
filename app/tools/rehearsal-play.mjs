@@ -58,7 +58,7 @@ const onPlay = () => pg.waitForSelector('.screen.tvhome .slock', { timeout: 1500
 const title = () => pg.$eval('.acctcard h2', e => e.textContent).catch(() => '');
 try {
   console.log('\n1. A fresh start: the Featured row is the one selected, with three games');
-  await pg.goto(appUrl + '?debug&splash=0');
+  await pg.goto(appUrl + '?debug&splash=0&fx=0');
   /* (two profiles: it opens on who's playing - the family's name, and nothing to go back to) */
   await pg.waitForSelector('.acctcard .who', { timeout: 15000 });
   check((await title()) === 'The Patels', 'on a fresh start it opens on the family\'s name: ' + (await title()));

@@ -39,11 +39,11 @@ export function challengePill(data){
   return pill;
 }
 
-export function showChallenges(data, { auto = false, from = null, onClosed = () => {} } = {}){
+export function showChallenges(data, { auto = false, first = false, from = null, onLeave = () => {}, onClosed = () => {} } = {}){
   const list = (data && data.challenges) || [];
   if (!list.length) return null;
   if (auto) splashed = true;
-  const layer = screen('dim chsplash'); layer.style.zIndex = 8;
+  const layer = screen('dim chsplash' + (first ? ' first' : '')); layer.style.zIndex = 8;
   const row = h('div', 'chbigrow');
   list.forEach((c, i) => {
     const pct = Math.round(100 * c.have / c.need);
@@ -68,6 +68,7 @@ export function showChallenges(data, { auto = false, from = null, onClosed = () 
     removeEventListener('keydown', key, true);
     sfx.select?.();
     layer.classList.add('leaving');
+    onLeave();
     const cards = [...row.children];
     if (reduced()){ setTimeout(finish, 220); return; }
     /* fly up to the pill (or, with none, the top right) */

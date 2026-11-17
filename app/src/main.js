@@ -1,5 +1,6 @@
 import './old-names.js';   /* (first: the old Astra Park settings, moved to their Orlis names) */
 import { week } from './ui/week.js';
+import { launch } from './ui/launch.js';
 import { toast } from './ui/toast.js';
 import { pose } from './tracking/pose.js';
 import { cursor, inFront } from './ui/cursor.js';
@@ -54,9 +55,20 @@ const CAMERA = new Set(['starting', 'lineup', 'play', 'outro', 'results', 'calib
    Create, and signing in. */
 const HOMEY = new Set(['menu', 'store', 'create', 'family', 'who']);
 
+/* The pages that crossfade into each other (the tabs have their own slide) */
+const FADEY = new Set(['menu', 'store', 'create', 'family', 'who', 'results']);
+const TABBY = new Set(['menu', 'store', 'create']);
+const INTO_GAME = new Set(['starting', 'lineup', 'play']);
+/* (?fx=0 turns the page fades off - the rehearsals read the page, and two pages at once would confuse them) */
+const NOFX = /[?&]fx=0\b/.test(location.search);
 function go(next, build){
   /* (a page with something to tidy away first - the Store's previews) */
   if (scene && scene.leave) scene.leave();
+  const was = mode;
+  /* the old page stays a moment, fading out under the new one fading in */
+  const ui = document.getElementById('ui');
+  const ghosts = ui && !NOFX && FADEY.has(was) && FADEY.has(next) && !(TABBY.has(was) && TABBY.has(next)) ? [...ui.children] : [];
+  if (!INTO_GAME.has(next)) launch.release(true);
   mode = next;
   if (CAMERA.has(next)) pose.wake(); else pose.sleep();
   if (HOMEY.has(next)) updateIfWaiting();
@@ -70,6 +82,12 @@ function go(next, build){
      with one profile goes on to Home - and then the newer page is the one) */
   const made = build ? build() : null;
   if (mode === next) scene = made;
+  if (ghosts.length && ui){
+    ghosts.forEach(g => g.classList.add('ghost'));
+    ui.prepend(...ghosts);
+    ui.classList.add('paging');
+    setTimeout(() => { ghosts.forEach(g => g.remove()); ui.classList.remove('paging'); }, 380);
+  }
 }
 
 /* The menus are quiet: music belongs to playing, so it starts when a game is
@@ -135,18 +153,26 @@ function toGame(g){
   playedLately(g.id);
   ambience.stop();
   players = pose.cap;
-  /* The camera first, if it's off: a moment's "Starting the camera" (the
-     first time, a few, while the body tracker loads). */
-  if (pose.on || pose.mouse.active && pose.reason === 'debug'){ music.start(game.music); lineUpThenPlay(); return; }
-  go('starting', () => {
-    const s = screen('dim lost');
-    s.append(h('p', 'lede', `${g.name} \u2014 starting the camera\u2026`));
-    return null;
-  });
-  pose.wake().finally(() => {
-    if (mode !== 'starting' || game !== g) return;      /* (went somewhere else meanwhile) */
+  /* The cover the tile opened into stays up while the game gets ready - the
+     camera starts underneath it (the first time, a few seconds, while the body
+     tracker loads) and nothing is said about it. It's up at least a moment, so
+     going in is never a blink. */
+  const MIN = launch.el ? 1500 : 0;
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  const settled = () => wait(Math.max(0, MIN - (performance.now() - launch.at)));
+  const begin = () => {
     music.start(game.music);
     lineUpThenPlay();
+    setTimeout(() => launch.release(), 150);          /* (the game's there; the cover fades away) */
+  };
+  if (pose.on || pose.mouse.active && pose.reason === 'debug'){
+    settled().then(() => { if (game === g && mode !== 'play') begin(); });
+    return;
+  }
+  go('starting', () => null);
+  Promise.all([pose.wake().catch(() => {}), settled()]).then(() => {
+    if (mode !== 'starting' || game !== g) return;      /* (went somewhere else meanwhile) */
+    begin();
   });
 }
 
@@ -500,6 +526,9 @@ const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : nul
   if (account.needed){ outbox.sync().catch(() => {}); setInterval(() => outbox.sync().catch(() => {}), 2 * 60 * 1000); }
   /* Straight into the game being worked on; or from the intro to the home
      screen, its tiles flying out of the cube. */
+  /* (this week's data first - a moment at most - so the first page already knows about the
+     challenge cards, and they come up straight after the logo, with no glimpse of Play) */
+  if (account.signedIn) await Promise.race([week.refresh({ force: true }).catch(() => {}), new Promise(r => setTimeout(r, 1500))]);
   if (straight) toGame(straight);
   /* In the Windows app: signed in, and who's playing, first. */
   else if (account.needed) toWho(true, settle);

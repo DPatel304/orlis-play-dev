@@ -46,7 +46,7 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(35
   const pg = await ctx.newPage();
   const errs = [];
   pg.on('pageerror', e => { if (!/sandboxed/.test(e.message)) errs.push(e.message); });
-  await pg.goto(appUrl + '?debug&splash=0');
+  await pg.goto(appUrl + '?debug&splash=0&fx=0');
   await pg.waitForSelector('.tvtop', { timeout: 25000 });
   await pg.waitForTimeout(1200);
   const toCreate = async () => { await pg.keyboard.press('Escape').catch(() => {});
