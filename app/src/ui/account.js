@@ -279,25 +279,17 @@ export function welcome(done, { auto = true, glide = false } = {}){
     getIn(sv);
   }
   const device = () => (navigator.userAgent.includes('Windows') ? 'Windows PC' : 'A device');
-  const finish = (r, joined = false, fresh = joined) => {
+  const finish = (r, joined = false) => {
     account.set({ token: r.token, account: r.account, household: r.household || null, profiles: r.profiles, current: null });
-    /* a brand-new account: first, any children to add (once) */
-    const then = (next) => fresh ? kids(next) : next();
     /* asked to join: straight on to the starter games while the owner lets them in */
-    if (r.account && r.account.waiting) return then(who);
+    if (r.account && r.account.waiting) return who();
     sfx.gold?.();
     /* someone joining with the Dev Kit, in the Windows app: setting it up first */
-    if (joined && r.account && r.account.devkit && setup.available) return then(ready);
-    if (joined && r.account) return then(welcomeIn);
-    then(who);
+    if (joined && r.account && r.account.devkit && setup.available) return ready();
+    if (joined && r.account) return welcomeIn();
+    who();
   };
-  /* Just made an account: kids play on their own, under it - add one now,
-     or later (Family). */
-  function kids(next){
-    show(h('h2', '', 'Playing with kids?'),
-      onPick(button('Add a child', 'wide'), () => { sfx.select(); addKid(); }),
-      onPick(button('Not now', 'link'), () => { sfx.back?.(); next(); }));
-  }
+
 
   /* Accounts are for grown-ups; making one says you are (no tick box -
      pressing Create account is the yes). Kids play on profiles. */
@@ -309,7 +301,7 @@ export function welcome(done, { auto = true, glide = false } = {}){
         ['email', 'Your email', 'email', 'email'],
         ['password', 'Password (8+ characters)', 'password', 'new-password'],
         ['name', 'Username', 'text']
-      ], 'Create account', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, adult: true, device: device() }), false, true)),
+      ], 'Create account', async (v) => finish(await call(sv.url, 'POST', '/api/signup', { ...v, adult: true, device: device() }))),
       grownups(), msg);
   }
 
