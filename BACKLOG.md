@@ -186,6 +186,33 @@ The plan for creating (decided):
 - Publishing gates, later: a minimum number of play hours before
   publishing, one published game first, more once it reaches a threshold.
 
+- **A second app for grown-ups: Orlis Studio (to think through).** A small
+  laptop app for making games with Claude Code, apart from Orlis Play, which
+  stays the TV app for the family. It would gather what already exists: the
+  Creator Kit, the install-and-sign-in checklist for Claude Code, the game
+  folders, and Check and send to the server. Create in Orlis Play is now just
+  the kids' picture flow, and the old Dev Kit screens have no way in from it.
+  - **Phone sign-in.** A QR code on the "Sign in to Claude" step, so a grown-up
+    can sign in on their phone instead of typing on a laptop. Check first what
+    Claude Code's sign-in actually hands back (it may only return a code to
+    type); keep the plain button as the fallback. Installing Claude Code stays
+    a button on the laptop.
+  - **Make games from the phone.** A bigger idea to look at separately:
+    Claude Code's remote control, so a session on the PC is driven from the
+    Claude app. Depends on the grown-up's plan; confirm it works first.
+  - **Try it.** Two ways: run the game in the studio in front of the laptop's
+    webcam (ships the camera engine in a second app), or send it to Orlis Play
+    and try it on the TV (the owner's Try it flow already exists). Start with
+    sending to the TV, add a local preview later. This ties in with "Try it on
+    the TV" above.
+  - **Costs:** a second signed installer, its own update channel and release
+    workflow; and the Play app is Windows-only today, so Mac and Linux
+    laptops need a decision.
+  - **Lighter option:** no installer, just the Creator Kit folder downloadable
+    from the server's own page, opened in Claude Code.
+  - **Open:** where the Dev Kit goes meanwhile (it's unreachable in Play), and
+    whether the old Dev Kit rehearsals are retired or rewritten for the studio.
+
 ## The app
 
 - **Make the privacy promise visible.** In words a parent sees, on the
