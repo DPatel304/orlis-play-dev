@@ -214,11 +214,25 @@ export function previewCover(canvas, { name = 'Your game', cols = ['#8b7cff', '#
   TITLES.tilt(c, W, H, String(name || 'Your game').slice(0, 40), cols[1]);
 }
 
-export function makeCover(g, { still = null, accent = '#6d5efc', w = 960, h = 600 } = {}){
+/* A creator's cover (an SVG picture, no words) as an image to draw. Loaded
+   as a picture, so nothing in it can run; checked first all the same. */
+const UNSAFE_COVER = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*image|<\s*style|<\s*text|<\s*tspan|<\s*use\b|url\(\s*['"]?(?!#)/i;
+export const coverSvgOk = (svg) => typeof svg === 'string' && svg.length > 20 && svg.length <= 12000 && /^\s*<svg[\s>]/i.test(svg) && !UNSAFE_COVER.test(svg);
+export function svgImage(svg){
+  return new Promise((ok) => {
+    if (typeof Image === 'undefined' || !coverSvgOk(svg)) return ok(null);
+    const im = new Image();
+    im.onload = () => ok(im); im.onerror = () => ok(null);
+    const s = /xmlns\s*=/.test(svg) ? svg : svg.replace(/<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+    im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+  });
+}
+export function makeCover(g, { still = null, art: own = null, accent = '#6d5efc', w = 960, h = 600 } = {}){
   if (typeof document === 'undefined') return null;
   const art = document.createElement('canvas'); art.width = w; art.height = h;
   const c = art.getContext && art.getContext('2d'); if (!c) return null;
   if (ART[g.id]){ try { ART[g.id](c, w, h); } catch (e){ return null; } }
+  else if (own){ try { c.drawImage(own, 0, 0, w, h); } catch (e){ return null; } }
   else if (still){
     const sy = still.height * 0.26, sh = still.height - sy, sw = Math.min(still.width, sh * w / h), sx = (still.width - sw) / 2;
     c.drawImage(still, sx, sy, sw, sh * sw / (sh * w / h), 0, 0, w, h);

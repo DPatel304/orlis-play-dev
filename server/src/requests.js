@@ -129,7 +129,7 @@ Make just that change and keep everything else about the game the same. Leave it
 
 The game: ${sum}${r.view ? `\n\nHow it's seen: ${view}` : ''}${r.action ? `\n\nThe main thing you do: ${ACTIONS[r.action].label}.${ACTIONS[r.action].like ? ` (Orlis Play's ${ACTIONS[r.action].like} does something similar, if it helps to think of it.)` : ''}` : ''}${r.name ? `\n\nIts name: ${r.name}.` : ''}${r.look ? `\n\nThe look and feel: ${LOOKS[r.look]} - the colours and mood of its world and its icon.` : ''}${quote(r.words)}
 
-Keep it simple and fun for the ages given, in Orlis Play's house style, with nothing to lose and nothing scary. Fill in orlis.json (a name, a blurb, about, the moves, and an icon). When it's done, the game must pass Orlis Play's checks.`;
+Keep it simple and fun for the ages given, in Orlis Play's house style, with nothing to lose and nothing scary. Fill in orlis.json (a name, a blurb, about, the moves, an icon, and a cover: a picture of the game, as the SKILL describes). When it's done, the game must pass Orlis Play's checks.`;
 }
 
 export function requests(db, files, shop, sent, log = { add(){} }, notify = () => {}){

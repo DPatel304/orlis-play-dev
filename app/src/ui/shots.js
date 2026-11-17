@@ -4,7 +4,7 @@
    memory, and between launches; by game and version, so a new version gets
    a new cover). */
 import { still } from './trailer.js';
-import { makeCover, hasArt } from './covers.js';
+import { makeCover, hasArt, svgImage } from './covers.js';
 
 const KEY = 'orlis.covers', MAX = 24;
 const V = typeof __BUILD__ === 'string' ? __BUILD__ : 'dev';
@@ -36,24 +36,43 @@ export function keepShot(g, canvas){
   return !!made && put(g, made, false);
 }
 /* A Discover entry's cover, for its tile: one already made (it's been here
-   before, or played), else made now if there's art for it. null: no cover
-   yet (a community game not on this PC: its tile keeps its icon art). */
-export function coverFor(entry){
+   before, or played), else made now from its art (built-in games) or its
+   cover picture (a creator's: it comes with the entry, and is drawn a
+   moment later - onReady(url) then). null: no cover yet (its tile keeps its
+   icon art). */
+export function coverFor(entry, onReady = () => {}){
   const g = { id: entry.id, name: entry.name, accent: entry.icon && entry.icon.cols && entry.icon.cols[0], store: { version: entry.version } };
   const had = shotOf(g);
   if (had) return had;
-  if (!hasArt(g.id)) return null;
-  const made = makeCover(g);
-  return made && put(g, made, true) ? shotOf(g) : null;
+  if (hasArt(g.id)){
+    const made = makeCover(g);
+    return made && put(g, made, true) ? shotOf(g) : null;
+  }
+  if (entry.cover) svgImage(entry.cover).then(im => {
+    const made = im && makeCover(g, { art: im, accent: g.accent });
+    if (made && put(g, made, true)) onReady(shotOf(g));
+  });
+  return null;
 }
 /* Make the missing ones, one at a time, between frames; onShot(game) as
-   each is ready. Gives back a stop(). */
+   each is ready. Gives back a stop(). A game with a cover picture of its own
+   (a creator's, downloaded or still in Discover) gets its cover from that;
+   a downloaded one without gets it from its banner, once it's played. */
 export function makeShots(games, onShot){
-  const todo = games.filter(g => !g.sandboxed && !g.discover && !shotOf(g));
+  const mine = (g) => !hasArt(g.id) && g.store && g.store.cover;
+  const todo = games.filter(g => !shotOf(g) && (mine(g) || (!g.sandboxed && !g.discover)));
   let stopped = false;
   const next = () => {
     if (stopped || !todo.length) return;
     const g = todo.shift();
+    if (mine(g)){
+      svgImage(g.store.cover).then(im => {
+        const made = im && makeCover(g, { art: im, accent: g.accent });
+        if (made && put(g, made, true)) onShot(g);
+        if (!stopped) setTimeout(next, 120);
+      });
+      return;
+    }
     const made = hasArt(g.id) ? makeCover(g) : (() => { const s = still(g); return s && makeCover(g, { still: s, accent: g.accent }); })();
     if (made && put(g, made, true)) onShot(g);
     setTimeout(next, 120);

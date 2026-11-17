@@ -7,8 +7,8 @@ import { start } from '../src/app.js';
 import { writeOrlis, readOrlis, manifestOf } from '../src/orlis-file.js';
 
 const ICON = { cols: ['#6366f1', '#c084fc'], glyph: '<circle cx="50" cy="50" r="30" fill="#fff"/>' };
-const game = (id, { version = '1.0', code = 'postMessage({ t: "ready" });', kit = 2, blurb = 'Flap to fly', icon = ICON, name = 'Bird Hoops' } = {}) =>
-  writeOrlis({ 'manifest.json': JSON.stringify({ format: 1, kit, id, name, version, blurb, players: [1, 4], icon, by: 'Me, honest' }), 'game.js': code });
+const game = (id, { version = '1.0', code = 'postMessage({ t: "ready" });', kit = 2, blurb = 'Flap to fly', icon = ICON, name = 'Bird Hoops', cover } = {}) =>
+  writeOrlis({ 'manifest.json': JSON.stringify({ format: 1, kit, id, name, version, blurb, players: [1, 4], icon, cover, by: 'Me, honest' }), 'game.js': code });
 
 async function server(){
   const dataDir = mkdtempSync(join(tmpdir(), 'orlis-sub-'));
@@ -90,7 +90,20 @@ test("the checks: a proper game for the sandbox, reaching for nothing it shouldn
     assert.match((await no(game('a5', { code: 'eval("1")' }))).message, /made up as it runs/);
     assert.match((await no(game('a6', { blurb: '' }))).message, /what the game is/);
     assert.match((await no(game('a7', { icon: { cols: ['#000'], glyph: '<circle onload="x()"/>' } }))).message, /more than shapes/);
+    /* a cover: a picture in shapes - no words, links, images or styles; not too big */
+    assert.match((await no(game('b1', { cover: '<svg viewBox="0 0 160 100"><text x="5" y="5">Bird</text></svg>' }))).message, /cover has more than shapes/);
+    assert.match((await no(game('b2', { cover: '<svg viewBox="0 0 160 100"><image href="http://x.y/a.png"/></svg>' }))).message, /cover has more than shapes/);
+    assert.match((await no(game('b3', { cover: '<svg onload="x()"></svg>' }))).message, /cover has more than shapes/);
+    assert.match((await no(game('b4', { cover: '<svg><rect style="fill:url(http://x.y)"/><style>@import url(x)</style></svg>' }))).message, /cover has more than shapes/);
+    assert.match((await no(game('b5', { cover: 'a picture of a bird' }))).message, /must be an SVG/);
+    assert.match((await no(game('b6', { cover: '<svg>' + '<rect/>'.repeat(2000) + '</svg>' }))).message, /too big/);
     assert.equal((await call('GET', '/api/submissions', null, friend)).submissions.length, 0, 'nothing kept');
+    /* a good one goes through, gradient and all */
+    const fine = '<svg viewBox="0 0 160 100"><defs><linearGradient id="sky"><stop offset="0" stop-color="#9fd8ff"/><stop offset="1" stop-color="#fff"/></linearGradient></defs><rect width="160" height="100" fill="url(#sky)"/><circle cx="100" cy="50" r="20" fill="#f90"/></svg>';
+    const ok = await call('POST', '/api/submissions', game('b7', { cover: fine }), friend);
+    assert.equal(ok.status, 201);
+    assert.equal(manifestOf(readOrlis(game('b7', { cover: fine }))).cover, fine, 'the manifest keeps it');
+    assert.equal(manifestOf(readOrlis(game('b8', { cover: 'x'.repeat(13000) }))).cover, '', 'one too big for the Store is dropped, not cut');
   } finally { await s.close(); }
 });
 

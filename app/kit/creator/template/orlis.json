@@ -11,6 +11,7 @@
   "howto": [
     { "move": "reach", "title": "Reach", "line": "Catch the stars with your hands" }
   ],
+  "cover": "",
   "icon": {
     "cols": ["#6366f1", "#c084fc"],
     "glyph": "<path d=\"M50 12l11 25 27 3-20 18 6 27-24-14-24 14 6-27-20-18 27-3z\" fill=\"#fff\"/>"

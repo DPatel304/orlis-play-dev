@@ -147,7 +147,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   /* this week's featured, from Discover: a game already here as itself;
      one to get as a stand-in that knows its Discover entry */
   const featured = waiting ? [] : week.featured().map(e => (library.installed.has(e.id) && GAMES.find(x => x.id === e.id))
-    || { id: e.id, name: e.name, accent: (e.icon && e.icon.cols && e.icon.cols[0]) || '#6d5efc', store: { icon: e.icon, blurb: e.blurb, version: e.version }, discover: e });
+    || { id: e.id, name: e.name, accent: (e.icon && e.icon.cols && e.icon.cols[0]) || '#6d5efc', store: { icon: e.icon, blurb: e.blurb, version: e.version, cover: e.cover || '' }, discover: e });
   const ROWS = pool.length ? playRows(pool, recent(), featured) : [];
   /* (one picture and one trailer per game, wherever it shows up) */
   const paints = new Map(), trailers = new Map();

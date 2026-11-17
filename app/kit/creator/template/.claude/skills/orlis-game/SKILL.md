@@ -99,7 +99,8 @@ Don't play a sound every frame - only when something happens.
   "ages": 3,                                // the youngest it's easy for
   "tags": ["Flying", "Together"],           // up to 6; "Together" puts it in Play together
   "howto": [ { "move": "wave", "title": "Flap", "line": "Flap your arms to fly up" } ],
-  "icon": { "cols": ["#0ea5e9", "#6366f1"], "glyph": "<path d=\"...\" fill=\"#fff\"/>" }
+  "icon": { "cols": ["#0ea5e9", "#6366f1"], "glyph": "<path d=\"...\" fill=\"#fff\"/>" },
+  "cover": "<svg viewBox=\"0 0 160 100\" xmlns=\"http://www.w3.org/2000/svg\">...</svg>"
 }
 ```
 
@@ -107,6 +108,19 @@ Don't play a sound every frame - only when something happens.
 squat, wave, run, dance, together (up to 5). The icon's `glyph` is SVG on a
 100 x 100 square: white shapes only (`path`, `circle`, `rect`, `ellipse`,
 `polygon`) - no scripts, links or images.
+
+### The cover
+
+`cover` is the picture the game shows in Play and Discover: a little scene of
+the game, as one SVG string. Orlis Play puts the game's name on it, so **no
+words in the picture** (no `<text>`). Draw it on `viewBox="0 0 160 100"`
+(wide), with the main thing - the creature, the balloons, the tower - in the
+middle and right, because the name goes bottom left. Use bright, friendly
+colours, 8 to 25 shapes, from `rect`, `circle`, `ellipse`, `path`, `polygon`
+and `g`; gradients are fine (`<linearGradient>` inside `<defs>`, used as
+`fill="url(#sky)"`). No `<text>`, `<style>`, `<use>`, `<image>`, links or
+scripts. Keep it under 12,000 letters. Inside the JSON it's one line, so use
+single quotes for the SVG's attributes (`fill='#fff'`) to avoid escaping.
 
 ## Good games for little ones
 

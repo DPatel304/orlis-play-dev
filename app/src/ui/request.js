@@ -34,6 +34,11 @@ const TWIST_SAYS = { faster: 'it gets a little faster as it goes', surprise: 'a 
 export const LOOKS = { sunny: 'sunny and bright', cozy: 'warm and cozy', night: 'a starry night', candy: 'sweet candy colours', ocean: 'cool ocean blues' };
 const LOOK_COLS = { sunny: ['#ffd86b', '#ff9f6b'], cozy: ['#e8a36a', '#a45a3b'], night: ['#2a2a6b', '#7a5ad6'], candy: ['#ff8fc8', '#7fc8ff'], ocean: ['#3fc1d9', '#2f6fd8'], none: ['#8b7cff', '#4cc3e8'] };
 const LOOK_ICON = { sunny: '\u2600\ufe0f', cozy: '\u{1F3E1}', night: '\u{1F319}', candy: '\u{1F36D}', ocean: '\u{1F30A}' };
+/* the colours and symbol a request's card has (Create's Your games uses it too) */
+export const looksOf = (recipe = {}) => ({
+  cols: LOOK_COLS[recipe.look] || LOOK_COLS.none,
+  glyph: recipe.action && ACTIONS[recipe.action] ? ACTIONS[recipe.action].icon : (recipe.look ? LOOK_ICON[recipe.look] : '\u2728')
+});
 const PLACES = ['a meadow', 'outer space', 'under the sea', 'a jungle', 'snowy hills', 'a kitchen', 'a castle', 'a city at night'];
 export const CHIPS = { easier: 'Easier', harder: 'Harder', slower: 'Slower', faster: 'Faster', sillier: 'Sillier', longer: 'Longer', two: 'Add a second player', colours: 'Different colours' };
 const CHIP_SAYS = { easier: 'make it easier', harder: 'make it harder', slower: 'make it slower', faster: 'make it faster', sillier: 'make it sillier', longer: 'make it last longer', two: 'add a second player', colours: 'use different colours' };

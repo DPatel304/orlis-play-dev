@@ -14,7 +14,8 @@ The idea: {{idea}}
   comes from the `Orlis` object. It ends with `Orlis.run({ ... })`.
 - **`orlis.json`** - what the Store shows: name, a one-line `blurb`, a longer
   `about`, `players`, `uses` (`"hands"` or `"body"`), `ages`, `tags`, `howto`
-  (the moves), and `icon` (two colours and a simple white SVG picture).
+  (the moves), `icon` (two colours and a simple white SVG picture), and
+  `cover` (a picture of the game, as an SVG - see the **orlis-game** skill).
 
 Edit only these two. Everything else in this folder is Orlis Play's (these
 instructions, `.claude/`) and is protected - don't try to change it.

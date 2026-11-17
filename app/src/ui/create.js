@@ -28,7 +28,9 @@ import { unpack, check, build, pack, nextVersion } from './creator-kit.js';
 import { newer } from './store.js';
 import { library } from './library.js';
 import { PAPER } from './boot.js';
-import { gameBuilder, changePop } from './request.js';
+import { gameBuilder, changePop, looksOf } from './request.js';
+import { previewCover } from './covers.js';
+import { coverFor } from './shots.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* how a requested game is going, as whoever asked sees it */
@@ -389,9 +391,10 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     /* everything it needs first; then, if a newer draw started meanwhile,
        leave it to that one - so overlapping draws never double anything */
     const me = ++drawing;
-    const [waiting, sent, asked, ok] = await Promise.all([kit ? outbox.list() : [], kit ? outbox.sent() : [],
+    const [waiting, sent, asked, ok, shop] = await Promise.all([kit ? outbox.list() : [], kit ? outbox.sent() : [],
       account.call('GET', '/api/requests').then(r => { slots = r.slots || null; return r.requests || []; }, () => null),
-      kit && making.available && claudeOk === null ? setup.status().then(claudeConnected) : claudeOk]);
+      kit && making.available && claudeOk === null ? setup.status().then(claudeConnected) : claudeOk,
+      store_()]);
     if (me !== drawing) return;
     if (ok !== null) claudeOk = ok;
     btns.innerHTML = '';
@@ -409,17 +412,31 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
       if (asked === null) sec.appendChild(h('p', 'cempty', 'Can’t reach the Orlis server right now.'));
       else if (!asked.length) sec.appendChild(h('p', 'cempty', 'None yet.'));
       else {
-        const list = h('div', 'clist');
+        const list = h('div', 'ygrid');
         for (const x of asked.filter(x => x.state !== 'withdrawn')){
           const [label, cls] = ASKED[x.state] || [x.state, ''];
-          const r = h('div', 'citem');
+          const recipe = x.recipe || {};
+          const name = (x.game && x.game.name) || (recipe.name || '').trim() || 'Your game';
+          /* its cover: the real one once it's in Discover with one; until then, the card it'll be - the look they chose, what you do, its name */
+          const entry = x.gameId ? shop.find(g => g.id === x.gameId) : null;
+          const cover = h('div', 'ycover');
+          const dress = (url) => { cover.style.backgroundImage = `url(${url})`; };
+          const real = entry ? coverFor(entry, dress) : null;
+          if (real) dress(real);
+          else {
+            const cv = document.createElement('canvas'); cv.width = 640; cv.height = 400;
+            try { const lk = looksOf(recipe); previewCover(cv, { name, cols: lk.cols, glyph: lk.glyph }); dress(cv.toDataURL('image/jpeg', 0.85)); } catch (e){}
+          }
+          const r = h('div', 'citem ycard');
           const when = new Date(x.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
-          r.append(h('div', 'cask', `${x.game ? `<b>${esc(x.game.name)}</b> ` : ''}<span class="csent">${esc(x.sentence)}</span><small>${esc(when)}${x.note ? ` · “${esc(x.note)}”` : ''}</small>`));
+          const body_ = h('div', 'ybody');
+          body_.append(h('div', 'cask', `${x.game ? `<b>${esc(x.game.name)}</b> ` : ''}<span class="csent">${esc(x.sentence)}</span><small>${esc(when)}${x.note ? ` · “${esc(x.note)}”` : ''}</small>`));
           const end = h('div', 'cend');
           if (x.state === 'waiting') end.appendChild(btn('Take back', async () => { try { await account.call('DELETE', `/api/requests/${x.id}`); said = 'Taken back.'; } catch (e){ said = e.message; bad = true; } draw(); }, 'quiet'));
           if (x.state === 'in-store' && x.gameId && x.game) end.appendChild(btn('Change it', () => { sfx.select(); changePop({ game: { id: x.gameId, name: x.game.name }, send: sendAsk, onDone: () => draw() }); }, 'quiet'));
           end.appendChild(h('span', `cstate ${cls}`, esc(label)));
-          r.appendChild(end);
+          body_.appendChild(end);
+          r.append(cover, body_);
           list.appendChild(r);
         }
         sec.appendChild(list);
@@ -438,8 +455,13 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
           const b = button('', 'slock');
           const meta = h('div', 'smeta');
           meta.append(L.icon('sicon'), h('div', 'stxt', `<div class="nm">${esc(g.manifest.name)}</div><div class="sub">${esc(g.manifest.blurb || '')}</div>`));
-          b.insertBefore(L.art('sthumb'), b.firstChild);
+          const thumb = L.art('sthumb');
+          b.insertBefore(thumb, b.firstChild);
           b.querySelector('.lbl').replaceWith(meta);
+          /* its cover, if it has one (the title's on the art) */
+          const dress = (url) => { thumb.style.backgroundImage = `url(${url})`; thumb.classList.add('shot'); b.classList.add('covered'); };
+          const cv = coverFor({ id: g.manifest.id, name: g.manifest.name, version: g.manifest.version, icon: g.manifest.icon, cover: g.manifest.cover }, dress);
+          if (cv) dress(cv);
           onPick(b, () => gamePop(g));
           shelf.appendChild(b);
         }

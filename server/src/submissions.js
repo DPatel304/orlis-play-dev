@@ -12,7 +12,7 @@
    tries it (in Orlis Play's Store, "Waiting for your OK") and approves it,
    or declines it with a note for the creator. Approved, it goes into the
    Store, made by the creator's family. */
-import { readOrlis, writeOrlis, manifestOf, sha256 } from './orlis-file.js';
+import { readOrlis, writeOrlis, manifestOf, sha256, COVER_MAX, UNSAFE_COVER } from './orlis-file.js';
 import { badWords } from './words.js';
 import { Fail, Raw } from './http.js';
 import { now } from './db.js';
@@ -65,6 +65,13 @@ export function checkGame(bytes){
   if (said.length) problems.push(`it has words that aren't for children (${said.join(', ')})`);
   if (!m.blurb) problems.push('it needs a line saying what the game is');
   if (m.icon && UNSAFE_PICTURE.test(m.icon.glyph)) problems.push('its picture has more than shapes in it');
+  /* its cover: a picture in shapes, no words in it, not too big */
+  const rawCover = (() => { try { return JSON.parse(parts['manifest.json'].toString('utf8')).cover; } catch { return undefined; } })();
+  if (rawCover !== undefined && rawCover !== ''){
+    if (typeof rawCover !== 'string' || !/^\s*<svg[\s>]/i.test(rawCover)) problems.push('its cover must be an SVG picture');
+    else if (rawCover.length > COVER_MAX) problems.push('its cover picture is too big');
+    else if (UNSAFE_COVER.test(rawCover)) problems.push('its cover has more than shapes in it (no words, links or images)');
+  }
   if (problems.length) throw new Fail(400, 'checks', `It didn't pass the checks: ${problems.join('; ')}.`, );
   return { parts, manifest: m };
 }

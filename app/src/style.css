@@ -1459,3 +1459,12 @@ body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
 .builder{ max-width:none; margin:-2vh 0 4vh; }
 .createpage .shero.mini{ height:19vh; }
 .builder{ margin:0 0 4vh; }
+
+/* ---- Create: Your games, as cards with their covers ---- */
+.ygrid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(36vh, 1fr)); gap:2.4vh; max-width:140vh; }
+.citem.ycard{ display:block; padding:0; overflow:hidden; border-radius:2.2vh; gap:0; }
+.ycover{ aspect-ratio:16/10; background:#eceef4 center/cover no-repeat; }
+.ybody{ padding:1.5vh 2vh 1.8vh; }
+.ybody .cask .csent{ display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; font-size:.9em; }
+.ybody .cask b{ display:block; font-size:1.1em; margin-bottom:.3vh; }
+.ybody .cend{ margin-top:1.4vh; justify-content:space-between; flex-wrap:wrap; }

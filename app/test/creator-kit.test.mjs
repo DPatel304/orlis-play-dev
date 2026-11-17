@@ -56,6 +56,12 @@ test('the checks: the starter passes; reaching for the internet, a broken orlis.
   assert.match(check({ game: 'import x from "y"; Orlis.run({})', manifest: g.files['orlis.json'] }).join(), /no import or export/);
   assert.match(check({ game: g.files['game.js'], manifest: '{ "id": "a", // no\n }' }).join(), /not valid JSON/);
   assert.match(check({ game: g.files['game.js'], manifest: { ...JSON.parse(g.files['orlis.json']), icon: { glyph: '<a href="x">' } } }).join(), /simple shapes/);
+  const withCover = (cover) => check({ game: g.files['game.js'], manifest: { ...JSON.parse(g.files['orlis.json']), cover } }).join();
+  assert.equal(withCover(''), '', 'no cover yet is fine');
+  assert.equal(withCover('<svg viewBox="0 0 160 100"><circle cx="80" cy="50" r="30" fill="#f90"/></svg>'), '', 'a cover in shapes is fine');
+  assert.match(withCover('<svg><text>Hi</text></svg>'), /no words/);
+  assert.match(withCover('<svg><image href="x"/></svg>'), /shapes only/);
+  assert.match(withCover('just words'), /must be an SVG/);
   assert.equal(idOf('  ¡Hola, Mundo!  '), 'hola-mundo');
   assert.equal(idOf('A'), 'game-a');
 });

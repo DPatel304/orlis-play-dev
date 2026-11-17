@@ -73,6 +73,9 @@ export function readOrlis(buf){
 }
 
 /* The manifest, checked: what the server lists and the app relies on. */
+export const COVER_MAX = 12000;
+/* what a cover can't have: anything that could run or fetch, and any words (text) */
+export const UNSAFE_COVER = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*image|<\s*style|<\s*text|<\s*tspan|<\s*use\b|url\(\s*['"]?(?!#)/i;
 const ID = /^[a-z0-9][a-z0-9-]{1,40}$/, VER = /^\d+\.\d+(\.\d+)?$/;
 export function manifestOf(files){
   if (!files['manifest.json'] || !files['game.js']) throw new Error('missing manifest.json or game.js');
@@ -86,6 +89,8 @@ export function manifestOf(files){
     format: m.format, id: m.id, name: m.name.trim(), version: m.version, kit: m.kit || 1,
     blurb: String(m.blurb || '').slice(0, 140), players: m.players || [1, 4],
     icon: m.icon && typeof m.icon === 'object' ? { cols: (m.icon.cols || []).slice(0, 2), glyph: String(m.icon.glyph || '').slice(0, 4000) } : null,
+    /* its cover: a picture (SVG, 160 x 100, no words) - the title is put on it by Orlis Play */
+    cover: typeof m.cover === 'string' && m.cover.length <= COVER_MAX ? m.cover : '',
     by: String(m.by || '').slice(0, 60),
     /* one new games in Create can start from (set by the server: the owner's own) */
     starter: m.starter === true,

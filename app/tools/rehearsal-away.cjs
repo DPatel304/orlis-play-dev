@@ -112,7 +112,7 @@ async function newGame(pg, name, idea){
   await pg.keyboard.press('Escape');
   return pg.evaluate(() => window.__claudeAsked.folder);
 }
-async function openGame(pg, name){ await tab(pg, 'Create'); await pg.click(`.slock >> text=${name}`); await pg.waitForTimeout(700); }
+async function openGame(pg, name){ await tab(pg, 'Create'); await pg.click(`.slock:has(.nm:text-is(${JSON.stringify(name)}))`); await pg.waitForTimeout(700); }
 async function sendIt(pg, name){
   await openGame(pg, name);
   await pg.click('.fpop .btn >> text=Check and send'); await pg.waitForTimeout(3000);
@@ -229,7 +229,7 @@ function claude(files, prompt){
   await own.waitForSelector('.tvtop', { timeout: 20000 });
   async function ownerTries(){
     await tab(own, 'Discover'); await own.waitForTimeout(1000);
-    await own.click('.slock >> text=Firefly Jar >> nth=0'); await own.waitForTimeout(800);
+    await own.click('.slock:has(.nm:text-is("Firefly Jar")) >> nth=0'); await own.waitForTimeout(800);
     await own.click('.sbtn >> text=Try it'); await own.waitForTimeout(2500);
     await own.evaluate(() => window.__fakeOn()); await own.waitForTimeout(32000);
     await own.keyboard.press('Escape'); await own.waitForTimeout(500);
@@ -297,7 +297,7 @@ function claude(files, prompt){
   await cz.click('.sbtn >> text=Update to 0.3'); await cz.waitForTimeout(3000);
   check(await have() === '0.3', 'they have 0.3 now');
   await tab(cz, 'Play');
-  await cz.click('.slock >> text=Firefly Jar >> nth=0'); await cz.waitForTimeout(3000);
+  await cz.click('.slock:has(.nm:text-is("Firefly Jar")) >> nth=0'); await cz.waitForTimeout(3000);
   await cz.evaluate(() => window.__fakeOn()); await cz.waitForTimeout(10000);
   const p3 = await cz.evaluate(() => { const i = window.__round && window.__round(); return i ? { failed: i.failed || null } : null; });
   check(p3 && !p3.failed, 'and it plays');

@@ -39,7 +39,7 @@ async function start(rec){
   if ((rec.manifest.kit || 1) !== KIT) throw Object.assign(new Error('built for another kit'), { stale: true });
   const g = await sandboxed(rec);
   /* what the Store said about it, for the home screen */
-  g.store = { version: rec.version, blurb: rec.manifest.blurb, icon: rec.manifest.icon };
+  g.store = { version: rec.version, blurb: rec.manifest.blurb, icon: rec.manifest.icon, cover: rec.manifest.cover || '' };
   return g;
 }
 function place(g){

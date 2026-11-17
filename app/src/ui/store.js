@@ -218,8 +218,9 @@ export function storePage({ nav = {}, onPlay, onChange = () => {}, onWho, onReca
     const b = button('', 'slock');
     const thumb = L.art('sthumb');
     /* its cover (the title's on the art), when there is one yet */
-    const cv = coverFor(g);
-    if (cv){ thumb.style.backgroundImage = `url(${cv})`; thumb.classList.add('shot'); b.classList.add('covered'); }
+    const dress = (url) => { thumb.style.backgroundImage = `url(${url})`; thumb.classList.add('shot'); b.classList.add('covered'); };
+    const cv = coverFor(g, dress);
+    if (cv) dress(cv);
     thumb.insertAdjacentHTML('beforeend', badge(g));
     const meta = h('div', 'smeta');
     meta.append(L.icon('sicon'), h('div', 'stxt', `<div class="nm">${esc(g.name)}</div><div class="sub">${esc(KIND(g))}</div>`));

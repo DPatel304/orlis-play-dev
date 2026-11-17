@@ -152,7 +152,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   log('\n6. He tries it on his TV');
   await goTo(bro, 'Play').catch(() => {}); await bro.waitForTimeout(800);
   await goTo(bro, 'Create'); await bro.waitForTimeout(1500);
-  await bro.click(`.slock >> text=${JSON.parse(manifest).name}`); await bro.waitForTimeout(600);
+  await bro.click(`.slock:has(.nm:text-is(${JSON.stringify(JSON.parse(manifest).name)}))`); await bro.waitForTimeout(600);
   await bro.click('.fpop .btn >> text=Try it'); await bro.waitForTimeout(2500);
   await bro.evaluate(() => window.__fakeOn());
   await bro.waitForTimeout(15000);
@@ -171,7 +171,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await bro.evaluate((f) => { window.__good = window.__fs[f]['game.js']; window.__fs[f]['game.js'] += '\nfetch("https://example.com/collect");\n'; }, folder);
   await goTo(bro, 'Play').catch(() => {}); await bro.waitForTimeout(600);
   await goTo(bro, 'Create'); await bro.waitForTimeout(1500);
-  await bro.click(`.slock >> text=${JSON.parse(manifest).name}`); await bro.waitForTimeout(600);
+  await bro.click(`.slock:has(.nm:text-is(${JSON.stringify(JSON.parse(manifest).name)}))`); await bro.waitForTimeout(600);
   await bro.click('.fpop .btn >> text=Check and send'); await bro.waitForTimeout(1500);
   const said = await txt(bro, '.fpop');
   check(/internet|fetch|can.t|problem/i.test(said), 'refused, with a plain reason: ' + said.slice(0, 160));
@@ -183,7 +183,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   log('\n8. He checks and sends the good one (on the home Wi-Fi: it goes straight away)');
   await goTo(bro, 'Play').catch(() => {}); await bro.waitForTimeout(600);
   await goTo(bro, 'Create'); await bro.waitForTimeout(1500);
-  await bro.click(`.slock >> text=${JSON.parse(manifest).name}`); await bro.waitForTimeout(600);
+  await bro.click(`.slock:has(.nm:text-is(${JSON.stringify(JSON.parse(manifest).name)}))`); await bro.waitForTimeout(600);
   await bro.click('.fpop .btn >> text=Check and send'); await bro.waitForTimeout(3000);
   log('    app says: ' + (await txt(bro, '.toast')).slice(0, 160));
   const subs = await api('GET', '/api/submissions?all=1', null, owner.token);
@@ -202,7 +202,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   const keyFile = path.join(data, 'manage.key'), key = fs.readFileSync(keyFile, 'utf8').trim();
   const early = await api('POST', `/api/submissions/${sub.id}/approve`, null, null, { 'X-Orlis-Manage': key });
   check(early.status >= 400, 'approving before playing it is refused');
-  await own.click(`.slock >> text=${sub.name}`); await own.waitForTimeout(800);
+  await own.click(`.slock:has(.nm:text-is(${JSON.stringify(sub.name)}))`); await own.waitForTimeout(800);
   await own.click('.sbtn >> text=Try it'); await own.waitForTimeout(2500);
   await own.evaluate(() => window.__fakeOn());
   await own.waitForTimeout(30000);
@@ -246,7 +246,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await goTo(cz, 'Play').catch(() => {}); await cz.click('.sbtn.back').catch(() => {}); await cz.waitForTimeout(500);
   await goTo(cz, 'Play').catch(() => {}); await cz.waitForTimeout(1500);
   check((await txt(cz, '.shelves')).includes(inStore.name), 'it is on their Home');
-  await cz.click(`.slock >> text=${inStore.name}`); await cz.waitForTimeout(3000);
+  await cz.click(`.slock:has(.nm:text-is(${JSON.stringify(inStore.name)}))`); await cz.waitForTimeout(3000);
   await cz.evaluate(() => window.__fakeOn());
   await cz.waitForTimeout(12000);
   const playing = await cz.evaluate(() => { const i = window.__round && window.__round(); return i ? { sandboxed: !!i.box, failed: i.failed || null } : null; });

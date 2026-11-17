@@ -19,6 +19,9 @@ import { KIT } from '../kit.js';
 export { FORBIDDEN, WORDS };
 const ID = /^[a-z0-9][a-z0-9-]{1,40}$/, VER = /^\d+\.\d+(\.\d+)?$/;
 const UNSAFE_PICTURE = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*image/i;
+/* a cover: an SVG picture in shapes - no words, links or images (the same rule as the server's) */
+const UNSAFE_COVER = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*image|<\s*style|<\s*text|<\s*tspan|<\s*use\b|url\(\s*['"]?(?!#)/i;
+const COVER_MAX = 12000;
 export const EDITABLE = ['game.js', 'orlis.json'];
 
 /* a game's id, from its name: "Bird Hoops!" -> "bird-hoops" */
@@ -101,6 +104,11 @@ export function check({ game, manifest }){
     if (!m.blurb) problems.push('orlis.json: "blurb" is needed - one line saying what the game is.');
     if (m.uses && !['hands', 'body'].includes(m.uses)) problems.push('orlis.json: "uses" is "hands" or "body".');
     if (m.icon && UNSAFE_PICTURE.test(m.icon.glyph || '')) problems.push('orlis.json: the icon picture must be simple shapes only.');
+    if (m.cover !== undefined && m.cover !== ''){
+      if (typeof m.cover !== 'string' || !/^\s*<svg[\s>]/i.test(m.cover)) problems.push('orlis.json: "cover" must be an SVG picture (starting with <svg).');
+      else if (m.cover.length > COVER_MAX) problems.push(`orlis.json: the cover picture is too big (keep it under ${COVER_MAX} letters).`);
+      else if (UNSAFE_COVER.test(m.cover)) problems.push('orlis.json: the cover must be shapes only - no words (<text>), links, images or styles.');
+    }
   } else if (manifest == null) problems.push('orlis.json is missing.');
   /* words no game for children has: in the code (even its names and
      comments), on screen, or in the Store's text */
