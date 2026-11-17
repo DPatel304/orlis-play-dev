@@ -44,14 +44,10 @@ export const looksOf = (recipe = {}) => ({
 export const CHIPS = { easier: 'Easier', harder: 'Harder', slower: 'Slower', faster: 'Faster', sillier: 'Sillier', longer: 'Longer', two: 'Add a second player', colours: 'Different colours' };
 const CHIP_SAYS = { easier: 'make it easier', harder: 'make it harder', slower: 'make it slower', faster: 'make it faster', sillier: 'make it sillier', longer: 'make it last longer', two: 'add a second player', colours: 'use different colours' };
 export const WORDS = 500;
-const DRAFT = 'orlis.requestDraft';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const count = (s) => ((s || '').match(/\S+/g) || []).length;
 const blank = () => ({ at: null, start: null, like: null, name: '', view: 'hands', action: null, thing: '', place: '', twists: [], ages: '4-6', energy: 'bouncy', minutes: SHORT, players: 2, look: null, words: '' });
-const load = () => { try { return { ...blank(), ...(JSON.parse(localStorage.getItem(DRAFT)) || {}) }; } catch { return blank(); } };
-const keep = (r) => { try { localStorage.setItem(DRAFT, JSON.stringify(r)); } catch {} };
-const drop = () => { try { localStorage.removeItem(DRAFT); } catch {} };
 
 /* The one-sentence sum-up - the same words the server keeps. */
 export function sentence(r, { likeName = null } = {}){
@@ -119,11 +115,11 @@ const LOOK_WORD = { sunny: 'Sunny', cozy: 'Cozy', night: 'Night', candy: 'Candy'
    is where it goes; it keeps a draft; onDone() when they're finished with it
    (after sending), onPlay() to go and see it on Play. */
 export function gameBuilder({ host, store = async () => [], send, onDone = () => {}, onOpen = () => {}, onPlay = null }){
-  let r = load(), games = null, step = 'start', reach = 0, round = { thing: 0, name: 0 };
+  let r = blank(), games = null, step = 'start', reach = 0, round = { thing: 0, name: 0 };
   const root = h('section', 'builder'); host.prepend(root);
   const close = () => { root.remove(); onDone(); };
   const likeName = () => (games || []).find(g => g.id === r.like)?.name || null;
-  const set = (patch) => { r = { ...r, ...patch }; keep(r); };
+  const set = (patch) => { r = { ...r, ...patch }; };
   let pools = {};   /* the shuffled suggestions, per action */
   const poolFor = (a) => pools[a] || (pools[a] = shuffled(ACTIONS[a].things));
 
@@ -133,8 +129,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   /* the ones that can be skipped, and whether they've been answered (else the pill says Skip) */
   const optional = (s) => ['thing', 'look', 'name', 'words'].includes(s) || (s === 'action' && r.start === 'like');
   const answered = (s) => s === 'thing' ? !!r.thing.trim() : s === 'look' ? !!r.look : s === 'name' ? !!r.name.trim() : s === 'words' ? !!r.words.trim() : s === 'action' ? !!r.action : true;
-  if (r.start){ const o = order(); step = o.includes(r.at) && r.at !== 'start' ? r.at : o[1]; reach = o.indexOf(step); }
-  const go = (s, quiet) => { step = s; reach = Math.max(reach, order().indexOf(s)); set({ at: s }); if (!quiet) sfx.select?.(); draw(); };
+  const go = (s, quiet) => { step = s; reach = Math.max(reach, order().indexOf(s)); if (!quiet) sfx.select?.(); draw(); };
   const next = () => { const o = order(); go(o[Math.min(o.length - 1, o.indexOf(step) + 1)]); };
   const up = () => { const o = order(), i = o.indexOf(step); if (i > 0) go(o[i - 1]); };
 
@@ -235,7 +230,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     side.appendChild(list);
     return side;
   };
-  let landed = null, busy = false, blueMade = !!r.action && !!r.at && r.at !== 'action';
+  let landed = null, busy = false, blueMade = false;
   /* an answer is built into the list: its card lifts off, flies across and lands as a brick; then the next question rises */
   function fly(el){
     const to = root.querySelector('.bst.now .bdot');
@@ -373,7 +368,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
         go_.classList.add('busy'); err.textContent = '';
         try {
           await send({ start: r.start === 'surprise' ? 'new' : r.start, like: r.like, name: r.name, view: 'hands', action: r.action, thing: r.thing, place: '', twists: [], ages: '4-6', energy: 'bouncy', minutes: r.minutes, players: 2, look: r.look, words: r.words });
-          drop(); sfx.gold?.(); sent();
+          sfx.gold?.(); sent();
         } catch (e){ go_.classList.remove('busy'); err.textContent = e.message || 'That didn’t send.'; }
       });
       side.append(err, go_);

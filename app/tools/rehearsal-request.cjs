@@ -105,10 +105,6 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   await tap(pg, '.bst.ok:has-text("Its name")');
   check((await txt(pg, '.bh')) === 'What’s it called?', 'tapping a brick goes back to that question');
   await tap(pg, '.bdown');
-  /* away to Play and back: the draft keeps */
-  await goTo(pg, 'Play'); await pg.waitForTimeout(1500);
-  await goTo(pg, 'Create'); await pg.waitForSelector('.builder'); await pg.waitForTimeout(1200);
-  check((await pg.inputValue('.bwords').catch(() => '')).includes('jar is full'), 'back on Create: it carries on where it was, words and all');
   await tap(pg, '.bdown');
   check((await txt(pg, '.bh')) === 'Ready?', 'review');
   check((await txt(pg, '.reqquote')).includes('jar is full'), 'their words, shown back');
@@ -132,6 +128,11 @@ const tap = async (pg, sel) => { await pg.click(sel); await pg.waitForTimeout(se
   check(/dragon/.test(list.requests[0].sentence) && /3 minutes/.test(list.requests[0].sentence) && list.requests[0].recipe.view === 'hands', 'with what was picked: ' + list.requests[0].sentence);
   await tap(pg, '.bpill >> text=Make another');
   check((await txt(pg, '.bh')) === 'How do you want to start?', 'Make another starts a fresh flow');
+  /* leave half way and come back: always the first question, nothing kept */
+  await tap(pg, '.bcard >> text=Make something new');
+  await goTo(pg, 'Play'); await pg.waitForTimeout(1500);
+  await goTo(pg, 'Create'); await pg.waitForSelector('.builder'); await pg.waitForTimeout(1200);
+  check((await txt(pg, '.bh')) === 'How do you want to start?' && (await pg.$$('.bst.ok')).length === 0, 'back on Create it always opens on how do you want to start');
 
   log('\n3. Surprise me, then it shows on Play under construction');
   await tap(pg, '.bcard >> text=Surprise me');
