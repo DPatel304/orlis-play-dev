@@ -1,4 +1,5 @@
 import './old-names.js';   /* (first: the old Astra Park settings, moved to their Orlis names) */
+import { week } from './ui/week.js';
 import { toast } from './ui/toast.js';
 import { pose } from './tracking/pose.js';
 import { cursor, inFront } from './ui/cursor.js';
@@ -80,7 +81,9 @@ function toMenu(arrive = false){
   voice.hush();
   if (mode === 'results' || mode === 'play' || mode === 'outro') sfx.back();
   pose.keepSitters = false;
-  go('menu', () => menu({ onPlay: toGame, onRecalibrate: toCalibration, onWho: () => toWho(false), nav: tabs(), arrive }));
+  go('menu', () => menu({ onPlay: toGame, onRecalibrate: toCalibration, onWho: () => toWho(false), nav: tabs(), arrive,
+    /* (this week's featured games and challenges came in, or changed: shown) */
+    onFresh: () => { if (mode === 'menu') toMenu(false); } }));
 }
 /* The tabs along the top: Home, the Store, Create. */
 function tabs(){ return { home: () => toMenu(false), store: toStore, create: toCreate, family: toFamily }; }
@@ -201,6 +204,9 @@ function showResults(){
   music.intensity(0.2);
   /* Bests are still kept - the menu tiles show them - just not announced. */
   scores.record(game.id, Math.max(1, joined.size), inst.value());
+  /* told to the family's server, for this week's challenges (not a game
+     being tried out - from Create, or waiting for the owner's OK) */
+  if (!game.back && !game.trial) week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) });
   /* (a game being tried goes back where it came from: Create) */
   go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'All games'));
 }
@@ -477,7 +483,7 @@ const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : nul
   requestAnimationFrame(tick);
   pose.setVideo(video, { forceMouse: debug });
   window.__pose = pose; window.__cursor = cursor; window.__music = music;   /* handles for tests; harmless in play */
-  window.__round = () => inst; window.__library = library; window.__outbox = outbox;
+  window.__round = () => inst; window.__finish = () => { roundLeft = 0; }; window.__library = library; window.__outbox = outbox;
   holdScreen();
   show.camReady = true;
   await new Promise(res => {

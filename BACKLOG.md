@@ -109,6 +109,40 @@ What's been decided, so it isn't only in chat. Newest last within each part.
   description, a check for well-known game and character names, and no
   recreations of existing games.
 
+- **Coming back each week (built):** Play's *Featured this week* is games
+  from Discover, a new few every Monday (the owner can pin one to keep it
+  there); three *family challenges* a week, reached together, a trophy for
+  each, reset every Monday with nothing lost for a missed week; *Jump back
+  in*; moving previews. Deliberately not: streaks that punish a missed day,
+  random prizes, endless autoplay, countdowns aimed at kids.
+
+## Following a creator (to think through)
+
+The idea: follow someone who makes games, and their new ones come to you.
+Open questions before building:
+
+- **Who can be followed?** Only people in your own family's server today;
+  later, with the one-service-for-many-families version, creators in other
+  families too. Probably creators only (Creator rank), never children's
+  profiles by name outside the family.
+- **Who follows?** The account (a grown-up), or each profile (a kid follows
+  their favourite)? Kids following kids across families needs a parent's
+  OK and probably stays family-only.
+- **What following gives you:** a *New from Mia* row on Play when there's
+  something new; the newest game from each followed creator in Featured; a
+  small note on the results screen ("Mia made 2 more games").
+- **A creator's page:** their games, newest first, how many families
+  played them; a Follow button. Reached from a game's page in Discover
+  ("by Mia").
+- **For creators:** how many follow them - kept gentle (no public
+  follower counts for children?), and a reason to make another game.
+- **Safety:** no messages, comments or chat between followers and
+  creators; display names only; the owner can remove a follow; the word
+  filter on names.
+- **Ties in with:** Creator ranks (followers as a milestone?), Featured
+  (followed creators' new games first), and the weekly rhythm (a Monday
+  "new this week from people you follow").
+
 ## Creator mode
 
 From the VibeBox concept (worked out together with a friend, who is doing

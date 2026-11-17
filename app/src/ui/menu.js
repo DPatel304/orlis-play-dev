@@ -10,6 +10,9 @@ import { remote } from './remote.js';
 import { trailer } from './trailer.js';
 import { topBar } from './tabs.js';
 import { account } from './account.js';
+import { week } from './week.js';
+import { library } from './library.js';
+import { toast } from './toast.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -96,16 +99,18 @@ const remember = (id) => { try { localStorage.setItem(LAST, id); } catch {} };
 const RECENT = 'orlis.recent';
 export const recent = () => { try { const r = JSON.parse(localStorage.getItem(RECENT)); return Array.isArray(r) ? r : []; } catch { return []; } };
 export function played(id){ try { localStorage.setItem(RECENT, JSON.stringify([id, ...recent().filter(x => x !== id)].slice(0, 8))); } catch {} }
-/* Featured: games from Discover first (newest), then these. */
+/* Featured, when the family's server can't say this week's: these. */
 export const FEATURED = ['pop-party', 'sky-painter', 'last-known-position', 'stack-it-high', 'sleepy-bear', 'leaf-pile'];
-/* Play's rows, from the games on this PC: Jump back in (if anything's been
-   played), Featured (once there are enough games for it to mean something),
-   and All, A-Z. The same game can be in more than one. */
-export function playRows(pool, lately = recent()){
+/* Play's rows: Jump back in (if anything's been played), Featured this week
+   (the server's pick from Discover - games to get - else a few from this
+   PC, once there are enough to mean something), and All, A-Z. The same
+   game can be in more than one. */
+export function playRows(pool, lately = recent(), featured = []){
   const byId = new Map(pool.map(g => [g.id, g])), rows = [];
   const back = lately.map(id => byId.get(id)).filter(Boolean).slice(0, 6);
   if (back.length) rows.push({ id: 'back', title: 'Jump back in', games: back });
-  if (pool.length > 3){
+  if (featured.length) rows.push({ id: 'featured', title: 'Featured this week', games: featured.slice(0, 6) });
+  else if (pool.length > 3){
     const feat = [...pool.filter(g => g.store), ...FEATURED.map(id => byId.get(id)).filter(Boolean)];
     rows.push({ id: 'featured', title: 'Featured', games: feat.filter((g, i) => feat.indexOf(g) === i).slice(0, 6) });
   }
@@ -124,7 +129,7 @@ export const CREATE_SOON = {
 };
 
 /* nav: { home(), store(), create() } - the tabs in the top bar. */
-export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false }){
+export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh = null }){
   clearUI();
   const s = screen('tvhome homepage onhero' + (arrive ? ' arrive' : ''));
 
@@ -137,7 +142,11 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
   /* (waiting to be let in: the starter games only) */
   const waiting = account.waiting;
   const pool = GAMES.filter(g => !HIDDEN.has(g.id) && (!waiting || STARTER_GAMES.includes(g.id)));
-  const ROWS = pool.length ? playRows(pool) : [];
+  /* this week's featured, from Discover: a game already here as itself;
+     one to get as a stand-in that knows its Discover entry */
+  const featured = waiting ? [] : week.featured().map(e => (library.installed.has(e.id) && GAMES.find(x => x.id === e.id))
+    || { id: e.id, name: e.name, accent: (e.icon && e.icon.cols && e.icon.cols[0]) || '#6d5efc', store: { icon: e.icon, blurb: e.blurb }, discover: e });
+  const ROWS = pool.length ? playRows(pool, recent(), featured) : [];
   /* (one picture and one trailer per game, wherever it shows up) */
   const paints = new Map(), trailers = new Map();
   const entry = (g, shelf) => {
@@ -200,6 +209,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
   };
   const cards = items.map((it, n) => {
     const { card, pic } = gameCard(it);
+    /* (one from Discover, not on this PC yet) */
+    if (it.g.discover) card.insertAdjacentHTML('beforeend', '<span class="getpill">\u2193 Get</span>');
     onPick(card, () => choose(n));
     card.addEventListener('mouseenter', () => { if (!going && !bar.menuOpen) move(n); });
     card.addEventListener('remotefocus', () => move(n));
@@ -218,6 +229,25 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
     const last = rows[rows.length - 1].row;
     last.appendChild(extraTile('<span class="gridglyph"><i></i><i></i><i></i><i></i></span>', 'See all', () => allGames()));
     if (nav.store) last.appendChild(extraTile('+', 'Get more games', () => nav.store()));
+  }
+
+  /* this week's family challenges, just above All: goals everyone works
+     on together, new every Monday (and a trophy for each one done) */
+  const ch = week.challenges;
+  /* (not while waiting to be let in: they'd name games not here yet) */
+  if (!waiting && ch && ch.challenges && ch.challenges.length && rows.length){
+    const sec = h('section', 'shelf challenges');
+    const head = h('h3', '', 'This week\u2019s challenges');
+    head.appendChild(h('span', 'chmore', `${ch.trophies ? `\u{1F3C6} ${ch.trophies} \u00b7 ` : ''}New every Monday`));
+    const row = h('div', 'chrow');
+    for (const c of ch.challenges){
+      const d = h('div', 'chcard' + (c.done ? ' done' : ''),
+        `<div class="chtitle"></div><div class="chbar"><i style="width:${Math.round(100 * c.have / c.need)}%"></i></div><div class="chfoot"><span>${c.have} / ${c.need}</span><span>${c.done ? '\u{1F3C6} Done!' : ''}</span></div>`);
+      d.querySelector('.chtitle').textContent = c.title;
+      row.appendChild(d);
+    }
+    sec.append(head, row);
+    wrap.insertBefore(sec, rows[rows.length - 1].sec);
   }
 
   /* All games: a grid of every game, with a filter along the top */
@@ -280,16 +310,28 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
     if (to === focus) return;
     focus = to; lastFocus = to; remember(items[to].g.id); sfx.nav(); ambience.lift(); show();
   }
-  /* A pick goes straight in. */
-  function choose(n){
-    if (going || bar.menuOpen) return;
+  /* A pick goes straight in - one from Discover is got first. */
+  let getting = false;
+  async function choose(n){
+    if (going || getting || bar.menuOpen) return;
     move(n);
     sfx.select();
-    going = { t: 0, g: items[n].g };
+    let g = items[n].g;
+    if (g.discover){
+      getting = true; cards[n].card.classList.add('getting');
+      toast(`Getting ${g.name}\u2026`);
+      try { g = await library.install(g.discover); sfx.gold?.(); }
+      catch (e){ getting = false; cards[n].card.classList.remove('getting'); toast(e.message || 'That didn\u2019t download. Try again.', { bad: true }); return; }
+      getting = false;
+    }
+    going = { t: 0, g };
     cards[n].card.classList.add('launch');
   }
   show();
   ambience.start();
+  /* this week's featured and challenges, fresh from the server (shown
+     again if they changed - not mid-pick) */
+  if (onFresh) week.refresh().then(changed => { if (changed && !going && !getting) onFresh(); }, () => {});
 
   return {
     get focus(){ return focus; },
@@ -320,7 +362,13 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false })
       bar.tick(dt);
       /* the banner's trailer: the picked game, playing itself */
       const it = items[focus];
-      if (it.trailer === undefined){ if (!trailers.has(it.g.id)) trailers.set(it.g.id, trailer(it.g)); it.trailer = trailers.get(it.g.id); }
+      if (it.trailer === undefined){
+        /* (one from Discover: its preview, fetched once, while its art shows) */
+        if (it.g.discover){
+          if (!trailers.has(it.g.id)){ trailers.set(it.g.id, null); library.preview(it.g.discover).then(game => trailers.set(it.g.id, trailer(game) || null), () => {}); }
+          if (trailers.get(it.g.id)) it.trailer = trailers.get(it.g.id);
+        } else { if (!trailers.has(it.g.id)) trailers.set(it.g.id, trailer(it.g)); it.trailer = trailers.get(it.g.id); }
+      }
       if (it.trailer && !going){
         it.trailer.step(Math.min(dt, 1 / 20), TW, TH);
       }

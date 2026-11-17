@@ -15,6 +15,7 @@ import { submissions } from './submissions.js';
 import { api } from './api.js';
 import { listenForApps, DISCOVERY_PORT } from './discovery.js';
 import { store } from './store.js';
+import { weekly } from './weekly.js';
 import { folderFiles } from './files.js';
 import { requests } from './requests.js';
 
@@ -56,6 +57,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const keep = files || folderFiles(dataDir);
   const shop = await store(keep, starters);
   const log = history(db);
+  const week = weekly(db);
   const sent = submissions(db, keep, shop, log);
   /* a note for the owner, by the clock (the cube shows it - supervisor.js) */
   const tell = notify || ((title, text) => console.log(`@@say ${String(title).replace(/[|\n]/g, ' ')}|${String(text).replace(/\n/g, ' ')}`));
@@ -77,7 +79,8 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
       if (!isLocal(ip)) throw new Fail(404, 'not_found', 'Nothing here.');
       return new Page(managePage());
     }],
-    ...shop.routes(who, owner, log, reach),
+    ...shop.routes(who, owner, log, reach, week),
+    ...week.routes(who, owner, log),
     ...club.routes(owner),
     /* the server's name, as families see it - the owner's to change (kept in
        settings.json, so it stays after a restart) */

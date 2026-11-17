@@ -20,3 +20,11 @@ test('nothing played yet: no Jump back in; only a couple of games (waiting to be
   assert.deepEqual(playRows(POOL, []).map(r => r.title), ['Featured', 'All']);
   assert.deepEqual(playRows(POOL.slice(0, 2), []).map(r => r.title), ['All']);
 });
+
+test('Featured this week: the server\'s pick from Discover when there is one (games to get, in its order)', () => {
+  const pick = [g('comet', 'Comet Catch', true), g('bubble', 'Bubble Dash', true)];
+  const rows = playRows(POOL, [], pick);
+  assert.deepEqual(rows.map(r => r.title), ['Featured this week', 'All']);
+  assert.deepEqual(rows[0].games.map(x => x.id), ['comet', 'bubble']);
+  assert.ok(!rows[1].games.some(x => x.id === 'comet'), 'All is what\'s on this PC');
+});

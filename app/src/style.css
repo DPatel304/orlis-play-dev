@@ -1352,3 +1352,22 @@ body.bigpicture .acctcard .grownups{ font-size:2.6vh; }
 /* the remote on a game card: the card's own lift and white edge show it (no box round the name) */
 body.remote .btn.slock.kfocus{ outline:none; box-shadow:none; transform:none; border-color:transparent; }
 body.remote .btn.slock.kfocus .sthumb{ transform:translateY(-.8vh) scale(1.05); box-shadow:0 0 0 .5vh #fff, 0 2.6vh 5vh rgba(20,24,50,.3); }
+
+/* ---------- Play: this week ---------- */
+/* a game from Discover, not on this PC yet */
+.btn.slock .getpill{ position:absolute; top:1.2vh; left:1.2vh; z-index:3; background:#fff; color:#16161d; border-radius:999px; padding:.4em .9em; font:700 1.7vh/1 var(--sys); box-shadow:0 .4vh 1vh rgba(0,0,0,.18); }
+.btn.slock{ position:relative; }
+.btn.slock.getting .sthumb{ animation:getpulse 1s ease-in-out infinite; }
+@keyframes getpulse{ 50%{ opacity:.6 } }
+/* this week's family challenges */
+.shelf.challenges h3{ display:flex; align-items:baseline; gap:1.2vw; }
+.chmore{ font-size:1.9vh; font-weight:600; color:#6d5efc; }
+.chrow{ display:flex; gap:1.5vw; padding:1.6vh 0 2.4vh; }
+.chcard{ flex:none; width:24vw; background:#fff; border-radius:2.2vh; padding:2.2vh 2.4vh; box-shadow:0 1vh 2.4vh rgba(30,40,90,.1); font-family:var(--sys); }
+.chtitle{ font-size:2.6vh; font-weight:700; color:#16161d; line-height:1.25; min-height:2.6em; }
+.chbar{ height:1.2vh; border-radius:999px; background:#eceef4; overflow:hidden; margin:1.4vh 0 1vh; }
+.chbar i{ display:block; height:100%; background:linear-gradient(90deg, #3da9ff, #c46bff); border-radius:999px; }
+.chfoot{ display:flex; justify-content:space-between; font-size:2vh; font-weight:600; color:#5b5f6e; }
+.chcard.done{ box-shadow:0 0 0 .4vh #ffd166, 0 1vh 2.4vh rgba(30,40,90,.1); }
+.chcard.done .chbar i{ background:linear-gradient(90deg, #ffb703, #ffd166); }
+.chcard.done .chfoot span:last-child{ color:#a16207; }

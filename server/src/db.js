@@ -167,6 +167,31 @@ export const STEPS = [
     decided_at TEXT,
     sent_at    TEXT
   );
+  `,
+  /* 12: this week - the rounds each family plays (for the weekly family
+     challenges), the trophies won, and the Discover games the owner features */
+  `
+  CREATE TABLE plays (
+    household_id TEXT NOT NULL,
+    account_id   TEXT NOT NULL,
+    game_id      TEXT NOT NULL,
+    value        INTEGER NOT NULL DEFAULT 0,
+    secs         INTEGER NOT NULL DEFAULT 0,
+    players      INTEGER NOT NULL DEFAULT 1,
+    at           TEXT NOT NULL
+  );
+  CREATE INDEX plays_week ON plays (household_id, at);
+  CREATE TABLE trophies (
+    household_id TEXT NOT NULL,
+    week         TEXT NOT NULL,
+    challenge_id TEXT NOT NULL,
+    at           TEXT NOT NULL,
+    PRIMARY KEY (household_id, week, challenge_id)
+  );
+  CREATE TABLE featured (
+    game_id   TEXT PRIMARY KEY,
+    pinned_at TEXT NOT NULL
+  );
   `
 ];
 

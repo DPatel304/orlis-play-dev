@@ -272,7 +272,7 @@ var TRY = ${TRY_SECS};
       return call('GET', '/api/history').then(function(r){
         var c = card('What happened to the family\\u2019s games');
         if (!r.history.length) note(c, 'Nothing yet. Every game sent, played, approved, declined or taken out is kept here, and every grown-up made a creator or not.');
-        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of Discover', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed', 'asked-to-join': 'Asked to join', 'join-approved': 'Let in', 'join-declined': 'Not let in', 'beta-requested': 'Asked for the beta', 'beta-approved': 'Approved for the beta', 'beta-declined': 'Beta request declined', 'password-set': 'Given a new password' };
+        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of Discover', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed', 'asked-to-join': 'Asked to join', 'join-approved': 'Let in', 'join-declined': 'Not let in', 'beta-requested': 'Asked for the beta', 'beta-approved': 'Approved for the beta', 'beta-declined': 'Beta request declined', 'password-set': 'Given a new password', featured: 'Featured in Discover', unfeatured: 'No longer featured' };
         r.history.forEach(function(x){
           row(c, '<span class="tag ' + (x.what === 'approved' ? 'ok' : x.what === 'declined' || x.what === 'removed' ? 'declined' : '') + '">' + esc(SAY[x.what] || x.what) + '</span> ' +
             (x.name ? '<b>' + esc(x.name) + '</b>' + (x.version ? ' <span class="tag">version ' + esc(x.version) + '</span>' : '') : '') +
@@ -292,11 +292,14 @@ var TRY = ${TRY_SECS};
           var cols = (g.icon && g.icon.cols) || ['#6d5efc', '#6d5efc'];
           var glyph = g.icon && g.icon.glyph && !/<\\s*script|on\\w+\\s*=|javascript:|href/i.test(g.icon.glyph) ? g.icon.glyph : '';
           row(c, '<span class="who"><span class="icon" style="background:linear-gradient(135deg,' + esc(cols[0]) + ',' + esc(cols[1] || cols[0]) + ')"><svg viewBox="0 0 100 100">' + glyph + '</svg></span><span><b>' + esc(g.name) + '</b><small>' + (g.reach === 'family' ? '<b>Their family only</b> \\u00b7 ' : '') + 'Version ' + esc(g.version) + (g.by ? ' \\u00b7 ' + esc(g.by) : '') + ' \\u00b7 ' + size(g.bytes) + (ok[g.id] ? '<br>' + esc(ok[g.id].note.split(' \\u00b7 ')[0]) + ' \\u00b7 approved ' + esc(when(ok[g.id].at)) + ' by ' + esc(ok[g.id].who) : '') + '</small></span></span>',
-            [g.reach === 'family'
+            [/* this week's featured, on everyone's Play page: pinned ones always, the rest take turns */
+             btn(g.pinned ? 'Featured \u2605' : (st.featured || []).indexOf(g.id) >= 0 ? 'Feature (this week\u2019s turn)' : 'Feature', g.pinned ? 'go' : '', function(){ call('POST', '/api/store/' + encodeURIComponent(g.id) + '/feature', { on: !g.pinned }).then(show, fail(c)); }),
+             g.reach === 'family'
               ? btn('Share with everyone', '', function(){ call('POST', '/api/store/' + encodeURIComponent(g.id) + '/reach', { everyone: true }).then(show, fail(c)); })
               : (g.by && !g.starter ? btn('Family only', '', function(){ call('POST', '/api/store/' + encodeURIComponent(g.id) + '/reach', { everyone: false }).then(show, fail(c)); }) : h('<span></span>')),
              sure('Take out', 'Take it out? Click again', 'danger', function(){ call('DELETE', '/api/store/' + encodeURIComponent(g.id)).then(show, fail(c)); })]);
         });
+        note(c, 'Featured games are at the top of everyone\u2019s Play page. Feature one to keep it there; the rest take turns, a new few every Monday.');
         note(c, 'Taking a game out of Discover leaves it on any PC that already downloaded it.');
       });
     },
