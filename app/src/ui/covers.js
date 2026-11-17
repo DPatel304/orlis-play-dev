@@ -183,6 +183,24 @@ const COLS = { 'pop-party': '#ff4f93', 'sky-painter': '#3f7fd8', 'leaf-pile': '#
 /* ---------- a cover ---------- */
 /* { art, cover }: canvases, w x h. `still` (a canvas of the game playing)
    is used when there's no art of its own - zoomed in below its words. */
+/* Games whose art reads better drawn at the banner's own wide shape than cut
+   from the cover (Sky Painter's whale is huge when cropped): banner(g) gives
+   a draw(c, w, h) that paints the whole scene across the banner, or null. */
+const WIDE = new Set(['sky-painter']);
+let wideMade = null;
+export function banner(g){
+  if (!WIDE.has(g.id) || !ART[g.id] || typeof document === 'undefined') return null;
+  return (c, w, h) => {
+    if (!wideMade || wideMade.id !== g.id || wideMade.w !== w || wideMade.h !== h){
+      const k = document.createElement('canvas'); k.width = w; k.height = h;
+      const kc = k.getContext && k.getContext('2d'); if (!kc) return;
+      try { ART[g.id](kc, w, h); } catch (e){ return; }
+      wideMade = { id: g.id, w, h, k };
+    }
+    c.drawImage(wideMade.k, 0, 0, w, h);
+  };
+}
+
 export function makeCover(g, { still = null, accent = '#6d5efc', w = 960, h = 600 } = {}){
   if (typeof document === 'undefined') return null;
   const art = document.createElement('canvas'); art.width = w; art.height = h;

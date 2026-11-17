@@ -14,6 +14,7 @@ import { week } from './week.js';
 import { library } from './library.js';
 import { toast } from './toast.js';
 import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
+import { banner as wideBanner } from './covers.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -417,8 +418,9 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       if (it.trailer) paint(heroPic, (c, w, hh) => cover(c, w, hh, it.trailer), t, 1);
       else {
         /* no trailer: the game's still, else its poster */
-        const im = shotImage(it.g);
-        paint(heroPic, im ? (c, w, hh) => { const k = Math.max(w / im.width, hh / im.height); c.drawImage(im, (w - im.width * k) / 2, (hh - im.height * k) * 0.4, im.width * k, im.height * k); } : it.paint, t);
+        const wide = wideBanner(it.g);
+        const im = wide ? null : shotImage(it.g);
+        paint(heroPic, wide ? wide : im ? (c, w, hh) => { const k = Math.max(w / im.width, hh / im.height); c.drawImage(im, (w - im.width * k) / 2, (hh - im.height * k) * 0.4, im.width * k, im.height * k); } : it.paint, t);
       }
       if (going){ c.fillStyle = `rgba(13,11,26,${Math.min(1, going.t / LAUNCH)})`; c.fillRect(0, 0, W, H); }
     }
