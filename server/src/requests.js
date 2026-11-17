@@ -100,13 +100,11 @@ export function sentence(r, { likeName = null, gameName = null } = {}){
     return `A change to ${gameName || 'their game'}${asks.length ? ': ' + asks.join(', ') : ''}${r.words ? (asks.length ? ', and more in their words.' : ', in their words.') : '.'}`;
   }
   const thing = r.thing || 'things', place = r.place ? ` in ${r.place}` : '';
-  const ages = { '2-3': '2 to 3', '4-6': '4 to 6', '7+': '7 and up' }[r.ages];
   const extra = r.twists.map(t => TWISTS[t]);
   const head = r.start === 'like' && likeName
     ? `Like ${likeName}${r.action ? `, but you ${ACTIONS[r.action].does(thing)}` : r.thing ? `, but with ${thing}` : ''}${place}.`
     : `A ${r.view === 'character' ? 'third-person' : 'first-person'} ${r.action ? ACTIONS[r.action].label.toLowerCase() : ''} game: you ${r.action ? ACTIONS[r.action].does(thing) : 'play'}${place}.`;
   return [head.replace('  ', ' '), extra.length ? `${extra.join('; ').replace(/^./, c => c.toUpperCase())}.` : '',
-    `For ages ${ages}, ${r.energy}, about ${r.minutes} minutes, ${r.players === 1 ? 'one player' : 'one or two players'}.`,
     r.look ? `The look: ${LOOKS[r.look]}.` : ''].filter(Boolean).join(' ');
 }
 
@@ -128,7 +126,7 @@ Make just that change and keep everything else about the game the same. Leave it
 
 The game: ${sum}${r.view ? `\n\nHow it's seen: ${view}` : ''}${r.action ? `\n\nThe main thing you do: ${ACTIONS[r.action].label}.${ACTIONS[r.action].like ? ` (Orlis Play's ${ACTIONS[r.action].like} does something similar, if it helps to think of it.)` : ''}` : ''}${r.name ? `\n\nIts name: ${r.name}.` : ''}${r.look ? `\n\nThe look and feel: ${LOOKS[r.look]} - the colours and mood of its world and its icon.` : ''}${quote(r.words)}
 
-Keep it simple and fun for the ages given, in Orlis Play's house style, with nothing to lose and nothing scary. Fill in orlis.json (a name, a blurb, about, the moves, an icon, and a cover: a picture of the game, as the SKILL describes). When it's done, the game must pass Orlis Play's checks.`;
+Keep it simple and fun for young children, in Orlis Play's house style, with nothing to lose and nothing scary. Fill in orlis.json (a name, a blurb, about, the moves, an icon, and a cover: a picture of the game, as the SKILL describes). When it's done, the game must pass Orlis Play's checks.`;
 }
 
 export function requests(db, files, shop, sent, log = { add(){} }, notify = () => {}){

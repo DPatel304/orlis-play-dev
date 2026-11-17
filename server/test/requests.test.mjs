@@ -35,7 +35,7 @@ const fireflies = { start: 'new', view: 'hands', action: 'catch', thing: 'firefl
 
 test('a recipe sums itself up in one sentence, and becomes a prompt with their words quoted as a description', () => {
   const r = tidy(fireflies);
-  assert.equal(sentence(r), 'A first-person catch game: you catch fireflies as they fall or fly by in a meadow at night. It gets a little faster as it goes; a golden one now and then, worth extra. For ages 4 to 6, calm, about 5 minutes, one or two players.');
+  assert.equal(sentence(r), 'A first-person catch game: you catch fireflies as they fall or fly by in a meadow at night. It gets a little faster as it goes; a golden one now and then, worth extra.');
   const p = promptFor(r, { sum: sentence(r) });
   assert.match(p, /Read CLAUDE.md first/);
   assert.match(p, /glowing mitts/);

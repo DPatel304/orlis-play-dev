@@ -6,7 +6,7 @@ import { sentence as serverSentence, tidy, ACTIONS as SA, CHIPS as SC, LOOKS as 
 const fireflies = { start: 'new', view: 'hands', action: 'pop', thing: 'bubbles', place: '', twists: [], ages: '4-6', energy: 'bouncy', minutes: 3, players: 2, words: '' };
 
 test('the sentence they see as they pick is the one the owner gets', () => {
-  assert.equal(sentence(fireflies), 'A first-person pop game: you pop bubbles by touching them. For ages 4 to 6, bouncy, about 3 minutes, one or two players.');
+  assert.equal(sentence(fireflies), 'A first-person pop game: you pop bubbles by touching them.');
   for (const action of Object.keys(ACTIONS)) for (const minutes of [SHORT, LONG]){
     const r = { ...fireflies, action, minutes };
     assert.equal(sentence(r), serverSentence(tidy(r)), `${action} ${minutes}`);

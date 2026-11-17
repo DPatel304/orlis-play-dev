@@ -52,13 +52,11 @@ const blank = () => ({ at: null, start: 'new', like: null, name: '', view: 'hand
 /* The one-sentence sum-up - the same words the server keeps. */
 export function sentence(r, { likeName = null } = {}){
   const thing = (r.thing || '').trim() || 'things', place = (r.place || '').trim() ? ` in ${r.place.trim()}` : '';
-  const ages = { '2-3': '2 to 3', '4-6': '4 to 6', '7+': '7 and up' }[r.ages];
   const extra = [];
   const head = r.start === 'like' && likeName
     ? `Like ${likeName}${r.action ? `, but you ${ACTIONS[r.action].does(thing)}` : (r.thing || '').trim() ? `, but with ${thing}` : ''}${place}.`
     : `A ${r.view === 'character' ? 'third-person' : 'first-person'} ${r.action ? ACTIONS[r.action].label.toLowerCase() : ''} game: you ${r.action ? ACTIONS[r.action].does(thing) : 'play'}${place}.`;
   return [head.replace('  ', ' '), extra.length ? `${extra.join('; ').replace(/^./, c => c.toUpperCase())}.` : '',
-    `For ages ${ages}, ${r.energy}, about ${r.minutes} minutes, ${Number(r.players) === 1 ? 'one player' : 'one or two players'}.`,
     r.look && LOOKS[r.look] ? `The look: ${LOOKS[r.look]}.` : ''].filter(Boolean).join(' ');
 }
 export const changeSentence = (name, chips, words) => {
@@ -123,8 +121,8 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   const poolFor = (a) => pools[a] || (pools[a] = shuffled(ACTIONS[a].things));
 
   /* the order of the steps, for how they started */
-  const order = () => ['action', 'thing', 'look', 'length', 'name', 'words', 'review'];
-  const ready = (s) => s === 'action' ? !!r.action : s === 'length' ? !!r.minutes : true;
+  const order = () => ['action', 'thing', 'look', 'name', 'words', 'review'];
+  const ready = (s) => s === 'action' ? !!r.action : true;
   /* the ones that can be skipped, and whether they've been answered (else the pill says Skip) */
   const optional = (s) => ['thing', 'look', 'name', 'words'].includes(s);
   const answered = (s) => s === 'thing' ? !!r.thing.trim() : s === 'look' ? !!r.look : s === 'name' ? !!r.name.trim() : s === 'words' ? !!r.words.trim() : s === 'action' ? !!r.action : true;
@@ -136,7 +134,6 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   const question = (s) => s === 'action' ? 'What do you do?'
     : s === 'thing' ? ({ pop: 'What do you pop?', steer: 'What do you fly?', copy: 'Who do you copy?', paint: 'What do you paint with?' }[r.action] || 'What’s in it?')
     : s === 'look' ? 'What does it look like?'
-    : s === 'length' ? 'How long is it?'
     : s === 'name' ? 'What’s it called?'
     : s === 'words' ? 'Anything else?'
     : 'Ready?';
@@ -144,7 +141,6 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     action: [r.action ? ACTIONS[r.action].icon : '\u{1F3AF}', r.action ? ACTIONS[r.action].short : 'Same'],
     thing: [r.thing.trim() ? artOf(r.thing, r.action) : '✏️', r.thing.trim() ? titled(r.thing).slice(0, 14) : 'Anything'],
     look: [r.look ? LOOK_ICON[r.look] : '\u{1F3A8}', r.look ? LOOK_WORD[r.look] : 'Surprise'],
-    length: [r.minutes >= LONG ? '\u{1F3D4}️' : '⏱️', r.minutes >= LONG ? 'Long' : 'Short'],
     name: ['\u{1F3F7}️', r.name.trim() ? r.name.trim().slice(0, 14) : 'Any name'],
     words: ['\u{1F4AC}', r.words.trim() ? 'Notes' : 'No notes'],
     review: ['\u{1F680}', 'Ready']
@@ -168,12 +164,11 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   const BRICK = ['#ff8fc8', '#3fc1d9', '#7be0a0', '#ffd86b', '#c79bff', '#ffb86b', '#6bc8ff', '#ff6b8f'];
   const STEP_TITLE = (s) => s === 'action' ? 'What you do'
     : s === 'thing' ? ({ pop: 'What you pop', steer: 'What you fly', copy: 'Who you copy', paint: 'What you paint with' }[r.action] || 'What’s in it')
-    : s === 'look' ? 'The look' : s === 'length' ? 'How long' : s === 'name' ? 'Its name' : s === 'words' ? 'Anything else' : 'Ready';
+    : s === 'look' ? 'The look' : s === 'name' ? 'Its name' : s === 'words' ? 'Anything else' : 'Ready';
   const ANSWER = (s) => ({
     action: r.action ? ACTIONS[r.action].label : '',
     thing: r.thing.trim() ? titled(r.thing) : 'Anything',
     look: r.look ? LOOKS[r.look].replace(/^./, c => c.toUpperCase()) : 'A surprise',
-    length: r.minutes >= LONG ? 'Long · 10 min' : 'Short · 3 min',
     name: r.name.trim() || 'Claude picks',
     words: r.words.trim() ? 'Notes added' : 'No notes',
     review: ''
@@ -256,20 +251,45 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     root.append(main, side || panel());
     landed = null;
     await fill(step, body);
+    /* a button to go on, for the questions you type in: Next once there's something typed, and Done for the notes */
+    if (step === 'thing' || step === 'name' || step === 'words'){
+      const p = button(step === 'words' ? 'Done' : 'Next', 'bpill go');
+      onPick(p, () => { if (!busy) next(); });
+      (step === 'words' ? main : body.querySelector('.btyped') || main).appendChild(p);
+      root._pill = p; pillNow(step);
+    }
     onOpen();
   }
 
-  /* three picture cards, a refresh for three more, and a place to type your own */
-  function suggest(body, three, pick, again, { cover = false, current = '', placeholder, max, input }){
-    const grid = h('div', 'bgrid n3');
-    three.forEach((t, k) => grid.appendChild(cover ? coverTile(t, current === t, (el) => pick(t, el)) : card(current === t ? 'on' : '', artOf(t, r.action), titled(t) ? t.replace(/^./, c => c.toUpperCase()) : t, HUES[(k + round.thing * 3) % HUES.length], (el) => pick(t, el))));
+  /* three ideas (picture cards, or title plaques for names), a refresh that swaps just those three, and a place to type your own */
+  function suggest(body, getThree, pick, bump, { cover = false, current = '', input }){
     const re = button('↻', 'bmore'); re.title = 'Three more ideas'; re.setAttribute('aria-label', 'Three more ideas');
-    onPick(re, () => { sfx.select?.(); again(); });
-    grid.appendChild(re);
-    body.appendChild(grid);
+    const cols = LOOK_COLS[r.look] || (r.action ? HUES[Object.keys(ACTIONS).indexOf(r.action) % HUES.length] : LOOK_COLS.none);
+    let stack, grid;
+    const make = (t, k) => {
+      if (cover){
+        const b = tile(`<span class="bpt">${esc(t)}</span>`, 'bplaque' + (current === t ? ' on' : ''), (e) => pick(t, e && e.currentTarget ? e.currentTarget : b));
+        b.style.setProperty('--c1', cols[0]); b.style.setProperty('--c2', cols[1] || cols[0]); b.setAttribute('aria-label', t);
+        return b;
+      }
+      return card(current === t ? 'on' : '', artOf(t, r.action), titled(t) ? t.replace(/^./, c => c.toUpperCase()) : t, HUES[(k + round.thing * 3) % HUES.length], (el) => pick(t, el));
+    };
+    /* the three are replaced in place and pop in one after another; the refresh button, the box and the rest don't move */
+    const show = (animate) => {
+      const items = getThree().map((t, k) => { const e = make(t, k); if (animate){ e.classList.add('swapin'); e.style.animationDelay = `${k * 70}ms`; } return e; });
+      (cover ? stack : grid.firstChild).replaceChildren(...items);
+    };
+    onPick(re, () => { if (busy) return; sfx.select?.(); bump(); show(true); });
+    if (cover){
+      stack = h('div', 'bplaques');
+      body.appendChild(h('div', 'bplakrow')).append(stack, re);
+    } else {
+      grid = h('div', 'bgrid n3'); grid.append(h('div', 'bitems'), re);
+      body.appendChild(grid);
+    }
+    show(false);
     const typed = h('div', 'btyped'); typed.appendChild(input); body.appendChild(typed);
   }
-  const coverTile = (name, on, fn) => { const t = tile('', 'bcard cover' + (on ? ' on' : ''), (e) => fn(e && e.currentTarget ? e.currentTarget : t)); t.querySelector('.lbl').replaceWith(coverCanvas(name)); t.setAttribute('aria-label', name); return t; };
   const typer = (value, placeholder, max, onType, onEnter) => {
     const input = Object.assign(document.createElement('input'), { className: 'btype', maxLength: max, value, placeholder });
     input.addEventListener('input', () => onType(input.value));
@@ -278,7 +298,8 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   };
   /* (typing: the Skip pill turns into Next without drawing it all again) */
   const pillNow = (s) => { const d = root.querySelector('.bdown'); if (d) d.disabled = !ready(s) || s === 'review';
-     const p = root._pill; if (p){ const a = answered(s); p.querySelector('.lbl').textContent = a ? 'Next' : 'Skip'; p.classList.toggle('go', a); p.classList.toggle('skip', !a); } };
+    const pl = root._pill; if (pl) pl.style.display = (s === 'words' || answered(s)) ? '' : 'none';
+  };
 
   /* what's inside the open question */
   async function fill(s, body){
@@ -290,19 +311,11 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     if (s === 'thing'){
       const pool = r.action ? poolFor(r.action) : ['fireflies', 'balloons', 'fish', 'a dragon', 'snowflakes', 'stars'];
       const input = typer(r.thing, 'Or type your own…', 60, (v) => { set({ thing: v }); pillNow('thing'); refreshSide(); }, next);
-      suggest(body, ideas(pool, round.thing), (t, el) => { set({ thing: t }); advance(el); }, () => { round.thing++; draw({ keepSide: true }); }, { current: r.thing, input });
+      suggest(body, () => ideas(pool, round.thing), (t, el) => { set({ thing: t }); advance(el); }, () => { round.thing++; }, { current: r.thing, input });
     }
     if (s === 'look'){
       const grid = h('div', 'bgrid n5');
       Object.entries(LOOKS).forEach(([id, label]) => grid.appendChild(card(r.look === id ? 'on' : '', LOOK_ICON[id], LOOK_WORD[id], LOOK_COLS[id], (el) => { set({ look: r.look === id ? null : id }); r.look ? advance(el) : draw(); })));
-      body.appendChild(grid);
-    }
-    if (s === 'length'){
-      const grid = h('div', 'bgrid n2');
-      grid.append(
-        card(r.minutes === SHORT ? 'on' : '', '⏱️', 'Short', HUES[0], (el) => { set({ minutes: SHORT }); advance(el); }),
-        card(r.minutes === LONG ? 'on' : '', '\u{1F3D4}️', 'Long', HUES[3], (el) => { set({ minutes: LONG }); advance(el); }));
-      grid.querySelectorAll('.bcard').forEach((t, k) => t.appendChild(h('span', 'bsub', k ? '10 minutes' : '3 minutes')));
       body.appendChild(grid);
     }
     if (s === 'name'){
@@ -310,7 +323,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
       const tally = (n) => { left.textContent = `${n} of ${NAME_MAX} letters`; };
       const input = typer(r.name, 'Or type your own…', NAME_MAX, (v) => { set({ name: v }); tally(v.length); pillNow('name'); refreshSide(); }, next);
       tally(r.name.length);
-      suggest(body, ideas(nameIdeas(r), round.name), (t, el) => { set({ name: t }); advance(el); }, () => { round.name++; draw({ keepSide: true }); }, { cover: true, current: r.name, input });
+      suggest(body, () => ideas(nameIdeas(r), round.name), (t, el) => { set({ name: t }); advance(el); }, () => { round.name++; }, { cover: true, current: r.name, input });
       body.appendChild(left);
     }
     if (s === 'words'){
