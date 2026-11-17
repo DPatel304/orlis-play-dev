@@ -10,13 +10,14 @@ import { trailer } from './trailer.js';
 import { topBar } from './tabs.js';
 import { account } from './account.js';
 import { week } from './week.js';
+import { appMode } from './mode.js';
 import { library } from './library.js';
 import { toast } from './toast.js';
 import { splashWanted, showChallenges } from './challenges.js';
 import { launch } from './launch.js';
 import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
-import { banner as wideBanner, discoverCoverUrl, seeAllCoverUrl, buildingCoverUrl } from './covers.js';
-import { looksOf } from './request.js';
+import { banner as wideBanner, discoverCoverUrl, seeAllCoverUrl } from './covers.js';
+import { buildingRow } from './building.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -269,29 +270,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
 
   /* Under construction: the games asked for and not here yet - at the very end, out of the way
      (nothing to do about one while it's being made, so nothing to pick, and no stop on the way down) */
-  let tail = null;
-  const made = !waiting && rows.length ? week.building() : [];
-  if (made.length){
-    tail = h('section', 'shelf building');
-    const trow = h('div', 'shelfrow');
-    tail.append(h('h3', '', 'Under construction'), trow);
-    const STATE = { waiting: ['In line', 15], making: ['Building…', 55], made: ['Waiting for OK', 90], ready: ['Waiting for OK', 90], declined: ['Not this time', 0] };
-    for (const x of made){
-      const [label, pct] = STATE[x.state] || ['Building…', 50];
-      const recipe = x.recipe || {};
-      const name = (recipe.name || '').trim() || (x.game && x.game.name) || 'Your game';
-      const t = button('', 'slock pictile covered buildingtile ' + x.state);
-      const th = h('div', 'sthumb');
-      const pic = buildingCoverUrl({ name, cols: looksOf(recipe).cols, label, pct }); if (pic) th.style.backgroundImage = `url(${pic})`;
-      t.insertBefore(th, t.firstChild);
-      t.querySelector('.lbl').replaceWith(h('div', 'smeta', ''));
-      t.setAttribute('aria-label', `${name}: ${label}`);
-      if (x.state === 'declined' && x.note) onPick(t, () => { sfx.select(); toast(`${name}: “${x.note}”`, { ms: 6000 }); });
-      t.tabIndex = -1;
-      trow.appendChild(t);
-    }
-    wrap.appendChild(tail);
-  }
+  const tail = !waiting && rows.length ? buildingRow(week.building()) : null;
+  if (tail) wrap.appendChild(tail);
 
   /* this week's family challenges: three big cards on arriving (once each time the
      app starts), then a pill in the top bar (challenges.js) */
@@ -545,7 +525,10 @@ function settings(onRecalibrate){
   head.append(h('h2', '', 'Settings'), onPick(button('✕', 'setclose'), close));
   card.appendChild(head);
   /* one setting a row: its name on the left, its control on the right */
+  /* (the Studio can't play: no volume or camera to set) */
+  const NOPLAY = appMode.studio() ? new Set(['Volume', 'Camera', 'Camera detail', 'Smoother tracking']) : new Set();
   const row = (name, ...ctl) => {
+    if (NOPLAY.has(name)){ const none = h('div', 'setctl'); return none; }
     const r = h('div', 'setrow');
     const c = h('div', 'setctl'); c.append(...ctl);
     r.append(h('span', 'setname', name), c);

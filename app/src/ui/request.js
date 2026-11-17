@@ -370,7 +370,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   function sent(){
     root.innerHTML = '';
     const done = h('div', 'bq bsent');
-    done.append(h('div', 'bigemoji', '\u{1F6A7}'), h('h1', 'bh', 'On its way!'), h('p', 'bnote', 'You’ll find it under construction on Play.'));
+    done.append(h('div', 'bigemoji', '\u{1F6A7}'), h('h1', 'bh', 'On its way!'), h('p', 'bnote', onPlay ? 'You’ll find it under construction on Play.' : 'You’ll find it under construction, below.'));
     const row = h('div', 'bbtns');
     const again = button('Make another', 'bpill go'); onPick(again, () => { sfx.select?.(); close(); });
     row.appendChild(again);

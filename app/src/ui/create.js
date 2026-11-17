@@ -29,6 +29,8 @@ import { newer } from './store.js';
 import { library } from './library.js';
 import { PAPER } from './boot.js';
 import { week } from './week.js';
+import { appMode } from './mode.js';
+import { buildingRow } from './building.js';
 import { gameBuilder, changePop, looksOf } from './request.js';
 import { previewCover } from './covers.js';
 import { coverFor } from './shots.js';
@@ -54,10 +56,10 @@ let lastTry = null;
 /* the first game a new creator made (setup's "Make my first game"), for a friendlier word after trying it */
 let firstFolder = null;
 
-export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }){
+export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, pro = false }){
   clearUI();
   const s = screen('tvhome createpage onhero');
-  const bar = topBar('create', nav, { onWho, onRecalibrate });
+  const bar = topBar(pro ? 'pro' : 'create', nav, { onWho, onRecalibrate });
   s.appendChild(bar.el);
   const scroll = h('div', 'sscroll');
   s.appendChild(scroll);
@@ -68,7 +70,8 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   /* every grown-up makes games (Make a game: described, then made for them);
      with the Dev Kit, they can also build them with Claude Code */
   const grown = account.signedIn && !account.isKid;
-  const kit = creator && !!(account.state.account && account.state.account.devkit);
+  /* (the Dev Kit - building games with Claude Code - is Create Pro; Create is the kids' picture flow) */
+  const kit = pro && creator && !!(account.state.account && account.state.account.devkit);
   /* waiting to be let in: Create opens then */
   if (grown && account.waiting){
     scroll.appendChild(banner('Create', 'Make a game', 'Pending account approval').hero);
@@ -84,25 +87,34 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     return scene;
   }
 
-  /* the page is the flow: no banner, straight into the first question */
-  s.classList.add('flow'); s.classList.remove('onhero');
-  /* the tabs, the cube and who's playing slide up and away (the page is the build now); a handle at the top, the top edge, or Escape brings them back */
-  let awayT = 0;
-  const lift = () => { clearTimeout(awayT); s.classList.add('chromeaway'); };
-  const drop = () => { clearTimeout(awayT); s.classList.remove('chromeaway'); };
-  setTimeout(() => { if (s.isConnected) lift(); }, 450);
-  const handle = onPick(button('▾', 'pullhandle'), () => { sfx.select?.(); s.classList.contains('chromeaway') ? drop() : lift(); });
-  handle.title = 'Show the tabs'; handle.setAttribute('aria-label', 'Show the tabs');
-  s.appendChild(handle);
-  s.addEventListener('pointermove', (e) => {
-    if (e.clientY < 36 && s.classList.contains('chromeaway')) drop();
-    else if (e.clientY > innerHeight * 0.22 && !s.classList.contains('chromeaway')){ clearTimeout(awayT); awayT = setTimeout(lift, 1800); }
-  });
-  const escKey = (e) => {
-    if (!s.isConnected){ removeEventListener('keydown', escKey, true); return; }
-    if (e.key === 'Escape' && !document.querySelector('.fpopwrap')){ e.preventDefault(); sfx.select?.(); s.classList.contains('chromeaway') ? drop() : lift(); }
-  };
-  addEventListener('keydown', escKey, true);
+  if (!pro){
+    /* the page is the flow: no banner, straight into the first question */
+    s.classList.add('flow'); s.classList.remove('onhero');
+    /* the tabs, the cube and who's playing slide up and away (the page is the build now); a handle at the top, the top edge, or Escape brings them back */
+    let awayT = 0;
+    const lift = () => { clearTimeout(awayT); s.classList.add('chromeaway'); };
+    const drop = () => { clearTimeout(awayT); s.classList.remove('chromeaway'); };
+    setTimeout(() => { if (s.isConnected) lift(); }, 450);
+    const handle = onPick(button('▾', 'pullhandle'), () => { sfx.select?.(); s.classList.contains('chromeaway') ? drop() : lift(); });
+    handle.title = 'Show the tabs'; handle.setAttribute('aria-label', 'Show the tabs');
+    s.appendChild(handle);
+    s.addEventListener('pointermove', (e) => {
+      if (e.clientY < 36 && s.classList.contains('chromeaway')) drop();
+      else if (e.clientY > innerHeight * 0.22 && !s.classList.contains('chromeaway')){ clearTimeout(awayT); awayT = setTimeout(lift, 1800); }
+    });
+    const escKey = (e) => {
+      if (!s.isConnected){ removeEventListener('keydown', escKey, true); return; }
+      if (e.key === 'Escape' && !document.querySelector('.fpopwrap')){ e.preventDefault(); sfx.select?.(); s.classList.contains('chromeaway') ? drop() : lift(); }
+    };
+    addEventListener('keydown', escKey, true);
+  }
+  /* Create Pro: a banner, with the Dev Kit's buttons */
+  let btns = null;
+  if (pro){
+    const b = banner('Create Pro', 'Make games with Claude Code', 'On your own Claude account');
+    btns = h('div', 'sbtns'); b.text.append(btns);
+    scroll.appendChild(b.hero);
+  }
   /* where Make a game builds */
   const buildHost = h('div', 'cbuild');
   scroll.appendChild(buildHost);
@@ -115,6 +127,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   s.appendChild(pickFile);
   /* what just happened, or went wrong (bad), said once in a pop-up */
   let said = '', bad = false;
+  let autoOpened = false;        /* the flow opened by itself, once */
   let mine = [];                 /* the games being made on this PC */
   let pop = null;
 
@@ -276,8 +289,9 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
       h('p', 'fnote', `Version ${esc(g.manifest.version || '0.1')} · changed ${esc(new Date(g.changed).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}`),
       h('div', 'cacts'), h('div', 'fbtns'));
     card.querySelector('.cacts').append(
-      btn('<span class="tri"></span>Try it', () => tryIt(g, card), 'go cbig'),
-      btn('Check and send', () => sendIt(g, card), 'cbig'));
+      ...(appMode.studio() ? [] : [btn('<span class="tri"></span>Try it', () => tryIt(g, card), 'go cbig')]),
+      btn('Check and send', () => sendIt(g, card), appMode.studio() ? 'go cbig' : 'cbig'));
+    if (appMode.studio()) card.insertBefore(h('p', 'fnote', 'The Studio can’t play a game: send it, then try it on the TV.'), card.querySelector('.cacts'));
     card.querySelector('.fbtns').append(
       btn('Show the folder', () => making.show(g.folder).catch(problem(card))),
       btn('Open in Claude Code', async () => {
@@ -311,7 +325,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   /* (a new grown-up who picked "Make a game" on joining: straight into it) */
   else if (account.state && account.state.firstGame === 'make'){ account.set({ firstGame: false }); autoOpened = true; setTimeout(askPop, 300); }
   /* (someone new with the Dev Kit who picked "Make my first game" in setup) */
-  else if (account.state && account.state.firstGame === true && making.available) firstGame();
+  else if (account.state && account.state.firstGame === true && making.available && !appMode.studio()) firstGame();
 
   /* Their first game: the starter (Star Catch), made in a moment with no
      Claude needed, and straight on to trying it - so the first thing they
@@ -376,7 +390,6 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
   const store_ = async () => { try { return (await account.call('GET', '/api/store')).games || []; } catch { return []; } };
   let slots = null;              /* { used, total } game slots (none for the owner) */
   let building = null;           /* the builder, while it's open */
-  let autoOpened = false;            /* it opened by itself, once */
   function askPop(quiet){
     if (quiet !== true) sfx.select();
     closePop();
@@ -389,7 +402,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
       return;
     }
     building = gameBuilder({
-      host: buildHost, store: store_, send: sendAsk, onPlay: () => nav.home && nav.home(),
+      host: buildHost, store: store_, send: sendAsk, onPlay: nav.home && !appMode.studio() ? () => nav.home() : null,
       onDone: () => { building = null; draw(); setTimeout(() => { if (s.isConnected) askPop(true); }, 0); }
     });
   }
@@ -415,8 +428,17 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate }
     if (ok !== null) claudeOk = ok;
     if (said){ toast(said, { bad }); said = ''; bad = false; }
     body.innerHTML = '';
+    /* (in the Studio there's no Play: what's on its way is here, under the questions) */
+    if (appMode.studio() && !pro){ await week.refresh({ force: true }).catch(() => {}); if (me !== drawing) return; const row_ = buildingRow(week.building()); if (row_) body.appendChild(row_); }
     /* the page opens straight into making a game (but not on the way back from Try it, or setup's own first game) */
-    if (!autoOpened){ autoOpened = true; if (!lastTry && !(account.state && account.state.firstGame === true)) askPop(true); }
+    if (!pro && !autoOpened){ autoOpened = true; if (!lastTry && !(account.state && account.state.firstGame === true)) askPop(true); }
+    if (pro){
+      btns.innerHTML = '';
+      if (kit){
+        btns.append(sbtn('<span class="plus">+</span>Build a game', () => (claudeOk && making.available ? newGamePop() : kitPop()), 'get'), sbtn('Dev Kit', kitPop, 'ghost'));
+        if (waiting.length) btns.append(sbtn('Send now', () => { sfx.select(); send(); }, 'ghost'));
+      }
+    }
 
     if (!kit) return;
 

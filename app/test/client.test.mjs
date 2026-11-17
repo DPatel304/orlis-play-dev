@@ -112,7 +112,7 @@ test('updates: the Update button and a slow check both show "Updating"; the beta
 
 test('Home, the Store and Create are pages under the same tabs; the corner menu keeps just Settings and Exit', () => {
   const tabs = readFileSync(new URL('../src/ui/tabs.js', import.meta.url), 'utf8');
-  assert.match(tabs, /\['home', 'Play'\], \['store', 'Discover'\], \['create', 'Create'\]/);
+  assert.match(tabs, /\['home', 'Play'\], \['store', 'Discover'\], \['create', 'Create'\], \['pro', 'Create Pro'\]/);
   for (const w of ["'Settings'", "'Exit'"]) assert.ok(tabs.includes(`item(`) && tabs.includes(w), w);
   assert.ok(!tabs.includes("'Sign out'") && !tabs.includes("'Check for updates'"), 'signing out is on the profile screen, updates are in Settings');
   assert.ok(!/\\u\{1F/.test(tabs), 'the corner menu has line icons, not emoji');
@@ -121,7 +121,7 @@ test('Home, the Store and Create are pages under the same tabs; the corner menu 
   assert.ok(!tabs.includes('places'), 'the menu has no Play / Discover / Create items: those are the tabs');
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   assert.match(main, /go\('store'/); assert.match(main, /go\('create'/);
-  assert.match(main, /const HOMEY = new Set\(\['menu', 'store', 'create', 'who'\]\)/);
+  assert.match(main, /const HOMEY = new Set\(\['menu', 'store', 'create', 'pro', 'who'\]\)/);
 });
 
 test('the title bar really goes in Big Picture: hidden beats its display:flex', () => {
@@ -155,4 +155,18 @@ test('a game waiting for the owner\'s OK is played before it can be approved: th
   assert.equal(+main.match(/const TRY_SECS = (\d+);/)[1], TRY_SECS);
   assert.ok(main.includes("/tried`"), 'it tells the server');
   assert.ok(readFileSync(new URL('../src/ui/store.js', import.meta.url), 'utf8').includes('game.trial = g.submission'), 'Try it marks the game');
+});
+
+test('one app, modes by install: Family has Create, Studio has Create and Create Pro, and for now everything shows', async () => {
+  const { MODES, appMode } = await import('../src/ui/mode.js');
+  assert.deepEqual(MODES.family, ['home', 'store', 'create']);
+  assert.deepEqual(MODES.studio, ['create', 'pro']);
+  assert.deepEqual(MODES.all, ['home', 'store', 'create', 'pro']);
+  assert.equal(appMode.get(), 'all', 'unset, it shows all four tabs, to build and test them');
+  const tabs = readFileSync(new URL('../src/ui/tabs.js', import.meta.url), 'utf8');
+  assert.ok(tabs.includes('appMode.tabs().includes(id)'), 'the tab bar follows the mode');
+  const menu = readFileSync(new URL('../src/ui/menu.js', import.meta.url), 'utf8');
+  assert.ok(!menu.includes("row('Mode'"), 'nothing in the app lets anyone switch');
+  const rust = readFileSync(new URL('../client/src-tauri/src/main.rs', import.meta.url), 'utf8');
+  assert.ok(rust.includes('option_env!("ORLIS_MODE")') && rust.includes('window.ORLIS_MODE'), 'the build says which mode it is');
 });

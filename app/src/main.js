@@ -3,6 +3,7 @@ import { week } from './ui/week.js';
 import { launch } from './ui/launch.js';
 import { toast } from './ui/toast.js';
 import { pose } from './tracking/pose.js';
+import { appMode } from './ui/mode.js';
 import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
 import { menu, toggleFullscreen, openSettings, played as playedLately } from './ui/menu.js';
@@ -53,11 +54,11 @@ let paused = null, lost = null, handsUp = 0, empty = 0, joined = new Set();
 const CAMERA = new Set(['starting', 'lineup', 'play', 'outro', 'results', 'calibrate']);
 /* The pages that are the mouse's and the keyboard's: Home, the Store,
    Create, and signing in. */
-const HOMEY = new Set(['menu', 'store', 'create', 'who']);
+const HOMEY = new Set(['menu', 'store', 'create', 'pro', 'who']);
 
 /* The pages that crossfade into each other (the tabs have their own slide) */
-const FADEY = new Set(['menu', 'store', 'create', 'who', 'results']);
-const TABBY = new Set(['menu', 'store', 'create']);
+const FADEY = new Set(['menu', 'store', 'create', 'pro', 'who', 'results']);
+const TABBY = new Set(['menu', 'store', 'create', 'pro']);
 const INTO_GAME = new Set(['starting', 'lineup', 'play']);
 /* (?fx=0 turns the page fades off - the rehearsals read the page, and two pages at once would confuse them) */
 const NOFX = /[?&]fx=0\b/.test(location.search);
@@ -95,6 +96,8 @@ function go(next, build){
 /* The menus are quiet: music belongs to playing, so it starts when a game is
    picked and fades away on the way back out. */
 function toMenu(arrive = false){
+  /* (the Studio has no Play: its first page is Create) */
+  if (appMode.studio()) return toCreate();
   music.stop();
   /* and anything still being said - Nova mid-sentence, lines waiting their
      turn - stops too: the game's over, its voice goes with it */
@@ -106,8 +109,9 @@ function toMenu(arrive = false){
     onFresh: () => { if (mode === 'menu') toMenu(false); } }));
 }
 /* The tabs along the top: Home, the Store, Create. */
-function tabs(){ return { home: () => toMenu(false), store: toStore, create: toCreate }; }
+function tabs(){ return { home: () => toMenu(false), store: toStore, create: toCreate, pro: toPro }; }
 function toStore(){
+  if (appMode.studio()) return toCreate();
   music.stop(); voice.hush();
   go('store', () => storePage({ nav: tabs(), onPlay: toGame, onChange: () => {}, onWho: () => toWho(false), onRecalibrate: toCalibration }));
 }
@@ -119,11 +123,15 @@ setInterval(() => { if (account.waiting) account.refresh(); }, 15000);
 addEventListener('orlisletin', () => {
   sfx.gold?.();
   toast('You’re in! Discover and Create are open.', { ms: 5000 });
-  if (mode === 'menu') toMenu(false); else if (mode === 'store') toStore(); else if (mode === 'create') toCreate();
+  if (mode === 'menu') toMenu(false); else if (mode === 'store') toStore(); else if (mode === 'create') toCreate(); else if (mode === 'pro') toPro();
 });
 
 function toCreate(){
   go('create', () => createPage({ nav: tabs(), onPlay: toGame, onWho: () => toWho(false), onRecalibrate: toCalibration }));
+}
+/* Create Pro: making games with Claude Code */
+function toPro(){
+  go('pro', () => createPage({ pro: true, nav: tabs(), onPlay: toGame, onWho: () => toWho(false), onRecalibrate: toCalibration }));
 }
 
 /* The Windows app's way in: find the server and sign in (once), then pick
@@ -132,7 +140,7 @@ function toCreate(){
 function toWho(arrive, glide = false){
   account.refresh();
   /* (asked for from a page: Back, or Escape, goes to that page again) */
-  const PAGES = { menu: () => toMenu(false), store: toStore, create: toCreate };
+  const PAGES = { menu: () => toMenu(false), store: toStore, create: toCreate, pro: toPro };
   const back = !arrive && PAGES[mode] ? PAGES[mode] : null;
   /* (a new creator who picked "Make my first game": straight to Create, where it's made) */
   go('who', () => welcome(() => (account.state && account.state.firstGame ? toCreate() : toMenu(arrive)), { auto: arrive, glide, onBack: back }));
@@ -148,6 +156,8 @@ function toCalibration(){
    child can step in partway through, and anyone can step out, without
    anything stopping. */
 function toGame(g){
+  /* (the Studio can't play games) */
+  if (appMode.studio()) return;
   game = g;
   playedLately(g.id);
   ambience.stop();
@@ -347,7 +357,7 @@ let last = 0;
 /* Seconds the owner plays a waiting game before it can be approved (the
    server's TRY_SECS). */
 const TRY_SECS = 20;
-const CALM = new Set(['boot', 'menu', 'store', 'create', 'who', 'starting']);
+const CALM = new Set(['boot', 'menu', 'store', 'create', 'pro', 'who', 'starting']);
 const HOME_GAP = 1000 / 30 - 2, AWAY_GAP = 250;
 let lastFrame = 0, wasAway = false;
 function tick(now){

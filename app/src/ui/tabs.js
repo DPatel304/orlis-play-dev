@@ -13,6 +13,7 @@ import { account, AVATARS } from './account.js';
 import { withFace } from './avatar-maker.js';
 import { openSettings } from './menu.js';
 import { week } from './week.js';
+import { appMode } from './mode.js';
 import { challengePill } from './challenges.js';
 
 /* The corner menu's icons: simple line drawings, like the rest of the app's. */
@@ -29,7 +30,7 @@ const MENU_ICON = {
 };
 const item = (icon, label) => `<span class="pi">${MENU_ICON[icon]}</span><span class="pn">${label}</span>`;
 
-export const TABS = [['home', 'Play'], ['store', 'Discover'], ['create', 'Create']];
+export const TABS = [['home', 'Play'], ['store', 'Discover'], ['create', 'Create'], ['pro', 'Create Pro']];
 
 /* The tab you were on last: going to another, its highlight slides over
    and the page comes in from that side - the bar itself stays put. */
@@ -73,7 +74,8 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
   /* the three tabs (a child playing sees Play and Discover; Create is for
      grown-ups). The one you're on is just a label. */
   const tabs = h('nav', 'tvtabs');
-  const shown = TABS.filter(([id]) => nav[id] && (id !== 'create' || !account.isKid));
+  /* (which tabs there are depends on the mode: Family has Create, Creator has Create Pro) */
+  const shown = TABS.filter(([id]) => nav[id] && appMode.tabs().includes(id) && (id !== 'create' || !account.isKid) && (id !== 'pro' || (!account.isKid && ['creator', 'owner'].includes(account.role))));
   for (const [id, name] of shown){
     if (id === page){ tabs.appendChild(h('span', 'tvtab on', name)); continue; }
     tabs.appendChild(onPick(button(name, 'tvtab'), () => { if (isBusy()) return; sfx.nav(); keepBanner(top); nav[id](); }));
@@ -92,7 +94,7 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
   burger.classList.add('hello'); setTimeout(() => burger.classList.remove('hello'), 1400);
   /* this week's challenges, as a small pill (the cards open from it) */
   const ch = week.challenges;
-  const pill = account.signedIn && !account.waiting && ch && ch.challenges && ch.challenges.length ? challengePill(ch) : null;
+  const pill = !appMode.studio() && account.signedIn && !account.waiting && ch && ch.challenges && ch.challenges.length ? challengePill(ch) : null;
   const sys = h('div', 'tvsys'); if (pill) sys.append(pill); if (whoChip) sys.append(whoChip); sys.append(burger);
   top.append(brand, tabs, sys);
 

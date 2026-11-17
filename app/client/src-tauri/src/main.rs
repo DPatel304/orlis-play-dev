@@ -152,11 +152,14 @@ async fn run_update(app: &AppHandle, found: Update) -> Result<(), String> {
 fn open(app: &AppHandle) -> tauri::Result<()> {
     let mode = display_mode(app);
     let script = format!(
-        "window.ORLIS_MUSIC = {};\nwindow.ORLIS_LOCAL = true;\nwindow.ORLIS_DISPLAY = {};\nwindow.ORLIS_VERSION = {};\nwindow.ORLIS_PRODUCT = {};\n{}\n{}",
+        "window.ORLIS_MUSIC = {};\nwindow.ORLIS_LOCAL = true;\nwindow.ORLIS_DISPLAY = {};\nwindow.ORLIS_VERSION = {};\nwindow.ORLIS_PRODUCT = {};\nwindow.ORLIS_MODE = {};\n{}\n{}",
         serde_json::to_string(&songs(app)).unwrap_or_else(|_| "[]".into()),
         serde_json::to_string(&mode).unwrap_or_else(|_| "\"window\"".into()),
         serde_json::to_string(&app.package_info().version.to_string()).unwrap_or_else(|_| "\"\"".into()),
         serde_json::to_string(&app.config().product_name.clone().unwrap_or_default()).unwrap_or_else(|_| "\"\"".into()),
+        // Which app this is, set when it is built (ORLIS_MODE=family or studio). Unset, it is "all":
+        // every tab, for building and testing. See src/ui/mode.js.
+        serde_json::to_string(option_env!("ORLIS_MODE").unwrap_or("all")).unwrap_or_else(|_| "\"all\"".into()),
         DISPLAY_SCRIPT,
         UPDATE_SCRIPT
     );
