@@ -338,3 +338,23 @@ no tunnel) - keeps it simple and safe.
   (Big Picture, camera), server updates, a one-page quick start.
 - Open: the kit (starter, checker) packaged outside the app; sign-in/token storage for the command on the laptop;
   whether the Player and the server are one installer or two.
+
+### Orlis mode on the laptop: the permission design (agreed)
+
+The game folder (template in `app/kit/creator/template/`: `CLAUDE.md`, `.claude/settings.json`, hooks, the
+orlis-game skill) already locks Claude to `game.js` and `orlis.json`, and denies Bash/PowerShell completely. For
+Claude to run test/publish itself:
+- A deny rule beats an allow rule in Claude Code, so the blanket `Bash`/`PowerShell` deny comes out of
+  `settings.json` and the **guard hook** (`guard.ps1`) becomes the one gatekeeper.
+- The guard allows a shell command only if it is **exactly** `orlis check`, `orlis test`, `orlis publish`,
+  `orlis take-off` or `orlis status` - no extra words, no options, no `&&`, pipes or redirects. Everything else
+  is refused. (Decided: no options at all for now.)
+- The `orlis` tool takes no option that changes where it sends things; works only on the current game folder
+  (reads `game.js` and `orlis.json`); talks only to the box this laptop was paired with. The box address and token
+  live in the creator's user profile, outside the game folder, so Claude can't read them (the guard already blocks
+  reads outside the game).
+- Publishing: the `/publish` command file makes Claude **ask the creator first** (a polite ask, not a hard lock;
+  decided). Worst case if Claude goes off-script: it can run test, publish, take-off or status - nothing else.
+- **Windows first** (the hooks are PowerShell; Mac/Linux would need a second guard and tool).
+- Order: build the `orlis` tool (standalone, built in CI) -> add the command files and update `CLAUDE.md` -> change
+  the guard and settings -> extend `test-hooks.mjs`.
