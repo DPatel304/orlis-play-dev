@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { POSES, POSE_NAMES, CARD, figureCard } from '../src/games/figure.js';
+import { POSES, POSE_NAMES, CARD, FACES, FACE_NAMES, faceAt, figureCard, drawCard } from '../src/games/figure.js';
 
 /* a canvas that only counts what's drawn */
 const fakeCanvas = () => {
@@ -28,4 +28,16 @@ test('every pose draws a card, with two arms and two legs, at any moment', () =>
 test('the card is one fill, one edge, one spot', () => {
   assert.match(CARD.fill, /^#[0-9a-f]{6}$/i); assert.match(CARD.edge, /^#[0-9a-f]{6}$/i);
   assert.ok(CARD.x > 0.5 && CARD.x < 1 && CARD.y > 0 && CARD.y < 1);
+});
+
+test('Cubo pulls a new face every couple of seconds, never the same one twice running', () => {
+  assert.ok(FACE_NAMES.length >= 6, 'a handful of faces');
+  assert.equal(faceAt(0.5).name, 'smile', 'starts with a smile');
+  const seen = new Set(); let last = null;
+  for (let t = 0; t < 120; t += 2.3){ const f = faceAt(t + 0.1).name; assert.ok(FACES[f], `${f} exists`); assert.notEqual(f, last, 'not the same twice'); seen.add(f); last = f; }
+  assert.ok(seen.size >= 5, 'a good mix over two minutes');
+});
+
+test('every face draws on every pose', () => {
+  for (const f of FACE_NAMES) for (const n of POSE_NAMES){ const c = fakeCanvas(); drawCard(c, n, 300, 500, 400, 1.3, 1, f); assert.ok(c.calls.includes('fill'), `${f} on ${n}`); }
 });
