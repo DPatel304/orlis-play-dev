@@ -8,7 +8,7 @@ const L = (a, b, k) => a + (b - a) * k, S = Math.sin;
 
 /* the look, in one place. size is a share of the screen's height; x and y are where its middle is, as a share of the screen. */
 export const CARD = { fill: '#ffffff', edge: '#2b2275', edgeW: 0.07, body: '#7aa2f7', line: '#2b2275', ink: '#1e1b4b',
-  head: ['#5eead4', '#60a5fa', '#c084fc'], size: 0.3, x: 0.86, y: 0.5 };
+  head: ['#60a5fa', '#c084fc'], top: ['#e9fbff', '#f3e8ff'], left: '#5eead4', size: 0.3, x: 0.86, y: 0.5 };
 
 /* each: (p 0..1 pulse, t seconds) -> { yOff, lean, arms: [[points after the shoulder]...], legs: [[knee, foot]...], sparkle } */
 export const POSES = {
@@ -40,27 +40,24 @@ export const POSE_NAMES = Object.keys(POSES);
 const gradient = (c, x0, y0, x1, y1, cols) => { const g = c.createLinearGradient(x0, y0, x1, y1); cols.forEach((col, i) => g.addColorStop(i / (cols.length - 1), col)); return g; };
 
 /* Cubo's faces: simple ones that read from across the room. Each draws on a head whose middle is (0, 0) and whose side is w. */
-const eyes = (c, w, ry, dx = 0.2) => { c.fillStyle = CARD.ink; for (const sx of [-1, 1]){ c.beginPath(); c.ellipse(sx * dx * w, -0.04 * w, w * 0.07, ry, 0, 0, 6.2832); c.fill(); }
-  c.fillStyle = '#fff'; for (const sx of [-1, 1]){ c.beginPath(); c.ellipse(sx * dx * w - w * 0.02, -0.04 * w - ry * 0.35, w * 0.022, ry * 0.28, 0, 0, 6.2832); c.fill(); } };
+const eyes = (c, w, ry, dx = 0.2) => { c.fillStyle = CARD.ink; for (const sx of [-1, 1]){ c.beginPath(); c.ellipse(sx * dx * w, -0.12 * w, w * 0.085, ry, 0, 0, 6.2832); c.fill(); }
+  c.fillStyle = '#fff'; for (const sx of [-1, 1]){ c.beginPath(); c.ellipse(sx * dx * w - w * 0.024, -0.12 * w - w * 0.04, w * 0.026, w * 0.034, 0, 0, 6.2832); c.fill(); } };
 const stroke = (c, w, lw = 0.05) => { c.strokeStyle = CARD.ink; c.lineWidth = w * lw; c.lineCap = 'round'; c.lineJoin = 'round'; };
-const smile = (c, w, r = 0.2, y = 0.08) => { stroke(c, w); c.beginPath(); c.arc(0, y * w, r * w, 0.3, Math.PI - 0.3); c.stroke(); };
-const happyEye = (c, w, sx) => { stroke(c, w, 0.055); c.beginPath(); c.arc(sx * 0.2 * w, 0.0, w * 0.075, Math.PI + 0.35, -0.35); c.stroke(); };
+const smile = (c, w, r = 0.18, y = 0.08) => { stroke(c, w, 0.055); c.beginPath(); c.moveTo(-r * w, y * w); c.quadraticCurveTo(0, (y + 0.18) * w, r * w, y * w); c.stroke(); };
+const happyEye = (c, w, sx) => { stroke(c, w, 0.055); c.beginPath(); c.arc(sx * 0.2 * w, -0.08 * w, w * 0.08, Math.PI + 0.35, -0.35); c.stroke(); };
 export const FACES = {
-  smile:  (c, w, blink) => { eyes(c, w, blink ? w * 0.025 : w * 0.105); smile(c, w); },
-  grin:   (c, w, blink) => { eyes(c, w, blink ? w * 0.025 : w * 0.105);
+  smile:  (c, w, blink) => { eyes(c, w, blink ? w * 0.025 : w * 0.125); smile(c, w); },
+  grin:   (c, w, blink) => { eyes(c, w, blink ? w * 0.025 : w * 0.125);
     c.fillStyle = CARD.ink; c.beginPath(); c.moveTo(-0.24 * w, 0.1 * w); c.quadraticCurveTo(0, 0.42 * w, 0.24 * w, 0.1 * w); c.closePath(); c.fill();
     c.fillStyle = '#ff7a8a'; c.beginPath(); c.ellipse(0, 0.27 * w, 0.1 * w, 0.045 * w, 0, 0, 6.2832); c.fill(); },
   wow:    (c, w) => { eyes(c, w, w * 0.13, 0.21); stroke(c, w); c.fillStyle = CARD.ink; c.beginPath(); c.ellipse(0, 0.22 * w, 0.07 * w, 0.09 * w, 0, 0, 6.2832); c.fill(); },
-  wink:   (c, w) => { c.fillStyle = CARD.ink; c.beginPath(); c.ellipse(-0.2 * w, -0.04 * w, w * 0.07, w * 0.105, 0, 0, 6.2832); c.fill();
-    c.fillStyle = '#fff'; c.beginPath(); c.ellipse(-0.22 * w, -0.08 * w, w * 0.022, w * 0.03, 0, 0, 6.2832); c.fill();
-    stroke(c, w, 0.055); c.beginPath(); c.moveTo(0.12 * w, -0.04 * w); c.lineTo(0.28 * w, -0.04 * w); c.stroke(); smile(c, w, 0.2, 0.1); },
-  tongue: (c, w, blink) => { eyes(c, w, blink ? w * 0.025 : w * 0.105); smile(c, w, 0.2, 0.08);
-    c.fillStyle = '#ff7a8a'; c.beginPath(); c.roundRect(-0.07 * w, 0.2 * w, 0.14 * w, 0.14 * w, [0, 0, 0.07 * w, 0.07 * w]); c.fill(); stroke(c, w, 0.03); c.stroke(); },
+  wink:   (c, w) => { c.fillStyle = CARD.ink; c.beginPath(); c.ellipse(-0.2 * w, -0.12 * w, w * 0.085, w * 0.125, 0, 0, 6.2832); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.ellipse(-0.224 * w, -0.16 * w, w * 0.026, w * 0.034, 0, 0, 6.2832); c.fill();
+    stroke(c, w, 0.055); c.beginPath(); c.moveTo(0.12 * w, -0.12 * w); c.lineTo(0.28 * w, -0.12 * w); c.stroke(); smile(c, w, 0.18, 0.08); },
+  tongue: (c, w, blink) => { eyes(c, w, blink ? w * 0.025 : w * 0.125); smile(c, w, 0.18, 0.08);
+    c.fillStyle = '#ff7a8a'; c.beginPath(); c.roundRect(-0.07 * w, 0.14 * w, 0.14 * w, 0.14 * w, [0, 0, 0.07 * w, 0.07 * w]); c.fill(); stroke(c, w, 0.03); c.stroke(); },
   joy:    (c, w) => { happyEye(c, w, -1); happyEye(c, w, 1);
     c.fillStyle = CARD.ink; c.beginPath(); c.moveTo(-0.22 * w, 0.1 * w); c.quadraticCurveTo(0, 0.4 * w, 0.22 * w, 0.1 * w); c.closePath(); c.fill(); },
-  grit:   (c, w, blink) => { eyes(c, w, blink ? w * 0.025 : w * 0.09, 0.2); stroke(c, w, 0.06);
-    c.beginPath(); c.moveTo(-0.32 * w, -0.2 * w); c.lineTo(-0.1 * w, -0.13 * w); c.moveTo(0.32 * w, -0.2 * w); c.lineTo(0.1 * w, -0.13 * w); c.stroke();
-    c.beginPath(); c.moveTo(-0.14 * w, 0.2 * w); c.quadraticCurveTo(0, 0.14 * w, 0.14 * w, 0.2 * w); c.stroke(); },
   smirk:  (c, w, blink) => { eyes(c, w, blink ? w * 0.025 : w * 0.1); stroke(c, w); c.beginPath(); c.moveTo(-0.12 * w, 0.2 * w); c.quadraticCurveTo(0.08 * w, 0.26 * w, 0.24 * w, 0.1 * w); c.stroke(); },
 };
 export const FACE_NAMES = Object.keys(FACES);
@@ -83,8 +80,12 @@ function head(c, cx, cy, r, t, face){
   const w = r * 2, f = face ? { name: face, pop: 0 } : faceAt(t), blink = S(t * 1.3) > 0.97, ow = w * 0.06, rad = w * 0.2;
   c.save(); c.translate(cx, cy); const k = 1 + 0.1 * f.pop; c.scale(k, k);
   c.fillStyle = CARD.line; c.beginPath(); c.roundRect(-w / 2 - ow, -w / 2 - ow, w + ow * 2, w + ow * 2, rad + ow); c.fill();
-  c.fillStyle = gradient(c, -w / 2, -w / 2, w / 2, w / 2, CARD.head); c.beginPath(); c.roundRect(-w / 2, -w / 2, w, w, rad); c.fill();
-  c.fillStyle = 'rgba(255,255,255,.3)'; c.beginPath(); c.roundRect(-w * 0.4, -w * 0.42, w * 0.46, w * 0.08, w * 0.04); c.fill();
+  /* the cube's own colours: its blue-to-purple front, the pale top edge, a sliver of the teal side */
+  c.save(); c.beginPath(); c.roundRect(-w / 2, -w / 2, w, w, rad); c.clip();
+  c.fillStyle = gradient(c, -w / 2, -w / 2, w / 2, w / 2, CARD.head); c.fillRect(-w / 2, -w / 2, w, w);
+  c.fillStyle = CARD.left; c.globalAlpha *= 0.9; c.fillRect(-w / 2, -w / 2, w * 0.1, w); c.globalAlpha /= 0.9;
+  c.fillStyle = gradient(c, -w / 2, -w / 2, w / 2, -w * 0.3, CARD.top); c.fillRect(-w / 2, -w / 2, w, w * 0.17);
+  c.restore();
   (FACES[f.name] || FACES.smile)(c, w, blink);
   c.restore();
 }
