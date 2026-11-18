@@ -13,6 +13,7 @@ import { makeServer, activity, Fail, Page, isLocal, isTailscale } from './http.j
 import { backups } from './backup.js';
 import { submissions } from './submissions.js';
 import { drafts } from './drafts.js';
+import { pairing } from './pair.js';
 import { api } from './api.js';
 import { listenForApps, DISCOVERY_PORT } from './discovery.js';
 import { store } from './store.js';
@@ -61,6 +62,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const week = weekly(db);
   const sent = submissions(db, keep, shop, log);
   const tv = drafts(db, keep, shop, log);
+  const pair = pairing(db);
   /* a note for the owner, by the clock (the cube shows it - supervisor.js) */
   const tell = notify || ((title, text) => console.log(`@@say ${String(title).replace(/[|\n]/g, ' ')}|${String(text).replace(/\n/g, ' ')}`));
   const asked = requests(db, keep, shop, sent, log, tell);
@@ -77,6 +79,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const owners = (who, owner) => [
     ...sent.routes(who, owner, (h, ip) => h['x-orlis-manage'] !== undefined ? owner(h, ip) : who(h)),
     ...tv.routes(who),
+    ...pair.routes(who),
     ...asked.routes(who, owner, (h, ip) => h['x-orlis-manage'] !== undefined ? owner(h, ip) : who(h)),
     /* the management page itself: only to this laptop */
     ['GET', '/manage', ({ ip }) => {

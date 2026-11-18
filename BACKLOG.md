@@ -358,3 +358,11 @@ Claude to run test/publish itself:
 - **Windows first** (the hooks are PowerShell; Mac/Linux would need a second guard and tool).
 - Order: build the `orlis` tool (standalone, built in CI) -> add the command files and update `CLAUDE.md` -> change
   the guard and settings -> extend `test-hooks.mjs`.
+
+**Built so far (Orlis mode):** server pairing (`server/src/pair.js`: a creator gets a one-use code good for 5 minutes,
+the tool trades it for its own sign-in called "Orlis tool"; wrong tries are limited) and the `orlis` command
+(`app/kit/cli/orlis.mjs`: connect, check, test, publish, take-off, status), tested end to end against a real server
+(`app/test/orlis-cli.test.mjs`). It bundles to one 21 KB file with esbuild
+(`npx esbuild kit/cli/orlis.mjs --bundle --platform=node --format=esm`). **Still to do:** a standalone Windows
+`orlis.exe` built in CI (Node single-executable) and put on the creator's PATH; the code + address shown in the
+app / on the TV (QR); the command files and `CLAUDE.md` changes; the guard hook and settings change; hook tests.

@@ -96,3 +96,22 @@ test('the TV waits, and is answered only when a creator tests, publishes or goes
     assert.equal((await call('POST', '/api/drafts/here', null, player)).status, 403, 'only creators');
   } finally { await s.close(); }
 });
+
+test('pairing: a creator asks for a code, the laptop tool trades it once for its own sign-in', async () => {
+  const { s, call, friend, player } = await server();
+  try {
+    assert.equal((await call('POST', '/api/pair', null, player)).status, 403, 'only creators');
+    const c = await call('POST', '/api/pair', null, friend);
+    assert.match(c.code, /^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    assert.equal((await call('POST', '/api/pair/redeem', { code: 'NOPE-NOPE' })).status, 400);
+    const got = await call('POST', '/api/pair/redeem', { code: c.code.toLowerCase().replace('-', ' ') });
+    assert.equal(got.status, 200); assert.ok(got.token && got.email === 'max@example.com');
+    assert.equal((await call('POST', '/api/pair/redeem', { code: c.code })).status, 400, 'good once');
+    /* the tool's sign-in works as that creator (and Test then works with it) */
+    assert.equal((await call('POST', '/api/drafts', game('bird-hoops'), got.token)).status, 201);
+    /* too many wrong tries: it waits */
+    let last;
+    for (let i = 0; i < 9; i++) last = await call('POST', '/api/pair/redeem', { code: 'WRONGCODE' });
+    assert.equal(last.status, 429);
+  } finally { await s.close(); }
+});
