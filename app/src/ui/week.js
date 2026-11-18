@@ -11,7 +11,7 @@ import { newer } from './store.js';
 export const week = {
   store: null,          /* { games, featured } */
   challenges: null,     /* { week, ends, challenges, stars } */
-  drafts: [],           /* the games a creator in the family is testing on this TV */
+  drafts: [],           /* the games a creator in the family is testing on this TV (kept by tvwatch.js) */
   requests: [],         /* the games this account asked to have made, and how each is going */
   at: 0,
 
@@ -22,16 +22,14 @@ export const week = {
     if (!force && Date.now() - this.at < (this.building().length ? 15000 : 60000)) return false;
     this.at = Date.now();
     const was = this.key();
-    const [st, ch, rq, dr] = await Promise.all([
+    const [st, ch, rq] = await Promise.all([
       account.waiting ? null : account.call('GET', '/api/store').catch(() => null),
       account.call('GET', '/api/challenges').catch(() => null),
-      account.waiting || account.isKid ? null : account.call('GET', '/api/requests').catch(() => null),
-      account.waiting || appMode.creator() ? null : account.call('GET', '/api/drafts').catch(() => null)
+      account.waiting || account.isKid ? null : account.call('GET', '/api/requests').catch(() => null)
     ]);
     if (st) this.store = st;
     if (ch) this.challenges = ch;
     if (rq) this.requests = rq.requests || [];
-    if (dr) this.drafts = dr.drafts || [];
     /* a game the family's own creator published: it comes down to this TV by itself (and a newer version of one) */
     let got = false;
     if (st && !appMode.creator() && library.installed){

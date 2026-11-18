@@ -260,7 +260,8 @@ family's Orlis Server as a *draft*; the Player app on the TV shows it in Play's 
 plays it without keeping it), then **Publish** (the server checks it again and stores it
 family-only; the Player app downloads it by itself and it sits under Play). All between the
 creator's laptop and the family's own server - the owner isn't involved. "Send" is gone from
-Create Pro. Server: `drafts.js` (`/api/drafts`), `mine` flag on `/api/store`. App: `ui/tv.js`.
+Create Pro. Server: `drafts.js` (`/api/drafts`), `mine` flag on `/api/store`. App: `ui/tv.js`, `ui/tvwatch.js`.
+The TV holds one request open (`/api/drafts/wait`); the server answers only on a Test, a removal, a publish, or a creator arriving/leaving (Create Pro sends "still here" every 10s while open). Idle costs nothing. Not done: starting the game on the TV by itself on a new Test.
 
 **Phase 2 (on hold):** submit a game to the owner, and maybe into Discover for everyone.
 Creator games have more freedom, so it'd need much more testing on the owner's side - perhaps

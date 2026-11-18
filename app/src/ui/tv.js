@@ -31,6 +31,8 @@ export const tv = {
   async drafts(){
     try { return (await account.call('GET', '/api/drafts')).drafts || []; } catch { return null; }
   },
+  /* Create Pro is open: the family's TV knows a creator is here */
+  here(){ return account.call('POST', '/api/drafts/here').catch(() => {}); },
   publish(id){ return account.call('POST', `/api/drafts/${encodeURIComponent(id)}/publish`); },
   remove(id){ return account.call('DELETE', `/api/drafts/${encodeURIComponent(id)}`); }
 };

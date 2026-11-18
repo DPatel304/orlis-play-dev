@@ -16,12 +16,27 @@ import { checkGame } from './submissions.js';
 import { readOrlis, writeOrlis, manifestOf, sha256 } from './orlis-file.js';
 
 export const LIMITS = { drafts: 20 };
+/* a creator's app says "I'm here" this often; gone if it's been quiet this long */
+export const HERE_MS = 40 * 1000;
+/* a waiting request is answered, empty, after this long (the TV just asks again) */
+export const WAIT_MS = 45 * 1000;
 
 export function drafts(db, files, shop, log = { add(){} }){
   const q = (sql) => db.prepare(sql);
   const keyOf = (household, id) => `drafts/${household}/${id}.orlis`;
   const prefix = (household) => `drafts/${household}/`;
   const familyName = (a) => { const r = q('SELECT name FROM households WHERE id = ?').get(a.household_id); return r ? r.name : 'A family'; };
+  /* Who's waiting, and what changed: per family, a number that goes up on every Test, removal, publish, and
+     when a creator arrives or leaves. The TV holds a request open until the number is past the one it has - so
+     nothing is asked or answered until something happens. */
+  const fam = new Map();       /* household -> { n, here: ms of the last "I'm here", waiting: [fn] } */
+  const state = (hh) => { let f = fam.get(hh); if (!f){ f = { n: 1, here: 0, waiting: [] }; fam.set(hh, f); } return f; };
+  const isHere = (f) => Date.now() - f.here < HERE_MS;
+  const bump = (hh) => { const f = state(hh); f.n++; const w = f.waiting; f.waiting = []; for (const fn of w) fn(); };
+  const touch = (hh) => { const f = state(hh), was = isHere(f); f.here = Date.now(); if (!was) bump(hh); };
+  /* (a creator who went quiet: the TV is told) */
+  const sweep = setInterval(() => { for (const [hh, f] of fam) if (f.here && !isHere(f)){ f.here = 0; bump(hh); } }, 10 * 1000);
+  sweep.unref();
   const creator = (a) => { if (a.role !== 'creator' && a.role !== 'owner') throw new Fail(403, 'not_creator', 'Only creators can make games for the TV.'); return a; };
 
   async function mine(a){
@@ -54,10 +69,23 @@ export function drafts(db, files, shop, log = { add(){} }){
         const had = (await mine(a)).some(d => d.id === m.id);
         if (!had && (await mine(a)).length >= LIMITS.drafts) throw new Fail(400, 'too_many', `You have ${LIMITS.drafts} games being tested already. Remove one first.`);
         await files.put(keyOf(a.household_id, m.id), raw);
+        touch(a.household_id); bump(a.household_id);
         return [201, { id: m.id, name: m.name, version: m.version }];
       }],
       /* the family's: the Player app lists these ("Testing") */
       ['GET', '/api/drafts', async ({ headers }) => ({ drafts: await mine(who(headers)) })],
+      /* the creator's app, open on Create Pro: still here */
+      ['POST', '/api/drafts/here', ({ headers }) => { const a = creator(who(headers)); touch(a.household_id); return { ok: true }; }],
+      /* the TV: wait until something has happened since the number it has. Answered at once if it already has;
+         else when a Test (or the like) happens; else, empty, after a while. Drafts show only while a creator is here. */
+      ['GET', '/api/drafts/wait', async ({ headers, query }) => {
+        const a = who(headers), f = state(a.household_id);
+        const since = Number(query.get('since')) || 0;
+        const ms = Math.min(Math.max(Number(query.get('ms')) || WAIT_MS, 50), WAIT_MS);
+        if (f.n <= since) await new Promise((ok) => { const t = setTimeout(() => { f.waiting = f.waiting.filter(x => x !== done); ok(); }, ms); const done = () => { clearTimeout(t); ok(); }; f.waiting.push(done); });
+        const here = isHere(state(a.household_id));
+        return { n: f.n, here, drafts: here ? await mine(a) : [] };
+      }],
       ['GET', '/api/drafts/:id/file', async ({ headers, params }) => {
         const a = who(headers);
         const data = await files.get(keyOf(a.household_id, params.id));
@@ -67,6 +95,7 @@ export function drafts(db, files, shop, log = { add(){} }){
       ['DELETE', '/api/drafts/:id', async ({ headers, params }) => {
         const a = creator(who(headers));
         if (!(await files.del(keyOf(a.household_id, params.id)))) throw new Fail(404, 'no_draft', 'That game isn\'t being tested.');
+        bump(a.household_id);
         return { ok: true };
       }],
       /* Publish: into the Store, for this family only */
@@ -84,6 +113,7 @@ export function drafts(db, files, shop, log = { add(){} }){
         await shop.add(manifest.id, file);
         if (!inStore || q('SELECT 1 FROM reach WHERE game_id = ?').get(manifest.id)) q('INSERT OR REPLACE INTO reach (game_id, household_id) VALUES (?, ?)').run(manifest.id, a.household_id);
         try { await files.del(keyOf(a.household_id, manifest.id)); } catch {}
+        bump(a.household_id);
         log.add(a, 'published', { gameId: manifest.id, name: manifest.name, version: manifest.version, note: `for ${m.by} only` });
         return { ok: true, game: { id: manifest.id, name: manifest.name, version: manifest.version, by: m.by, reach: 'family' } };
       }]

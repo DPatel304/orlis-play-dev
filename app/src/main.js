@@ -4,6 +4,7 @@ import { launch } from './ui/launch.js';
 import { toast } from './ui/toast.js';
 import { pose } from './tracking/pose.js';
 import { appMode } from './ui/mode.js';
+import { watchTests } from './ui/tvwatch.js';
 import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
 import { menu, toggleFullscreen, openSettings, played as playedLately } from './ui/menu.js';
@@ -540,6 +541,8 @@ const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : nul
     wait();
   });
   await libraryReady;
+  /* a creator's Test, at once: the Testing row on Play changes when one comes (and only then) */
+  watchTests({ onChange: () => { if (mode === 'menu') toMenu(false); } });
   /* Straight into the game being worked on; or from the intro to the home
      screen, its tiles flying out of the cube. */
   /* (this week's data first - a moment at most - so the first page already knows about the

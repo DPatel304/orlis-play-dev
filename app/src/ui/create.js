@@ -295,6 +295,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
       ...(appMode.creator() ? [] : [btn('<span class="tri"></span>Try it', () => tryIt(g, card), 'cbig')]),
       btn('Test on the TV', () => testIt(g, card), on ? 'cbig' : 'go cbig'),
       btn('Publish', () => publishIt(g, card), on ? 'go cbig' : 'cbig off'));
+    if (on) card.querySelector('.fbtns').append(btn('Take it off the TV', async () => { try { await tv.remove(g.manifest.id); } catch (e){ problem(card)(e); return; } sfx.select(); closePop(); said = `${g.manifest.name} is off the TV.`; await refreshMine(); }));
     if (!on) card.insertBefore(h('p', 'fnote', 'Test it on the TV first. When it’s right, publish it: it’s downloaded to the TV and shows up under Play.'), card.querySelector('.cacts'));
     card.querySelector('.fbtns').append(
       btn('Show the folder', () => making.show(g.folder).catch(problem(card))),
@@ -453,6 +454,12 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
       }
     }
 
+  }
+  /* Create Pro open and in view: "still here" to the family's server, so the TV knows a creator is testing */
+  if (kit){
+    const beat = () => { if (!s.isConnected){ clearInterval(beatT); return; } if (!document.hidden) tv.here(); };
+    const beatT = setInterval(beat, 10000);
+    beat();
   }
   draw();
   refreshMine();

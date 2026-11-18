@@ -121,12 +121,14 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
     check((await txt(pg, '.ferr, .toast')).length >= 0 && (await api('GET', '/api/store', null, me.token)).games.every(g => !/firefly/i.test(g.id)), 'Publish before Test does nothing');
     await pg.keyboard.press('Escape'); await wait(300);
     await pg.click('.sshelf .slock'); await wait(600);
+    /* the TV is already on Play, waiting: it should hear about the Test by itself, with no reload */
+    const tvp = await open('&mode=player'); await wait(2500);
+    check(!(await tvp.$('.shelf.testing')), 'before Test: nothing on the TV');
     await pg.click('.cacts .btn >> text=Test on the TV'); await wait(2500);
     const dr = (await api('GET', '/api/drafts', null, me.token)).drafts || [];
     check(dr.length === 1 && /firefly/i.test(dr[0].id), 'Test put it on the TV: ' + dr.map(d => d.id).join(','));
     await pg.screenshot({ path: out + '-tested.png' });
-    const tvp = await open('&mode=player'); await wait(3000);
-    check((await tvp.$$eval('.shelf.testing .testtile', e => e.length)) === 1, 'the TV (Player app) shows it in a Testing row');
+    check((await tvp.$$eval('.shelf.testing .testtile', e => e.length)) === 1, 'the TV (Player app, already waiting) shows it in a Testing row at once');
     await tvp.$eval('.shelf.testing', e => e.scrollIntoView({ block: 'center' })).catch(() => {});
     await tvp.screenshot({ path: out + '-tv-testing.png' });
     await tvp.context().close();

@@ -63,3 +63,36 @@ test('Test then Publish: a creator\'s game plays on their family\'s TV, then liv
     assert.deepEqual(await sees(friend), []);
   } finally { await s.close(); }
 });
+
+test('the TV waits, and is answered only when a creator tests, publishes or goes away', async () => {
+  const { s, call, friend, player } = await server();
+    const tv = friend;      /* (the family's TV is signed in as one of the family) */
+  try {
+    const wait = (n, tok, ms = 3000) => call('GET', `/api/drafts/wait?since=${n}&ms=${ms}`, null, tok);
+    const first = await wait(0, tv, 50);
+    assert.equal(first.here, false); assert.deepEqual(first.drafts, []);
+    /* quiet: nothing to say, so an empty answer, same number */
+    const quiet = await wait(first.n, tv, 100);
+    assert.equal(quiet.n, first.n);
+    /* a Test (made while it waits) answers it at once - and the creator is here, so the draft shows */
+    const pending = wait(first.n, tv, 5000);
+    await new Promise(r => setTimeout(r, 150));
+    await call('POST', '/api/drafts', game('bird-hoops'), friend);
+    const got = await pending;
+    assert.ok(got.n > first.n); assert.equal(got.here, true); assert.deepEqual(got.drafts.map(d => d.id), ['bird-hoops']);
+    /* another family's TV hears nothing of it */
+    const other = await wait(0, player, 50);
+    assert.deepEqual(other.drafts, []);
+    /* taking it off tells the TV */
+    const p2 = wait(got.n, tv, 5000);
+    await new Promise(r => setTimeout(r, 100));
+    await call('DELETE', '/api/drafts/bird-hoops', null, friend);
+    assert.deepEqual((await p2).drafts, []);
+    /* "still here" from the creator's app counts as arriving */
+    const p3 = wait((await p2).n, tv, 5000);
+    await new Promise(r => setTimeout(r, 100));
+    assert.equal((await call('POST', '/api/drafts/here', null, friend)).ok, true);
+    assert.equal((await p3).here, true);
+    assert.equal((await call('POST', '/api/drafts/here', null, player)).status, 403, 'only creators');
+  } finally { await s.close(); }
+});
