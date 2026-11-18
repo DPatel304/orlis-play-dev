@@ -305,3 +305,12 @@ Other devices considered: Raspberry Pi (no, see above); iPhone or Android as the
 a separate web/iOS/Android Player build, with the Library and sandbox reworked; Android is the better first
 try; quickest test is the app's web page in the phone's browser with the camera on). Testing games on the
 laptop with the mouse as hands was considered and dropped: testing on the TV is the only way.
+
+## Phone as a Create Pro remote (idea)
+
+Coding can't happen on a phone (Claude Code and the game folder need a computer). But a phone signed in to the
+family's server could list the games being tested (`GET /api/drafts`) and press **Publish** / **Take it off the
+TV** (routes exist already) - so you can play on the TV and publish from the couch. The Create picture flow
+also only needs the server, so it'd work on a phone. Test stays on the laptop (it packs the laptop's folder).
+Needs a phone build or a small web page served by the Orlis Server. Coding in the cloud (Claude's own app) and
+getting the game home is a bigger design (needs a way in from outside the home network) - not started.
