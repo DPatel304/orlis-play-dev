@@ -453,3 +453,11 @@ name; Sign out on the profile screen; mode, creator role and Dev Kit granted by 
 - Owner view in the app (who joined, who is a creator, remove a family) - today only the web management page.
 - Data and recovery: delete a child's profile and scores completely (partly there), password reset, a list of signed-in
   devices with "sign out everywhere".
+
+## Camera: no settings, it looks after itself (done)
+
+Settings no longer has Re-calibrate, a camera picker, Camera detail or Smoother tracking (those stay at their defaults:
+standard picture, tracking on the main thread; the first camera Windows offers is used). In their place the camera is
+quietly started over (`pose.heal()`, at most every 30 s, players start again, the tracker stays loaded) when no new
+picture has come for 4 s (a stuck or re-plugged camera), or when nobody has been seen for 20 s in a game. Not tried on a
+real camera yet. Open: a way to choose between two cameras if a PC ever needs it.

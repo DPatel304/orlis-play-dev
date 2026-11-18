@@ -316,10 +316,13 @@ function checkLost(dt){
   pose.players.forEach((p, i) => { if (p.present) joined.add(i); });
   const anyone = pose.mouse.active || pose.players.some(p => p.present);
   empty = anyone ? 0 : empty + dt;
-  if (empty > EMPTY_AFTER && !lost) lost = lostOverlay();
+  if (empty > EMPTY_AFTER && !lost){ lost = lostOverlay(); healed = false; }
+  /* nobody seen for a long while in a game: the camera is started over once, in case it's what's wrong */
+  if (lost && !healed && empty > EMPTY_HEAL){ healed = true; pose.heal(); }
   else if (anyone && lost){ lost.remove(); lost = null; }
 }
-const EMPTY_AFTER = 2;
+const EMPTY_AFTER = 2, EMPTY_HEAL = 20;
+let healed = false;
 
 /* ---------- HUD ---------- */
 /* The card before a round: the game, what to do, then 3, 2, 1. */

@@ -428,3 +428,30 @@ test('while play is capped at two, a third person waits; opened up, they join', 
   pose.cap = 2;
   for (const p of pose.players){ p.present = false; p.lm = null; p.lostFor = 99; }
 });
+
+test('a camera whose pictures stop coming is quietly started over, once in a while', async () => {
+  const { FROZEN_MS, HEAL_EVERY_MS } = await import('../src/tracking/pose.js');
+  resetPose();
+  const opened = [];
+  const was = { _open: pose._open, _close: pose._close, video: pose.video, on: pose.on, ready: pose.ready };
+  pose._open = async (id) => { opened.push(id); };
+  pose._close = () => {};
+  pose.video = { readyState: 2, currentTime: 5, srcObject: null };
+  pose.on = true; pose.ready = true; pose.paused = false; pose._healedAt = 0; pose._healing = false;
+  /* pictures stop: after FROZEN_MS the camera is started over (the players are started over too) */
+  pose._lastT = 5; pose._frameAt = performance.now() - (FROZEN_MS + 500);
+  pose.update(performance.now(), 0.016);
+  await new Promise(r => setTimeout(r, 20));
+  assert.equal(opened.length, 1, 'started over');
+  assert.ok(pose.players.every(p => !p.present), 'and the players start again');
+  /* still frozen: not again for a while */
+  pose._lastT = 5; pose._frameAt = performance.now() - (FROZEN_MS + 500);
+  pose.update(performance.now(), 0.016);
+  await new Promise(r => setTimeout(r, 20));
+  assert.equal(opened.length, 1, 'not every few seconds');
+  assert.ok(HEAL_EVERY_MS >= 30000);
+  /* the mouse (no camera) has nothing to start over */
+  pose.mouse.active = true; pose._healedAt = 0;
+  assert.equal(await pose.heal(), false);
+  Object.assign(pose, was); pose.mouse.active = false; pose._healedAt = 0;
+});

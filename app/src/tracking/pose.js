@@ -128,6 +128,9 @@ function withTimeout(promise, ms){
   ]);
 }
 
+/* the camera is started over (quietly) if no new picture comes for this long, and not more often than this */
+export const FROZEN_MS = 4000, HEAL_EVERY_MS = 30000;
+
 export const pose = {
   ready:false, usingCamera:false, reason:'', detail:'', activeId:'',
   players:Array.from({ length: MAX_PLAYERS }, (_, i) => blank(i)),
@@ -270,6 +273,24 @@ export const pose = {
     this.video.srcObject = stream;
     await this.video.play();
   },
+  /* Quietly starting the camera over, with no screen and nothing to press (there's no Re-calibrate button to ask
+     for it): when its pictures stop coming (a frozen or unplugged-and-back camera), or when nobody's been seen for
+     a long while in a game. Players are started over, as for a new camera; the tracker stays loaded. At most once
+     every half minute. Gives back whether it tried. */
+  async heal(){
+    if (!this.on || this.mouse.active || this._healing || !this.video) return false;
+    const now = performance.now();
+    if (this._healedAt && now - this._healedAt < HEAL_EVERY_MS) return false;
+    this._healedAt = now; this._healing = true;
+    try {
+      this._close();
+      await this._open(this.preferred(), false);
+      for (const p of this.players){ p.lm = null; p.present = false; p.lostFor = 99; }
+      this._frameAt = performance.now(); this._emptyFor = 0;
+    } catch (e){ /* (it'll try again later) */ }
+    this._healing = false;
+    return true;
+  },
   _close(){
     try { this.video.srcObject && this.video.srcObject.getTracks().forEach(t => t.stop()); } catch (e){}
     try { this.video.srcObject = null; } catch (e){}
@@ -333,8 +354,14 @@ export const pose = {
       this.fps = this._hits * 1000 / (wall - this._since);
       this._hits = 0; this._since = wall;
     }
-    if (v.currentTime === this._lastT) { this._decay(dt); return; }
-    this._lastT = v.currentTime;
+    if (v.currentTime === this._lastT){
+      /* no new picture: if that goes on, the camera is stuck (or was unplugged and back) - start it over */
+      if (!this._frameAt) this._frameAt = wall;
+      const tr = v.srcObject && v.srcObject.getVideoTracks && v.srcObject.getVideoTracks()[0];
+      if (!this.paused && (wall - this._frameAt > FROZEN_MS || (tr && tr.readyState === 'ended' && wall - this._frameAt > 1000))) this.heal();
+      this._decay(dt); return;
+    }
+    this._lastT = v.currentTime; this._frameAt = wall;
 
     /* The pause screen has no use for bodies. */
     if (this.paused){ this._decay(dt); return; }
