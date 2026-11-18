@@ -366,3 +366,37 @@ the tool trades it for its own sign-in called "Orlis tool"; wrong tries are limi
 (`npx esbuild kit/cli/orlis.mjs --bundle --platform=node --format=esm`). **Still to do:** a standalone Windows
 `orlis.exe` built in CI (Node single-executable) and put on the creator's PATH; the code + address shown in the
 app / on the TV (QR); the command files and `CLAUDE.md` changes; the guard hook and settings change; hook tests.
+
+## Guardrails for creators' games: start strict, loosen as trust grows (plan)
+
+Rule: every guardrail is a switch or a number in one place (`server/src/guardrails.js` so far), each with a test that
+shows what it holds back, so loosening is a one-line change. All of these were chosen for the first version.
+
+**Done**
+- TV confirms publishing: the laptop tool (the "Orlis tool" sign-in) can only ASK; the TV shows "Publish?" on the
+  Testing tile and a grown-up presses Publish (a kid profile is told to ask a grown-up). Switch: `tvConfirmPublish`.
+  (A person using the Create Pro app can still publish directly.)
+- Rates: tests a minute (6) and publish questions an hour (10), per family.
+- The trail: tested, publish-asked, publish-declined, published and taken-off are written to History (tests with the
+  file's fingerprint and whether the tool or the app did it).
+- Only the laptop tool's exact commands (design agreed; guard hook not changed yet - see below).
+
+**To do, in order**
+1. Guard hook + settings: exact `orlis ...` commands only; tamper check (the hooks verify the guardrail files haven't
+   changed since the folder was made); command files + `CLAUDE.md`; change summaries after each edit; prompt-injection
+   check extended; hook tests (Windows CI).
+2. Kit/server checks: stricter code allowlist (only documented `Orlis.*` calls and plain canvas to start), smaller size
+   caps, no new files/symlinks, no text input or personal info, no ads/purchases/links (payment words, URL strings),
+   photosensitivity rule (limits on rapid full-screen brightness changes), sound volume and length caps, age range
+   declared in `orlis.json`, scary-content flag, play-area limits (no long spinning/jumping), same list in the app, kit
+   and server with a test that they match.
+3. Player runtime: frame-time watchdog (a freezing/slow game is stopped with a friendly message), memory/loop limits,
+   round-length ceiling, crash isolation (a game that crashes twice is pulled from Play until fixed), break reminders
+   from the Player (not the game), age gating by profile age, sandbox hardening tests (no network, storage, clipboard,
+   fullscreen, popups).
+4. Publishing: keep the last good version so one press rolls back; a published version is never edited in place; a
+   minimum number of test plays before publish; the reviewer pass (a separate Claude pass reads the game for content and
+   safety and writes a report kept with each version; advisory at first); owner alerts on publish or repeated check
+   failures.
+5. Reports and control: "Report a problem" from the Player hides the game at once until the owner looks; owner "pause
+   all creator games"; reviewer report visible in History.

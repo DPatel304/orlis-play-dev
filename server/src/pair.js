@@ -5,6 +5,7 @@
    account, called "Orlis tool", which the creator can see and end like any other device. Same Wi-Fi only: nothing
    here is for the internet - and the tool is never given the creator's password. */
 import { Fail } from './http.js';
+import { TOOL_DEVICE } from './guardrails.js';
 import { now } from './db.js';
 import { newToken, hashToken } from './secure.js';
 import { randomInt } from 'node:crypto';
@@ -40,7 +41,7 @@ export function pairing(db){
         const a = db.prepare('SELECT * FROM accounts WHERE id = ?').get(hit.account);
         if (!a || (a.role !== 'creator' && a.role !== 'owner')) throw new Fail(403, 'not_creator', 'Only creators can connect Claude Code.');
         const token = newToken(), n = now();
-        db.prepare('INSERT INTO sessions (token_hash, account_id, device, created_at, last_seen) VALUES (?, ?, ?, ?, ?)').run(hashToken(token), a.id, 'Orlis tool', n, n);
+        db.prepare('INSERT INTO sessions (token_hash, account_id, device, created_at, last_seen) VALUES (?, ?, ?, ?, ?)').run(hashToken(token), a.id, TOOL_DEVICE, n, n);
         return { token, email: a.email };
       }]
     ]

@@ -38,7 +38,8 @@ export function testingRow(drafts, onTry){
     const pic = buildingCoverUrl({ name: d.name, cols: (d.icon && d.icon.cols) || ['#7c3aed', '#06b6d4'], label: 'Testing', pct: 100 }); if (pic) th.style.backgroundImage = `url(${pic})`;
     t.insertBefore(th, t.firstChild);
     t.querySelector('.lbl').replaceWith(h('div', 'smeta', ''));
-    t.setAttribute('aria-label', `${d.name}: testing. Play it.`);
+    if (d.asking) th.appendChild(h('span', 'newchip', 'Publish?'));
+    t.setAttribute('aria-label', d.asking ? `${d.name}: asking to be published.` : `${d.name}: testing. Play it.`);
     onPick(t, () => { sfx.select(); onTry(d); });
     row.appendChild(t);
   }

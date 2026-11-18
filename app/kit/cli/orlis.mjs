@@ -4,7 +4,7 @@
      orlis connect <address> <code>   once, by the creator (not Claude): trade a pairing code for this laptop's sign-in
      orlis check                      the game's checks, in plain words
      orlis test                       check, pack, and put it on the TV's Testing row
-     orlis publish                    make the tested game one of the family's games, under Play
+     orlis publish                    ask to make the tested game one of the family's games: a grown-up presses Publish on the TV
      orlis take-off                   take it off the TV's Testing row
      orlis status                     what's being tested and what's published
 
@@ -88,7 +88,8 @@ const commands = {
     const g = game(); if (g.manifest === null) stop('This folder has no orlis.json. Run orlis in a game folder.');
     let m; try { m = JSON.parse(g.manifest); } catch { stop('orlis.json isn’t valid JSON.'); }
     const r = await call('POST', `/api/drafts/${encodeURIComponent(m.id)}/publish`);
-    say(`${r.data.game.name} (version ${r.data.game.version}) is published: it downloads to the TV by itself, under Play.`);
+    if (r.data.asking) say(`Asked: ${r.data.game.name} (version ${r.data.game.version}) is waiting for a grown-up to press Publish on the TV. (It isn't published until they do.)`);
+    else say(`${r.data.game.name} (version ${r.data.game.version}) is published: it downloads to the TV by itself, under Play.`);
   },
   async 'take-off'(){
     const g = game(); if (g.manifest === null) stop('This folder has no orlis.json. Run orlis in a game folder.');

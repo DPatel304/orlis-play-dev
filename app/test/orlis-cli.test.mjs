@@ -61,13 +61,16 @@ test('the orlis command: connect once, then check, test, publish, status and tak
     r = await run(['take-off'], dir, home); assert.equal(r.code, 0, r.err);
     assert.equal((await call('GET', '/api/drafts', null, me.token)).drafts.length, 0);
     await run(['test'], dir, home);
-    r = await run(['publish'], dir, home); assert.equal(r.code, 0, r.err); assert.match(r.out, /is published/);
+    /* publishing from the tool is only a question: a grown-up answers it on the TV */
+    r = await run(['publish'], dir, home); assert.equal(r.code, 0, r.err); assert.match(r.out, /waiting for a grown-up to press Publish on the TV/);
+    r = await run(['status'], dir, home); assert.match(r.out, /Nothing is published yet/);
+    assert.equal((await call('POST', '/api/drafts/' + JSON.parse(readFileSync(join(dir, 'orlis.json'), 'utf8')).id + '/publish', null, me.token)).status, 200, 'the TV says yes');
     r = await run(['status'], dir, home); assert.match(r.out, /Published for the family:\n- Firefly Jar/);
     /* the same version again: it gets a newer number by itself */
     r = await run(['test'], dir, home);
     assert.equal(r.code, 0, r.err); assert.match(r.out, /Version is now 0\.2/);
     assert.equal(JSON.parse(readFileSync(join(dir, 'orlis.json'), 'utf8')).version, '0.2');
-    r = await run(['publish'], dir, home); assert.equal(r.code, 0, r.err);
+    r = await run(['publish'], dir, home); assert.equal(r.code, 0, r.err); assert.match(r.out, /Asked/);
     /* it can't be sent anywhere else: no option names a server */
     r = await run(['test', '--server', 'http://elsewhere'], dir, home);
     assert.equal(r.code, 0, 'extra words are ignored by the tool (the guard refuses them for Claude)');

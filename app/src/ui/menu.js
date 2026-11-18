@@ -271,7 +271,28 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   /* Under construction: the games asked for and not here yet - at the very end, out of the way
      (nothing to do about one while it's being made, so nothing to pick, and no stop on the way down) */
   /* (and Testing: a creator's game on this TV to try, played from the family's server, not kept) */
-  const tryDraft = async (d) => {
+  /* the creator asked to publish it: a grown-up answers here, on the TV */
+  const askPublish = (d) => {
+    const wrap = screen('dim fpopwrap'); wrap.style.zIndex = 6;
+    const card = h('div', 'fpop'), close = () => { wrap.remove(); remote.mark(cards[focus].card); };
+    const kid = account.isKid;
+    card.append(h('h2', '', `Publish ${d.name}?`),
+      h('p', '', kid ? 'Ask a grown-up: only they can say yes.' : 'It becomes one of your family\u2019s games, under Play. Play it first if you haven\u2019t.'),
+      h('div', 'fbtns'));
+    const b = (label, fn, cls = '') => onPick(button(label, 'setbtn ' + cls), fn);
+    const act = card.querySelector('.fbtns');
+    act.append(b('Not now', async () => { sfx.back?.(); close(); if (!kid) { try { await account.call('DELETE', `/api/drafts/${encodeURIComponent(d.id)}/ask`); } catch {} } }),
+      b('Play it', () => { sfx.select(); close(); playDraft(d); }));
+    if (!kid) act.append(b('Publish', async () => {
+      try { await account.call('POST', `/api/drafts/${encodeURIComponent(d.id)}/publish`); }
+      catch (e){ toast(e.message || 'That didn\u2019t work.', { bad: true }); return; }
+      sfx.gold?.(); close(); toast(`${d.name} is published`);
+      await week.refresh({ force: true }).catch(() => {}); if (nav.home) nav.home();
+    }, 'go'));
+    wrap.appendChild(card);
+  };
+  const tryDraft = (d) => { if (going || getting) return; if (d.asking) askPublish(d); else playDraft(d); };
+  const playDraft = async (d) => {
     if (going || getting) return;
     toast(`Getting ${d.name}\u2026`);
     try {

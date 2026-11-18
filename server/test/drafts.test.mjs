@@ -115,3 +115,35 @@ test('pairing: a creator asks for a code, the laptop tool trades it once for its
     assert.equal(last.status, 429);
   } finally { await s.close(); }
 });
+
+test('guardrails: the laptop tool can only ask to publish; a grown-up presses Publish on the TV; rates and the trail', async () => {
+  const { s, call, friend, player } = await server();
+  try {
+    const tool = (await call('POST', '/api/pair/redeem', { code: (await call('POST', '/api/pair', null, friend)).code })).token;
+    const tv = friend;                       /* (the family's TV, signed in as one of the family) */
+    /* the tool may test... */
+    assert.equal((await call('POST', '/api/drafts', game('bird-hoops'), tool)).status, 201);
+    /* ...but publishing from it is only a question */
+    const q = await call('POST', '/api/drafts/bird-hoops/publish', null, tool);
+    assert.equal(q.status, 202); assert.equal(q.asking, true);
+    assert.equal((await call('GET', '/api/store', null, friend)).games.some(g => g.id === 'bird-hoops'), false, 'not published by asking');
+    const seen = (await call('GET', '/api/drafts', null, tv)).drafts[0];
+    assert.equal(seen.asking, true, 'the TV sees the question');
+    /* the tool can't answer it, and "not now" is the TV's */
+    assert.equal((await call('DELETE', '/api/drafts/bird-hoops/ask', null, tool)).status, 403);
+    assert.equal((await call('DELETE', '/api/drafts/bird-hoops/ask', null, tv)).ok, true);
+    assert.equal((await call('GET', '/api/drafts', null, tv)).drafts[0].asking, false);
+    /* a new test clears a question; ask again, and the TV says yes */
+    await call('POST', '/api/drafts/bird-hoops/publish', null, tool);
+    const yes = await call('POST', '/api/drafts/bird-hoops/publish', null, tv);
+    assert.equal(yes.status, 200); assert.equal(yes.game.reach, 'family');
+    /* the trail */
+    const trail = (await call('GET', '/api/history', null, null, { 'X-Orlis-Manage': s.manageKey })).history.map(h => h.what);
+    for (const w of ['tested', 'publish-asked', 'publish-declined', 'published']) assert.ok(trail.includes(w), `${w} is written down`);
+    /* rates: a family can't put a game on the TV a hundred times a minute */
+    let last;
+    for (let i = 0; i < 8; i++) last = await call('POST', '/api/drafts', game('bird-hoops', { version: `2.${i}` }), tool);
+    assert.equal(last.status, 429);
+    assert.equal((await call('DELETE', '/api/drafts/bird-hoops', null, tv)).status, 200);
+  } finally { await s.close(); }
+});

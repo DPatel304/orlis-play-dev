@@ -132,9 +132,19 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
     check((await tvp.$$eval('.shelf.testing .testtile', e => e.length)) === 1, 'the TV (Player app, already waiting) shows it in a Testing row at once');
     await tvp.$eval('.shelf.testing', e => e.scrollIntoView({ block: 'center' })).catch(() => {});
     await tvp.screenshot({ path: out + '-tv-testing.png' });
+    /* the laptop tool (Claude) can only ASK to publish; a grown-up answers on the TV */
+    const code = (await api('POST', '/api/pair', null, me.token)).code;
+    const tool = (await api('POST', '/api/pair/redeem', { code })).token;
+    const asked = await fetch(S + `/api/drafts/${dr[0].id}/publish`, { method: 'POST', headers: { Authorization: `Bearer ${tool}` } });
+    check(asked.status === 202 && (await api('GET', '/api/store', null, me.token)).games.every(g => !/firefly/i.test(g.id)), 'the tool\'s Publish is only a question (nothing published yet)');
+    await wait(1500);
+    check((await txt(tvp, '.testtile .newchip')) === 'Publish?', 'the TV shows "Publish?" on the tile');
+    await tvp.screenshot({ path: out + '-tv-asking.png' });
+    await tvp.click('.testtile'); await wait(600);
+    check((await txt(tvp, '.fpop h2')).startsWith('Publish '), 'tapping it asks the grown-up: ' + (await txt(tvp, '.fpop h2')));
+    await tvp.click('.fpop .setbtn.go'); await wait(3500);
     await tvp.context().close();
-    await pg.click('.sshelf .slock'); await wait(600);
-    await pg.click('.cacts .btn >> text=Publish'); await wait(2500);
+    await pg.keyboard.press('Escape'); await wait(300);
     const st2 = (await api('GET', '/api/store', null, me.token)).games.find(g => /firefly/i.test(g.id));
     check(!!st2 && st2.reach === 'family' && st2.mine === true, 'Publish put it in the family\'s Store: ' + (st2 && st2.id));
     await pg.screenshot({ path: out + '-published.png' });
