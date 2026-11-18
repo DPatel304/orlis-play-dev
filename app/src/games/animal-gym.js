@@ -8,6 +8,7 @@
    The moves are the body's, from the camera's landmarks (a jump uses the jump watch the other games use). With no
    landmarks - the mouse, in testing - a fast hand counts as a try, so the game can still be played. */
 import { Juice } from './common.js';
+import { figureCard } from './figure.js';
 import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { L } from '../tracking/pose-shared.js';
@@ -186,7 +187,7 @@ class AnimalGym {
     c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#000';
     c.fillText(m.animal, 0, 0);
     c.restore();
-    this._figure(c, mv, W * 0.8, H * 0.52, H * 0.14, t);
+    figureCard(c, W, H, mv, t);
     /* the animal's name, and where we are in the workout (a dot for each stretch) */
     c.save(); c.textAlign = 'center'; c.textBaseline = 'middle';
     c.font = `800 ${Math.round(H * 0.045)}px Inter, Segoe UI, sans-serif`; c.fillStyle = '#33322e';
@@ -202,35 +203,6 @@ class AnimalGym {
     this.avatars.drawMitts(c, W, H, this.players);
     sayBubble(c, W, H, { text: this.say.text, t: this.say.t });
     goalBar(c, W, H, this.fill, { color: this.cheered ? '#e8b44a' : '#34b27b' });
-  }
-
-  /* a little stick figure showing the move, for the ones who can't read: on a card beside the animal */
-  _figure(c, mv, cx, cy, s, t){
-    const p = 0.5 + 0.5 * Math.sin(t * 4), lerp = (a, b, k) => a + (b - a) * k;
-    c.save();
-    c.fillStyle = 'rgba(255,255,255,.82)'; c.beginPath(); c.roundRect(cx - s * 1.7, cy - s * 1.9, s * 3.4, s * 3.8, s * 0.5); c.fill();
-    c.translate(cx, cy + s * 0.15);
-    let yOff = 0, lean = 0, arms, legs;
-    const sh = () => ({ x: lean * 0.6, y: -0.62 + yOff });
-    const kneeUp = Math.sin(t * 4) > 0;
-    if (mv === 'reach') arms = [[lerp(-0.3, -0.62, p), lerp(0.15, -1.2, p)], [lerp(0.3, 0.62, p), lerp(0.15, -1.2, p)]];
-    else if (mv === 'flap') arms = [[-0.9, lerp(0.05, -0.85, p)], [0.9, lerp(0.05, -0.85, p)]];
-    else if (mv === 'jump'){ yOff = -p * 0.45; arms = [[-0.55, lerp(0.0, -0.6, p)], [0.55, lerp(0.0, -0.6, p)]]; }
-    else if (mv === 'squat'){ yOff = p * 0.4; arms = [[-0.6, -0.2 + yOff], [0.6, -0.2 + yOff]]; }
-    else if (mv === 'march') arms = [[-0.45, 0.0], [0.45, 0.0]];
-    else { lean = lerp(-0.4, 0.4, p); arms = [[-0.5 + lean, 0.1], [0.5 + lean, 0.1]]; }
-    const hip = { x: lean * 0.1, y: -0.05 + yOff }, s0 = sh();
-    legs = mv === 'squat' ? [[[-0.5, 0.3], [-0.3, 0.7]], [[0.5, 0.3], [0.3, 0.7]]]
-      : mv === 'march' ? [[[kneeUp ? -0.45 : -0.15, kneeUp ? 0.15 : 0.32], [kneeUp ? -0.45 : -0.2, kneeUp ? 0.5 : 0.7]], [[0.15, 0.32], [0.2, 0.7]]]
-      : mv === 'jump' ? [[[-0.1, 0.35 + yOff * 0.4], [-0.15, 0.7 + yOff]], [[0.1, 0.35 + yOff * 0.4], [0.15, 0.7 + yOff]]]
-      : [[[-0.15, 0.32], [-0.2, 0.7]], [[0.15, 0.32], [0.2, 0.7]]];
-    c.strokeStyle = '#33322e'; c.lineWidth = s * 0.13; c.lineCap = 'round'; c.lineJoin = 'round';
-    const line = (pts) => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x * s, y * s) : c.moveTo(x * s, y * s))); c.stroke(); };
-    line([[s0.x, s0.y], [hip.x, hip.y]]);                              /* body */
-    for (const a of arms) line([[s0.x, s0.y], a]);                       /* arms */
-    for (const l of legs) line([[hip.x, hip.y], ...l]);                  /* legs */
-    c.fillStyle = '#33322e'; c.beginPath(); c.arc(s0.x * s, (s0.y - 0.28) * s, s * 0.2, 0, 6.2832); c.fill();     /* head */
-    c.restore();
   }
 
   hud(){ return { score: this.score, showLives: false, hideScore: true }; }
