@@ -400,3 +400,33 @@ shows what it holds back, so loosening is a one-line change. All of these were c
    failures.
 5. Reports and control: "Report a problem" from the Player hides the game at once until the owner looks; owner "pause
    all creator games"; reviewer report visible in History.
+
+## Direction undecided: widen Create, or keep Create Pro (free coding) with a forced flow (thinking)
+
+Where it stands: Create Pro (Claude Code on the creator's laptop -> `orlis test` -> the family's TV box -> a grown-up
+presses Publish) is built, with guardrails stage 1. The owner is now leaning toward **expanding the existing Create
+mode** instead of leaning on free coding. Nothing decided.
+
+**Option A - widen Create (the guided picture flow)**
+- More questions and choices (moves, themes, game types, looks); still made for them, you or the maker in the loop.
+- Safest; nothing to install; works for kids and parents.
+- Limit: only what the flow can express - no custom logic.
+- Needs: more actions/things/looks in `request.js` + `server/src/requests.js` (kept in step), maker prompts for them.
+
+**Option B - Create Pro with a forced flow (gated)**
+- Stages the server enforces in order, each tied to the file's fingerprint: brief (picture questions) -> build ->
+  check + reviewer pass -> test on the TV (a grown-up plays a full round, measured by the Player) -> grown-up preview
+  (name, age range, reviewer notes) -> publish (grown-up presses it). Any edit sends the game back to build. A change to
+  a published game restarts at build with a change note.
+- Needs: a server state machine, play time measured by the Player, the reviewer pass, a brief screen.
+- Cost: slower for experimenters; the reviewer must be dependable since a failed review blocks everyone.
+
+**Option C - both**: Create for everyone; Create Pro only for trusted people (e.g. the owner's brother), at the strict
+level, loosened as trust grows.
+
+**Questions to settle:** what can't Create make today that matters? Who is the creator (child, parent, someone who
+codes)? How involved should the owner stay? What play time counts as "tested" (20 seconds or a full round)? Does a
+grown-up have to play it?
+
+**What survives any choice:** the server checks, the History trail, rate limits, the TV "Publish?" step, the Testing
+row, pairing codes and the `orlis` tool (optional). Guardrails stages 1-5 (above) apply to any game that reaches the TV.
