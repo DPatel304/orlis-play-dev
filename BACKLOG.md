@@ -430,3 +430,26 @@ grown-up have to play it?
 
 **What survives any choice:** the server checks, the History trail, rate limits, the TV "Publish?" step, the Testing
 row, pairing codes and the `orlis` tool (optional). Guardrails stages 1-5 (above) apply to any game that reaches the TV.
+
+## Families: what to build (from the UI review; to revisit)
+
+Now: one grown-up account per family (the head of household) + kid profiles (a name and a picture only) + a family
+name; Sign out on the profile screen; mode, creator role and Dev Kit granted by the owner (web management page).
+
+**Do next (decided to wait, written here):**
+1. **Grown-up PIN (important).** Any child can tap the grown-up's profile on the shared TV and get grown-up powers
+   (Settings, Create, and **Publish on the TV** - the guardrail only checks "is this profile a kid", so it is not a real
+   lock). A 4-digit PIN asked when opening the grown-up profile or doing a grown-up action (publish, Settings, Create).
+   Held by the TV app (the server can't tell who is at the TV: it sees only the family's sign-in). Needs: set/change the
+   PIN (on the profile screen), lock after a few wrong tries, forgot-PIN path (the account password), tests.
+5. **Kid age bands** (3-5, 6-8, 9+) instead of a birth date - keeps the "nothing else is kept about a child" promise and
+   makes age gating possible (games declare an age range; the Player only offers what fits the profile). Needs: a
+   field on the kid profile (server `profiles` + editor), the age range in `orlis.json`, filtering in Play/Discover.
+
+**Other gaps seen (not decided):**
+- One grown-up only: a second parent has no account of their own. Options: share the sign-in (today), a second grown-up
+  profile under the same account (same PIN), or bring invites back (removed on purpose).
+- Family-level settings: quiet hours / daily play limit, a camera consent notice.
+- Owner view in the app (who joined, who is a creator, remove a family) - today only the web management page.
+- Data and recovery: delete a child's profile and scores completely (partly there), password reset, a list of signed-in
+  devices with "sign out everywhere".
