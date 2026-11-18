@@ -269,7 +269,7 @@ function showResults(){
   if (!game.back && !game.trial) week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) })
     .then((done) => done.forEach((c, i) => setTimeout(() => { sfx.gold?.(); toast(`\u2605 Star earned: ${c.title}`, { ms: 6000 }); }, 900 + i * 1200)), () => {});
   /* (a game being tried goes back where it came from: Create) */
-  go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'All games', summary));
+  go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'Home', summary));
 }
 
 /* ---------- pause by gesture ----------
@@ -296,7 +296,7 @@ function openPause(){
   paused = pauseOverlay(game, game.endless ? null : roundLeft,
     () => { paused.remove(); paused = null; cursor.reset(); },
     () => { paused.remove(); paused = null; roundDone(); (game.back || toMenu)(); },
-    game.back ? 'Back to Create' : 'All games');
+    game.back ? 'Back to Create' : 'Home');
   /* who's who, to put right a mix-up */
   if (MAKING && crew.profiles.length >= 2) paused.querySelector('.gbtext').appendChild(whoRow(crew.profiles));
   sfx.whoosh();

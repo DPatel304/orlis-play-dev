@@ -156,7 +156,7 @@ function gameBanner(cls, kicker, name, line){
    The ending scene stays in view behind - the bouquets, the lanterns, the
    sky full of pictures. back: where the other button goes ('Home', or
    'Back to Create' for a game being tried). */
-export function results(game, onAgain, onMenu, back = 'All games', summary = null){
+export function results(game, onAgain, onMenu, back = 'Home', summary = null){
   const { s, t } = gameBanner('end', 'Well played!', game.name);
   s.style.setProperty('--accent', game.accent);
   /* what everyone did together (never a winner or a ranking), and a new best if there is one */
@@ -174,7 +174,7 @@ export function results(game, onAgain, onMenu, back = 'All games', summary = nul
 
 /* ---------- pause ---------- */
 /* left: seconds left in the round (none for an endless game). */
-export function pauseOverlay(game, left, onResume, onQuit, back = 'All games'){
+export function pauseOverlay(game, left, onResume, onQuit, back = 'Home'){
   const line = left == null || !isFinite(left) ? '' : `${Math.floor(left / 60)}:${String(Math.max(0, Math.floor(left % 60))).padStart(2, '0')} left`;
   const { s, t } = gameBanner('dim pause', 'Paused', game.name, line);
   s.style.setProperty('--accent', game.accent);

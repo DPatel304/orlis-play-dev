@@ -213,7 +213,7 @@ class AnimalGym {
     let yOff = 0, lean = 0, arms, legs;
     const sh = () => ({ x: lean * 0.6, y: -0.62 + yOff });
     const kneeUp = Math.sin(t * 4) > 0;
-    if (mv === 'reach') arms = [[-0.28, lerp(0.15, -1.15, p)], [0.28, lerp(0.15, -1.15, p)]];
+    if (mv === 'reach') arms = [[lerp(-0.3, -0.62, p), lerp(0.15, -1.2, p)], [lerp(0.3, 0.62, p), lerp(0.15, -1.2, p)]];
     else if (mv === 'flap') arms = [[-0.9, lerp(0.05, -0.85, p)], [0.9, lerp(0.05, -0.85, p)]];
     else if (mv === 'jump'){ yOff = -p * 0.45; arms = [[-0.55, lerp(0.0, -0.6, p)], [0.55, lerp(0.0, -0.6, p)]]; }
     else if (mv === 'squat'){ yOff = p * 0.4; arms = [[-0.6, -0.2 + yOff], [0.6, -0.2 + yOff]]; }
@@ -229,7 +229,7 @@ class AnimalGym {
     line([[s0.x, s0.y], [hip.x, hip.y]]);                              /* body */
     for (const a of arms) line([[s0.x, s0.y], a]);                       /* arms */
     for (const l of legs) line([[hip.x, hip.y], ...l]);                  /* legs */
-    c.fillStyle = '#33322e'; c.beginPath(); c.arc(s0.x, s0.y - 0.3 * s, s * 0.2, 0, 6.2832); c.fill();     /* head */
+    c.fillStyle = '#33322e'; c.beginPath(); c.arc(s0.x * s, (s0.y - 0.28) * s, s * 0.2, 0, 6.2832); c.fill();     /* head */
     c.restore();
   }
 
