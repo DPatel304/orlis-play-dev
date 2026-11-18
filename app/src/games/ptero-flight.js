@@ -1,4 +1,4 @@
-/* Ptero Flight: you are a pterodactyl, gliding over a prehistoric world. Spread your arms like wings and tip them to
+/* Pterry Flight: you are a pterodactyl, gliding over a prehistoric world. Spread your arms like wings and tip them to
    steer - the lower arm is the way you turn - and raise or lower both to climb and dive. The land rolls out in front
    of you and far below: forests and ferns, lakes, mountains, a smoking volcano, herds of long-necked dinosaurs. Now and
    then something wonderful is waiting ahead, ringed with sparkles - fly over it and it goes in your sticker book.
@@ -56,7 +56,7 @@ export function skyAt(f){
 export const hash = (i, j, s = 0) => { let h = (i * 374761393 + j * 668265263 + s * 2246822519) | 0; h = (h ^ (h >>> 13)) * 1274126177; h = (h ^ (h >>> 16)) >>> 0; return h / 4294967295; };
 
 export default {
-  id: 'ptero-flight', unit: 'wonders', name: 'Ptero Flight', stars: 1, accent: '#e0915b',
+  id: 'ptero-flight', unit: 'wonders', name: 'Pterry Flight', stars: 1, accent: '#e0915b',
   secs: ROUND, moves: ['steer', 'glide'],
   create(n){ return new PteroFlight(n); }
 };
