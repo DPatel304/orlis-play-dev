@@ -70,14 +70,14 @@ export async function store(files, starters = []){
     dir: files.where(DIR), games, add,
     /* reach: { of(gameId) -> 'everyone' | 'family', canSee(account, gameId) }
        - a family's own games are for that family until the owner shares them */
-    routes: (who, owner, log = { add(){} }, reach = { of: () => 'everyone', canSee: () => true }, week = null) => [
+    routes: (who, owner, log = { add(){} }, reach = { of: () => 'everyone', canSee: () => true, mine: () => false }, week = null) => [
       ['GET', '/api/store', async ({ headers, ip }) => {
         const a = headers['x-orlis-manage'] !== undefined ? owner(headers, ip) : who(headers);
         const all = a.role === 'owner';
         const seen = (await games()).filter(g => all || reach.canSee(a, g.id));
         /* (this week's featured, for the Play page: the owner's pins, then turns) */
         const pins = week ? week.pins() : [];
-        return { games: seen.map(g => ({ ...pub(g), reach: reach.of(g.id), pinned: pins.includes(g.id) })), featured: week ? week.featured(seen.map(g => g.id)) : [] };
+        return { games: seen.map(g => ({ ...pub(g), reach: reach.of(g.id), mine: reach.mine(a, g.id), pinned: pins.includes(g.id) })), featured: week ? week.featured(seen.map(g => g.id)) : [] };
       }],
       ['GET', '/api/store/:id/file', async ({ headers, params }) => {
         const a = who(headers);

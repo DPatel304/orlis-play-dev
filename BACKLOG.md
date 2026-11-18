@@ -251,3 +251,17 @@ The plan for creating (decided):
   same signing key), code signing, payments.
 - Last Known Position and Pop Party release-ready; Nova re-record; finish
   the Orlis look once there's a third game (see `mockups/ORLIS-LOOK.md`).
+
+
+## Create Pro: Test and Publish, local to the family (done) - and Phase 2 (on hold)
+
+Creator app, Create Pro: code with Claude, then **Test on the TV** (the game goes to the
+family's Orlis Server as a *draft*; the Player app on the TV shows it in Play's **Testing** row and
+plays it without keeping it), then **Publish** (the server checks it again and stores it
+family-only; the Player app downloads it by itself and it sits under Play). All between the
+creator's laptop and the family's own server - the owner isn't involved. "Send" is gone from
+Create Pro. Server: `drafts.js` (`/api/drafts`), `mine` flag on `/api/store`. App: `ui/tv.js`.
+
+**Phase 2 (on hold):** submit a game to the owner, and maybe into Discover for everyone.
+Creator games have more freedom, so it'd need much more testing on the owner's side - perhaps
+charge for it. Not started. (The old outbox/`/api/submissions` path is still there for it.)

@@ -7,10 +7,9 @@
    Orlis Play's rules and guardrails. Your games: each one, to open in
    Claude Code again (or see its folder).
 
-   Sending: a game's .orlis file waits here (the outbox, on this PC) and is
-   sent by itself when the family's Orlis server is in reach - on its home
-   Wi-Fi - to wait for the owner's OK. Below, what's been sent and how each
-   went: waiting, in the Store, or not this time (with the owner's note).
+   Create Pro (Creator app): Test puts a game on the family's TV Orlis (Play's
+   Testing row); Publish downloads it there, under Play. All between this PC
+   and the family's server - nobody else is in it (ui/tv.js).
 
    Everyone else sees what's coming. */
 import { toast } from './toast.js';
@@ -20,7 +19,7 @@ import { sfx } from '../audio/sound.js';
 import { account } from './account.js';
 import { setup, claudeConnected } from './setup.js';
 import { claudeChecklist } from './connect-claude.js';
-import { outbox } from './outbox.js';
+import { tv } from './tv.js';
 import { topBar } from './tabs.js';
 import { CREATE_SOON, looks } from './menu.js';
 import { making } from './making.js';
@@ -36,7 +35,6 @@ import { previewCover } from './covers.js';
 import { coverFor } from './shots.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const STATE = { waiting: ['Waiting for OK', ''], approved: ['In Discover', 'ok'], declined: ['Not this time', 'no'] };
 
 /* Create's banner: the same banner as Home's and the Store's, with its own
    picture - a sparkle on purple and teal. */
@@ -122,9 +120,6 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
   scroll.appendChild(body);
   const sbtn = (label, fn, cls) => onPick(button(label, 'sbtn ' + cls), fn);
   const btn = (label, fn, cls = '') => onPick(button(label, 'setbtn ' + cls), fn);
-  const pickFile = document.createElement('input');
-  pickFile.type = 'file'; pickFile.accept = '.orlis'; pickFile.style.display = 'none';
-  s.appendChild(pickFile);
   /* what just happened, or went wrong (bad), said once in a pop-up */
   let said = '', bad = false;
   let autoOpened = false;        /* the flow opened by itself, once */
@@ -252,46 +247,55 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     sfx.select(); closePop(); onPlay(game);
   }
 
-  /* Check and Send: checked, a new version number if this one's been sent
-     before, packed, and into the outbox - sent now if the Orlis server's in
-     reach, or by itself when it is. */
-  async function sendIt(g, card){
+  /* Test and Publish are between this laptop and the TV's Orlis (the family's server): nobody else is in it.
+     Test puts the game where the TV can play it (Play, the Testing row); Publish makes it one of the family's
+     games, downloaded to the TV and under Play. A game is checked first, and given a newer version number
+     if this one's been published before. */
+  let testing = new Set();       /* ids being tested on the TV now */
+  let published = new Map();     /* id -> version, of this family's published games */
+  async function prepare(g, card){
     let now;
-    try { now = await making.read(g.folder); } catch (e){ problem(card)(e); return; }
+    try { now = await making.read(g.folder); } catch (e){ problem(card)(e); return null; }
     const problems = check(now);
-    if (problems.length) return problemsPop(g, `${g.manifest.name} needs a fix before it’s sent`, problems);
+    if (problems.length){ problemsPop(g, `${g.manifest.name} needs a fix first`, problems); return null; }
     let m = JSON.parse(now.manifest);
     try {
-      /* (out of reach of the server, what this PC remembers sending counts too) */
-      const before = [...((await outbox.sent()) || []).filter(x => x.gameId === m.id), ...(await outbox.list()).filter(x => x.gameId === m.id)].map(x => x.version);
-      if (outbox.sentVersion(m.id)) before.push(outbox.sentVersion(m.id));
-      const top = before.reduce((a, v) => (!a || newer(v, a) ? v : a), null);
-      if (top && !newer(m.version, top)){
-        const v = nextVersion(top);
-        await making.setVersion(g.folder, v);
+      const was = published.get(m.id);
+      if (was && !newer(m.version, was)){
+        await making.setVersion(g.folder, nextVersion(was));
         now = await making.read(g.folder); m = JSON.parse(now.manifest);
       }
       const { bytes } = await pack(now);
-      await outbox.add(bytes);
-      sfx.select();
-      said = `${m.name} (version ${m.version}) is ready to send.`;
-      closePop();
-      await send();
-      refreshMine();
-    } catch (e){ problem(card)(e); }
+      return { bytes, m };
+    } catch (e){ problem(card)(e); return null; }
+  }
+  async function testIt(g, card){
+    const ready = await prepare(g, card); if (!ready) return;
+    try { await tv.test(ready.bytes); } catch (e){ problem(card)(e); return; }
+    sfx.gold?.(); closePop();
+    said = `${ready.m.name} is on the TV: open Play, then the Testing row.`;
+    await refreshMine();
+  }
+  async function publishIt(g, card){
+    try { await tv.publish(g.manifest.id); } catch (e){ problem(card)(e); return; }
+    sfx.gold?.(); closePop();
+    said = `${g.manifest.name} is published: it’s downloading to the TV, under Play.`;
+    await refreshMine();
   }
 
-  /* One of your games: try it, send it, open it in Claude Code, or see its folder. */
+  /* One of your games: test it on the TV, publish it, open it in Claude Code, or see its folder. */
   function gamePop(g){
     sfx.select();
     const L = looks({ id: g.manifest.id, icon: g.manifest.icon });
     const card = popup(L.icon('sicon cpopicon'), h('h2', '', esc(g.manifest.name)), h('p', 'fnote', esc(g.manifest.blurb || '')),
       h('p', 'fnote', `Version ${esc(g.manifest.version || '0.1')} · changed ${esc(new Date(g.changed).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}`),
       h('div', 'cacts'), h('div', 'fbtns'));
+    const on = testing.has(g.manifest.id);
     card.querySelector('.cacts').append(
-      ...(appMode.creator() ? [] : [btn('<span class="tri"></span>Try it', () => tryIt(g, card), 'go cbig')]),
-      btn('Check and send', () => sendIt(g, card), appMode.creator() ? 'go cbig' : 'cbig'));
-    if (appMode.creator()) card.insertBefore(h('p', 'fnote', 'The Creator app can’t play a game: send it, then try it on the TV.'), card.querySelector('.cacts'));
+      ...(appMode.creator() ? [] : [btn('<span class="tri"></span>Try it', () => tryIt(g, card), 'cbig')]),
+      btn('Test on the TV', () => testIt(g, card), on ? 'cbig' : 'go cbig'),
+      btn('Publish', () => publishIt(g, card), on ? 'go cbig' : 'cbig off'));
+    if (!on) card.insertBefore(h('p', 'fnote', 'Test it on the TV first. When it’s right, publish it: it’s downloaded to the TV and shows up under Play.'), card.querySelector('.cacts'));
     card.querySelector('.fbtns').append(
       btn('Show the folder', () => making.show(g.folder).catch(problem(card))),
       btn('Open in Claude Code', async () => {
@@ -307,11 +311,10 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     const card = popup(h('h2', '', t.failed ? `${esc(t.name)} stopped` : `How was ${esc(t.name)}?`),
       h('p', '', t.failed ? `It stopped after ${t.secs} seconds because something went wrong. It’s written down for Claude: tell it “It broke when I tried it - have a look”.`
         : t.folder === firstFolder ? 'That’s your own game, made on this PC. Now make it yours: press Open in Claude Code and tell Claude what to change - like “make the stars rainbow coloured”, or “make it about catching fish”.'
-        : `You played ${t.secs} seconds, with no errors. Tell Claude what to change, or send it when you’re happy.`),
+        : `You played ${t.secs} seconds, with no errors. Tell Claude what to change, or test it on the TV when you’re happy.`),
       h('div', 'fbtns'));
     card.querySelector('.fbtns').append(
       btn('Open in Claude Code', async () => { try { await opened(g.folder, t.name, await making.openClaude(g.folder), false); } catch (e){ problem(card)(e); } }),
-      ...(t.failed || !mine.length ? [] : [btn('Check and send', () => sendIt(g, card))]),
       btn('OK', () => { sfx.select(); closePop(); }, 'go'));
   }
 
@@ -347,25 +350,6 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     } catch (e){ problem(card)(e); }
   }
 
-  pickFile.addEventListener('change', async () => {
-    const f = pickFile.files && pickFile.files[0];
-    pickFile.value = '';
-    if (!f) return;
-    try {
-      const g = await outbox.add(new Uint8Array(await f.arrayBuffer()));
-      sfx.select(); said = `${g.name} is ready to send.`;
-      await send();
-    } catch (e){ said = e.message; bad = true; draw(); }
-  });
-
-  async function send(){
-    if (!kit) return;
-    const r = await outbox.sync();
-    if (r.sent) { said = `Sent ${r.sent === 1 ? 'it' : r.sent + ' games'} for the owner’s OK.`; sfx.gold?.(); }
-    else if (!r.reached) said = (said ? said + ' ' : '') + 'It’ll send when the Orlis server’s in reach.';
-    draw();
-  }
-
   /* The Dev Kit: building games yourself, with Claude Code. Set up once
      (install it, sign in), then: build a game, or send in a game file. */
   let claudeOk = null;
@@ -377,12 +361,11 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
       const check = claudeChecklist({ onConnected: () => { claudeOk = true; go.style.display = ''; head.textContent = 'Ready!'; draw(); } });
       const head = h('h2', '', 'Dev Kit setup');
       const card = popup(head, h('p', '', 'Build games yourself with Claude Code. Two steps, once.'), check.el, h('div', 'fbtns'));
-      card.lastChild.append(btn('Send a game file', () => { check.stop(); closePop(); sfx.select(); pickFile.click(); }, 'flink'), btn('Later', () => { sfx.back?.(); check.stop(); closePop(); }, 'flink'), go);
+      card.lastChild.append(btn('Later', () => { sfx.back?.(); check.stop(); closePop(); }, 'flink'), go);
       return;
     }
-    const card = popup(h('h2', '', 'Dev Kit'), h('div', 'fbtns'));
+    const card = popup(h('h2', '', 'Create Pro'), h('div', 'fbtns'));
     if (making.available) card.lastChild.append(btn('Build a game', () => { closePop(); newGamePop(); }, 'go'));
-    card.lastChild.append(btn('Send a game file', () => { closePop(); sfx.select(); pickFile.click(); }, making.available ? 'flink' : 'go'));
   }
 
   /* Request a game: the wizard, then back here to see it listed */
@@ -420,12 +403,14 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     /* everything it needs first; then, if a newer draw started meanwhile,
        leave it to that one - so overlapping draws never double anything */
     const me = ++drawing;
-    const [waiting, sent, , ok, shop] = await Promise.all([kit ? outbox.list() : [], kit ? outbox.sent() : [],
+    const [, , , ok, shop, drafts] = await Promise.all([0, 0,
       account.call('GET', '/api/requests').then(r => { slots = r.slots || null; return r.requests || []; }, () => null),
       kit && making.available && claudeOk === null ? setup.status().then(claudeConnected) : claudeOk,
-      store_()]);
+      store_(), kit ? tv.drafts() : null]);
     if (me !== drawing) return;
     if (ok !== null) claudeOk = ok;
+    if (drafts) testing = new Set(drafts.map(d => d.id));
+    published = new Map(shop.filter(g => g.mine).map(g => [g.id, g.version]));
     if (said){ toast(said, { bad }); said = ''; bad = false; }
     body.innerHTML = '';
     /* (in the Creator app there's no Play: what's on its way is here, under the questions) */
@@ -436,7 +421,6 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
       btns.innerHTML = '';
       if (kit){
         btns.append(sbtn('<span class="plus">+</span>Build a game', () => (claudeOk && making.available ? newGamePop() : kitPop()), 'get'), sbtn('Dev Kit', kitPop, 'ghost'));
-        if (waiting.length) btns.append(sbtn('Send now', () => { sfx.select(); send(); }, 'ghost'));
       }
     }
 
@@ -460,6 +444,8 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
           const dress = (url) => { thumb.style.backgroundImage = `url(${url})`; thumb.classList.add('shot'); b.classList.add('covered'); };
           const cv = coverFor({ id: g.manifest.id, name: g.manifest.name, version: g.manifest.version, icon: g.manifest.icon, cover: g.manifest.cover }, dress);
           if (cv) dress(cv);
+          const chip = testing.has(g.manifest.id) ? 'Testing' : published.has(g.manifest.id) ? 'Published' : '';
+          if (chip) thumb.appendChild(h('span', 'newchip', chip));
           onPick(b, () => gamePop(g));
           shelf.appendChild(b);
         }
@@ -467,34 +453,8 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
       }
     }
 
-    if (waiting.length){
-      const sec = row('Waiting to send', '');
-      const list = h('div', 'clist');
-      for (const x of waiting){
-        const r = h('div', 'citem');
-        r.append(h('div', '', `<b>${esc(x.name)}</b> <span class="ctag">version ${esc(x.version)}</span>${x.problem ? `<small class="cbad">${esc(x.problem)}</small>` : ''}`),
-          btn('Remove', async () => { await outbox.remove(x.key); draw(); }, 'quiet'));
-        list.appendChild(r);
-      }
-      sec.appendChild(list);
-    }
-
-    /* out of reach: how they'd gone, as of the last visit */
-    const last = sent === null ? outbox.lastSent() : null;
-    const shown = sent === null ? last.list : sent;
-    /* (only once something's been sent: no empty rows) */
-    if (shown && shown.length){
-      const sec = row('Sent', sent === null && last.list ? `As of ${new Date(last.at).toLocaleDateString([], { month: 'short', day: 'numeric' })}` : '');
-      const list = h('div', 'clist');
-      for (const x of shown){
-        const [label, cls] = STATE[x.state] || [x.state, ''];
-        list.appendChild(h('div', 'citem', `<div><b>${esc(x.name)}</b> <span class="ctag">version ${esc(x.version)}</span><small>${esc(new Date(x.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' }))}${x.note ? ` · “${esc(x.note)}”` : ''}</small></div><span class="cstate ${cls}">${esc(label)}</span>`));
-      }
-      sec.appendChild(list);
-    }
   }
   draw();
-  send();
   refreshMine();
 
   /* (leaving: no card left over the next page) */

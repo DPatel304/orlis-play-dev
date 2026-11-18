@@ -13,7 +13,6 @@ import { installTitlebar, titlebarPlaying } from './ui/titlebar.js';
 import { library } from './ui/library.js';
 import { storePage } from './ui/store.js';
 import { createPage } from './ui/create.js';
-import { outbox } from './ui/outbox.js';
 import { boot as bootShow } from './ui/boot.js';
 import { calibration, results, pauseOverlay, lostOverlay,
          clearUI, drawSkeletons, screen, h } from './ui/screens.js';
@@ -96,8 +95,8 @@ function go(next, build){
 /* The menus are quiet: music belongs to playing, so it starts when a game is
    picked and fades away on the way back out. */
 function toMenu(arrive = false){
-  /* (the Creator app has no Play: its first page is Create) */
-  if (appMode.creator()) return toCreate();
+  /* (the Creator app has no Play: it starts on Create Pro) */
+  if (appMode.creator()) return toStart();
   music.stop();
   /* and anything still being said - Nova mid-sentence, lines waiting their
      turn - stops too: the game's over, its voice goes with it */
@@ -111,7 +110,7 @@ function toMenu(arrive = false){
 /* The tabs along the top: Home, the Store, Create. */
 function tabs(){ return { home: () => toMenu(false), store: toStore, create: toCreate, pro: toPro }; }
 function toStore(){
-  if (appMode.creator()) return toCreate();
+  if (appMode.creator()) return toStart();
   music.stop(); voice.hush();
   go('store', () => storePage({ nav: tabs(), onPlay: toGame, onChange: () => {}, onWho: () => toWho(false), onRecalibrate: toCalibration }));
 }
@@ -126,12 +125,16 @@ addEventListener('orlisletin', () => {
   if (mode === 'menu') toMenu(false); else if (mode === 'store') toStore(); else if (mode === 'create') toCreate(); else if (mode === 'pro') toPro();
 });
 
+/* the Creator app's first page: Create Pro (for a grown-up creator), else Create */
+function toStart(){
+  if (account.signedIn && !account.isKid && ['creator', 'owner'].includes(account.role)) toPro(); else toCreate();
+}
 function toCreate(){
   go('create', () => createPage({ nav: tabs(), onPlay: toGame, onWho: () => toWho(false), onRecalibrate: toCalibration }));
 }
 /* the mode was switched (Settings, in a testing build): that mode's first page */
 addEventListener('orlismode', (e) => {
-  if (e.detail === 'creator') toCreate(); else toMenu(false);
+  if (e.detail === 'creator') toStart(); else toMenu(false);
   toast(e.detail === 'creator' ? 'Creator app' : 'Player app', { ms: 2500 });
 });
 /* Create Pro: making games with Claude Code */
@@ -529,7 +532,7 @@ const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : nul
   requestAnimationFrame(tick);
   pose.setVideo(video, { forceMouse: debug });
   window.__pose = pose; window.__cursor = cursor; window.__music = music;   /* handles for tests; harmless in play */
-  window.__round = () => inst; window.__finish = () => { roundLeft = 0; }; window.__library = library; window.__outbox = outbox;
+  window.__round = () => inst; window.__finish = () => { roundLeft = 0; }; window.__library = library;
   holdScreen();
   show.camReady = true;
   await new Promise(res => {
@@ -537,9 +540,6 @@ const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : nul
     wait();
   });
   await libraryReady;
-  /* a creator's games waiting to send: sent by themselves, whenever the
-     family's server is in reach */
-  if (account.needed){ outbox.sync().catch(() => {}); setInterval(() => outbox.sync().catch(() => {}), 2 * 60 * 1000); }
   /* Straight into the game being worked on; or from the intro to the home
      screen, its tiles flying out of the cube. */
   /* (this week's data first - a moment at most - so the first page already knows about the

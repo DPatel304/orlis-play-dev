@@ -47,7 +47,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
 
   log('\n1. Nothing said: the Creator app, for now');
   let pg = await open('');
-  check((await tabsOf(pg)).join('|') === 'Create|Create Pro' && !!(await pg.$('.createpage')), 'Create and Create Pro, opening on Create: ' + (await tabsOf(pg)).join(', '));
+  check((await tabsOf(pg)).join('|') === 'Create|Create Pro' && !!(await pg.$('.tvtab.on >> text=Create Pro')), 'Create and Create Pro, opening on Create Pro: ' + (await tabsOf(pg)).join(', '));
   await pg.context().close();
 
   log('\n1b. Switching, for testing: Settings has a Mode switch');
@@ -70,11 +70,11 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
 
   log('\n3. The Creator app: only Create and Create Pro; it cannot play');
   pg = await open('&mode=creator');
-  check(!!(await pg.$('.createpage')), 'it opens on Create, not Play');
+  check(!!(await pg.$('.tvtab.on >> text=Create Pro')), 'it opens on Create Pro, not Play');
   check((await pg.$$('.shelf')).length === 0 && !(await pg.$('.shero .sbtn.play')), 'no games on show');
   await pg.keyboard.press('Escape'); await pg.waitForTimeout(900);
   const st = await tabsOf(pg);
-  check(st.join('|') === 'Create|Create Pro' && !!(await pg.$('.tvtab.on >> text=Create')), 'the tabs are Create and Create Pro: ' + st.join(', '));
+  check(st.join('|') === 'Create|Create Pro' && !!(await pg.$('.tvtab.on >> text=Create Pro')), 'the tabs are Create and Create Pro: ' + st.join(', '));
   check(!(await pg.$('.challengepill, .chpill')), 'no weekly challenges');
   await pg.mouse.move(800, 20); await wait(300);
   await pg.screenshot({ path: out + '-creator-create.png' });
@@ -84,6 +84,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   const rows = await pg.$$eval('.setname', e => e.map(x => x.textContent));
   check(!rows.includes('Volume') && !rows.includes('Camera') && rows.includes('Display'), 'Settings has no volume or camera: ' + rows.join(', '));
   await pg.click('.setclose'); await wait(400);
+  await pg.evaluate(() => [...document.querySelectorAll('.tvtab')].find(t => t.textContent.trim() === 'Create').click()); await wait(1800);
   /* the questions work, and what is on its way shows below them */
   check((await pg.getAttribute('.bh', 'data-q')) === 'What do you do?', 'the questions are here');
   await pg.click('.bcard >> text=Pop'); await wait(1000);
@@ -115,8 +116,31 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   if (card){
     await card.click(); await wait(600);
     const acts = await pg.$$eval('.cacts .btn', e => e.map(x => x.textContent.trim()));
-    check(!acts.some(x => /Try it/.test(x)) && acts.some(x => /Check and send/.test(x)), 'a game here: Check and send, and no Try it (it cannot play): ' + acts.join(' | '));
-    check((await txt(pg, '.fpop')).includes('try it on the TV'), 'and it says to try it on the TV');
+    check(!acts.some(x => /Try it|send/i.test(x)) && acts.includes('Test on the TV') && acts.includes('Publish'), 'a game here: Test on the TV and Publish, no Try it, no Send: ' + acts.join(' | '));
+    await pg.click('.cacts .btn >> text=Publish'); await wait(800);
+    check((await txt(pg, '.ferr, .toast')).length >= 0 && (await api('GET', '/api/store', null, me.token)).games.every(g => !/firefly/i.test(g.id)), 'Publish before Test does nothing');
+    await pg.keyboard.press('Escape'); await wait(300);
+    await pg.click('.sshelf .slock'); await wait(600);
+    await pg.click('.cacts .btn >> text=Test on the TV'); await wait(2500);
+    const dr = (await api('GET', '/api/drafts', null, me.token)).drafts || [];
+    check(dr.length === 1 && /firefly/i.test(dr[0].id), 'Test put it on the TV: ' + dr.map(d => d.id).join(','));
+    await pg.screenshot({ path: out + '-tested.png' });
+    const tvp = await open('&mode=player'); await wait(3000);
+    check((await tvp.$$eval('.shelf.testing .testtile', e => e.length)) === 1, 'the TV (Player app) shows it in a Testing row');
+    await tvp.$eval('.shelf.testing', e => e.scrollIntoView({ block: 'center' })).catch(() => {});
+    await tvp.screenshot({ path: out + '-tv-testing.png' });
+    await tvp.context().close();
+    await pg.click('.sshelf .slock'); await wait(600);
+    await pg.click('.cacts .btn >> text=Publish'); await wait(2500);
+    const st2 = (await api('GET', '/api/store', null, me.token)).games.find(g => /firefly/i.test(g.id));
+    check(!!st2 && st2.reach === 'family' && st2.mine === true, 'Publish put it in the family\'s Store: ' + (st2 && st2.id));
+    await pg.screenshot({ path: out + '-published.png' });
+    const tvp2 = await open('&mode=player'); await wait(5000);
+    const names = await tvp2.$$eval('.pictile .nm, .slock .nm', e => e.map(x => x.textContent));
+    check(!(await tvp2.$('.shelf.testing')), 'and the Testing row is gone');
+    check(await tvp2.evaluate(() => [...window.__library.installed.keys()].some(k => /firefly/.test(k))), 'the TV downloaded it by itself: ' + (await tvp2.evaluate(() => [...window.__library.installed.keys()].join(','))));
+    await tvp2.screenshot({ path: out + '-tv-published.png' });
+    await tvp2.context().close();
   } else check(false, 'the new game is listed under Built by you');
   check(!pg.errs.length, 'no page errors' + (pg.errs.length ? ': ' + pg.errs.join(' | ') : ''));
   await b.close();

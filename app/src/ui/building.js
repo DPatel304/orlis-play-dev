@@ -26,6 +26,25 @@ export function buildingTile(x){
   return t;
 }
 
+/* Testing: the games a creator in the family has put on this TV to try - a tap plays one, and nothing is kept */
+export function testingRow(drafts, onTry){
+  if (!drafts.length) return null;
+  const sec = h('section', 'shelf building testing');
+  const row = h('div', 'shelfrow');
+  sec.append(h('h3', '', 'Testing'), row);
+  for (const d of drafts){
+    const t = button('', 'slock pictile covered buildingtile testtile');
+    const th = h('div', 'sthumb');
+    const pic = buildingCoverUrl({ name: d.name, cols: (d.icon && d.icon.cols) || ['#7c3aed', '#06b6d4'], label: 'Testing', pct: 100 }); if (pic) th.style.backgroundImage = `url(${pic})`;
+    t.insertBefore(th, t.firstChild);
+    t.querySelector('.lbl').replaceWith(h('div', 'smeta', ''));
+    t.setAttribute('aria-label', `${d.name}: testing. Play it.`);
+    onPick(t, () => { sfx.select(); onTry(d); });
+    row.appendChild(t);
+  }
+  return sec;
+}
+
 /* the whole row, or null when there's nothing under construction */
 export function buildingRow(requests){
   if (!requests.length) return null;

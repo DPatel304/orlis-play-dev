@@ -1715,3 +1715,4 @@ textarea.btype.bwords{ width:62vw; height:26vh; border-radius:3vh; padding:2.4vh
 .bpic{ font-size:10vh; line-height:1; filter:drop-shadow(0 1vh 1.4vh rgba(0,0,0,.2)); }
 .bq-mark{ display:grid; place-items:center; width:8vh; height:8vh; border-radius:50%; background:#6d5efc; color:#fff; font-size:5.2vh; font-weight:800; box-shadow:0 .8vh 2vh rgba(109,94,252,.35); animation:bwob 2.4s ease-in-out infinite; }
 @keyframes bwob{ 0%,100%{ transform:rotate(-6deg); } 50%{ transform:rotate(6deg) scale(1.05); } }
+.btn.setbtn.cbig.off{ opacity:.55; }

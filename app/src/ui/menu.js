@@ -17,7 +17,7 @@ import { splashWanted, showChallenges } from './challenges.js';
 import { launch } from './launch.js';
 import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
 import { banner as wideBanner, discoverCoverUrl, seeAllCoverUrl } from './covers.js';
-import { buildingRow } from './building.js';
+import { buildingRow, testingRow } from './building.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -270,7 +270,21 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
 
   /* Under construction: the games asked for and not here yet - at the very end, out of the way
      (nothing to do about one while it's being made, so nothing to pick, and no stop on the way down) */
-  const tail = !waiting && rows.length ? buildingRow(week.building()) : null;
+  /* (and Testing: a creator's game on this TV to try, played from the family's server, not kept) */
+  const tryDraft = async (d) => {
+    if (going || getting) return;
+    toast(`Getting ${d.name}\u2026`);
+    try {
+      const game = await library.preview({ id: d.id, version: d.version, sha256: d.sha256, draft: true });
+      game.back = () => nav.home && nav.home();
+      sfx.gold?.(); onPlay(game);
+    } catch (e){ toast(e.message || 'That didn\u2019t start.', { bad: true }); }
+  };
+  const tail = !waiting && rows.length ? (() => {
+    const a = testingRow(week.drafts || [], tryDraft), b = buildingRow(week.building());
+    if (a && b){ const both = h('div', 'tailrows'); both.append(a, b); return both; }
+    return a || b;
+  })() : null;
   if (tail) wrap.appendChild(tail);
 
   /* this week's family challenges: three big cards on arriving (once each time the

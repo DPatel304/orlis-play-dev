@@ -71,6 +71,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   /* who sees which game in the Store (db.js, step 9) */
   const reach = {
     of: (id) => db.prepare('SELECT 1 FROM reach WHERE game_id = ?').get(id) ? 'family' : 'everyone',
+    mine: (a, id) => { const r = db.prepare('SELECT household_id FROM reach WHERE game_id = ?').get(id); return !!r && r.household_id === a.household_id; },
     canSee: (a, id) => { const r = db.prepare('SELECT household_id FROM reach WHERE game_id = ?').get(id); return !r || r.household_id === a.household_id; }
   };
   const owners = (who, owner) => [

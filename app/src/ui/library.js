@@ -52,8 +52,8 @@ function place(g){
 async function fetchRec(entry, progress = () => {}){
   const s = account.state;
   progress(0.05);
-  /* (a game waiting for the owner's OK comes from the waiting ones) */
-  const path = entry.submission ? `/api/submissions/${encodeURIComponent(entry.submission)}/file` : `/api/store/${encodeURIComponent(entry.id)}/file`;
+  /* (a game waiting for the owner's OK comes from the waiting ones; one being tested, from the family's drafts) */
+  const path = entry.draft ? `/api/drafts/${encodeURIComponent(entry.id)}/file` : entry.submission ? `/api/submissions/${encodeURIComponent(entry.submission)}/file` : `/api/store/${encodeURIComponent(entry.id)}/file`;
   const r = await fetch(s.server.url.replace(/\/$/, '') + path, { headers: { Authorization: `Bearer ${s.token}` } });
   if (!r.ok) throw new Error(r.status === 401 ? 'Please sign in again.' : 'The download didn\'t work. Try again.');
   const bytes = new Uint8Array(await r.arrayBuffer());
@@ -105,7 +105,7 @@ export const library = {
      playing itself - fetched and checked just the same, started in the
      sandbox, and not kept. (A game already here is used as it is.) */
   async preview(entry){
-    if (!entry.submission && this.installed.get(entry.id) === entry.version){
+    if (!entry.submission && !entry.draft && this.installed.get(entry.id) === entry.version){
       const here = GAMES.find(x => x.id === entry.id);
       if (here) return here;
     }
