@@ -478,6 +478,6 @@ The Orlis cube with arms and legs, on the shared indigo move card (`app/src/game
 ### The move card (Cubo): how it works now
 `app/src/games/figure.js`: 14 moves (reach, flap, wave, clap, hug, jump, squat, march, lean, duck, run, dance, freeze,
 side). Flat Cubo on a white card with a thick indigo border, a floating shadow, sliding in from the right (0.45 s) and out
-(0.3 s). Stop-motion: 3-4 drawings per move at 5 a second, each with its own face. Orange arrows lead into each move and
+(0.3 s). Stop-motion: exactly 4 drawings per move (locked, a test enforces it) at 5 a second, each with its own face. Orange arrows lead into each move and
 go away while he holds the pose; orange is only ever used for "move this way". Only Animal Gym uses it so far; the other
 games would pass the move's name and how long it has been on. All the numbers are in `CARD` and `MOTION`.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { POSES, POSE_NAMES, CARD, FACES, FACE_NAMES, FRAMES, MARKS, MOTION, frameAt, figureCard, drawCard } from '../src/games/figure.js';
+import { POSES, POSE_NAMES, CARD, FACES, FACE_NAMES, FRAMES, MARKS, MOTION, DRAWINGS, frameAt, figureCard, drawCard } from '../src/games/figure.js';
 
 /* a canvas that only counts what's drawn */
 const fakeCanvas = () => {
@@ -32,7 +32,7 @@ test('the card is one fill, one edge, one spot', () => {
 
 test('Cubo moves like stop-motion: a few drawings that repeat, each with its own face', () => {
   for (const n of POSE_NAMES){
-    assert.ok(FRAMES[n] && FRAMES[n].length >= 1 && FRAMES[n].length <= 4, `${n}: up to four drawings`);
+    assert.equal(FRAMES[n] && FRAMES[n].length, DRAWINGS, `${n}: exactly four drawings, the same beat for every move`);
     for (const [p, face] of FRAMES[n]){ assert.ok(p >= 0 && p <= 1, `${n}: p in range`); assert.ok(FACES[face], `${n}: ${face} is a face`); }
   }
   /* he holds one drawing for a moment, then jumps to the next, and the set repeats */
@@ -65,4 +65,10 @@ test('arrows: only on drawings that exist, and always inside the card', () => {
   const c = fakeCanvas(); drawCard(c, 'reach', 300, 500, 400, 0.01);                    /* the first drawing of reach has arrows */
   const d = fakeCanvas(); drawCard(d, 'reach', 300, 500, 400, 2 / MOTION.fps + 0.01);    /* the held one doesn't */
   assert.ok(c.calls.filter(x => x === 'quadraticCurveTo').length > d.calls.filter(x => x === 'quadraticCurveTo').length, 'arrows lead in, then go while he holds the pose');
+});
+
+test('march lifts the left knee and then the right', () => {
+  const left = POSES.march(0.5).legs, right = POSES.march(1).legs, down = POSES.march(0).legs;
+  assert.ok(left[0][1][1] < down[0][1][1] && left[1][1][1] === down[1][1][1], 'left foot up');
+  assert.ok(right[1][1][1] < down[1][1][1] && right[0][1][1] === down[0][1][1], 'right foot up');
 });

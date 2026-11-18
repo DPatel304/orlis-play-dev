@@ -13,6 +13,9 @@ export const CARD = { fill: '#ffffff', edge: '#2b2275', edgeW: 0.07, body: '#7aa
 /* how it moves: drawings a second, and how long the card takes to slide in and out (quick enough to start the move in time) */
 export const MOTION = { fps: 5, slideIn: 0.45, slideOut: 0.3 };
 
+/* every move is exactly four drawings (the same beat everywhere: 0.8 s a loop). */
+export const DRAWINGS = 4;
+
 /* each pose: p (0..1) is how far into the move this drawing is -> { yOff, lean, arms: [[points after the shoulder]...], legs: [[knee, foot]...] } */
 export const POSES = {
   reach:  (p) => ({ arms: [[[L(-0.3, -0.85, p), L(0.15, -1.25, p)]], [[L(0.3, 0.85, p), L(0.15, -1.25, p)]]] }),
@@ -24,8 +27,8 @@ export const POSES = {
     legs: [[[-0.1, 0.35 + y * 0.4], [-0.15, 0.7 + y]], [[0.1, 0.35 + y * 0.4], [0.15, 0.7 + y]]] }; },
   squat:  (p) => { const y = p * 0.4; return { yOff: y, arms: [[[-0.6, -0.2 + y]], [[0.6, -0.2 + y]]],
     legs: [[[-0.5, 0.3], [-0.3, 0.7]], [[0.5, 0.3], [0.3, 0.7]]] }; },
-  march:  (p) => { const u = p > 0.5; return { arms: [[[-0.45, 0]], [[0.45, 0]]],
-    legs: [[[u ? -0.45 : -0.15, u ? 0.15 : 0.32], [u ? -0.45 : -0.2, u ? 0.5 : 0.7]], [[0.15, 0.32], [0.2, 0.7]]] }; },
+  march:  (p) => { const l = p > 0.25 && p < 0.75, r = p >= 0.75; return { arms: [[[-0.45, 0]], [[0.45, 0]]],
+    legs: [[[l ? -0.45 : -0.15, l ? 0.15 : 0.32], [l ? -0.45 : -0.2, l ? 0.5 : 0.7]], [[r ? 0.45 : 0.15, r ? 0.15 : 0.32], [r ? 0.45 : 0.2, r ? 0.5 : 0.7]]] }; },
   lean:   (p) => { const l = L(-0.4, 0.4, p); return { lean: l, arms: [[[-0.5 + l, 0.1]], [[0.5 + l, 0.1]]] }; },
   duck:   (p) => ({ yOff: L(0.4, 0.5, p), lean: 0.3, arms: [[[-0.7, -0.55], [-0.5, -1.0]], [[0.7, -0.55], [0.5, -1.0]]],
     legs: [[[-0.5, 0.3], [-0.3, 0.7]], [[0.5, 0.3], [0.3, 0.7]]] }),
@@ -34,7 +37,7 @@ export const POSES = {
     legs: [[[0.35 * a, 0.3], [0.62 * a, 0.7 - up(a)]], [[-0.35 * a, 0.3], [-0.62 * a, 0.7 - up(-a)]]] }; },
   dance:  (p) => { const l = L(-0.3, 0.3, p); return { lean: l,
     arms: [[[-0.95 + l, L(-0.8, -1.2, p)]], [[0.95 + l, L(-1.2, -0.8, p)]]] }; },
-  freeze: () => ({ arms: [[[-0.42, 0.3]], [[0.42, 0.3]]] }),
+  freeze: (p) => ({ yOff: p * 0.03, arms: [[[-0.42 - p * 0.04, 0.3]], [[0.42 + p * 0.04, 0.3]]] }),   /* a tiny shiver */
   side:   (p) => ({ lean: L(0, 0.25, p), arms: [[[-0.6, -0.25], [-0.25, 0.0]], [[0.6, -0.25], [0.25, 0.0]]],
     legs: [[[-0.15, 0.32], [-0.2, 0.7]], [[L(0.25, 0.6, p), 0.32], [L(0.3, 0.95, p), 0.7]]] }),
 };
@@ -50,12 +53,12 @@ export const FRAMES = {
   hug:    [[0, 'smile'], [0.5, 'joy'], [1, 'joy'], [1, 'joy']],
   jump:   [[0, 'smile'], [0.5, 'grin'], [1, 'wow'], [0.5, 'grin']],
   squat:  [[0, 'smile'], [0.5, 'smirk'], [1, 'tongue'], [1, 'tongue']],
-  march:  [[0, 'grin'], [1, 'smile']],
+  march:  [[0, 'grin'], [0.5, 'smile'], [0, 'grin'], [1, 'smile']],               /* down, left knee up, down, right knee up */
   lean:   [[0, 'smile'], [0.5, 'grin'], [1, 'smirk'], [0.5, 'grin']],
   duck:   [[0, 'smile'], [0.5, 'wink'], [1, 'wink'], [1, 'wink']],
   run:    [[0, 'grin'], [0.5, 'smile'], [1, 'grin'], [0.5, 'smile']],
   dance:  [[0, 'joy'], [0.5, 'grin'], [1, 'joy'], [0.5, 'tongue']],
-  freeze: [[0, 'wow']],
+  freeze: [[0, 'wow'], [1, 'wow'], [0, 'wow'], [1, 'wow']],
   side:   [[0, 'smile'], [0.5, 'smirk'], [1, 'smirk'], [1, 'smirk']],
 };
 /* which drawing a move is on at time t (seconds since it began) */
@@ -74,7 +77,7 @@ export const MARKS = {
   hug:    { 0: IN(-0.45), 1: IN(-0.45) },
   jump:   { 0: UP, 1: UP, 3: DOWN },
   squat:  { 0: DOWN, 1: DOWN },
-  march:  { 1: [[-1.2, 0.55, -1.2, -0.2]] },
+  march:  { 1: [[-1.2, 0.55, -1.2, -0.2]], 3: [[1.2, 0.55, 1.2, -0.2]] },
   lean:   { 1: RIGHT(-1.9), 3: LEFT(-1.9) },
   duck:   { 0: DOWN, 1: DOWN },
   run:    { 0: [[-1.4, -0.2, -0.6, -0.2]], 2: [[-1.4, -0.2, -0.6, -0.2]] },
@@ -161,6 +164,9 @@ export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
   pass(s * 0.17, CARD.body); ends(s * 0.11, CARD.body);
   head(c, sh.x * s, hy * s, hr, face || fr.face);
   for (const a of (MARKS[pose] || {})[fr.i] || []) arrow(c, s, a);
+  if (pose === 'freeze') [[-1.3, -1.5], [1.3, -0.9], [-1.25, 0.1], [1.2, 0.35]].forEach(([x, y], j) => { if ((j + fr.i) % 2) return;   /* ice twinkles, a different pair each drawing */
+    const r = s * 0.2; c.beginPath(); c.moveTo(x * s, y * s - r * 1.5); c.lineTo(x * s + r, y * s); c.lineTo(x * s, y * s + r * 1.5); c.lineTo(x * s - r, y * s); c.closePath();
+    c.fillStyle = '#9be0ff'; c.fill(); c.strokeStyle = CARD.line; c.lineWidth = s * 0.07; c.lineJoin = 'round'; c.stroke(); });
   c.restore();
 }
 
