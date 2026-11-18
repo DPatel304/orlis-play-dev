@@ -1716,3 +1716,22 @@ textarea.btype.bwords{ width:62vw; height:26vh; border-radius:3vh; padding:2.4vh
 .bq-mark{ display:grid; place-items:center; width:8vh; height:8vh; border-radius:50%; background:#6d5efc; color:#fff; font-size:5.2vh; font-weight:800; box-shadow:0 .8vh 2vh rgba(109,94,252,.35); animation:bwob 2.4s ease-in-out infinite; }
 @keyframes bwob{ 0%,100%{ transform:rotate(-6deg); } 50%{ transform:rotate(6deg) scale(1.05); } }
 .btn.setbtn.cbig.off{ opacity:.55; }
+
+/* Create Pro: a short banner, then three step cards (Connected, Build a game, Test it on the TV) */
+.createpage .shero.prohero{ height:38vh; }
+.createpage .shero.prohero .shtext{ bottom:auto; top:15vh; max-width:80vw; }
+.psteps{ display:flex; gap:2.4vh; padding:0 4vw; margin-top:-6vh; position:relative; z-index:2; }
+.pstep{ position:relative; flex:1; height:36vh; border-radius:3.6vh; color:#fff; overflow:hidden; box-shadow:0 1.6vh 3.6vh rgba(20,24,50,.22); }
+.pstep:before{ content:""; position:absolute; left:-4vh; top:-4vh; width:19vh; height:19vh; border-radius:50%; background:rgba(255,255,255,.16); }
+.pstep .pn{ position:absolute; right:2.4vh; top:2vh; width:5.6vh; height:5.6vh; border-radius:50%; background:rgba(255,255,255,.28); display:grid; place-items:center; font-weight:800; font-size:2.8vh; }
+.pstep .pem{ position:absolute; left:0; right:0; top:5vh; text-align:center; font-size:11vh; filter:drop-shadow(0 .8vh 1.2vh rgba(0,0,0,.25)); }
+.pstep .plb{ position:absolute; left:0; right:0; bottom:10vh; text-align:center; font-weight:800; font-size:4vh; text-shadow:0 .2vh .8vh rgba(0,0,0,.3); }
+.pstep .pact{ position:absolute; left:0; right:0; bottom:2.6vh; text-align:center; }
+.pstep.s1{ background:linear-gradient(145deg,#7be0a0,#2fa8d8); }
+.pstep.s2{ background:linear-gradient(145deg,#a45aff,#ff6bb0); }
+.pstep.s3{ background:linear-gradient(145deg,#ffd86b,#ff8f6b); }
+.pstep.todo{ background:linear-gradient(145deg,#8f8bff,#4fb0e8); }
+.pstep.lock{ filter:saturate(.3) brightness(1.06); opacity:.75; }
+.pchip{ display:inline-flex; align-items:center; height:5vh; padding:0 2.4vh; border-radius:99px; background:rgba(255,255,255,.28); font-weight:800; font-size:2.1vh; }
+.btn.pbtn{ height:5.8vh; padding:0 3.4vh; border-radius:99px; background:#fff; color:#16161d; font-weight:800; font-size:2.3vh; box-shadow:0 .6vh 1.6vh rgba(0,0,0,.2); }
+.createpage .psteps + .srow{ margin-top:5vh; }

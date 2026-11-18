@@ -107,10 +107,9 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     addEventListener('keydown', escKey, true);
   }
   /* Create Pro: a banner, with the Dev Kit's buttons */
-  let btns = null;
   if (pro){
-    const b = banner('Create Pro', 'Make games with Claude Code', 'On your own Claude account');
-    btns = h('div', 'sbtns'); b.text.append(btns);
+    const b = banner('Create Pro', 'Make games with Claude Code', kit ? '' : 'On your own Claude account');
+    b.hero.classList.add('prohero');
     scroll.appendChild(b.hero);
   }
   /* where Make a game builds */
@@ -418,18 +417,32 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     if (appMode.creator() && !pro){ await week.refresh({ force: true }).catch(() => {}); if (me !== drawing) return; const row_ = buildingRow(week.building()); if (row_) body.appendChild(row_); }
     /* the page opens straight into making a game (but not on the way back from Try it, or setup's own first game) */
     if (!pro && !autoOpened){ autoOpened = true; if (!lastTry && !(account.state && account.state.firstGame === true)) askPop(true); }
-    if (pro){
-      btns.innerHTML = '';
-      if (kit){
-        btns.append(sbtn('<span class="plus">+</span>Build a game', () => (claudeOk && making.available ? newGamePop() : kitPop()), 'get'), sbtn('Dev Kit', kitPop, 'ghost'));
-      }
+    /* Create Pro: three steps, as big pictures - connect Claude, build a game, test it on the TV (and publish) */
+    if (pro && kit){
+      const steps = h('div', 'psteps');
+      const step = (n, cls, em, label, ...extra) => {
+        const c = h('div', `pstep ${cls}`, `<span class="pn">${n}</span><div class="pem">${em}</div><div class="plb">${label}</div>`);
+        const act = h('div', 'pact'); act.append(...extra); c.appendChild(act);
+        return c;
+      };
+      const pbtn = (label, fn) => onPick(button(label, 'pbtn'), fn);
+      const chip = (text) => h('span', 'pchip', text);
+      const ready = !!claudeOk || !making.available;
+      steps.append(
+        ready ? step(1, 's1', '\u{1F517}', 'Connected', chip('\u2713 Claude is ready'))
+              : step(1, 's1 todo', '\u{1F511}', 'Connect Claude', pbtn('Connect', kitPop)),
+        step(2, 's2', '\u{1F6E0}\uFE0F', 'Build a game', pbtn('+ New game', () => (claudeOk && making.available ? newGamePop() : kitPop()))),
+        mine.length
+          ? step(3, 's3', '\u{1F4FA}', 'Test it on the TV', pbtn(testing.size ? 'Test or publish' : 'Test a game', () => gamePop(mine.find(x => testing.has(x.manifest.id)) || mine[0])))
+          : step(3, 's3 lock', '\u{1F4FA}', 'Test it on the TV', chip('Build a game first')));
+      body.appendChild(steps);
     }
 
     if (!kit) return;
 
     /* games they've built themselves (Dev Kit), as the Store's cards */
     if (making.available && (mine.length || claudeOk)){
-      const sec = row('Built by you', '');
+      const sec = row('Your games', '');
       if (!mine.length) sec.appendChild(h('p', 'cempty', 'None yet.'));
       else {
         const shelf = h('div', 'sshelf');

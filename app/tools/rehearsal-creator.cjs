@@ -102,10 +102,11 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await pg.keyboard.press('Escape'); await wait(900);
   await pg.click('.tvtab >> text=Create Pro'); await wait(1800);
   check(!!(await pg.$('.createpage')) && (await txt(pg, '.shero h1')).includes('Claude Code'), 'Create Pro: ' + (await txt(pg, '.shero h1')));
-  const btns = await pg.$$eval('.sbtns .sbtn', e => e.map(x => x.textContent.trim()));
-  check(btns.some(x => /Build a game/.test(x)) && btns.some(x => /Dev Kit/.test(x)), 'its buttons: ' + btns.join(' | '));
+  const steps = await pg.$$eval('.pstep .plb', e => e.map(x => x.textContent.trim()));
+  check(steps.join('|') === 'Connect Claude|Build a game|Test it on the TV' || steps.join('|') === 'Connected|Build a game|Test it on the TV', 'three step cards: ' + steps.join(' | '));
+  check(!(await pg.$('.sbtns')), 'no Send, no Dev Kit buttons');
   check(!(await pg.$('.builder')), 'no picture questions on this page');
-  await pg.click('.sbtn >> text=Build a game'); await wait(800);
+  await pg.click('.pbtn >> text=New game'); await wait(800);
   await pg.fill('.fpop input.finput', 'Firefly Jar'); await pg.fill('.fpop textarea', 'Catch fireflies in a jar');
   await pg.click('.fpop .btn.go'); await wait(1500);
   const asked = await pg.evaluate(() => window.__claudeAsked);
