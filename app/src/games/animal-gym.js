@@ -187,7 +187,7 @@ class AnimalGym {
     c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#000';
     c.fillText(m.animal, 0, 0);
     c.restore();
-    figureCard(c, W, H, mv, t);
+    figureCard(c, W, H, mv, this.segT, { age: this.segT, left: SCHEDULE[this.seg].len - this.segT });
     /* the animal's name, and where we are in the workout (a dot for each stretch) */
     c.save(); c.textAlign = 'center'; c.textBaseline = 'middle';
     c.font = `800 ${Math.round(H * 0.045)}px Inter, Segoe UI, sans-serif`; c.fillStyle = '#33322e';

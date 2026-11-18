@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { POSES, POSE_NAMES, CARD, FACES, FACE_NAMES, faceAt, figureCard, drawCard } from '../src/games/figure.js';
+import { POSES, POSE_NAMES, CARD, FACES, FACE_NAMES, FRAMES, MOTION, frameAt, figureCard, drawCard } from '../src/games/figure.js';
 
 /* a canvas that only counts what's drawn */
 const fakeCanvas = () => {
@@ -16,7 +16,7 @@ test('the move card has the poses the games ask for', () => {
 
 test('every pose draws a card, with two arms and two legs, at any moment', () => {
   for (const n of POSE_NAMES) for (const t of [0, 0.3, 0.77, 1.9, 5.2]){
-    const q = POSES[n](0.5 + 0.5 * Math.sin(t * 4), t);
+    const q = POSES[n](frameAt(n, t).p);
     assert.equal(q.arms.length, 2, `${n}: two arms`);
     if (q.legs) assert.equal(q.legs.length, 2, `${n}: two legs`);
     for (const p of [...q.arms.flat(), ...(q.legs || []).flat()]) assert.ok(Number.isFinite(p[0]) && Number.isFinite(p[1]), `${n}: joints are numbers`);
@@ -30,12 +30,24 @@ test('the card is one fill, one edge, one spot', () => {
   assert.ok(CARD.x > 0.5 && CARD.x < 1 && CARD.y > 0 && CARD.y < 1);
 });
 
-test('Cubo pulls a new face every couple of seconds, never the same one twice running', () => {
-  assert.ok(FACE_NAMES.length >= 6, 'a handful of faces');
-  assert.equal(faceAt(0.5).name, 'smile', 'starts with a smile');
-  const seen = new Set(); let last = null;
-  for (let t = 0; t < 120; t += 2.3){ const f = faceAt(t + 0.1).name; assert.ok(FACES[f], `${f} exists`); assert.notEqual(f, last, 'not the same twice'); seen.add(f); last = f; }
-  assert.ok(seen.size >= 5, 'a good mix over two minutes');
+test('Cubo moves like stop-motion: a few drawings that repeat, each with its own face', () => {
+  for (const n of POSE_NAMES){
+    assert.ok(FRAMES[n] && FRAMES[n].length >= 1 && FRAMES[n].length <= 4, `${n}: up to four drawings`);
+    for (const [p, face] of FRAMES[n]){ assert.ok(p >= 0 && p <= 1, `${n}: p in range`); assert.ok(FACES[face], `${n}: ${face} is a face`); }
+  }
+  /* he holds one drawing for a moment, then jumps to the next, and the set repeats */
+  assert.equal(frameAt('reach', 0).i, 0); assert.equal(frameAt('reach', 0.1).i, 0, 'still the first drawing');
+  assert.equal(frameAt('reach', 0.25).i, 1, 'then the next');
+  assert.equal(frameAt('reach', 4 / MOTION.fps + 0.01).i, 0, 'and round again');
+});
+
+test('the card slides in from the side and back out, and is in place in between', () => {
+  const xs = [];
+  const track = (age, left) => { const c = fakeCanvas(), calls = []; const orig = c; const p = new Proxy({}, { get: (_, k) => k === 'translate' ? (x) => { calls.push(x); } : orig[k], set: () => true }); figureCard(p, 1600, 900, 'jump', 1, { age, left }); return calls[0]; };
+  const home = track(5, 5), starting = track(0, 5), ending = track(5, 0.05);
+  assert.ok(starting > home + 100, 'starts off to the right'); assert.ok(ending > home + 100, 'leaves to the right');
+  assert.ok(track(MOTION.slideIn, 5) - home < 1, 'in place by the end of the slide');
+  assert.ok(MOTION.slideIn <= 0.6, 'quick enough to start the move in time');
 });
 
 test('every face draws on every pose', () => {
