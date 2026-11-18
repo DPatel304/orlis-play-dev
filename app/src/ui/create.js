@@ -414,7 +414,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     if (said){ toast(said, { bad }); said = ''; bad = false; }
     body.innerHTML = '';
     /* (in the Creator app there's no Play: what's on its way is here, under the questions) */
-    if (appMode.creator() && !pro){ await week.refresh({ force: true }).catch(() => {}); if (me !== drawing) return; const row_ = buildingRow(week.building()); if (row_) body.appendChild(row_); }
+    if (appMode.creator() && !pro){ await week.refresh({ force: true }).catch(() => {}); if (me !== drawing) return; const row_ = buildingRow(week.building(), () => draw()); if (row_) body.appendChild(row_); }
     /* the page opens straight into making a game (but not on the way back from Try it, or setup's own first game) */
     if (!pro && !autoOpened){ autoOpened = true; if (!lastTry && !(account.state && account.state.firstGame === true)) askPop(true); }
     /* Create Pro: three steps, as big pictures - connect Claude, build a game, test it on the TV (and publish) */

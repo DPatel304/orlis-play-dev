@@ -220,11 +220,22 @@ export function requests(db, files, shop, sent, log = { add(){} }, notify = () =
         return { requests: q("SELECT * FROM requests WHERE account_id = ? AND status != 'withdrawn' ORDER BY created_at DESC LIMIT 50").all(a.id).map(r => out(r)),
           slots: a.role === 'owner' ? null : slotsOf(a.id) };
       }],
-      /* the asker takes one back, before it's being made */
-      ['DELETE', '/api/requests/:id', ({ headers, params }) => {
+      /* the asker takes one back: while it waits in line, when it was turned down, or once it's made and waiting for the
+         owner's OK (that goes back too). Not while it's being made, and not once it's a game in Discover. */
+      ['DELETE', '/api/requests/:id', async ({ headers, params }) => {
         const a = who(headers);
-        const r = q("UPDATE requests SET status = 'withdrawn', decided_at = ? WHERE id = ? AND account_id = ? AND status = 'waiting'").run(now(), params.id, a.id);
-        if (!r.changes) throw new Fail(404, 'no_request', 'That request isn’t waiting any more.');
+        const r = q("SELECT * FROM requests WHERE id = ? AND account_id = ?").get(params.id, a.id);
+        if (!r || r.status === 'withdrawn') throw new Fail(404, 'no_request', 'That request is already gone.');
+        if (r.status === 'making') throw new Fail(409, 'making', 'It’s being made right now. Once it’s done, you can take it back.');
+        if (r.status === 'made' && r.submission_id){
+          const s = q('SELECT status FROM submissions WHERE id = ?').get(r.submission_id);
+          if (s && s.status === 'approved') throw new Fail(409, 'approved', 'That one is already a game. Ask the owner to take it out of Discover.');
+          if (s && s.status === 'waiting'){
+            q("UPDATE submissions SET status = 'withdrawn', decided_at = ? WHERE id = ?").run(now(), r.submission_id);
+            try { await files.del(`submissions/${r.submission_id}.orlis`); } catch {}
+          }
+        }
+        q("UPDATE requests SET status = 'withdrawn', decided_at = ? WHERE id = ?").run(now(), r.id);
         return { ok: true };
       }],
       /* the owner's changes to the prompt, before making it */

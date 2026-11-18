@@ -308,7 +308,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     } catch (e){ toast(e.message || 'That didn\u2019t start.', { bad: true }); }
   };
   const tail = !waiting && rows.length ? (() => {
-    const a = testingRow(week.drafts || [], tryDraft), b = buildingRow(week.building());
+    const a = testingRow(week.drafts || [], tryDraft), b = buildingRow(week.building(), () => { if (nav.home) nav.home(); });
     if (a && b){ const both = h('div', 'tailrows'); both.append(a, b); return both; }
     return a || b;
   })() : null;
