@@ -38,7 +38,9 @@ export const BLURB = {
   'sleepy-bear': 'Dance to the music - then freeze before the bear peeks!',
   'leaf-pile': 'Sweep the autumn leaves into a big pile - then jump in!',
   'stack-it-high': 'Catch the falling blocks and build a tower to the sky',
-  'sky-painter': 'Paint the sky with your arms - what’s hiding there?'
+  'sky-painter': 'Paint the sky with your arms - what’s hiding there?',
+  'animal-gym': 'Move like the animals: stretch, hop, flap, squat and stomp',
+  'keep-it-up': 'Keep the big beach ball floating up together'
 };
 /* Each game's icon, in the cube's style: a rounded square in two colours,
    a simple white picture on it. */
@@ -49,7 +51,9 @@ export const ICONS = {
   'sleepy-bear': { cols: ['#b07a4f', '#f2c48a'], glyph: 'bear' },
   'leaf-pile': { cols: ['#e07b39', '#f2c14e'], glyph: 'leaf' },
   'stack-it-high': { cols: ['#4fb3a8', '#a98bff'], glyph: 'blocks' },
-  'sky-painter': { cols: ['#5b8fd6', '#9fd8e6'], glyph: 'brush' }
+  'sky-painter': { cols: ['#5b8fd6', '#9fd8e6'], glyph: 'brush' },
+  'animal-gym': { cols: ['#34b27b', '#ffd35c'], glyph: 'paw' },
+  'keep-it-up': { cols: ['#4da3ff', '#ff7eb3'], glyph: 'ball' }
 };
 const GLYPHS = {
   balloon: '<path d="M50 14c15 0 25 11 25 26 0 17-14 30-25 33-11-3-25-16-25-33 0-15 10-26 25-26z" fill="#fff"/><path d="M46 73h8l-4 6z" fill="#fff"/><path d="M50 79c-5 6 5 9 0 16" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="41" cy="31" rx="5" ry="8" transform="rotate(-25 41 31)" fill="#000" opacity=".12"/>',
@@ -60,6 +64,8 @@ const GLYPHS = {
   leaf: '<path d="M22 74C22 40 46 20 80 20c0 34-20 58-54 58z" fill="#fff"/><path d="M24 76L66 34" stroke="#000" stroke-opacity=".18" stroke-width="4" stroke-linecap="round"/>',
   blocks: '<rect x="30" y="58" width="40" height="24" rx="6" fill="#fff"/><rect x="34" y="36" width="32" height="22" rx="6" fill="#fff" opacity=".9"/><rect x="38" y="16" width="24" height="20" rx="5" fill="#fff" opacity=".8"/>',
   brush: '<path d="M70 14l16 16-30 30-16-16z" fill="#fff"/><path d="M38 46l16 16c-4 12-14 20-30 22 2-16 8-30 14-38z" fill="#fff" opacity=".85"/>',
+  paw: '<ellipse cx="50" cy="64" rx="20" ry="16" fill="#fff"/><ellipse cx="26" cy="46" rx="8" ry="11" fill="#fff"/><ellipse cx="42" cy="32" rx="8" ry="11" fill="#fff"/><ellipse cx="58" cy="32" rx="8" ry="11" fill="#fff"/><ellipse cx="74" cy="46" rx="8" ry="11" fill="#fff"/>',
+  ball: '<circle cx="50" cy="50" r="34" fill="#fff"/><path d="M50 16v68M16 50h68M26 26l48 48M74 26L26 74" stroke="#000" stroke-opacity=".16" stroke-width="4" fill="none"/><circle cx="50" cy="50" r="7" fill="#000" opacity=".14"/>',
   tower: '<path d="M30 30h8v-8h8v8h8v-8h8v8h8v14H30z" fill="#fff"/><path d="M34 44h32v36H34z" fill="#fff"/><path d="M45 80V64a5 5 0 0 1 10 0v16z" fill="#000" opacity=".15"/>'
 };
 /* A game's icon: its own, or the one its Store entry gave it (a picture

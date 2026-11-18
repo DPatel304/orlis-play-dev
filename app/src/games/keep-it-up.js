@@ -1,0 +1,175 @@
+/* Keep It Up!: one big beach ball, and everybody keeps it in the air together. A hand that meets the ball bats it
+   back up; the longer it stays up, the bigger the number grows, with a cheer at 10, 25, 50 and every 25 after that.
+   A second ball joins in once the first has been kept up 15 times. A breeze sometimes blows it sideways.
+
+   Nothing to lose: if the ball reaches the ground it just bounces back up and the count starts again. The best run
+   is the round's best. Gentle by design - a hit always sends the ball up, a little toward where the hand was going. */
+import { Juice } from './common.js';
+import { sayBubble, goalBar } from './hud.js';
+import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
+import { sfx } from '../audio/sound.js';
+import { Scene } from './pop-party-scene.js';
+import { Avatars } from '../ui/avatars.js';
+
+export const ROUND = 180;
+/* in screen heights and seconds */
+export const GRAV = 0.5, BALL_R = 0.065, REACH = 0.075, FLOOR = 0.9, LIFT = 0.62, MAX_SIDE = 0.45, COOL = 0.25;
+export const MILESTONES = [10, 25, 50, 75, 100, 125, 150];
+export const SECOND_BALL_AT = 15;
+export const BREEZE_EVERY = [9, 15];
+const BALL_COLS = ['#ff5d6c', '#ffb84d', '#ffe36e', '#4cc9a0', '#4da3ff', '#a98bff'];
+
+export default {
+  id: 'keep-it-up', unit: 'bounces', name: 'Keep It Up!', stars: 1, accent: '#4da3ff',
+  secs: ROUND, moves: ['bat', 'reach'],
+  create(n){ return new KeepItUp(n); }
+};
+
+class KeepItUp {
+  constructor(players){
+    this.players = players;
+    this.score = Array.from({ length: MAX_PLAYERS }, () => 0);     /* hits, per player */
+    this.balls = [this._ball(0.5)];
+    this.streak = 0; this.best = 0; this.hits = 0;
+    this.t = 0; this.over = false;
+    this.breezeT = 6 + Math.random() * 4; this.breeze = 0; this.breezeLeft = 0;
+    this.say = { text: 'Keep the ball up!', t: 0 };
+    this.j = new Juice();
+    this.scene = new Scene();
+    this.avatars = new Avatars();
+  }
+
+  _ball(x){ return { x, y: 0.35, vx: 0, vy: 0, rot: 0, spin: 0, cool: 0 }; }
+
+  _next(){ return MILESTONES.find(m => m > this.streak) || (Math.floor(this.streak / 25) + 1) * 25; }
+
+  step(dt, W, H){
+    this.t += dt; this.say.t += dt;
+    this.j.step(dt);
+    if (this.t >= ROUND) this.over = true;
+    const aspect = W / H;
+
+    /* a breeze, now and then */
+    this.breezeT -= dt;
+    if (this.breezeT <= 0){
+      this.breezeT = BREEZE_EVERY[0] + Math.random() * (BREEZE_EVERY[1] - BREEZE_EVERY[0]);
+      this.breeze = (Math.random() < 0.5 ? -1 : 1) * 0.12; this.breezeLeft = 2.2;
+    }
+    if (this.breezeLeft > 0){ this.breezeLeft -= dt; if (this.breezeLeft <= 0) this.breeze = 0; }
+
+    /* hands: any hand that's moving, or one the ball falls onto */
+    const hands = [];
+    for (let i = 0; i < this.players; i++){
+      const p = pose.players[i];
+      if (!p || !p.present) continue;
+      for (const h of pose.mouse.active ? [p.hands.right] : [p.hands.left, p.hands.right]) if (h) hands.push([i, h]);
+    }
+
+    for (const b of this.balls){
+      b.cool = Math.max(0, b.cool - dt);
+      b.vy += GRAV * dt; b.vx += this.breeze * dt; b.vx *= Math.pow(0.6, dt);
+      b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.spin * dt; b.spin *= Math.pow(0.5, dt);
+      if (b.x < 0.05){ b.x = 0.05; b.vx = Math.abs(b.vx) * 0.7; }
+      if (b.x > 0.95){ b.x = 0.95; b.vx = -Math.abs(b.vx) * 0.7; }
+      if (b.y < 0.1){ b.y = 0.1; b.vy = Math.abs(b.vy) * 0.3; }
+      if (b.cool <= 0){
+        for (const [i, h] of hands){
+          const dx = (b.x - h.x) * aspect, dy = b.y - h.y;
+          if (Math.hypot(dx, dy) > BALL_R + REACH) continue;
+          if (!(h.speed > 0.15 || b.vy > 0.2)) continue;
+          this._hit(b, i, h, W, H);
+          break;
+        }
+      }
+      /* the ground: a soft bounce, the count starts again */
+      if (b.y > FLOOR){
+        b.y = FLOOR; b.vy = -0.55; b.vx *= 0.5; b.spin = (Math.random() - 0.5) * 6;
+        if (this.streak > 0) this._drop();
+      }
+    }
+    this.scene.step(dt, { t: this.t, p: 0.3 + 0.5 * Math.min(1, this.t / ROUND), storm: false, wind: 0.01 + Math.abs(this.breeze) * 0.1, joy: Math.min(1, 0.3 + this.streak / 30), look: 0.5, rainbow: false });
+    this.avatars.step(dt, this.players);
+  }
+
+  _hit(b, who, h, W, H){
+    b.cool = COOL;
+    b.vy = -(LIFT + Math.min(0.2, Math.max(0, -(h.vy || 0)) * 0.15));
+    b.vx = Math.max(-MAX_SIDE, Math.min(MAX_SIDE, b.vx * 0.3 + (h.vx || 0) * 0.5));
+    b.spin = (b.vx * 8) + (Math.random() - 0.5) * 4;
+    this.score[who]++; this.hits++; this.streak++;
+    if (this.streak > this.best) this.best = this.streak;
+    this.j.burst(b.x * W, b.y * H, PLAYER_COLORS[who], 6, 0.6);
+    sfx.pop?.(0.5 + Math.min(1, this.streak / 40) * 0.6);
+    if (this.streak === SECOND_BALL_AT && this.balls.length < 2){ this.balls.push(this._ball(b.x < 0.5 ? 0.75 : 0.25)); this.say = { text: 'A second ball!', t: 0 }; }
+    else if (MILESTONES.includes(this.streak) || (this.streak > 150 && this.streak % 25 === 0)){
+      this.say = { text: `${this.streak} in a row! Wow!`, t: 0 };
+      this.j.kick(8); sfx.hooray?.();
+      for (let k = 0; k < 16; k++) this.j.burst(W * (0.2 + Math.random() * 0.6), H * (0.2 + Math.random() * 0.4), ['#ffd35c', '#ff7eb3', '#7fd6a2', '#7ab8ff'][k % 4], 4, 1);
+    } else if (this.streak >= 3) this.say = { text: `${this.streak} in a row!`, t: Math.min(this.say.t, 0.2) };
+  }
+
+  _drop(){
+    this.streak = 0;
+    if (this.balls.length > 1) this.balls.length = 1;
+    this.say = { text: 'Up we go again!', t: 0 };
+    sfx.whoosh?.();
+  }
+
+  draw(c, W, H){
+    this.scene.drawBack(c, W, H);
+    const shook = this.j.applyShake ? this.j.applyShake(c) : false;
+    this.scene.drawFront(c, W, H);
+    for (const b of this.balls){
+      /* its shadow on the grass: smaller the higher it is */
+      const hgt = Math.max(0, Math.min(1, (FLOOR - b.y) / 0.8)), sw = BALL_R * H * (1.1 - hgt * 0.5);
+      c.fillStyle = `rgba(58,51,96,${0.2 - hgt * 0.1})`; c.beginPath(); c.ellipse(b.x * W, FLOOR * H + BALL_R * H * 0.9, sw, sw * 0.28, 0, 0, 6.2832); c.fill();
+    }
+    for (const b of this.balls) this._ballAt(c, b.x * W, b.y * H, BALL_R * H, b.rot);
+    this.j.draw(c, H);
+    if (this.breezeLeft > 0){
+      c.save(); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = Math.max(2, H * 0.004); c.lineCap = 'round';
+      const dir = Math.sign(this.breeze);
+      for (let k = 0; k < 5; k++){
+        const y = H * (0.2 + k * 0.1), x = ((this.t * 0.5 * dir + k * 0.23) % 1 + 1) % 1 * W;
+        c.beginPath(); c.moveTo(x, y); c.lineTo(x + dir * W * 0.08, y); c.stroke();
+      }
+      c.restore();
+    }
+    if (shook) c.restore();
+    this.avatars.drawMitts(c, W, H, this.players);
+    sayBubble(c, W, H, { text: this.say.text, t: this.say.t });
+    goalBar(c, W, H, this.streak / this._next(), { color: '#4da3ff' });
+  }
+
+  /* a beach ball: coloured wedges, a shine */
+  _ballAt(c, x, y, r, rot){
+    c.save(); c.translate(x, y); c.rotate(rot);
+    const n = BALL_COLS.length;
+    for (let i = 0; i < n; i++){
+      c.fillStyle = BALL_COLS[i]; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, r, i * 6.2832 / n, (i + 1) * 6.2832 / n); c.closePath(); c.fill();
+    }
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, r * 0.18, 0, 6.2832); c.fill();
+    c.restore();
+    c.save(); c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(x - r * 0.35, y - r * 0.4, r * 0.28, r * 0.17, -0.6, 0, 6.2832); c.fill(); c.restore();
+  }
+
+  hud(){ return { score: this.score, showLives: false, hideScore: true }; }
+  tally(){
+    const rows = [];
+    for (let i = 0; i < this.players; i++){
+      if (!this.score[i] && !pose.players[i].present) continue;
+      rows.push({ label: `Player ${i + 1}`, value: this.score[i], color: PLAYER_COLORS[i] });
+    }
+    return rows;
+  }
+  /* (the shell shows no winner; this is the contract every game keeps) */
+  winner(){
+    const played = this.score.slice(0, this.players).map((s, i) => i).filter(i => this.score[i] > 0 || pose.players[i].present);
+    if (played.length < 2) return null;
+    const top = Math.max(...played.map(i => this.score[i]));
+    const best = played.filter(i => this.score[i] === top);
+    return best.length > 1 ? -1 : best[0];
+  }
+  /* the best run, for the bests the menu keeps */
+  value(){ return this.best; }
+}
