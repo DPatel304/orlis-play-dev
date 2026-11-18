@@ -8,7 +8,6 @@
    The moves are the body's, from the camera's landmarks (a jump uses the jump watch the other games use). With no
    landmarks - the mouse, in testing - a fast hand counts as a try, so the game can still be played. */
 import { Juice } from './common.js';
-import { figureCard } from './figure.js';
 import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { L } from '../tracking/pose-shared.js';
@@ -187,7 +186,6 @@ class AnimalGym {
     c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#000';
     c.fillText(m.animal, 0, 0);
     c.restore();
-    figureCard(c, W, H, mv, this.segT, { age: this.segT, left: SCHEDULE[this.seg].len - this.segT });
     /* the animal's name, and where we are in the workout (a dot for each stretch) */
     c.save(); c.textAlign = 'center'; c.textBaseline = 'middle';
     c.font = `800 ${Math.round(H * 0.045)}px Inter, Segoe UI, sans-serif`; c.fillStyle = '#33322e';
@@ -205,6 +203,8 @@ class AnimalGym {
     goalBar(c, W, H, this.fill, { color: this.cheered ? '#e8b44a' : '#34b27b' });
   }
 
+  /* the move card: which move the card in the corner shows right now, or null for none (the move he is on, all round) */
+  card(){ return this.move; }
   hud(){ return { score: this.score, showLives: false, hideScore: true }; }
   tally(){
     const rows = [];

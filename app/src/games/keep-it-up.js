@@ -153,6 +153,8 @@ class KeepItUp {
     c.save(); c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(x - r * 0.35, y - r * 0.4, r * 0.28, r * 0.17, -0.6, 0, 6.2832); c.fill(); c.restore();
   }
 
+  /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
+  card(){ return this.t < 8 ? 'reach' : null; }
   hud(){ return { score: this.score, showLives: false, hideScore: true }; }
   tally(){
     const rows = [];

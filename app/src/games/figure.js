@@ -1,7 +1,7 @@
 /* The move card: one little picture of a move, for the ones who can't read. Every game that shows one uses this, so it
    always looks the same and sits in the same place. It is Cubo, the Orlis cube, drawn flat like a sticker: a square head
    looking straight at you, a body with arms and legs, all with a dark outline, on a white card with a thick indigo border.
-   The card floats (a soft shadow under it) and slides in from the side when a move starts, and out again when it ends.
+   The card floats (a soft shadow under it) and slides in from the side (the left, away from the scores and Sleepy Bear's cave) when a move starts, and out again when it ends.
    Cubo moves like stop-motion: each move is three or four still drawings that repeat, and his face is part of each
    drawing, so he looks excited when his hands go up and strains a little in the squat. */
 const L = (a, b, k) => a + (b - a) * k;
@@ -9,7 +9,7 @@ const L = (a, b, k) => a + (b - a) * k;
 /* the look, in one place. size is a share of the screen's height; x and y are where the card's middle is, as a share of the
    screen. head: how big his head is, as a share of what it was first drawn at. */
 export const CARD = { fill: '#ffffff', edge: '#2b2275', edgeW: 0.07, body: '#7aa2f7', line: '#2b2275', ink: '#1e1b4b',
-  arrow: '#ff7a59', head: ['#60a5fa', '#c084fc'], top: ['#e9fbff', '#f3e8ff'], left: '#5eead4', size: 0.3, x: 0.86, y: 0.5, headSize: 0.75 };
+  arrow: '#ff7a59', head: ['#60a5fa', '#c084fc'], top: ['#e9fbff', '#f3e8ff'], left: '#5eead4', size: 0.3, x: 0.14, y: 0.5, headSize: 0.75 };
 /* how it moves: drawings a second, and how long the card takes to slide in and out (quick enough to start the move in time) */
 export const MOTION = { fps: 5, slideIn: 0.45, slideOut: 0.3 };
 
@@ -173,7 +173,7 @@ export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
 /* the card where every game puts it: the same spot on the screen, the same size. age: seconds since the move began (it
    slides in from the side); left: seconds until it ends (it slides back out). */
 export function figureCard(c, W, H, pose, t, { alpha = 1, age = Infinity, left = Infinity } = {}){
-  const K = H * CARD.size, away = W * (1 - CARD.x) + K * 0.6;
+  const K = H * CARD.size, dir = CARD.x < 0.5 ? -1 : 1, away = dir * ((dir < 0 ? W * CARD.x : W * (1 - CARD.x)) + K * 0.6);   /* it comes from whichever side it lives on */
   const into = 1 - easeOut(Math.min(1, Math.max(0, age / MOTION.slideIn))), out = easeIn(Math.min(1, Math.max(0, 1 - left / MOTION.slideOut)));
   drawCard(c, pose, K, W * CARD.x + away * Math.max(into, out), H * CARD.y, Math.min(t, isFinite(age) ? age : t), alpha);
 }

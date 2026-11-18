@@ -232,6 +232,8 @@ class SleepyBear {
     }
   }
 
+  /* the move card: which move the card in the corner shows right now, or null for none (dancing, then frozen) */
+  card(){ return this.phase === 'dance' ? 'dance' : 'freeze'; }
   hud(){ return { score: this.score, showLives: false, hideScore: true }; }
   /* both hands up is a dance move here; Back on the remote still pauses */
   pausable(){ return false; }

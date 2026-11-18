@@ -479,5 +479,8 @@ The Orlis cube with arms and legs, on the shared indigo move card (`app/src/game
 `app/src/games/figure.js`: 14 moves (reach, flap, wave, clap, hug, jump, squat, march, lean, duck, run, dance, freeze,
 side). Flat Cubo on a white card with a thick indigo border, a floating shadow, sliding in from the right (0.45 s) and out
 (0.3 s). Stop-motion: exactly 4 drawings per move (locked, a test enforces it) at 5 a second, each with its own face. Orange arrows lead into each move and
-go away while he holds the pose; orange is only ever used for "move this way". Only Animal Gym uses it so far; the other
-games would pass the move's name and how long it has been on. All the numbers are in `CARD` and `MOTION`.
+go away while he holds the pose; orange is only ever used for "move this way". The shell draws it for every game (`drawMoveCard` in
+`app/src/main.js`); a game just answers `card()` with a move's name, or null for none. Wired into Animal Gym (all round),
+Pop Party, Stack It High, Keep It Up!, Ptero Flight, Sky Painter (first 8 s), Leaf Pile (when it says Jump in!) and
+Sleepy Bear (dance / freeze). Not in Castle Defense or Last Known Position (their moves change with the story).
+It lives on the left, so it stays clear of the scores and the bear's cave. All the numbers are in `CARD` and `MOTION`.

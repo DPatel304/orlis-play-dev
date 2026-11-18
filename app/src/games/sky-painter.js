@@ -191,6 +191,8 @@ class SkyPainter {
     goalBar(c, W, H, this.alive ? 1 : this.covered / DONE, { color: '#7398c4' });
   }
 
+  /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
+  card(){ return this.t < 8 ? 'wave' : null; }
   hud(){ return { score: this.score, showLives: false, hideScore: true }; }
   /* big arm sweeps go everywhere; Back on the remote still pauses */
   pausable(){ return false; }

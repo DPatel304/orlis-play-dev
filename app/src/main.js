@@ -6,6 +6,7 @@ import { pose } from './tracking/pose.js';
 import { appMode } from './ui/mode.js';
 import { watchTests } from './ui/tvwatch.js';
 import { hud } from './games/hud.js';
+import { figureCard, MOTION } from './games/figure.js';
 import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
 import { menu, toggleFullscreen, openSettings, played as playedLately, BLURB } from './ui/menu.js';
@@ -222,10 +223,23 @@ function crewTick(dt){
 /* The first moments of a round: a card saying what to do, then 3, 2, 1 (the game waits, the hands already work) */
 const INTRO_CARD = 0.9, INTRO = INTRO_CARD + 3;
 let introLeft = 0, introN = 0;
+/* The move card: a game says which move to show (inst.card(), or null for none) and the shell draws it, the same way
+   for every game: it slides in when the move changes and out when there is none. */
+const moveCard = { pose: null, age: 0, out: -1 };
+function drawMoveCard(c, W, H, dt){
+  const want = !hud.quiet && inst && inst.card ? inst.card() : null;
+  if (!paused && introLeft <= 0){ moveCard.age += dt; if (moveCard.out >= 0) moveCard.out += dt; }
+  if (want && want !== moveCard.pose){ moveCard.pose = want; moveCard.age = 0; moveCard.out = -1; }
+  else if (want) moveCard.out = -1;
+  else if (moveCard.pose && moveCard.out < 0) moveCard.out = 0;
+  if (!moveCard.pose) return;
+  if (moveCard.out > MOTION.slideOut){ moveCard.pose = null; return; }
+  figureCard(c, W, H, moveCard.pose, moveCard.age, { age: moveCard.age, left: moveCard.out < 0 ? Infinity : MOTION.slideOut - moveCard.out });
+}
 function startRound(){
   joined = new Set();
   hud.quiet = false;
-  introLeft = INTRO; introN = 0;
+  introLeft = INTRO; introN = 0; moveCard.pose = null;
   inst = game.create(players);
   /* A game where squatting is a move keeps players who crouch or sit. */
   pose.keepSitters = !!game.keepSitters;
@@ -462,6 +476,7 @@ function tick(now){
   }
   if (mode === 'outro' && inst && inst.outro(dt, W, H)) showResults();
   if ((mode === 'play' || mode === 'outro' || mode === 'results') && inst) inst.draw(c, W, H);
+  if (mode === 'play' && inst) drawMoveCard(c, W, H, dt);
 
   /* A scene can navigate during its own tick - the title's wave ends by
      opening the menu - which leaves `scene` null before the draw. Hold the

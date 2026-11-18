@@ -194,6 +194,8 @@ class StackItHigh {
   /* (left of the tower, which grows up the middle) */
   _say(c, W, H){ sayBubble(c, W, H, { text: this.say.text, t: this.say.t, x: 0.24 }); }
 
+  /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
+  card(){ return this.t < 8 ? 'reach' : null; }
   hud(){ return { score: this.score, showLives: false, hideScore: true }; }
   /* reaching up high is how you catch the blocks; Back on the remote pauses */
   pausable(){ return false; }

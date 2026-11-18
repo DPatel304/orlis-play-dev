@@ -242,6 +242,8 @@ class LeafPile {
   /* how big the pile is: a bar under the words */
   _meter(c, W, H){ goalBar(c, W, H, this.ready ? 1 : this.pile / this.need, { color: this.ready ? '#e8b44a' : '#e0893b' }); }
 
+  /* the move card: which move the card in the corner shows right now, or null for none (show it when the game says to jump in) */
+  card(){ return this.say.text === 'Jump in!' && this.say.t < 6 ? 'jump' : null; }
   hud(){ return { score: this.score, showLives: false, hideScore: true }; }
   /* arms go up a lot (and in the jump); Back on the remote still pauses */
   pausable(){ return false; }

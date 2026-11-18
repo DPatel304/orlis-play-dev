@@ -687,6 +687,8 @@ class PopParty {
 
   /* No numbers on screen: nobody wins, and how well everyone did is the
      size of their bouquet at the end. (The count's still kept, for that.) */
+  /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds, then get out of the way of the balloons) */
+  card(){ return this.t < 8 ? 'reach' : null; }
   hud(){
     return { score: this.score, showLives: false, hideScore: true };
   }
