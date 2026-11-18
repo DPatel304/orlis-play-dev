@@ -314,3 +314,27 @@ TV** (routes exist already) - so you can play on the TV and publish from the cou
 also only needs the server, so it'd work on a phone. Test stays on the laptop (it packs the laptop's folder).
 Needs a phone build or a small web page served by the Orlis Server. Coding in the cloud (Claude's own app) and
 getting the game home is a bigger design (needs a way in from outside the home network) - not started.
+
+## The dev kit: everything on the TV box, creators use their own Claude Code (design agreed, not built)
+
+Idea: a creator (e.g. a brother with Claude Code already) is given a TV box. It runs the Player app **and** its own
+Orlis Server. The creator codes with Claude Code on their own laptop, says "test it" / "publish it", and the game
+goes to the box over the home Wi-Fi. Nothing goes through the owner's server. Same Wi-Fi only (no internet door,
+no tunnel) - keeps it simple and safe.
+
+- Server on the box, started at boot: it checks games (kit rules, words), packs, keeps drafts and published games,
+  tells the TV about a Test (the waiting request), and holds accounts. It is the hub; each box is its own island.
+- No Creator app needed on the laptop: Claude Code plus a **Claude command file** (`/new-game`, `/test`, `/publish`,
+  `/take-off`, `/status`) and a small upload command (could be plain `curl` + token) that sends the game's files to
+  the box. Move **packing** to the server so the laptop only uploads source (manifest + game.js).
+- **Onboarding on the TV:** first start shows a short pairing code and a QR; scanning opens a setup page served by
+  the box (steps, the one-line connect command, the Claude command file). Pairing code: one use, expires in minutes,
+  only for creators/owner. Also covers #64 (setup link / saved address) and the phone sign-in QR.
+- Create Pro app shrinks to onboarding + a status view (or is dropped for creators); the step cards stay for those who
+  want a friendlier path.
+- Works from a phone too: if Claude Code runs on the laptop and the phone controls it, the phone is just the remote.
+  Cloud-run Claude can't reach the home Wi-Fi - not in scope.
+- Needs: real Creator/Player builds (`ORLIS_MODE`), server + Player packaged together and auto-starting on the box
+  (Big Picture, camera), server updates, a one-page quick start.
+- Open: the kit (starter, checker) packaged outside the app; sign-in/token storage for the command on the laptop;
+  whether the Player and the server are one installer or two.
