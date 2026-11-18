@@ -251,6 +251,23 @@ export function previewCover(canvas, { name = 'Your game', cols = ['#8b7cff', '#
   TITLES.tilt(c, W, H, String(name || 'Your game').slice(0, 40), cols[1]);
 }
 
+/* The art for a game that has no cover of its own (a creator's first versions): its look's two colours, soft
+   circles, and a big sparkle - the title then goes on in one of the cover styles, like every other cover. */
+export function generatedArt(cols = ['#8b7cff', '#4cc3e8'], w = 960, h = 600){
+  if (typeof document === 'undefined') return null;
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const c = cv.getContext && cv.getContext('2d'); if (!c) return null;
+  const g = c.createLinearGradient(0, 0, w, h); g.addColorStop(0, cols[0]); g.addColorStop(1, cols[1] || cols[0]); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  c.fillStyle = 'rgba(255,255,255,.16)';
+  for (const [x, y, r] of [[0.15, 0.25, 0.22], [0.82, 0.18, 0.16], [0.7, 0.78, 0.28], [0.3, 0.9, 0.12]]){ c.beginPath(); c.arc(w * x, h * y, h * r, 0, TAU); c.fill(); }
+  /* the sparkle */
+  c.save(); c.translate(w * 0.7, h * 0.36); c.fillStyle = 'rgba(255,255,255,.55)';
+  const R = h * 0.3, r = R * 0.22; c.beginPath();
+  for (let i = 0; i < 8; i++){ const a = i * Math.PI / 4 - Math.PI / 2, d = i % 2 ? r : R; c.lineTo(Math.cos(a) * d, Math.sin(a) * d); }
+  c.closePath(); c.fill(); c.restore();
+  return cv;
+}
+
 /* A game on its way: the card it'll be (its colours, its name), under hazard
    stripes with a construction sign, a pill saying how it's going and a bar
    along the bottom. For Play's Under construction row - nothing to pick. */

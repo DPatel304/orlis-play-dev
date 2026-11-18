@@ -4,7 +4,7 @@
    memory, and between launches; by game and version, so a new version gets
    a new cover). */
 import { still } from './trailer.js';
-import { makeCover, hasArt, svgImage } from './covers.js';
+import { makeCover, hasArt, svgImage, generatedArt } from './covers.js';
 
 const KEY = 'orlis.covers2', MAX = 24;
 const V = typeof __BUILD__ === 'string' ? __BUILD__ : 'dev';
@@ -48,11 +48,16 @@ export function coverFor(entry, onReady = () => {}){
     const made = makeCover(g);
     return made && put(g, made, true) ? shotOf(g) : null;
   }
-  if (entry.cover) svgImage(entry.cover).then(im => {
-    const made = im && makeCover(g, { art: im, accent: g.accent });
-    if (made && put(g, made, true)) onReady(shotOf(g));
-  });
-  return null;
+  if (entry.cover){
+    svgImage(entry.cover).then(im => {
+      const made = im && makeCover(g, { art: im, accent: g.accent });
+      if (made && put(g, made, true)) onReady(shotOf(g));
+    });
+    return null;
+  }
+  /* no cover of its own: a generated one, in its look's colours, so every tile reads the same way */
+  const gen = makeCover(g, { art: generatedArt((entry.icon && entry.icon.cols) || [g.accent || '#8b7cff', '#4cc3e8']), accent: g.accent });
+  return gen && put(g, gen, true) ? shotOf(g) : null;
 }
 /* Make the missing ones, one at a time, between frames; onShot(game) as
    each is ready. Gives back a stop(). A game with a cover picture of its own
@@ -60,7 +65,9 @@ export function coverFor(entry, onReady = () => {}){
    a downloaded one without gets it from its banner, once it's played. */
 export function makeShots(games, onShot){
   const mine = (g) => !hasArt(g.id) && g.store && g.store.cover;
-  const todo = games.filter(g => !shotOf(g) && (mine(g) || (!g.sandboxed && !g.discover)));
+  /* (a game with nothing of its own to make a cover from: one is generated) */
+  const plain = (g) => !hasArt(g.id) && !(g.store && g.store.cover) && (g.sandboxed || g.discover);
+  const todo = games.filter(g => !shotOf(g) && (mine(g) || plain(g) || (!g.sandboxed && !g.discover)));
   let stopped = false;
   const next = () => {
     if (stopped || !todo.length) return;
@@ -73,7 +80,7 @@ export function makeShots(games, onShot){
       });
       return;
     }
-    const made = hasArt(g.id) ? makeCover(g) : (() => { const s = still(g); return s && makeCover(g, { still: s, accent: g.accent }); })();
+    const made = hasArt(g.id) ? makeCover(g) : plain(g) ? makeCover(g, { art: generatedArt((g.store && g.store.icon && g.store.icon.cols) || [g.accent || '#8b7cff', '#4cc3e8']), accent: g.accent }) : (() => { const s = still(g); return s && makeCover(g, { still: s, accent: g.accent }); })();
     if (made && put(g, made, true)) onShot(g);
     setTimeout(next, 120);
   };
