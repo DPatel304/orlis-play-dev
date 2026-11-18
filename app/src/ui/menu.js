@@ -566,8 +566,8 @@ function settings(onRecalibrate){
   head.append(h('h2', '', 'Settings'), onPick(button('✕', 'setclose'), close));
   card.appendChild(head);
   /* one setting a row: its name on the left, its control on the right */
-  /* (the Creator app can't play: no volume or camera to set) */
-  const NOPLAY = appMode.creator() ? new Set(['Volume', 'Camera', 'Camera detail', 'Smoother tracking']) : new Set();
+  /* (the Creator app can't play: no volume to set) */
+  const NOPLAY = appMode.creator() ? new Set(['Volume']) : new Set();
   const row = (name, ...ctl) => {
     if (NOPLAY.has(name)){ const none = h('div', 'setctl'); return none; }
     if (pending){ card.appendChild(h('div', 'setgroup', pending)); pending = null; }
@@ -617,42 +617,6 @@ function settings(onRecalibrate){
     mark();
     row('Display', seg, h('span', 'keyhint', 'F11'));
   } else row('Display', small('Full screen', () => toggleFullscreen()));
-
-  group('Camera and tracking');
-  /* the camera: which one (when there's a choice), and finding everyone again */
-  const camCtl = row('Camera', small('Re-calibrate', () => { s.remove(); onRecalibrate(); }));
-  /* the camera's cost: a sharper picture, or tracking off the main thread */
-  if (pose.reason !== 'debug'){
-    const flag = (key, label, on, off, note) => {
-      const get = () => { try { return localStorage.getItem(key) === '1'; } catch (e){ return false; } };
-      const b = small(get() ? on : off, () => {
-        const v = !get();
-        try { localStorage.setItem(key, v ? '1' : '0'); } catch (e){}
-        b.querySelector('.lbl').textContent = v ? on : off;
-        b.classList.toggle('chosen', v);
-      }, 'mode');
-      b.classList.toggle('chosen', get());
-      row(label, b, h('span', 'keyhint', note));
-    };
-    flag('orlis_camsharp', 'Camera detail', 'Sharper', 'Standard', 'next game');
-    flag('orlis_trackworker', 'Smoother tracking', 'On', 'Off', 'experimental · next game');
-  }
-  if (pose.reason !== 'debug'){
-    pose.cameras().then(list => {
-      if (list.length < 2) return;
-      const seg = h('div', 'seg');
-      list.forEach(cam => {
-        const b = small(cam.label.slice(0, 24), async () => {
-          b.querySelector('.lbl').textContent = 'Switching…';
-          try { await pose.use(cam.id); seg.querySelectorAll('.chosen').forEach(x => x.classList.remove('chosen')); b.classList.add('chosen'); b.querySelector('.lbl').textContent = cam.label.slice(0, 24); }
-          catch (e){ b.querySelector('.lbl').textContent = 'Couldn\'t open it'; }
-        }, 'mode');
-        b.classList.toggle('chosen', cam.id === pose.activeId);
-        seg.appendChild(b);
-      });
-      camCtl.prepend(seg);
-    });
-  }
 
   /* the app: its version and updates */
   group('App');

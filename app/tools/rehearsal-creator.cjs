@@ -82,7 +82,7 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
   await pg.click('.burger'); await wait(400);
   await pg.click('.popitem >> text=Settings'); await wait(500);
   const rows = await pg.$$eval('.setname', e => e.map(x => x.textContent));
-  check(!rows.includes('Volume') && !rows.includes('Camera') && rows.includes('Display'), 'Settings has no volume or camera: ' + rows.join(', '));
+  check(!rows.includes('Volume') && rows.includes('Display'), 'Settings has no volume: ' + rows.join(', '));
   await pg.click('.setclose'); await wait(400);
   await pg.evaluate(() => [...document.querySelectorAll('.tvtab')].find(t => t.textContent.trim() === 'Create').click()); await wait(1800);
   /* the questions work, and what is on its way shows below them */
