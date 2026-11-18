@@ -21,7 +21,7 @@ import { sfx, music } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
 
-export const ROUND = 150;
+export const ROUND = 180;
 /* how long the dancing goes between freezes (a range, so it can't be
    timed), how long a freeze lasts, and the grace at its start - nobody
    stops on the exact beat */

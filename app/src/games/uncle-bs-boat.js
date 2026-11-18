@@ -28,7 +28,7 @@ import { WATER, UNCLE_X, seatsFor, drawLake, drawWeeds, drawSurface, drawBoatBac
    one for a while. Uncle B keeps his line in the water for company - the
    catching is the children's - and cheers every fish they bring up. */
 
-export const ROUND = 300;
+export const ROUND = 180;
 export const FINALE = ROUND - 12;
 export const OPENING = 30;
 export const ADMIRE = 3.2;

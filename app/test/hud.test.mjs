@@ -27,3 +27,11 @@ test('every game says what its score counts, for the line on the results', async
   const { GAMES } = await import('../src/games/index.js');
   for (const g of GAMES) if (g.id !== 'last-known-position') assert.ok(g.unit, `${g.id} has a unit`);
 });
+
+test('every timed game is three minutes, so the games feel the same (Tower Defense has no clock: it runs until the castle falls)', async () => {
+  const { GAMES } = await import('../src/games/index.js');
+  for (const g of GAMES){
+    if (g.id === 'last-known-position' || g.endless) continue;
+    assert.equal(g.secs, 180, `${g.id} is 3 minutes`);
+  }
+});

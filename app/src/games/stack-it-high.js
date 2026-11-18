@@ -16,7 +16,7 @@ import { sfx } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
 
-export const ROUND = 150;
+export const ROUND = 180;
 /* blocks in a finished tower (it blasts off), a block's size (screen
    heights), the tower's place, and where the ground is */
 export const TOWER_FULL = 8, BLOCK = 0.085, TOWER = { x: 0.5, base: 0.93 };

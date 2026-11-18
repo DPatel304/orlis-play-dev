@@ -19,7 +19,7 @@ import { JumpWatch } from '../tracking/jump.js';
 import { Scene, rgbOf } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
 
-export const ROUND = 150;
+export const ROUND = 180;
 /* leaves in the pile before it's ready to jump in, the first time (each
    pile after that wants a few more) */
 export const PILE_FULL = 24, PILE_MORE = 6;
