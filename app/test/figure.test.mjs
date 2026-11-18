@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { POSES, POSE_NAMES, CARD, FACES, FACE_NAMES, FRAMES, MOTION, frameAt, figureCard, drawCard } from '../src/games/figure.js';
+import { POSES, POSE_NAMES, CARD, FACES, FACE_NAMES, FRAMES, MARKS, MOTION, frameAt, figureCard, drawCard } from '../src/games/figure.js';
 
 /* a canvas that only counts what's drawn */
 const fakeCanvas = () => {
@@ -52,4 +52,17 @@ test('the card slides in from the side and back out, and is in place in between'
 
 test('every face draws on every pose', () => {
   for (const f of FACE_NAMES) for (const n of POSE_NAMES){ const c = fakeCanvas(); drawCard(c, n, 300, 500, 400, 1.3, 1, f); assert.ok(c.calls.includes('fill'), `${f} on ${n}`); }
+});
+
+test('arrows: only on drawings that exist, and always inside the card', () => {
+  for (const n of POSE_NAMES){
+    assert.ok(MARKS[n], `${n} has a place in the arrow table`);
+    for (const [i, arrows] of Object.entries(MARKS[n])){
+      assert.ok(+i < FRAMES[n].length, `${n}: drawing ${i} exists`);
+      for (const [x1, y1, x2, y2] of arrows) for (const [x, y] of [[x1, y1], [x2, y2]]) assert.ok(Math.abs(x) <= 1.45 && y >= -2.0 && y <= 1.2, `${n}: an arrow stays on the card`);
+    }
+  }
+  const c = fakeCanvas(); drawCard(c, 'reach', 300, 500, 400, 0.01);                    /* the first drawing of reach has arrows */
+  const d = fakeCanvas(); drawCard(d, 'reach', 300, 500, 400, 2 / MOTION.fps + 0.01);    /* the held one doesn't */
+  assert.ok(c.calls.filter(x => x === 'quadraticCurveTo').length > d.calls.filter(x => x === 'quadraticCurveTo').length, 'arrows lead in, then go while he holds the pose');
 });

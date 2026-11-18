@@ -9,7 +9,7 @@ const L = (a, b, k) => a + (b - a) * k;
 /* the look, in one place. size is a share of the screen's height; x and y are where the card's middle is, as a share of the
    screen. head: how big his head is, as a share of what it was first drawn at. */
 export const CARD = { fill: '#ffffff', edge: '#2b2275', edgeW: 0.07, body: '#7aa2f7', line: '#2b2275', ink: '#1e1b4b',
-  head: ['#60a5fa', '#c084fc'], top: ['#e9fbff', '#f3e8ff'], left: '#5eead4', size: 0.3, x: 0.86, y: 0.5, headSize: 0.75 };
+  arrow: '#ff7a59', head: ['#60a5fa', '#c084fc'], top: ['#e9fbff', '#f3e8ff'], left: '#5eead4', size: 0.3, x: 0.86, y: 0.5, headSize: 0.75 };
 /* how it moves: drawings a second, and how long the card takes to slide in and out (quick enough to start the move in time) */
 export const MOTION = { fps: 5, slideIn: 0.45, slideOut: 0.3 };
 
@@ -60,6 +60,38 @@ export const FRAMES = {
 };
 /* which drawing a move is on at time t (seconds since it began) */
 export const frameAt = (pose, t) => { const f = FRAMES[pose] || FRAMES.freeze, i = Math.floor(Math.max(0, t) * MOTION.fps) % f.length; return { i, p: f[i][0], face: f[i][1] }; };
+
+
+/* the arrows: orange means "move this way". They show on the drawings that lead into a move, and not while he holds the
+   pose, so the card stays clean. Each is [fromX, fromY, toX, toY, bend], in body sizes from the middle of the figure. */
+const UP = [[-1.3, -0.05, -1.3, -1.1], [1.3, -0.05, 1.3, -1.1]], DOWN = [[-1.3, -1.1, -1.3, -0.05], [1.3, -1.1, 1.3, -0.05]];
+const IN = (y) => [[-1.4, y, -0.8, y], [1.4, y, 0.8, y]], RIGHT = (y) => [[-0.5, y, 0.9, y]], LEFT = (y) => [[0.5, y, -0.9, y]];
+export const MARKS = {
+  reach:  { 0: UP, 1: UP },
+  flap:   { 0: UP, 1: UP, 3: DOWN },
+  wave:   { 0: RIGHT(-1.8), 1: LEFT(-1.8), 2: RIGHT(-1.8), 3: LEFT(-1.8) },
+  clap:   { 0: IN(-0.38), 1: IN(-0.38) },
+  hug:    { 0: IN(-0.45), 1: IN(-0.45) },
+  jump:   { 0: UP, 1: UP, 3: DOWN },
+  squat:  { 0: DOWN, 1: DOWN },
+  march:  { 1: [[-1.2, 0.55, -1.2, -0.2]] },
+  lean:   { 1: RIGHT(-1.9), 3: LEFT(-1.9) },
+  duck:   { 0: DOWN, 1: DOWN },
+  run:    { 0: [[-1.4, -0.2, -0.6, -0.2]], 2: [[-1.4, -0.2, -0.6, -0.2]] },
+  dance:  { 1: RIGHT(-1.9), 3: LEFT(-1.9) },
+  freeze: {},
+  side:   { 0: [[0.5, 1.0, 1.4, 1.0]], 1: [[0.5, 1.0, 1.4, 1.0]] },
+};
+function arrow(c, s, [x1, y1, x2, y2, bend = 0]){
+  const mx = (x1 + x2) / 2 + bend, my = (y1 + y2) / 2, ang = Math.atan2(y2 - my, x2 - mx), tip = 0.12;
+  const shaft = () => { c.beginPath(); c.moveTo(x1 * s, y1 * s); c.quadraticCurveTo(mx * s, my * s, (x2 - Math.cos(ang) * tip) * s, (y2 - Math.sin(ang) * tip) * s); };
+  const tipPath = () => { const hl = s * 0.34, hw = s * 0.26, X = x2 * s, Y = y2 * s, ca = Math.cos(ang), sa = Math.sin(ang);
+    c.beginPath(); c.moveTo(X, Y); c.lineTo(X - ca * hl + sa * hw, Y - sa * hl - ca * hw); c.lineTo(X - ca * hl - sa * hw, Y - sa * hl + ca * hw); c.closePath(); };
+  c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+  c.strokeStyle = CARD.line; c.fillStyle = CARD.line; c.lineWidth = s * 0.27; shaft(); c.stroke(); tipPath(); c.fill(); c.lineWidth = s * 0.1; c.stroke();   /* the dark outline */
+  c.strokeStyle = CARD.arrow; c.fillStyle = CARD.arrow; c.lineWidth = s * 0.13; shaft(); c.stroke(); tipPath(); c.fill();
+  c.restore();
+}
 
 const gradient = (c, x0, y0, x1, y1, cols) => { const g = c.createLinearGradient(x0, y0, x1, y1); cols.forEach((col, i) => g.addColorStop(i / (cols.length - 1), col)); return g; };
 
@@ -128,6 +160,7 @@ export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
   pass(s * 0.3, CARD.line); ends(s * 0.17, CARD.line);                    /* the dark outline, then the body over it */
   pass(s * 0.17, CARD.body); ends(s * 0.11, CARD.body);
   head(c, sh.x * s, hy * s, hr, face || fr.face);
+  for (const a of (MARKS[pose] || {})[fr.i] || []) arrow(c, s, a);
   c.restore();
 }
 

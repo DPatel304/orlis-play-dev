@@ -474,3 +474,10 @@ The Orlis cube with arms and legs, on the shared indigo move card (`app/src/game
   or mark called Cubion, but it is not a real trademark search. Other cube mascots to stay clear of: Qubo (the kids'
   channel's teal cube with a face) and Nex Playground (a cube console). "Cubby" has marks and characters already
   (CUBBY CUBE, Cubby the Bear), so it is not used.
+
+### The move card (Cubo): how it works now
+`app/src/games/figure.js`: 14 moves (reach, flap, wave, clap, hug, jump, squat, march, lean, duck, run, dance, freeze,
+side). Flat Cubo on a white card with a thick indigo border, a floating shadow, sliding in from the right (0.45 s) and out
+(0.3 s). Stop-motion: 3-4 drawings per move at 5 a second, each with its own face. Orange arrows lead into each move and
+go away while he holds the pose; orange is only ever used for "move this way". Only Animal Gym uses it so far; the other
+games would pass the move's name and how long it has been on. All the numbers are in `CARD` and `MOTION`.
