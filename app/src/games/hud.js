@@ -30,3 +30,37 @@ export function goalBar(c, W, H, k, { color = '#7398c4', x = 0.5, y = 0.25 } = {
   if (k > 0){ c.fillStyle = color; c.beginPath(); c.roundRect(bx + 3, by + 3, Math.max(h - 6, (w - 6) * Math.min(1, k)), h - 6, (h - 6) / 2); c.fill(); }
   c.restore();
 }
+
+/* ---------- the standard screen: where everything lives (see UI-STANDARD.md) ---------- */
+
+/* The shell's areas, as rectangles in pixels for a screen W by H. A game keeps anything a player has to touch, catch or
+   read out of these; the shell draws on top of them. The move card is square (a share of the screen's height). */
+export function hudZones(W, H){
+  const pad = Math.max(14, H * 0.03), K = H * 0.3;
+  return {
+    top:   { x: W * 0.3, y: 0, w: W * 0.4, h: H * 0.28 },                         /* clock, hint words, goal bar */
+    score: { x: W * 0.84, y: 0, w: W * 0.16, h: H * 0.46 },                        /* the scores, top right, one column */
+    card:  { x: W * 0.14 - K / 2 - pad * 0.4, y: H * 0.5 - K / 2 - pad * 0.4, w: K + pad * 0.8, h: K + pad * 0.8 },   /* the move card, left middle */
+    badge: { x: 0, y: 0, w: W * 0.2, h: H * 0.2 },                                 /* the game's one badge, top left */
+  };
+}
+/* is this point (pixels) under one of the shell's areas? (for placing targets) */
+export function underHud(W, H, x, y){
+  return Object.values(hudZones(W, H)).some(z => x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h);
+}
+
+/* The game's one badge, top left: a streak, lives, a combo. The same cream pill the scores use, with an optional picture
+   (an emoji), a word or number, and the same bounce when it changes (bump: 1 right then, back to 0). */
+export function badge(c, W, H, { icon = '', value = '', color = '#7398c4', bump = 0 } = {}){
+  if (hud.quiet || (icon === '' && value === '')) return;
+  const h = H * 0.08, pad = Math.max(14, H * 0.03), font = `800 ${Math.round(h * 0.62)}px ${FONT}`;
+  c.save(); c.font = font;
+  const tw = c.measureText(String(value)).width, iw = icon ? h * 0.9 : 0, w = h * 0.7 + iw + tw + (value !== '' ? h * 0.2 : 0);
+  c.translate(pad + w / 2, pad + h / 2); const k = 1 + 0.28 * Math.sin(Math.min(1, bump) * Math.PI); c.scale(k, k); c.translate(-w / 2, -h / 2);
+  c.shadowColor = 'rgba(20,20,60,.25)'; c.shadowBlur = h * 0.25; c.shadowOffsetY = h * 0.07;
+  c.fillStyle = 'rgba(252,250,244,.96)'; c.beginPath(); c.roundRect(0, 0, w, h, h / 2); c.fill(); c.shadowColor = 'transparent';
+  c.textBaseline = 'middle'; c.textAlign = 'left';
+  if (icon){ c.font = `${Math.round(h * 0.56)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; c.fillStyle = '#000'; c.fillText(icon, h * 0.35, h / 2 + 2); }
+  c.font = font; c.fillStyle = color; c.fillText(String(value), h * 0.35 + iw + (icon ? h * 0.1 : 0), h / 2 + 2);
+  c.restore();
+}

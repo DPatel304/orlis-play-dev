@@ -484,3 +484,10 @@ go away while he holds the pose; orange is only ever used for "move this way". T
 Pop Party, Stack It High, Keep It Up!, Ptero Flight, Sky Painter (first 8 s), Leaf Pile (when it says Jump in!) and
 Sleepy Bear (dance / freeze). Not in Castle Defense or Last Known Position (their moves change with the story).
 It lives on the left, so it stays clear of the scores and the bear's cave. All the numbers are in `CARD` and `MOTION`.
+
+## The game screen standard (written)
+`app/src/games/UI-STANDARD.md`: where the clock, hint words, goal bar, scores (top right, one column), move card (left,
+middle) and one optional badge (top left) go, who draws each, and ten rules for new games. `hudZones` / `underHud` /
+`badge` in `hud.js`, with a test that the shell's areas never overlap. It is a standard, not a law: exceptions are written
+down at the end of the file. Next steps: tell the Create flow and the creator kit's instructions about it, so a game made
+in Create follows it; and have the games that place targets use `underHud`.
