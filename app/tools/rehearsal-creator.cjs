@@ -45,21 +45,21 @@ const txt = async (pg, sel) => ((await pg.textContent(sel).catch(() => '')) || '
     return pg;
   };
 
-  log('\n1. Nothing said: the Creator app, for now');
+  log('\n1. Nothing said: the Player app');
   let pg = await open('');
-  check((await tabsOf(pg)).join('|') === 'Create|Create Pro' && !!(await pg.$('.tvtab.on >> text=Create Pro')), 'Create and Create Pro, opening on Create Pro: ' + (await tabsOf(pg)).join(', '));
+  check((await tabsOf(pg)).join('|') === 'Play|Discover|Create' && !!(await pg.$('.tvtab.on >> text=Play')), 'Play, Discover, Create, opening on Play: ' + (await tabsOf(pg)).join(', '));
   await pg.context().close();
 
   log('\n1b. Switching, for testing: Settings has a Mode switch');
   pg = await open('');
-  await pg.keyboard.press('Escape'); await wait(900);
   await pg.click('.burger'); await wait(400); await pg.click('.popitem >> text=Settings'); await wait(500);
   check((await pg.$$eval('.setname', e => e.map(x => x.textContent))).includes('Mode'), 'Settings has a Mode row');
-  await pg.click('.seg .setbtn >> text=Player'); await wait(1800);
-  check((await tabsOf(pg)).join('|') === 'Play|Discover|Create' && !!(await pg.$('.tvtab.on >> text=Play')), 'Player: Play, Discover, Create, on Play: ' + (await tabsOf(pg)).join(', '));
-  await pg.click('.burger'); await wait(400); await pg.click('.popitem >> text=Settings'); await wait(500);
   await pg.click('.seg .setbtn >> text=Creator'); await wait(1800);
-  check((await tabsOf(pg)).join('|') === 'Create|Create Pro', 'and back to Creator: ' + (await tabsOf(pg)).join(', '));
+  check((await tabsOf(pg)).join('|') === 'Create|Create Pro' && !!(await pg.$('.tvtab.on >> text=Create Pro')), 'Creator: Create and Create Pro, on Create Pro: ' + (await tabsOf(pg)).join(', '));
+  await pg.keyboard.press('Escape'); await wait(900);
+  await pg.click('.burger'); await wait(400); await pg.click('.popitem >> text=Settings'); await wait(500);
+  await pg.click('.seg .setbtn >> text=Player'); await wait(1800);
+  check((await tabsOf(pg)).join('|') === 'Play|Discover|Create' && !!(await pg.$('.tvtab.on >> text=Play')), 'and back to Player, on Play: ' + (await tabsOf(pg)).join(', '));
   await pg.context().close();
 
   log('\n2. The Player app: Play, Discover and Create, no Create Pro');

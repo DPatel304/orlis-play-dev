@@ -157,12 +157,12 @@ test('a game waiting for the owner\'s OK is played before it can be approved: th
   assert.ok(readFileSync(new URL('../src/ui/store.js', import.meta.url), 'utf8').includes('game.trial = g.submission'), 'Try it marks the game');
 });
 
-test('one app, modes by install: Player has Play, Discover and Create; Creator has Create and Create Pro; unset is Creator', async () => {
+test('one app, modes by install: Player has Play, Discover and Create; Creator has Create and Create Pro; unset is Player', async () => {
   const { MODES, appMode } = await import('../src/ui/mode.js');
   assert.deepEqual(MODES.player, ['home', 'store', 'create']);
   assert.deepEqual(MODES.creator, ['create', 'pro']);
   assert.equal(Object.keys(MODES).length, 2);
-  assert.equal(appMode.get(), 'creator', 'for now, unset is the Creator app');
+  assert.equal(appMode.get(), 'player', 'unset is the Player app');
   assert.equal(appMode.canSwitch(), true, 'a testing build (no mode told, no release label) can be switched');
   const tabs = readFileSync(new URL('../src/ui/tabs.js', import.meta.url), 'utf8');
   assert.ok(tabs.includes('appMode.tabs().includes(id)'), 'the tab bar follows the mode');

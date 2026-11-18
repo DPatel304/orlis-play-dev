@@ -8,7 +8,7 @@
    A build that is told its mode (ORLIS_MODE=player or creator when it's
    built -> window.ORLIS_MODE) is locked to it: no way to change it. One that
    isn't - the Beta, and the app in a browser - is for testing, so Settings has
-   a Mode switch (kept on this PC); until it's used, it's creator, for now.
+   a Mode switch (kept on this PC); until it's used, it's the Player app.
    In a browser, ?mode=player or ?mode=creator picks it for that page. */
 export const MODES = { player: ['home', 'store', 'create'], creator: ['create', 'pro'] };
 
@@ -24,7 +24,7 @@ export const appMode = {
     const label = typeof window !== 'undefined' && window.ORLIS_LABEL;
     return !label || !!label.beta;
   },
-  get(){ return built() || asked() || (this.canSwitch() ? kept() : null) || 'creator'; },
+  get(){ return built() || asked() || (this.canSwitch() ? kept() : null) || 'player'; },
   set(mode){
     if (!this.canSwitch() || !MODES[mode]) return;
     try { localStorage.setItem(KEY, mode); } catch (e){}
