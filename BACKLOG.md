@@ -266,3 +266,42 @@ The TV holds one request open (`/api/drafts/wait`); the server answers only on a
 **Phase 2 (on hold):** submit a game to the owner, and maybe into Discover for everyone.
 Creator games have more freedom, so it'd need much more testing on the owner's side - perhaps
 charge for it. Not started. (The old outbox/`/api/submissions` path is still there for it.)
+
+## The TV box: which mini PC (to revisit)
+
+The Player app runs on a Windows PC plugged into the TV (camera tracking + drawing the games). Not
+measured on real hardware yet - see "real-hardware camera check" above. What it needs: Windows 11, a decent
+integrated GPU (Radeon 780M or better is comfortable), 16 GB in two sticks, 512 GB SSD, HDMI 2.0+, Wi-Fi 6
+or Ethernet, 2+ free USB ports. Plus a wide-angle (~90 degree) 1080p USB webcam under the TV.
+Avoid: Mac mini (the app is Windows-only), single-stick memory, a Raspberry Pi (no Windows app; WebKitGTK
+and slow tracking), phones (iOS/Android would be a separate Player build - see below).
+
+Short list (prices are rough US figures from a web search in Nov 2026 - check before buying):
+
+| # | Mini PC | Rough price | Notes |
+|---|---|---|---|
+| 1 | Beelink SER8 (Ryzen 7 8845HS) | $630-800 | All-rounder, runs cool |
+| 2 | Beelink SER6 Pro | $350-500 (from memory) | Older, often best value |
+| 3 | Minisforum UM780 XTX (Ryzen 7 7840HS) | $500-650 | Strong graphics |
+| 4 | Minisforum UM890 Pro (Ryzen 9 8945HS) | $900-1,100 (32 GB / 1 TB) | More than needed |
+| 5 | Geekom A7 / A8 | $640-710 (A8) | Quiet, good build and warranty |
+| 6 | GMKtec K8 | from ~$360 | Cheapest, thinner support |
+| 7 | ASUS NUC 14 Pro (Core Ultra) | $430-650 | Brand-name, good support |
+| 8 | Geekom IT13 (Core i9) | $600-800 (from memory) | Fast, but hot and loud |
+| 9 | Lenovo ThinkCentre Tiny / HP EliteDesk or Elite Mini | $250-600, cheaper refurbished | Quiet, reliable; check HDMI is 2.0+ |
+| 10 | Beelink Mini S12 Pro / EQ14 (N100/N150) | $150-250 (from memory) | Cheapest; may be too slow for tracking + rendering - buy only if returnable |
+Also seen: Beelink SER9 (Ryzen 9), about $600-750.
+
+Intel vs AMD: AMD Ryzen has stronger integrated graphics, runs cooler, better value, but smaller brands with
+variable support. Intel (NUC, ThinkCentre, EliteDesk) has reliable business machines and great Windows
+drivers; the Core i9 minis run hot and loud, and the N100/N150 are the weakest.
+
+Chosen direction so far: budget-friendly AND easy to buy again in two years. So either a refurbished business
+mini PC (ThinkCentre Tiny / EliteDesk with Ryzen or Core i5/i7, 16 GB, 512 GB) or a Beelink SER6/SER8. The app
+isn't tied to a model, so "buying again" just means any similar Windows mini PC. Keep a short setup
+checklist (Windows, Player app, Orlis Server, camera position) so a new box takes ~20 minutes.
+
+Other devices considered: Raspberry Pi (no, see above); iPhone or Android as the TV box (maybe one day - needs
+a separate web/iOS/Android Player build, with the Library and sandbox reworked; Android is the better first
+try; quickest test is the app's web page in the phone's browser with the camera on). Testing games on the
+laptop with the mouse as hands was considered and dropped: testing on the TV is the only way.
