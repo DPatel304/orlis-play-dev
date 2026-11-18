@@ -564,6 +564,7 @@ function settings(onRecalibrate){
   const NOPLAY = appMode.creator() ? new Set(['Volume', 'Camera', 'Camera detail', 'Smoother tracking']) : new Set();
   const row = (name, ...ctl) => {
     if (NOPLAY.has(name)){ const none = h('div', 'setctl'); return none; }
+    if (pending){ card.appendChild(h('div', 'setgroup', pending)); pending = null; }
     const r = h('div', 'setrow');
     const c = h('div', 'setctl'); c.append(...ctl);
     r.append(h('span', 'setname', name), c);
@@ -571,6 +572,9 @@ function settings(onRecalibrate){
     return c;
   };
   const small = (label, fn, cls = '') => onPick(button(label, 'setbtn ' + cls), fn);
+  /* a small heading over a few rows (not in the Creator app, where there's nothing to group yet) */
+  let pending = null;
+  const group = (title) => { pending = title; };   /* (its heading comes with its first row: none for a group with nothing in it) */
 
   /* sound */
   const sl = document.createElement('input');
@@ -585,45 +589,10 @@ function settings(onRecalibrate){
     mute.setAttribute('aria-label', m ? 'Unmute' : 'Mute'); sl.classList.toggle('off', m);
   }, 'spk');
   mute.title = 'Mute'; mute.setAttribute('aria-label', audio.muted ? 'Unmute' : 'Mute'); sl.classList.toggle('off', audio.muted);
+  group('Sound');
   row('Volume', mute, sl);
 
-  /* a newer version (the Windows app): picked once it checks, picked again it installs and restarts on it */
-  const appInfo = typeof window !== 'undefined' && window.orlisApp;
-  if (appInfo){
-    let next = null, busy = false;
-    const up = small('Check for updates', async () => {
-      if (busy) return;
-      const say = (t) => { up.querySelector('.lbl').textContent = t; };
-      busy = true; sfx.select();
-      try {
-        if (next){ say('Updating…'); await appInfo.installUpdate(); }
-        else {
-          say('Checking…');
-          const r = await appInfo.checkUpdate();
-          if (r.available){ next = r.version; say(`Update to ${appInfo.nameOf ? appInfo.nameOf(next) : next}`); }
-          else say('Up to date');
-        }
-      } catch (e){ next = null; say('Couldn\'t check - try later'); }
-      busy = false;
-    });
-    row('Updates', up, h('span', 'keyhint', `Orlis Play ${appInfo.label ? appInfo.label() : appInfo.version}`));
-  }
-
-  /* the mode, for testing (a build that was told its mode has no switch) */
-  if (appMode.canSwitch()){
-    const seg = h('div', 'seg');
-    const modes = [['player', 'Player'], ['creator', 'Creator']];
-    const mark = () => modes.forEach(([m], i) => seg.children[i].classList.toggle('chosen', appMode.get() === m));
-    for (const [m, name] of modes){
-      seg.appendChild(small(name, () => {
-        if (appMode.get() === m) return;
-        sfx.select(); appMode.set(m); s.remove();
-      }, 'mode'));
-    }
-    mark();
-    row('Mode', seg, h('span', 'keyhint', 'testing only'));
-  }
-
+  group('Screen');
   /* the screen: in the Windows app, a window or Big Picture (full screen,
      for the TV), kept for next time; in a browser, its own full screen */
   const display = typeof window !== 'undefined' && window.orlisDisplay;
@@ -643,6 +612,7 @@ function settings(onRecalibrate){
     row('Display', seg, h('span', 'keyhint', 'F11'));
   } else row('Display', small('Full screen', () => toggleFullscreen()));
 
+  group('Camera and tracking');
   /* the camera: which one (when there's a choice), and finding everyone again */
   const camCtl = row('Camera', small('Re-calibrate', () => { s.remove(); onRecalibrate(); }));
   /* the camera's cost: a sharper picture, or tracking off the main thread */
@@ -676,6 +646,47 @@ function settings(onRecalibrate){
       });
       camCtl.prepend(seg);
     });
+  }
+
+  /* the app: its version and updates */
+  group('App');
+  /* a newer version (the Windows app): picked once it checks, picked again it installs and restarts on it */
+  const appInfo = typeof window !== 'undefined' && window.orlisApp;
+  if (appInfo){
+    let next = null, busy = false;
+    const up = small('Check for updates', async () => {
+      if (busy) return;
+      const say = (t) => { up.querySelector('.lbl').textContent = t; };
+      busy = true; sfx.select();
+      try {
+        if (next){ say('Updating…'); await appInfo.installUpdate(); }
+        else {
+          say('Checking…');
+          const r = await appInfo.checkUpdate();
+          if (r.available){ next = r.version; say(`Update to ${appInfo.nameOf ? appInfo.nameOf(next) : next}`); }
+          else say('Up to date');
+        }
+      } catch (e){ next = null; say('Couldn\'t check - try later'); }
+      busy = false;
+    });
+    row('Updates', up, h('span', 'keyhint', `Orlis Play ${appInfo.label ? appInfo.label() : appInfo.version}`));
+  }
+
+  /* testing only */
+  group('Testing');
+  /* the mode, for testing (a build that was told its mode has no switch) */
+  if (appMode.canSwitch()){
+    const seg = h('div', 'seg');
+    const modes = [['player', 'Player'], ['creator', 'Creator']];
+    const mark = () => modes.forEach(([m], i) => seg.children[i].classList.toggle('chosen', appMode.get() === m));
+    for (const [m, name] of modes){
+      seg.appendChild(small(name, () => {
+        if (appMode.get() === m) return;
+        sfx.select(); appMode.set(m); s.remove();
+      }, 'mode'));
+    }
+    mark();
+    row('Mode', seg);
   }
 
   s.appendChild(card);
