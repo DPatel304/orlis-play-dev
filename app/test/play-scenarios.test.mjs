@@ -283,7 +283,8 @@ test('leaf-pile: a full pile with nobody left to jump still bursts; one child al
   assert.ok(h.ready, 'ready');
   const piles = h.piles;
   play(h, leafPile, k2, 2);
-  assert.equal(h.piles, piles + 1, 'one child jumping is everyone');
+  /* (sweeping is easier now, so the next pile may fill and burst in those two seconds too) */
+  assert.ok(h.piles >= piles + 1, 'one child jumping is everyone');
   assert.ok(h.leaves.length <= 90, 'leaves stay bounded');
 });
 

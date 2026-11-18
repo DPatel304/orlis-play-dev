@@ -22,10 +22,15 @@ import { Avatars } from '../ui/avatars.js';
 export const ROUND = 180;
 /* leaves in the pile before it's ready to jump in, the first time (each
    pile after that wants a few more) */
-export const PILE_FULL = 24, PILE_MORE = 6;
+export const PILE_FULL = 14, PILE_MORE = 6;
 /* a sweep: a hand moving at least this fast (screen widths a second)
    within REACH (screen heights) of a leaf pushes it */
 export const SWEEP_SPEED = 0.3, REACH = 0.09;
+/* A sweep is one gentle push, not a swat: a leaf is pushed once (then not again for SWEEP_GAP seconds, however long
+   the hand stays over it), at most MAX_SLIDE screen widths a second whatever the hand's speed, nudged toward the pile
+   (STEER: how much of the push goes toward it), and only when the hand is going the pile's way. It slides along the
+   ground - never up into the air. */
+export const SWEEP_GAP = 0.5, MAX_SLIDE = 0.6, STEER = 0.5;
 /* if nobody jumps, the pile bursts by itself after this long */
 export const JUMP_WAIT = 6;
 /* where the pile sits (screen fractions), and how far its pull reaches */
@@ -114,15 +119,21 @@ class LeafPile {
     }
     for (const L of this.leaves){
       if (L.inPile) continue;
+      if (L.cool > 0) L.cool -= dt;
       for (const [i, h] of hands){
         const dx = (L.x - h.x) * aspect, dy = L.y - h.y;
         if (dx * dx + dy * dy > REACH * REACH) continue;
-        /* sweeping back the other way (away from the pile) barely moves them:
-           children sweep back and forth, and only the way in should count */
-        const inward = Math.sign(h.vx) === Math.sign(PILE.x - L.x) ? 1 : 0.25;
-        L.vx = clampV(L.vx + h.vx * 0.9 * inward); L.vy = clampV(L.vy + h.vy * 0.5 * inward);
-        if (!L.air && L.vy < 0){ L.air = true; L.rest = Math.min(GROUND_BOTTOM, Math.max(GROUND_TOP, L.y + 0.04)); }
-        L.spin = (Math.random() - 0.5) * 12; L.who = i;
+        /* once per sweep, and only the way in: children sweep back and forth, and the way out does nothing */
+        if (L.cool > 0) continue;
+        const toward = Math.sign(PILE.x - L.x);
+        if (!h.vx || Math.sign(h.vx) !== toward) continue;
+        const speed = Math.min(MAX_SLIDE, Math.abs(h.vx) * 0.9);
+        /* the hand's way, bent toward the pile */
+        const px = (PILE.x - L.x) * aspect, py = PILE.y - L.y, d = Math.hypot(px, py) || 1;
+        const ux = (1 - STEER) * toward + STEER * (px / d), uy = STEER * (py / d), n = Math.hypot(ux, uy) || 1;
+        L.vx = (ux / n) * speed; if (!L.air) L.vy = (uy / n) * speed;     /* (a leaf still fluttering down keeps falling) */
+        L.cool = SWEEP_GAP;
+        L.spin = (Math.random() - 0.5) * 6; L.who = i;
         if (Math.random() < 0.08) sfx.rustle?.();
       }
     }

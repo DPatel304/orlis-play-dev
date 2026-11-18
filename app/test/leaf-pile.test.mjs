@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { pose } from '../src/tracking/pose.js';
-import leafPile, { PILE, PILE_FULL, PILE_MORE, JUMP_WAIT, SWEEP_SPEED } from '../src/games/leaf-pile.js';
+import leafPile, { PILE, PILE_FULL, PILE_MORE, JUMP_WAIT, SWEEP_SPEED, SWEEP_GAP, MAX_SLIDE } from '../src/games/leaf-pile.js';
 
 const DT = 1 / 30, W = 1920, H = 1080;
 function players(n){
@@ -51,3 +51,39 @@ test('a full pile waits for a jump - and bursts by itself if nobody jumps', () =
   assert.equal(g.need, PILE_FULL + PILE_MORE, 'the next pile is a bit bigger');
   assert.ok(g.leaves.some(L => L.air), 'leaves fly up and come back down');
 });
+
+
+test('a sweep is one gentle push: capped speed, once per sweep, only the way in, along the ground', () => {
+  players(1);
+  /* however fast the hand, the leaf never leaves faster than MAX_SLIDE */
+  let g = leafPile.create(1);
+  g.leaves = []; g._leaf(true, 0.3, 0.86); g.fallT = 99;
+  let L = g.leaves[0];
+  const h = pose.players[0].hands.right;
+  Object.assign(h, { x: L.x, y: L.y, vx: 6, vy: -4, speed: 6 });
+  g.step(DT, W, H);
+  assert.ok(Math.hypot(L.vx, L.vy) <= MAX_SLIDE + 1e-9, 'capped: ' + Math.hypot(L.vx, L.vy));
+  assert.ok(!L.air, 'it slides, it does not fly up');
+  /* the hand stays over it: no second push for a while */
+  const first = L.vx;
+  Object.assign(h, { x: L.x, y: L.y, vx: 6, vy: 0, speed: 6 });
+  g.step(DT, W, H);
+  assert.ok(L.vx <= first, 'not pushed again at once');
+  assert.ok(SWEEP_GAP > DT * 3);
+  /* sweeping the wrong way (away from the pile) does nothing */
+  g = leafPile.create(1);
+  g.leaves = []; g._leaf(true, 0.3, 0.86); g.fallT = 99;
+  L = g.leaves[0];
+  Object.assign(pose.players[0].hands.right, { x: L.x, y: L.y, vx: -1.5, vy: 0, speed: 1.5 });
+  g.step(DT, W, H);
+  assert.equal(L.vx, 0, 'the way out does nothing');
+  /* a push that is off to one side is bent toward the pile */
+  g = leafPile.create(1);
+  g.leaves = []; g._leaf(true, 0.3, 0.72); g.fallT = 99;
+  L = g.leaves[0];
+  Object.assign(pose.players[0].hands.right, { x: L.x, y: L.y, vx: 1, vy: 0, speed: 1 });
+  g.step(DT, W, H);
+  assert.ok(L.vy > 0, 'nudged down toward the pile, which is lower than the leaf');
+});
+
+test('the first pile is a quick one', () => { assert.equal(PILE_FULL, 14); });
