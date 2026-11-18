@@ -196,7 +196,7 @@ class StackItHigh {
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
   card(){ return this.t < 8 ? 'reach' : null; }
-  hud(){ return { score: this.score, showLives: false, hideScore: true }; }
+  hud(){ return { score: this.score, showLives: false }; }
   /* reaching up high is how you catch the blocks; Back on the remote pauses */
   pausable(){ return false; }
   tally(){

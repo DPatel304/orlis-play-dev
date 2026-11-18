@@ -205,7 +205,7 @@ class AnimalGym {
 
   /* the move card: which move the card in the corner shows right now, or null for none (the move he is on, all round) */
   card(){ return this.move; }
-  hud(){ return { score: this.score, showLives: false, hideScore: true }; }
+  hud(){ return { score: this.score, showLives: false }; }
   tally(){
     const rows = [];
     for (let i = 0; i < this.players; i++){

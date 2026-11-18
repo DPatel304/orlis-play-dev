@@ -313,7 +313,7 @@ class PteroFlight {
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
   card(){ return this.t < 8 ? 'flap' : null; }
-  hud(){ return { score: this.score, showLives: false, hideScore: true }; }
+  hud(){ return { score: this.score, showLives: false }; }
   tally(){
     const rows = [];
     for (let i = 0; i < this.players; i++){

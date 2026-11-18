@@ -174,7 +174,6 @@ class SleepyBear {
       for (const h of hands) frost(c, h.x * W, h.y * H, H * 0.03, this.frost[i], this.t);
     }
     this._say(c, W, H);
-    this._stars(c, W, H);
   }
 
   /* the bear's hill, with the cave and the bear in it, on the right */
@@ -217,24 +216,10 @@ class SleepyBear {
 
   _say(c, W, H){ sayBubble(c, W, H, { text: (this.phase === 'freeze' && this.say.text === 'Freeze!' ? '\u2744 ' : '') + this.say.text, t: this.say.t }); }
 
-  /* each player's stars, in their colour, top right */
-  _stars(c, W, H){
-    const size = Math.round(H * 0.032);
-    let x = W - H * 0.04;
-    for (let i = this.players - 1; i >= 0; i--){
-      if (!pose.players[i].present && !this.score[i]) continue;
-      const text = `★ ${this.score[i]}`;
-      c.font = `800 ${size}px Inter, Segoe UI, sans-serif`;
-      const w = c.measureText(text).width + size * 1.4;
-      c.fillStyle = 'rgba(250,247,238,.94)'; c.beginPath(); c.roundRect(x - w, H * 0.05, w, size * 1.8, size * 0.9); c.fill();
-      c.fillStyle = PLAYER_COLORS[i]; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, x - w / 2, H * 0.05 + size * 0.95);
-      x -= w + H * 0.015;
-    }
-  }
 
   /* the move card: which move the card in the corner shows right now, or null for none (dancing, then frozen) */
   card(){ return this.phase === 'dance' ? 'dance' : 'freeze'; }
-  hud(){ return { score: this.score, showLives: false, hideScore: true }; }
+  hud(){ return { score: this.score, showLives: false }; }
   /* both hands up is a dance move here; Back on the remote still pauses */
   pausable(){ return false; }
   tally(){

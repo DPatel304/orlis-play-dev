@@ -244,7 +244,7 @@ class LeafPile {
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it when the game says to jump in) */
   card(){ return this.say.text === 'Jump in!' && this.say.t < 6 ? 'jump' : null; }
-  hud(){ return { score: this.score, showLives: false, hideScore: true }; }
+  hud(){ return { score: this.score, showLives: false }; }
   /* arms go up a lot (and in the jump); Back on the remote still pauses */
   pausable(){ return false; }
   tally(){
