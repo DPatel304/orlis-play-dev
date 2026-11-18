@@ -83,3 +83,12 @@ test('the round is three minutes', () => {
   assert.equal(g.over, true);
   assert.equal(g.winner(), null, 'one player: nobody to beat');
 });
+
+test('the results speak of the best run, so the "New best!" is about the same thing', () => {
+  players(1);
+  const g = keepItUp.create(1);
+  assert.equal(g.summary(1), null, 'nothing to say before a run');
+  g.best = 17;
+  assert.equal(g.summary(1), 'Your best run: 17 in a row');
+  assert.equal(g.summary(2), 'Your best run together: 17 in a row');
+});

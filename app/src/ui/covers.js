@@ -71,6 +71,68 @@ const ART = {
       c.fillRect(W * x + r, H * y - r * 4, r * 0.35, r * 4);
     }
   },
+  /* the new games' covers: drawn from shapes and emoji, no other game's code */
+  'animal-gym': (c, W, H) => {
+    const s = new Scene(); s.step(1 / 60, { t: 3, p: 0.35, storm: false, wind: 0, joy: 1, look: 0.5, rainbow: true });
+    s.drawBack(c, W, H); s.drawFront(c, W, H);
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    const font = (k) => `${Math.round(H * k)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
+    c.font = font(0.5); c.fillText('\u{1F992}', W * 0.58, H * 0.46);
+    c.font = font(0.22); c.fillText('\u{1F430}', W * 0.8, H * 0.7); c.fillText('\u{1F438}', W * 0.36, H * 0.74);
+    c.font = font(0.18); c.fillText('\u{1F418}', W * 0.2, H * 0.5); c.fillText('\u{1F427}', W * 0.9, H * 0.46);
+    c.fillStyle = '#fff6c8';
+    for (const [x, y, r] of [[0.7, 0.14, 0.03], [0.4, 0.2, 0.02], [0.86, 0.3, 0.02]]){
+      c.beginPath(); for (let k = 0; k < 8; k++){ const a = k * Math.PI / 4, q = k % 2 ? r * 0.35 : r; c.lineTo(W * x + Math.cos(a) * q * H, H * y + Math.sin(a) * q * H); } c.closePath(); c.fill();
+    }
+  },
+  'keep-it-up': (c, W, H) => {
+    const s = new Scene(); s.step(1 / 60, { t: 2, p: 0.3, storm: false, wind: 0, joy: 1, look: 0.5, rainbow: false });
+    s.drawBack(c, W, H); s.drawFront(c, W, H);
+    /* a beach ball, high in the sky, with a soft shadow on the grass */
+    const x = W * 0.62, y = H * 0.4, r = H * 0.27, cols = ['#ff5d6c', '#ffb84d', '#ffe36e', '#4cc9a0', '#4da3ff', '#a98bff'];
+    c.fillStyle = 'rgba(58,51,96,.2)'; c.beginPath(); c.ellipse(x, H * 0.93, r * 0.85, r * 0.16, 0, 0, TAU); c.fill();
+    c.save(); c.translate(x, y); c.rotate(0.35);
+    cols.forEach((col, i) => { c.fillStyle = col; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, r, i * TAU / 6, (i + 1) * TAU / 6); c.closePath(); c.fill(); });
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, r * 0.17, 0, TAU); c.fill(); c.restore();
+    c.fillStyle = 'rgba(255,255,255,.4)'; c.beginPath(); c.ellipse(x - r * 0.35, y - r * 0.42, r * 0.28, r * 0.17, -0.6, 0, TAU); c.fill();
+    /* motion lines under it, and two little sparkles */
+    c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = H * 0.008; c.lineCap = 'round';
+    for (const dx of [-0.5, 0, 0.5]){ c.beginPath(); c.moveTo(x + dx * r, y + r * 1.15); c.lineTo(x + dx * r, y + r * 1.45); c.stroke(); }
+    c.fillStyle = '#fff6c8';
+    for (const [px, py, pr] of [[0.3, 0.2, 0.03], [0.88, 0.22, 0.022]]){
+      c.beginPath(); for (let k = 0; k < 8; k++){ const a = k * Math.PI / 4, q = k % 2 ? pr * 0.35 : pr; c.lineTo(W * px + Math.cos(a) * q * H, H * py + Math.sin(a) * q * H); } c.closePath(); c.fill();
+    }
+  },
+  'ptero-flight': (c, W, H) => {
+    /* a sunset sky, far mountains, a smoking volcano and a pterodactyl gliding over the trees */
+    const g = c.createLinearGradient(0, 0, 0, H * 0.62); g.addColorStop(0, '#6a4f9b'); g.addColorStop(1, '#ffb56b'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+    const sun = c.createRadialGradient(W * 0.22, H * 0.46, H * 0.02, W * 0.22, H * 0.46, H * 0.5); sun.addColorStop(0, 'rgba(255,240,200,.95)'); sun.addColorStop(1, 'rgba(255,240,200,0)');
+    c.fillStyle = sun; c.fillRect(0, 0, W, H);
+    c.fillStyle = 'rgba(110,90,140,.75)'; c.beginPath(); c.moveTo(0, H * 0.62);
+    for (let i = 0; i <= 12; i++) c.lineTo(i * W / 12, H * (0.46 + hash(i, 7) * 0.1)); c.lineTo(W, H * 0.62); c.closePath(); c.fill();
+    const gg = c.createLinearGradient(0, H * 0.6, 0, H); gg.addColorStop(0, '#a9c98c'); gg.addColorStop(1, '#4f9a5c'); c.fillStyle = gg; c.fillRect(0, H * 0.6, W, H * 0.4);
+    c.textAlign = 'center'; c.textBaseline = 'bottom';
+    const font = (k) => `${Math.round(H * k)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
+    c.font = font(0.3); c.fillText('\u{1F30B}', W * 0.78, H * 0.78);
+    c.font = font(0.2); c.fillText('\u{1F334}', W * 0.12, H * 0.9); c.fillText('\u{1F332}', W * 0.3, H * 0.86); c.fillText('\u{1F995}', W * 0.5, H * 0.88);
+    /* the pterodactyl, big, from behind, over it all */
+    c.save(); c.translate(W * 0.5, H * 0.42); c.rotate(-0.12);
+    const span = W * 0.3;
+    for (const side of [-1, 1]){
+      c.fillStyle = '#e9915b'; c.beginPath(); c.moveTo(side * span * 0.06, 0);
+      c.quadraticCurveTo(side * span * 0.6, -H * 0.2, side * span * 1.05, -H * 0.06);
+      c.quadraticCurveTo(side * span * 0.8, H * 0.02, side * span * 0.7, H * 0.09);
+      c.quadraticCurveTo(side * span * 0.4, H * 0.02, side * span * 0.25, H * 0.1);
+      c.quadraticCurveTo(side * span * 0.12, H * 0.06, side * span * 0.06, H * 0.1); c.closePath(); c.fill();
+      c.strokeStyle = '#2d6a78'; c.lineWidth = H * 0.012; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(side * span * 0.06, 0); c.quadraticCurveTo(side * span * 0.6, -H * 0.2, side * span * 1.05, -H * 0.06); c.stroke();
+    }
+    c.fillStyle = '#2d6a78'; c.beginPath(); c.ellipse(0, H * 0.04, span * 0.13, H * 0.1, 0, 0, TAU); c.fill();
+    c.fillStyle = '#7cc6c0'; c.beginPath(); c.ellipse(0, H * 0.07, span * 0.07, H * 0.06, 0, 0, TAU); c.fill();
+    c.fillStyle = '#2d6a78'; c.beginPath(); c.ellipse(0, -H * 0.09, span * 0.07, H * 0.06, 0, 0, TAU); c.fill();
+    c.beginPath(); c.moveTo(-span * 0.03, -H * 0.12); c.lineTo(0, -H * 0.22); c.lineTo(span * 0.05, -H * 0.11); c.closePath(); c.fill();
+    c.restore();
+  },
   'stack-it-high': (c, W, H) => {
     const s = new Scene(); s.step(1 / 60, { t: 2, p: 0.5, storm: false, wind: 0, joy: 1, look: 0.5, rainbow: true });
     s.drawBack(c, W, H); s.drawFront(c, W, H);
@@ -176,10 +238,10 @@ export const TITLES = {
 };
 const ORDER = ['tilt', 'stack', 'ribbon', 'deep', 'pop'];
 /* each built-in game's style; any other by its id (always the same one) */
-const STYLE = { 'pop-party': 'tilt', 'sky-painter': 'deep', 'leaf-pile': 'stack', 'sleepy-bear': 'ribbon', 'stack-it-high': 'pop', 'last-known-position': 'tilt' };
+const STYLE = { 'animal-gym': 'ribbon', 'keep-it-up': 'pop', 'ptero-flight': 'deep', 'pop-party': 'tilt', 'sky-painter': 'deep', 'leaf-pile': 'stack', 'sleepy-bear': 'ribbon', 'stack-it-high': 'pop', 'last-known-position': 'tilt' };
 export const styleOf = (id) => STYLE[id] || ORDER[[...String(id)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7) % ORDER.length];
 /* the title's colour: the game's own, a little deeper */
-const COLS = { 'pop-party': '#ff4f93', 'sky-painter': '#3f7fd8', 'leaf-pile': '#e2702a', 'sleepy-bear': '#8a5a3b', 'stack-it-high': '#18a596', 'last-known-position': '#2fa36b' };
+const COLS = { 'animal-gym': '#1f9d63', 'keep-it-up': '#2f86e0', 'ptero-flight': '#d4743a', 'pop-party': '#ff4f93', 'sky-painter': '#3f7fd8', 'leaf-pile': '#e2702a', 'sleepy-bear': '#8a5a3b', 'stack-it-high': '#18a596', 'last-known-position': '#2fa36b' };
 
 /* ---------- a cover ---------- */
 /* { art, cover }: canvases, w x h. `still` (a canvas of the game playing)

@@ -55,6 +55,21 @@ export function skyAt(f){
 /* a number from a cell, the same every time: 0 to 1 */
 export const hash = (i, j, s = 0) => { let h = (i * 374761393 + j * 668265263 + s * 2246822519) | 0; h = (h ^ (h >>> 13)) * 1274126177; h = (h ^ (h >>> 16)) >>> 0; return h / 4294967295; };
 
+/* The emoji are drawn once each into a small picture and stamped from then on - far quicker than drawing text a
+   hundred times a frame. (Where there's no document - the tests - they're drawn as text.) */
+const SPRITES = new Map(), EMOJI_FONT = '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+function sprite(e){
+  if (SPRITES.has(e)) return SPRITES.get(e);
+  let cv = null;
+  if (typeof document !== 'undefined'){
+    cv = document.createElement('canvas'); cv.width = cv.height = 160;
+    const x = cv.getContext && cv.getContext('2d');
+    if (x){ x.font = `128px ${EMOJI_FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(e, 80, 84); } else cv = null;
+  }
+  SPRITES.set(e, cv);
+  return cv;
+}
+
 export default {
   id: 'ptero-flight', unit: 'wonders', name: 'Pterry Flight', stars: 1, accent: '#e0915b',
   secs: ROUND, moves: ['steer', 'glide'],
@@ -143,7 +158,7 @@ class PteroFlight {
       if (d < FIND && this.alt < FIND_ALT && !w.got){
         w.got = true; this.found.push(w.w);
         for (let i = 0; i < this.players; i++) if (pose.players[i] && pose.players[i].present) this.score[i]++;
-        this.say = { text: `You found ${w.w.text}!`, t: 0 };
+        this.say = { text: `You found ${w.w.text}!`, t: 0, until: 4.5 };
         sfx.hooray?.(); sfx.chime?.(1);
         for (let q = 0; q < 14; q++) this.j.burst(W * (0.3 + Math.random() * 0.4), H * (0.25 + Math.random() * 0.3), ['#ffd35c', '#ff7eb3', '#7fd6a2', '#7ab8ff'][q % 4], 4, 1);
       }
@@ -203,7 +218,7 @@ class PteroFlight {
     this.j.draw(c, H);
     this._ptero(c, W, H);
     this._book(c, W, H);
-    sayBubble(c, W, H, { text: this.say.text, t: this.say.t, until: this.say.text.startsWith('Spread') ? this.hintUntil : Infinity });
+    sayBubble(c, W, H, { text: this.say.text, t: this.say.t, until: this.say.until || (this.say.text.startsWith('Spread') ? this.hintUntil : Infinity) });
     goalBar(c, W, H, this.found.length / WONDERS.length, { color: '#e0915b' });
     this.avatars.drawMitts(c, W, H, this.players);
   }
@@ -255,8 +270,11 @@ class PteroFlight {
 
   _emoji(c, e, x, y, size, alpha){
     if (size < 3) return;
-    c.save(); c.globalAlpha = alpha; c.font = `${Math.round(size)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
-    c.textAlign = 'center'; c.textBaseline = 'bottom'; c.fillStyle = '#000'; c.fillText(e, x, y + size * 0.12); c.restore();
+    const sp = sprite(e);
+    c.save(); c.globalAlpha = alpha;
+    if (sp){ const k = size / 128; c.drawImage(sp, x - 80 * k, y - size * 0.38 - 84 * k, 160 * k, 160 * k); }
+    else { c.font = `${Math.round(size)}px ${EMOJI_FONT}`; c.textAlign = 'center'; c.textBaseline = 'bottom'; c.fillStyle = '#000'; c.fillText(e, x, y + size * 0.12); }
+    c.restore();
   }
 
   /* the pterodactyl, from behind: wings spread, rolling with the turn, flapping gently */
@@ -285,11 +303,11 @@ class PteroFlight {
   /* the sticker book: a picture for every wonder found, along the bottom */
   _book(c, W, H){
     if (!this.found.length) return;
-    const size = H * 0.055, gap = size * 1.25, x0 = W / 2 - (this.found.length - 1) * gap / 2;
+    /* along the bottom left, out of the pterodactyl's way */
+    const size = H * 0.05, gap = size * 1.2, x0 = W * 0.04 + size * 0.7, y = H * 0.94, n = this.found.length;
     c.save(); c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.roundRect(x0 - gap * 0.7, H * 0.925 - size * 0.7, gap * (this.found.length - 1) + gap * 1.4, size * 1.4, size * 0.7); c.fill();
-    c.font = `${Math.round(size)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; c.fillStyle = '#000';
-    this.found.forEach((w, i) => c.fillText(w.emoji, x0 + i * gap, H * 0.925));
+    c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.roundRect(x0 - gap * 0.7, y - size * 0.7, gap * (n - 1) + gap * 1.4, size * 1.4, size * 0.7); c.fill();
+    this.found.forEach((w, i) => { const sp = sprite(w.emoji); if (sp){ const k = size / 128; c.drawImage(sp, x0 + i * gap - 80 * k, y - 84 * k, 160 * k, 160 * k); } else { c.font = `${Math.round(size)}px ${EMOJI_FONT}`; c.fillStyle = '#000'; c.fillText(w.emoji, x0 + i * gap, y); } });
     c.restore();
   }
 

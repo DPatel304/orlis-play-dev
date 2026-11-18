@@ -39,7 +39,7 @@ class KeepItUp {
     this.avatars = new Avatars();
   }
 
-  _ball(x){ return { x, y: 0.35, vx: 0, vy: 0, rot: 0, spin: 0, cool: 0 }; }
+  _ball(x){ return { x, y: 0.5, vx: 0, vy: 0, rot: 0, spin: 0, cool: 0 }; }
 
   _next(){ return MILESTONES.find(m => m > this.streak) || (Math.floor(this.streak / 25) + 1) * 25; }
 
@@ -170,6 +170,7 @@ class KeepItUp {
     const best = played.filter(i => this.score[i] === top);
     return best.length > 1 ? -1 : best[0];
   }
-  /* the best run, for the bests the menu keeps */
+  /* the best run, for the bests the menu keeps - and what the results say, so the "New best!" is about the same thing */
+  summary(n){ return this.best > 0 ? `${n > 1 ? 'Your best run together' : 'Your best run'}: ${this.best} in a row` : null; }
   value(){ return this.best; }
 }
