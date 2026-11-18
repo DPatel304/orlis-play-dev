@@ -33,8 +33,6 @@ import { buildingRow, testingRow } from './building.js';
 /* A line about each game. */
 export const BLURB = {
   'pop-party': 'Reach up and pop the balloons before they float away',
-  'uncle-bs-boat': 'Cup your hands and catch fish with Uncle B',
-  'dance-party': 'Copy the dancers and move to the music',
   'last-known-position': 'Run, jump and explore a strange planet',
   'castle-defense': 'Build towers together and keep the castle safe',
   'sleepy-bear': 'Dance to the music - then freeze before the bear peeks!',
@@ -47,8 +45,6 @@ export const BLURB = {
 export const ICONS = {
   'pop-party': { cols: ['#ff7eb3', '#ffa25a'], glyph: 'balloon' },
   'last-known-position': { cols: ['#7fb8c9', '#b4c79a'], glyph: 'rocket' },
-  'uncle-bs-boat': { cols: ['#0ea5e9', '#5eead4'], glyph: 'boat' },
-  'dance-party': { cols: ['#f43f5e', '#fbbf24'], glyph: 'note' },
   'castle-defense': { cols: ['#10b981', '#a3e635'], glyph: 'tower' },
   'sleepy-bear': { cols: ['#b07a4f', '#f2c48a'], glyph: 'bear' },
   'leaf-pile': { cols: ['#e07b39', '#f2c14e'], glyph: 'leaf' },
@@ -96,7 +92,7 @@ export function looks(g){
 /* The pick made this session ({ id, row }): coming back (from a game, or another page) it's still the one. A fresh start picks the first Featured game. */
 let sessionPick = null;
 /* Games kept off the home screen for now (still there, just not shown). */
-export const HIDDEN = new Set(['uncle-bs-boat', 'dance-party', 'castle-defense']);
+export const HIDDEN = new Set(['last-known-position', 'castle-defense']);
 /* What was picked last - kept between launches, by game. */
 const LAST = 'orlis.lastGame';
 let lastFocus = null;

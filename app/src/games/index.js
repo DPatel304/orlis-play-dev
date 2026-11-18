@@ -3,8 +3,6 @@
    the camera, the clock, the HUD, pausing and every screen around the round -
    adding a game means adding a file and a line here. */
 import popParty from './pop-party.js';
-import uncleBsBoat from './uncle-bs-boat.js';
-import danceParty from './dance-party.js';
 import lastKnownPosition from './lkp-game.js';
 import castleDefense from './castle-defense.js';
 import sleepyBear from './sleepy-bear.js';
@@ -17,7 +15,7 @@ import skyPainter from './sky-painter.js';
    Opened any other way - the browser, the tests - they're all built in. */
 export const FROM_STORE = new Set([]);
 const inApp = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
-export const GAMES = [popParty, sleepyBear, leafPile, stackItHigh, skyPainter, uncleBsBoat, danceParty, lastKnownPosition, castleDefense]
+export const GAMES = [popParty, sleepyBear, leafPile, stackItHigh, skyPainter, lastKnownPosition, castleDefense]
   .filter(g => !(inApp && FROM_STORE.has(g.id)));
 export const byId = (id) => GAMES.find(g => g.id === id);
 /* Waiting for the owner to let you in: these two, built in, to play

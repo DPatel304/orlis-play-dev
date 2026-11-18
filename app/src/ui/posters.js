@@ -3,12 +3,10 @@
 
    Each poster is painted with the game's own scenery, so it looks like what
    you get, with a few of the game's things moving in front: balloons bobbing
-   for Pop Party, fish drifting under Uncle B's boat. A game without a poster gets a soft wash of its accent colour. */
+   for Pop Party and the castle. A game without a poster gets a soft wash of its accent colour. */
 import { Scene } from '../games/pop-party-scene.js';
 import { glow } from './backdrop.js';
 import { drawKid, KID_SKINS } from './kids.js';
-import { drawLake, drawWeeds, drawSurface, drawBoatBack, drawBoatFront, drawUncle, drawCrew, drawRod, drawPalm } from '../games/fishing-art.js';
-import { byId as fishById, drawFish } from '../games/fishing-fish.js';
 import { P as lkpP, RUN as LKP_RUN, drawCorridor, drawBeam, drawCrystal, drawCrew as drawSpaceCrew, setPalette as setLkpPalette } from '../games/lkp-art.js';
 import { LEVELS } from '../games/lkp-levels.js';
 import { finish as finishLkp } from '../games/lkp-world.js';
@@ -16,7 +14,6 @@ import { head } from './avatar-art.js';
 import { GENERIC } from './crew.js';
 import { PLAYER_COLORS } from '../tracking/pose-shared.js';
 import { PADS as CASTLE_PADS, along as castleAlong, PATHS as CASTLE_PATHS, drawMeadow, drawCastle, drawTower, drawMonster, drawTree as drawCastleTree, TREES, drawTent, inked } from '../games/castle-art.js';
-import { DANCERS, MOVES, FLOOR, drawStage, drawMirrorBall, drawDancer } from '../games/dance-art.js';
 
 const hash = (i, k = 1) => (((i + 1) * 2654435761 * k) % 4294967296) / 4294967296;
 
@@ -46,33 +43,6 @@ function popParty(){
       c.fillStyle = 'rgba(255,255,255,.45)';
       c.beginPath(); c.ellipse(x - r * 0.35, y - r * 0.4, r * 0.16, r * 0.26, -0.4, 0, 6.2832); c.fill();
     }
-  };
-}
-
-function unclesBoat(){
-  return (c, W, H, t) => {
-    drawLake(c, W, H, t, 0.2);
-    for (const [id, x, y, d] of [['trout', 0.45, 0.66, 1], ['koi', 0.75, 0.55, -1], ['catfish', 0.45, 0.82, 1], ['rainbow', 0.82, 0.75, -1]]) drawFish(c, fishById[id], (x + Math.sin(t * 0.4 + x * 9) * 0.03) * W, y * H, fishById[id].len * H * 1.4, t * 5 + x * 9, d);
-    drawWeeds(c, W, H, t); drawSurface(c, W, H, t);
-    drawBoatBack(c, W, H, t);
-    const uh = drawUncle(c, W, H, t, 'idle');
-    const kid = (seat, col) => drawCrew(c, W, H, t, seat, col, (x, y, r) => drawKid(c, x, y + r * 0.08, r * 0.95, t + seat, seat ? '#c98f6a' : '#e9b892'));
-    kid(0, '#3da9ff'); kid(1, '#ff8a3d');
-    drawBoatFront(c, W, H, t);
-    drawRod(c, uh[1], -0.55, H * 0.2, H);
-    /* A pair of hands closing round a goldfish. */
-    const g = fishById.goldfish, gx = 0.2 * W, gy = (0.6 + Math.sin(t * 1.3) * 0.02) * H, L = g.len * H * 1.4;
-    drawFish(c, g, gx, gy, L, t * 12, 1);
-    for (const side of [-1, 1]) drawPalm(c, gx + side * L * 0.6, gy, H * 0.05, side < 0 ? 0 : Math.PI, '#3da9ff');
-  };
-}
-
-function danceParty(){
-  return (c, W, H, t) => {
-    const beat = t * 112 / 60, n = Math.floor(beat), b = beat - n;
-    drawStage(c, W, H, t, b, n, 0.75);
-    drawMirrorBall(c, W, H, t, 0.75);
-    DANCERS.forEach((d, i) => drawDancer(c, d, d.x * W, FLOOR * H, d.h * H, t, MOVES[(Math.floor(n / 8) + i * 2) % MOVES.length], b, n, 0.75));
   };
 }
 
@@ -121,7 +91,7 @@ function plain(accent){
   };
 }
 
-const POSTERS = { 'pop-party': popParty, 'uncle-bs-boat': unclesBoat, 'dance-party': danceParty, 'last-known-position': lastKnownPosition, 'castle-defense': castleDefense };
+const POSTERS = { 'pop-party': popParty, 'last-known-position': lastKnownPosition, 'castle-defense': castleDefense };
 
 export function poster(game){
   return (POSTERS[game.id] || (() => plain(game.accent)))();

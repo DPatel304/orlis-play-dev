@@ -5,11 +5,8 @@ import { GAMES } from '../src/games/index.js';
 import lastKnownPosition, { story } from '../src/games/lkp-game.js';
 /* The play itself, without the captain's scenes. */
 story.on = false;
-import boat from '../src/games/uncle-bs-boat.js';
-import danceParty from '../src/games/dance-party.js';
 import popParty from '../src/games/pop-party.js';
 import { RUN } from '../src/games/lkp-art.js';
-import { WATER, seatsFor } from '../src/games/fishing-art.js';
 import { standIn } from '../src/games/moon-art.js';
 
 const W = 1920, H = 1080, DT = 1 / 60;
@@ -64,28 +61,6 @@ test('Last Known Position: four crew share the corridor, and each can lean round
   assert.equal(inst.crew[2].hp, inst.crew[2].max, 'missed it');
 });
 
-test("Uncle B's Boat: four seats, and every child can scoop a fish", () => {
-  assert.equal(seatsFor(4).length, 4);
-  assert.equal(new Set(seatsFor(4).map(s => s.x)).size, 4);
-  row(4);
-  const inst = boat.create(4);
-  inst.fish = []; inst.spawn = 1e9; inst.lastCatch = 1e9;
-  for (let i = 0; i < 4; i++){
-    const f = inst._fish(false); f.x = XS[i]; f.y = 0.65; f.speed = 0;
-    const p = pose.players[i];
-    p.hands.left = { x: XS[i] - 0.01, y: 0.65 }; p.hands.right = { x: XS[i] + 0.01, y: 0.65 };
-  }
-  run(inst, 0.3);
-  assert.deepEqual(inst.cups.map(c => !!c.fish), [true, true, true, true]);
-});
-
-test('Dance Party: the fourth child dancing counts too', () => {
-  row(4);
-  const inst = danceParty.create(4);
-  const rest = pose.players.map(p => p.lm);
-  run(inst, 3, (t) => { const p = pose.players[3]; p.lm = rest[3].map(k => ({ ...k, x: k.x + Math.sin(t * 12.6) * 0.06 })); });
-  assert.ok(inst.moving[3] > 0.5);
-});
 
 test('Pop Party: a bouquet for each of four, each small enough to fit', () => {
   row(4);
