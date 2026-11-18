@@ -461,3 +461,16 @@ standard picture, tracking on the main thread; the first camera Windows offers i
 quietly started over (`pose.heal()`, at most every 30 s, players start again, the tracker stays loaded) when no new
 picture has come for 4 s (a stuck or re-plugged camera), or when nobody has been seen for 20 s in a game. Not tried on a
 real camera yet. Open: a way to choose between two cameras if a PC ever needs it.
+
+## The mascot: Cubion (decided)
+The Orlis cube with arms and legs, on the shared indigo move card (`app/src/games/figure.js`).
+- Name: **Cubion**. Full name: **Cubion!#&-551**, from an alien planet (the symbols are the alien way of writing it).
+  Nickname: **Cubo** (said KYOO-boh).
+- Say the full name out loud as "Cubion five-five-one"; show the symbols only where it is for fun (a special moment,
+  a name plate), never as the name a kid has to read. Day to day, the character is "Cubo" or "Cubion".
+- Not built yet: the name is not in the app. Ideas for where it goes: a line on the results screen, the how-to cards,
+  the avatar list, the loading screen.
+- Before launch: search the exact name (and "Cubo") in the USPTO trademark database. A quick web search found no mascot
+  or mark called Cubion, but it is not a real trademark search. Other cube mascots to stay clear of: Qubo (the kids'
+  channel's teal cube with a face) and Nex Playground (a cube console). "Cubby" has marks and characters already
+  (CUBBY CUBE, Cubby the Bear), so it is not used.
