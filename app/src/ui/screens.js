@@ -152,13 +152,19 @@ function gameBanner(cls, kicker, name, line){
   return { s, t };
 }
 
-/* After the round's own ending, just the way on: no scores and no winner.
+/* After the round's own ending: what everyone did together - one friendly line, no scores per child and no winner - and the way on.
    The ending scene stays in view behind - the bouquets, the lanterns, the
    sky full of pictures. back: where the other button goes ('Home', or
    'Back to Create' for a game being tried). */
-export function results(game, onAgain, onMenu, back = 'All games'){
+export function results(game, onAgain, onMenu, back = 'All games', summary = null){
   const { s, t } = gameBanner('end', 'Well played!', game.name);
   s.style.setProperty('--accent', game.accent);
+  /* what everyone did together (never a winner or a ranking), and a new best if there is one */
+  if (summary && summary.line){
+    const p = h('p', 'resultline'); p.textContent = summary.line;
+    if (summary.best){ const b = h('span', 'newbest'); b.textContent = '\u2605 New best!'; p.append(' ', b); }
+    t.appendChild(p);
+  }
   const row = h('div', 'row bigrow');
   row.append(bigButton('again', 'Play again', 'go', onAgain), bigButton('home', back, 'home', onMenu));
   t.appendChild(row);

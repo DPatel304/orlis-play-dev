@@ -12,6 +12,7 @@
    How much is painted is kept on a coarse grid (GRID), so it's cheap to
    ask; the picture shows through a mask painted with the same strokes. */
 import { Juice } from './common.js';
+import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { Avatars } from '../ui/avatars.js';
@@ -29,7 +30,7 @@ export const PICTURES = ['whale', 'balloon', 'butterfly'];
 const PAPER = '#f2ebdc';
 
 export default {
-  id: 'sky-painter', name: 'Sky Painter', stars: 1, accent: '#7398c4', secs: ROUND,
+  id: 'sky-painter', unit: 'bits of sky painted', name: 'Sky Painter', stars: 1, accent: '#7398c4', secs: ROUND,
   moves: ['arms'],
   create(n){ return new SkyPainter(n); }
 };
@@ -185,18 +186,9 @@ class SkyPainter {
   }
 
   _say(c, W, H){
-    const text = this.alive ? ['Look - a whale!', 'Look - a hot-air balloon!', 'Look - a butterfly!'][this.which] : 'What’s hiding in the sky? Keep painting!';
-    const size = Math.round(H * 0.036);
-    c.save(); c.font = `800 ${size}px Inter, Segoe UI, sans-serif`;
-    const w = c.measureText(text).width + size * 1.6, x = W * 0.5, y = H * 0.19;
-    c.fillStyle = 'rgba(250,247,238,.95)'; c.beginPath(); c.roundRect(x - w / 2, y - size * 0.95, w, size * 1.9, size * 0.95); c.fill();
-    c.fillStyle = '#33322e'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, x, y + 2);
-    /* how much is painted: a bar under the words */
-    const bw = W * 0.2, bh = H * 0.02, bx = x - bw / 2, by = y + size * 1.4;
-    c.fillStyle = 'rgba(250,247,238,.9)'; c.beginPath(); c.roundRect(bx, by, bw, bh, bh / 2); c.fill();
-    const kk = this.alive ? 1 : Math.min(1, this.covered / DONE);
-    if (kk > 0){ c.fillStyle = '#7398c4'; c.beginPath(); c.roundRect(bx + 3, by + 3, Math.max(bh - 6, (bw - 6) * kk), bh - 6, (bh - 6) / 2); c.fill(); }
-    c.restore();
+    const text = this.alive ? ['Look - a whale!', 'Look - a hot-air balloon!', 'Look - a butterfly!'][this.which] : 'What\u2019s hiding in the sky? Keep painting!';
+    sayBubble(c, W, H, { text });
+    goalBar(c, W, H, this.alive ? 1 : this.covered / DONE, { color: '#7398c4' });
   }
 
   hud(){ return { score: this.score, showLives: false, hideScore: true }; }

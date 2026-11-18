@@ -15,6 +15,7 @@
    waving just your arms counts - in screen widths a second, smoothed a
    little; the camera's jitter is well under STILL. */
 import { Juice, clamp } from './common.js';
+import { sayBubble } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx, music } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
@@ -33,7 +34,7 @@ const FIRST_DANCE = 9;
 const POINTS = [0, 11, 12, 15, 16, 23, 24];
 
 export default {
-  id: 'sleepy-bear', name: 'Sleepy Bear', stars: 1, accent: '#a0704a', secs: ROUND,
+  id: 'sleepy-bear', unit: 'stars', name: 'Sleepy Bear', stars: 1, accent: '#a0704a', secs: ROUND,
   moves: ['dance'],
   create(n){ return new SleepyBear(n); }
 };
@@ -214,16 +215,7 @@ class SleepyBear {
     }
   }
 
-  _say(c, W, H){
-    const k = Math.min(1, this.say.t / 0.25), size = Math.round(H * 0.045);
-    const text = (this.phase === 'freeze' && this.say.text === 'Freeze!' ? '❄ ' : '') + this.say.text;
-    c.save(); c.font = `800 ${size}px Inter, Segoe UI, sans-serif`;
-    const w = c.measureText(text).width + size * 1.6, x = W * 0.5, y = H * 0.2;
-    c.globalAlpha = k; c.translate(x, y); c.scale(0.85 + 0.15 * k, 0.85 + 0.15 * k);
-    c.fillStyle = 'rgba(250,247,238,.95)'; c.beginPath(); c.roundRect(-w / 2, -size * 0.95, w, size * 1.9, size * 0.95); c.fill();
-    c.fillStyle = '#33322e'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, 0, 2);
-    c.restore();
-  }
+  _say(c, W, H){ sayBubble(c, W, H, { text: (this.phase === 'freeze' && this.say.text === 'Freeze!' ? '\u2744 ' : '') + this.say.text, t: this.say.t }); }
 
   /* each player's stars, in their colour, top right */
   _stars(c, W, H){

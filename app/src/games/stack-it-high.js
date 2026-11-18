@@ -10,6 +10,7 @@
    count is the blocks they put on. First person: the players are their
    hands. */
 import { Juice } from './common.js';
+import { sayBubble } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
@@ -28,7 +29,7 @@ const COLS = ['#ff7aa8', '#ffd25a', '#79b3aa', '#a98bff', '#f2a65a', '#9fd38a', 
 const MARKS = ['star', 'heart', 'dot'];
 
 export default {
-  id: 'stack-it-high', name: 'Stack It High', stars: 1, accent: '#79b3aa', secs: ROUND,
+  id: 'stack-it-high', unit: 'blocks', name: 'Stack It High', stars: 1, accent: '#79b3aa', secs: ROUND,
   moves: ['reach'],
   create(n){ return new StackItHigh(n); }
 };
@@ -190,15 +191,8 @@ class StackItHigh {
     c.fillStyle = '#e8513d'; c.beginPath(); c.moveTo(x - s * 0.5 + shake, base - n * s); c.quadraticCurveTo(x + shake, base - n * s - s * 1.5, x + s * 0.5 + shake, base - n * s); c.fill();
   }
 
-  _say(c, W, H){
-    const k = Math.min(1, this.say.t / 0.25), size = Math.round(H * 0.04), text = this.say.text;
-    c.save(); c.font = `800 ${size}px Inter, Segoe UI, sans-serif`;
-    const w = c.measureText(text).width + size * 1.6, x = W * 0.24, y = H * 0.19;
-    c.globalAlpha = k; c.translate(x, y); c.scale(0.85 + 0.15 * k, 0.85 + 0.15 * k);
-    c.fillStyle = 'rgba(250,247,238,.95)'; c.beginPath(); c.roundRect(-w / 2, -size * 0.95, w, size * 1.9, size * 0.95); c.fill();
-    c.fillStyle = '#33322e'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, 0, 2);
-    c.restore();
-  }
+  /* (left of the tower, which grows up the middle) */
+  _say(c, W, H){ sayBubble(c, W, H, { text: this.say.text, t: this.say.t, x: 0.24 }); }
 
   hud(){ return { score: this.score, showLives: false, hideScore: true }; }
   /* reaching up high is how you catch the blocks; Back on the remote pauses */

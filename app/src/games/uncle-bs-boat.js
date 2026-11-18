@@ -46,7 +46,7 @@ export const CURIOUS = 0.24;
 export const HINT_FIRST = 1.5, HINT_AGAIN = 40, HINT_LOOP = 6;
 
 export default {
-  id: 'uncle-bs-boat', name: "Uncle B's Boat", stars: 1, accent: '#4bb3c9', secs: ROUND,
+  id: 'uncle-bs-boat', unit: 'fish', name: "Uncle B's Boat", stars: 1, accent: '#4bb3c9', secs: ROUND,
   /* The moves it uses, shown as pictures on the home screen. */
   moves: ['cup'],
   create(n){ return new Boat(n); }

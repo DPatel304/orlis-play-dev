@@ -1768,3 +1768,7 @@ textarea.btype.bwords{ width:62vw; height:26vh; border-radius:3vh; padding:2.4vh
 .btn.slock:focus-visible{ outline:none; }
 /* (a tile's ring is its picture's, white; the generic purple box round a whole focused button never shows on a tile) */
 body.remote .btn.slock.kfocus:not(.tvtile):not(.play){ outline:none; box-shadow:none; transform:none; border-color:transparent; }
+
+/* The results: one friendly line (what everyone got together) */
+.gbtext .resultline{ margin:1.2vh 0 0; font-size:3.4vh; font-weight:800; color:#fff; text-shadow:0 .2vh .8vh rgba(0,0,0,.3); }
+.gbtext .resultline .newbest{ display:inline-block; margin-left:.6vh; padding:.3vh 1.4vh; border-radius:999px; background:#f59e0b; font-size:.62em; vertical-align:middle; }

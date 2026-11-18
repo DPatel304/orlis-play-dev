@@ -1,4 +1,5 @@
 import { Juice, clamp } from './common.js';
+import { sayBubble } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx, music } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
@@ -16,7 +17,7 @@ export const OPENING = 20;
    the one a two-year-old can play without being told anything - so nothing
    in it punishes: no lives, nothing to avoid, only things to chase. */
 export default {
-  id:'pop-party', name:'Pop Party', stars:1, accent:'#ff5d9e', secs:ROUND,
+  id:'pop-party', unit: 'points', name:'Pop Party', stars:1, accent:'#ff5d9e', secs:ROUND,
   /* The moves it uses, shown as pictures on the home screen. */
   moves: ['reach'],
   create(n){ return new PopParty(n); }
@@ -594,6 +595,8 @@ class PopParty {
        of everything, so a child never loses them. */
     if (this.out) this._drawBouquets(c, W, H);
     else this.avatars.drawMitts(c, W, H, this.players);
+    /* the first seconds: what to do (then it eases away) */
+    if (!this.out) sayBubble(c, W, H, { text: 'Reach up and pop the balloons!', t: this.t, until: 7 });
   }
 
   _balloon(c, b, W, H){

@@ -31,7 +31,7 @@ import { buildingRow, testingRow } from './building.js';
    Arriving from the boot (arrive), the tiles fly out from where the cube
    broke apart, into their places. */
 /* A line about each game. */
-const BLURB = {
+export const BLURB = {
   'pop-party': 'Reach up and pop the balloons before they float away',
   'uncle-bs-boat': 'Cup your hands and catch fish with Uncle B',
   'dance-party': 'Copy the dancers and move to the music',
@@ -150,7 +150,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const items = [];
   /* (waiting to be let in: the starter games only) */
   const waiting = account.waiting;
-  const pool = GAMES.filter(g => !HIDDEN.has(g.id) && (!waiting || STARTER_GAMES.includes(g.id)));
+  const showHidden = typeof location !== 'undefined' && /[?&]debug\b/.test(location.search) && /[?&]hidden=1/.test(location.search);   /* (to try the games kept off Play) */
+  const pool = GAMES.filter(g => (showHidden || !HIDDEN.has(g.id)) && (!waiting || STARTER_GAMES.includes(g.id)));
   /* this week's featured, from Discover: a game already here as itself;
      one to get as a stand-in that knows its Discover entry */
   const featured = waiting ? [] : week.featured().map(e => (library.installed.has(e.id) && GAMES.find(x => x.id === e.id))

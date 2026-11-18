@@ -5,9 +5,10 @@ import { toast } from './ui/toast.js';
 import { pose } from './tracking/pose.js';
 import { appMode } from './ui/mode.js';
 import { watchTests } from './ui/tvwatch.js';
+import { hud } from './games/hud.js';
 import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
-import { menu, toggleFullscreen, openSettings, played as playedLately } from './ui/menu.js';
+import { menu, toggleFullscreen, openSettings, played as playedLately, BLURB } from './ui/menu.js';
 import { remote, typing } from './ui/remote.js';
 import { account, welcome } from './ui/account.js';
 import { installTitlebar, titlebarPlaying } from './ui/titlebar.js';
@@ -218,8 +219,13 @@ function crewTick(dt){
   for (const { i } of crew.popped()){ const p = crew.profileOf(i); if (p && MAKING) namePop(p); }
 }
 
+/* The first moments of a round: a card saying what to do, then 3, 2, 1 (the game waits, the hands already work) */
+const INTRO_CARD = 0.9, INTRO = INTRO_CARD + 3;
+let introLeft = 0, introN = 0;
 function startRound(){
   joined = new Set();
+  hud.quiet = false;
+  introLeft = INTRO; introN = 0;
   inst = game.create(players);
   /* A game where squatting is a move keeps players who crouch or sit. */
   pose.keepSitters = !!game.keepSitters;
@@ -251,13 +257,18 @@ function showResults(){
   roundDone();
   music.intensity(0.2);
   /* Bests are still kept - the menu tiles show them - just not announced. */
-  scores.record(game.id, Math.max(1, joined.size), inst.value());
+  const n = Math.max(1, joined.size), before = scores.best(game.id, n);
+  const isBest = scores.record(game.id, n, inst.value()) && before > 0;
+  hud.quiet = true;
+  /* one friendly line: what everyone got together */
+  const total = (() => { try { return inst.tally().reduce((a, r) => a + (Number(r.value) || 0), 0); } catch { return 0; } })();
+  const summary = total > 0 ? { line: `${n > 1 ? 'Together you got' : 'You got'} ${total} ${game.unit || 'points'}`, best: isBest } : null;
   /* told to the family's server, for this week's challenges (not a game
      being tried out - from Create, or waiting for the owner's OK) */
   if (!game.back && !game.trial) week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) })
     .then((done) => done.forEach((c, i) => setTimeout(() => { sfx.gold?.(); toast(`\u2605 Star earned: ${c.title}`, { ms: 6000 }); }, 900 + i * 1200)), () => {});
   /* (a game being tried goes back where it came from: Create) */
-  go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'All games'));
+  go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'All games', summary));
 }
 
 /* ---------- pause by gesture ----------
@@ -310,8 +321,34 @@ function checkLost(dt){
 const EMPTY_AFTER = 2;
 
 /* ---------- HUD ---------- */
+/* The card before a round: the game, what to do, then 3, 2, 1. */
+function drawIntro(){
+  const how = BLURB[game.id] || (game.store && game.store.blurb) || '';
+  c.save();
+  c.fillStyle = 'rgba(13,11,26,.28)'; c.fillRect(0, 0, W, H);
+  const cw = Math.min(W * 0.62, H * 1.3), ch = H * 0.4, x = W / 2, y = H * 0.46;
+  c.shadowColor = 'rgba(20,24,50,.3)'; c.shadowBlur = H * 0.04; c.shadowOffsetY = H * 0.01;
+  c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath(); c.roundRect(x - cw / 2, y - ch / 2, cw, ch, H * 0.05); c.fill();
+  c.shadowColor = 'transparent';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = '#16161d'; c.font = `800 ${Math.round(H * 0.06)}px "Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif`;
+  c.fillText(game.name, x, y - ch * 0.3);
+  let size = Math.round(H * 0.034); c.font = `600 ${size}px "Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif`;
+  while (size > 14 && c.measureText(how).width > cw * 0.9){ size -= 2; c.font = `600 ${size}px "Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif`; }
+  c.fillStyle = '#4b4f5e'; c.fillText(how, x, y - ch * 0.08);
+  /* 3, 2, 1: the number for the second it's in */
+  const n = Math.ceil(introLeft), into = introLeft - Math.floor(introLeft);
+  if (introLeft <= 3 && n >= 1){
+    const pop = 1 + 0.25 * Math.pow(into, 3);
+    c.save(); c.translate(x, y + ch * 0.27); c.scale(pop, pop);
+    c.fillStyle = game.accent || '#6d5efc'; c.font = `900 ${Math.round(H * 0.13)}px "Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif`;
+    c.fillText(String(n), 0, 0); c.restore();
+  }
+  c.restore();
+}
 function drawHUD(){
   if (mode !== 'play' || !inst) return;
+  if (introLeft > 0 && !paused && !lost){ drawIntro(); return; }
   const hud = inst.hud();
   const pad = Math.max(14, H * 0.03);
   c.textBaseline = 'top';
@@ -391,6 +428,11 @@ function tick(now){
 
   if (mode === 'play' && inst && !paused && !lost){
     crewTick(dt);
+    if (introLeft > 0){
+      introLeft -= dt;
+      const n = Math.ceil(Math.max(0, introLeft)); if (n !== introN && n >= 1 && n <= 3){ introN = n; sfx.tick?.(); }
+      if (introLeft <= 0) sfx.select?.();
+    } else {
     inst.step(dt, W, H);
     roundLeft -= dt; played += dt;
     /* the owner trying a game that's waiting for their OK: once they've
@@ -412,6 +454,7 @@ function tick(now){
       : done < 30 ? 0.15
       : 0.2 + 0.72 * Math.min(1, (done - 30) / Math.max(1, game.secs - 40)));
     if (roundLeft <= 0 || inst.over) endRound();
+    }
   }
   if (mode === 'outro' && inst && inst.outro(dt, W, H)) showResults();
   if ((mode === 'play' || mode === 'outro' || mode === 'results') && inst) inst.draw(c, W, H);

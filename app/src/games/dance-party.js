@@ -35,7 +35,7 @@ const MOVING = [L.L_WRIST, L.R_WRIST, L.L_ANKLE, L.R_ANKLE, L.NOSE, L.L_HIP, L.R
 const CROWD = [['bunny', 0.06], ['frog', 0.15], ['bird', 0.24], ['elephant', 0.76], ['starfish', 0.85], ['giraffe', 0.94]];
 
 export default {
-  id: 'dance-party', name: 'Dance Party', stars: 1, accent: '#ff4fa3', secs: ROUND,
+  id: 'dance-party', unit: 'dance bursts', name: 'Dance Party', stars: 1, accent: '#ff4fa3', secs: ROUND,
   /* The moves it uses, shown as pictures on the home screen. */
   moves: ['dance'],
   /* A party wants its music up from the start, and arms go up a lot. */

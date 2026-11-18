@@ -261,7 +261,7 @@ export const ogresOf = (w) => (w % 5 === 0 ? w / 5 : 0) + Math.floor(Math.max(0,
 export default {
   /* Endless: it lasts as long as the castle holds. secs is only how long
      the music takes to build. */
-  id: 'castle-defense', name: 'Tower Defense', stars: 2, accent: '#e5534b', secs: ROUND, endless: true,
+  id: 'castle-defense', unit: 'points', name: 'Tower Defense', stars: 2, accent: '#e5534b', secs: ROUND, endless: true,
   /* The moves it uses, shown as pictures on the home screen. */
   moves: ['run', 'point', 'march', 'jump', 'arms', 'squat', 'clap', 'hug'],
   /* Arms go up now and then; a pause is a longer hold. */

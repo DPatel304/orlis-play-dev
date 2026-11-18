@@ -12,6 +12,7 @@
    Nothing to lose: no clock pressure, no wrong moves. Each player's count
    is the leaves they swept in. First person: the players are their hands. */
 import { Juice } from './common.js';
+import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { JumpWatch } from '../tracking/jump.js';
@@ -34,7 +35,7 @@ const GROUND_TOP = 0.7, GROUND_BOTTOM = 0.9, START_LEAVES = 46, MAX_LEAVES = 90;
 const COLS = ['#e0893b', '#d4643a', '#e8b44a', '#c9503a', '#d99a3b'];
 
 export default {
-  id: 'leaf-pile', name: 'Leaf Pile', stars: 1, accent: '#d9853b', secs: ROUND,
+  id: 'leaf-pile', unit: 'leaves', name: 'Leaf Pile', stars: 1, accent: '#d9853b', secs: ROUND,
   moves: ['sweep', 'jump'],
   create(n){ return new LeafPile(n); }
 };
@@ -226,23 +227,9 @@ class LeafPile {
     }
   }
 
-  _say(c, W, H){
-    const k = Math.min(1, this.say.t / 0.25), size = Math.round(H * 0.04);
-    const text = this.say.text;
-    c.save(); c.font = `800 ${size}px Inter, Segoe UI, sans-serif`;
-    const w = c.measureText(text).width + size * 1.6, x = W * 0.5, y = H * 0.19;
-    c.globalAlpha = k; c.translate(x, y); c.scale(0.85 + 0.15 * k, 0.85 + 0.15 * k);
-    c.fillStyle = 'rgba(250,247,238,.95)'; c.beginPath(); c.roundRect(-w / 2, -size * 0.95, w, size * 1.9, size * 0.95); c.fill();
-    c.fillStyle = '#33322e'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, 0, 2);
-    c.restore();
-  }
+  _say(c, W, H){ sayBubble(c, W, H, { text: this.say.text, t: this.say.t }); }
   /* how big the pile is: a bar under the words */
-  _meter(c, W, H){
-    const w = W * 0.2, h = H * 0.022, x = W * 0.5 - w / 2, y = H * 0.25;
-    c.fillStyle = 'rgba(250,247,238,.9)'; c.beginPath(); c.roundRect(x, y, w, h, h / 2); c.fill();
-    const k = this.ready ? 1 : Math.min(1, this.pile / this.need);
-    if (k > 0){ c.fillStyle = this.ready ? '#e8b44a' : '#e0893b'; c.beginPath(); c.roundRect(x + 3, y + 3, Math.max(h - 6, (w - 6) * k), h - 6, (h - 6) / 2); c.fill(); }
-  }
+  _meter(c, W, H){ goalBar(c, W, H, this.ready ? 1 : this.pile / this.need, { color: this.ready ? '#e8b44a' : '#e0893b' }); }
 
   hud(){ return { score: this.score, showLives: false, hideScore: true }; }
   /* arms go up a lot (and in the jump); Back on the remote still pauses */
