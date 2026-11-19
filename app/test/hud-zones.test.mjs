@@ -15,9 +15,9 @@ test('the shell\'s areas never overlap each other, on a wide screen or a squarer
 
 test('underHud says where a target must not go', () => {
   assert.ok(underHud(1600, 900, 800, 40), 'under the clock');
-  assert.ok(underHud(1600, 900, 1500, 100), 'under the scores');
-  assert.ok(underHud(1600, 900, 220, 450), 'under the move card');
-  assert.ok(underHud(1600, 900, 100, 60), 'under the badge');
+  assert.ok(underHud(1600, 900, 80, 100), 'under the scores');
+  assert.ok(underHud(1600, 900, 1368, 170), 'under the move card');
+  assert.ok(underHud(1600, 900, 1450, 335), 'under the badge');
   assert.ok(!underHud(1600, 900, 800, 600), 'the middle of the screen is the game\'s');
 });
 

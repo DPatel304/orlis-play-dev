@@ -1,7 +1,7 @@
 /* The move card: one little picture of a move, for the ones who can't read. Every game that shows one uses this, so it
    always looks the same and sits in the same place. It is Cubo, the Orlis cube, drawn flat like a sticker: a square head
    looking straight at you, a body with arms and legs, all with a dark outline, on a white card with a thick indigo border.
-   The card floats (a soft shadow under it) and slides in from the side (the left, away from the scores and Sleepy Bear's cave) when a move starts, and out again when it ends.
+   The card floats (a soft shadow under it) and slides in from the right, where it sits in the top-right corner, when a move starts, and out again when it ends.
    Cubo moves like stop-motion: each move is three or four still drawings that repeat, and his face is part of each
    drawing, so he looks excited when his hands go up and strains a little in the squat. */
 const L = (a, b, k) => a + (b - a) * k;
@@ -9,7 +9,7 @@ const L = (a, b, k) => a + (b - a) * k;
 /* the look, in one place. size is a share of the screen's height; x and y are where the card's middle is, as a share of the
    screen. head: how big his head is, as a share of what it was first drawn at. */
 export const CARD = { fill: '#ffffff', edge: '#2b2275', edgeW: 0.07, body: '#7aa2f7', line: '#2b2275', ink: '#1e1b4b',
-  arrow: '#ff7a59', head: ['#60a5fa', '#c084fc'], top: ['#e9fbff', '#f3e8ff'], left: '#5eead4', size: 0.3, x: 0.14, y: 0.5, headSize: 0.75 };
+  arrow: '#ff7a59', head: ['#60a5fa', '#c084fc'], top: ['#e9fbff', '#f3e8ff'], left: '#5eead4', size: 0.26, x: 0.855, y: 0.19, headSize: 0.75 };
 /* how it moves: drawings a second, and how long the card takes to slide in and out (quick enough to start the move in time) */
 export const MOTION = { fps: 5, slideIn: 0.45, slideOut: 0.3 };
 

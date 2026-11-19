@@ -12,14 +12,14 @@ All positions are shares of the screen, so they hold at any size. Code: `hud.js`
 
 ```
 +-----------------------------------------------------------------+
-| BADGE        |        CLOCK                          |  SCORES  |
-| (top left,   |        hint words                      |  (top    |
-|  optional)   |        goal bar                        |  right,  |
-|              |                                        |  column) |
-|                                                       |          |
-| MOVE CARD            THE GAME'S WORLD                            |
-| (left, middle)       (everything else)                           |
-|                                                                  |
+| SCORES      |        CLOCK                        |  MOVE CARD   |
+| (top left,  |        hint words                   |  (top right, |
+|  one        |        goal bar                     |   26%)       |
+|  column)    |                                     |   BADGE      |
+|             |                                     |  (under the  |
+|                                                   |   card)      |
+|                    THE GAME'S WORLD                              |
+|                    (everything else)                             |
 +-----------------------------------------------------------------+
 ```
 
@@ -28,14 +28,15 @@ All positions are shares of the screen, so they hold at any size. Code: `hud.js`
 | Clock | top centre, `y` 3% of height | shell | nothing: set the round length (`secs`) |
 | Hint words | top centre, `y` 19% | `sayBubble` | a few words; they fade after about 7 s |
 | Goal bar | top centre, `y` 25%, 20% of width | `goalBar` | only if there is something to fill |
-| Scores | top right, one column, first player on top | shell | return `score` per player from `hud()`, or set `hideScore: true` |
-| Move card | left, middle: centre at (14% of width, 50% of height), side 30% of height | shell | answer `card()` with a move name, or `null` |
-| Badge | top left, one pill | `badge` | optional: one streak, lives or combo |
+| Scores | top left, one column, first player on top | shell | return `score` per player from `hud()`, or set `hideScore: true` |
+| Move card | top right: centre at (85.5% of width, 19% of height), side 26% of height; slides in from the right | shell | answer `card()` with a move name, or `null` |
+| Badge | under the move card, its right edge lined up with the card's | `badge` | optional: one streak, lives or combo |
 | Countdown, pause, results | centre, full screen | shell | nothing |
 | The game's world | everything else | the game | everything |
 
 `hudZones(W, H)` returns the shell's rectangles (`top`, `score`, `card`, `badge`) and `underHud(W, H, x, y)` says whether a
-point is under one. Use them when placing targets.
+point is under one. Use them when placing targets. The card's size and place are `CARD` in `figure.js`; change them there
+and everything (the zones, the badge, the slide-in) follows.
 
 ## Rules
 
@@ -52,8 +53,9 @@ point is under one. Use them when placing targets.
 5. **Scores are stars with a count.** Whole numbers a child can follow. A game whose count would climb into the hundreds
    (paint, distance) hides the score or shows progress instead (`goalBar`). A game with no winner can hide it too.
 6. **The move card** shows the move being asked for, when it is asked for (the first seconds of a round, or each time the
-   move changes). It slides in and out by itself; a game only says which move.
-7. **One badge at most.** Top left, the cream pill, an optional emoji and a number or word. Not a second row.
+   move changes). It slides in from the right and out again by itself; a game only says which move. It stays big enough to
+   read from the sofa (about 26% of the screen's height; not under 20%).
+7. **One badge at most.** Under the move card, the cream pill, an optional emoji and a number or word. Not a second row.
 8. **Same motion.** Things slide in in about 0.45 s and out in about 0.3 s. Numbers bounce when they go up. Nothing flashes
    or strobes.
 9. **Same sounds.** The same cheer, tick and whoosh for the same events everywhere.
@@ -62,8 +64,9 @@ point is under one. Use them when placing targets.
 
 ## Where the standard stops
 
-- Last Known Position and Castle Defense (story games) have their own displays for crystals, gold and so on. They keep
-  the clock and results, and stay out of the move card's box. Their displays count as their own world.
+- Last Known Position and Castle Defense (story games) have their own displays for crystals, gold, Nova and so on. They
+  keep the clock and results, and stay out of the move card's box. Their displays count as their own world (Nova lives
+  top left, where the scores would be).
 - Pop Party shows no scores on purpose (nobody wins). Sky Painter hides its score (it counts painted cells).
 
 ## Loosening it

@@ -365,12 +365,12 @@ function drawIntro(){
   c.restore();
 }
 /* The score pill every game shares: the player's colour, a star, and the number. It bounces and the star twinkles
-   each time the number goes up (bump: 1 right then, back to 0). xRight is where its right edge goes. */
+   each time the number goes up (bump: 1 right then, back to 0). xLeft is where its left edge goes. */
 const scoreSeen = [], scoreBumpAt = [];
-function drawScorePill(c, xRight, y, h, color, n, bump){
+function drawScorePill(c, xLeft, y, h, color, n, bump){
   const font = `800 ${Math.round(h * 0.62)}px "Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif`;
   c.save(); c.font = font; const tw = c.measureText(String(n)).width, w = h * 1.65 + tw;
-  c.translate(xRight - w / 2, y + h / 2); const k = 1 + 0.28 * Math.sin(Math.min(1, bump) * Math.PI); c.scale(k, k); c.translate(-w / 2, -h / 2);
+  c.translate(xLeft + w / 2, y + h / 2); const k = 1 + 0.28 * Math.sin(Math.min(1, bump) * Math.PI); c.scale(k, k); c.translate(-w / 2, -h / 2);
   c.shadowColor = 'rgba(20,20,60,.25)'; c.shadowBlur = h * 0.25; c.shadowOffsetY = h * 0.07;
   c.fillStyle = 'rgba(252,250,244,.96)'; c.beginPath(); c.roundRect(0, 0, w, h, h / 2); c.fill(); c.shadowColor = 'transparent';
   c.fillStyle = color; c.beginPath(); c.arc(h / 2, h / 2, h * 0.3, 0, 6.2832); c.fill();                       /* the player's colour */
@@ -391,13 +391,13 @@ function drawHUD(){
   const pad = Math.max(14, H * 0.03);
   c.textBaseline = 'top';
   /* A cooperative game can keep score privately and show only the clock. Otherwise a score for each child who has played
-     this round, the same for every game: top right, in one column (first player on top), each in their own colour. */
+     this round, the same for every game: top left, in one column (first player on top), each in their own colour. */
   const shown = hud.hideScore ? [] : [...joined].filter(i => i < players).sort();
   shown.forEach((i, row) => {
     const n = hud.score[i], h = H * 0.08;
     if (scoreSeen[i] !== undefined && n > scoreSeen[i]) scoreBumpAt[i] = performance.now();
     scoreSeen[i] = n;
-    drawScorePill(c, W - pad, pad + row * h * 1.28, h, PLAYER_COLORS[i], n, Math.max(0, 1 - (performance.now() - (scoreBumpAt[i] || -1e9)) / 450));
+    drawScorePill(c, pad, pad + row * h * 1.28, h, PLAYER_COLORS[i], n, Math.max(0, 1 - (performance.now() - (scoreBumpAt[i] || -1e9)) / 450));
   });
   /* A game that lasts as long as you hold out has no clock to show. */
   if (hud.hideClock){ c.textAlign = 'start'; c.textBaseline = 'alphabetic'; return; }
