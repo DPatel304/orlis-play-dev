@@ -615,3 +615,13 @@ Limit: a move to true 3D is bigger than a repaint; games that compute from pixel
 **Order of work:** (1) write the rules of the look from the real code and screenshots (palette, light, shape language, haze, outlines, HUD) as a one-page style sheet; (2) fix the rough spots in LKP first (oversized foreground tree and rock in the climbing scenes); (3) prove the rules by re-skinning Pop Party's scene (does it belong with LKP and still read for toddlers? a brighter second palette in the same style may be needed); (4) only then extract the kit, with tests.
 
 **Open design questions:** how bright/saturated the party games may be; one skin or a "calm" and "party" palette in one style; how much of the faceted-prop language the asset library takes on; the HUD in one look; where the depth slot lives; how a creator's game picks a skin version; what is checked by screenshot.
+
+### Style kit: owner's answers (planning)
+- **Reference:** Untitled Goose Game and Katamari Damacy (soft haze, chunky rocks and trees, simple characters). LKP is already that look; it is a versatile look, not a toddler look.
+- **One palette** for everything. Consistency comes from the palette (like Roblox / Fortnite); every view is welcome (side-on, top-down, perspective, third person).
+- **Creators can never make new assets.** A description is only ever matched to what is in the kit; creators work on gameplay and camera angles. Only the owner (with Claude) adds to the kit, which may grow large. "Request a picture" stays the way a creator asks for a missing one.
+- **Establish the look now and redraw every existing game from it** (Pop Party and the meadow games, Save the Harvest, Ptero Flight, Castle Defense, Sky Painter, the asset library's emoji pieces and free-hue balloons).
+- **One HUD** (the invisible-rows one) in every game; Last Known Position has to be moved onto it.
+- **A checker for the kit:** an asset using a colour outside the palette, or breaking the light direction, is rejected automatically.
+- **Assets are shapes with colour roles**, not fixed colours; shading comes from the skin's light direction.
+- **Next steps:** (1) extract and lock the palette; (2) settle the asset format (code, data shapes, or painted sprites); (3) move LKP onto the standard HUD.
