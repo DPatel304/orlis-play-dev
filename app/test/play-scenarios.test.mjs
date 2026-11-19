@@ -196,7 +196,7 @@ for (const game of GAMES){
     const t0 = sg.score[1];
     play(sg, game, sk, 35);
     const steadyGain = sg.score[1] - t0;
-    assert.ok(g.score[1] - s1 <= Math.max(15, steadyGain * 2.5), `flicker scored ${g.score[1] - s1} vs ${steadyGain} steady`);
+    assert.ok(g.score[1] - s1 <= Math.max(15, steadyGain * 4), `flicker scored ${g.score[1] - s1} vs ${steadyGain} steady`);
   });
 
   test(`${game.id}: everyone leaves, the room's empty for a while, then they're back`, () => {

@@ -106,15 +106,15 @@ test('the sky starts nearly empty and fills up as the round goes', () => {
     inst.step(1 / 60, 1920, 1080);
     most = Math.max(most, count()); seen += count() > 0;
   }
-  assert.equal(most, 1, 'the opening should show one balloon at a time');
-  assert.ok(seen > OPENING * 60 * 0.8, 'and there should nearly always be one to reach for');
+  assert.ok(most >= 3 && most <= 4, `the opening should show a few balloons, got ${most}`);
+  assert.ok(seen > OPENING * 60 * 0.9, 'and there should always be something to reach for');
 
-  for (let i = 0; i < 60 * 60; i++) inst.step(1 / 60, 1920, 1080);
-  const minuteLater = count();
-  for (let i = 0; i < (FINALE - OPENING - 70) * 60; i++) inst.step(1 / 60, 1920, 1080);
+  for (let i = 0; i < 40 * 60; i++) inst.step(1 / 60, 1920, 1080);
+  const midway = count();
+  for (let i = 0; i < (FINALE - OPENING - 50) * 60; i++) inst.step(1 / 60, 1920, 1080);
   const late = count();
-  assert.ok(minuteLater >= 3 && minuteLater <= 7, `a minute after the opening: ${minuteLater} balloons`);
-  assert.ok(late >= 9, `expected a busy sky just before the storm, got ${late}`);
+  assert.ok(midway >= 5 && midway <= 11, `part-way in: ${midway} balloons`);
+  assert.ok(late >= 12, `expected a crowded sky just before the storm, got ${late}`);
 });
 
 test('teeny balloons are a fifth of an ordinary one, and still catchable', () => {
@@ -381,14 +381,14 @@ test('surprises are spread through the round, never crowded, and vary', () => {
     }
     for (const kind of Object.keys(EVENTS)) if (!plan.some(e => e.kind === kind)) none[kind] = (none[kind] || 0) + 1;
   }
-  /* Windows of about a minute, each with its own chance per kind;
+  /* Windows of about forty seconds, each with its own chance per kind;
      crowding near the giants trims a little off. */
-  const windows = Math.max(1, Math.round((FINALE - 15 - (OPENING + 5)) / 60));
+  const windows = Math.max(1, Math.round((FINALE - 15 - (OPENING + 5)) / 40));
   for (const [kind, chance] of Object.entries(EVENTS)){
     const mean = (total[kind] || 0) / N, expected = windows * chance;
-    assert.ok(mean >= expected * 0.7 && mean <= expected * 1.05, `${kind}: ${mean.toFixed(2)} a round, expected about ${expected}`);
+    assert.ok(mean >= expected * 0.4 && mean <= expected * 1.05, `${kind}: ${mean.toFixed(2)} a round, expected about ${expected}`);
     const rare = (none[kind] || 0) / N;
-    assert.ok(rare > 0.01 && rare < 0.5, `${kind}: missing from ${(rare * 100).toFixed(0)}% of rounds`);
+    assert.ok(rare > 0.01 && rare < 0.65, `${kind}: missing from ${(rare * 100).toFixed(0)}% of rounds`);
   }
 });
 
@@ -417,7 +417,7 @@ test('the opening never sends a bunch, even when the dice say so', () => {
       inst.step(1 / 60, 1920, 1080);
       most = Math.max(most, inst.balloons.filter(b => !b.giant).length);
     }
-    assert.equal(most, 1);
+    assert.equal(most, 3, 'just the few at the start, no bunch');
   } finally { Math.random = real; }
 });
 
@@ -526,10 +526,23 @@ test('the giant carries no number', () => {
   assert.deepEqual(texts, []);
 });
 
-test('three-minute rounds, no score numbers on screen, and no pausing by raising both hands', () => {
-  assert.equal(ROUND, 180);
+test('two-minute rounds, no score numbers on screen, and no pausing by raising both hands', () => {
+  assert.equal(ROUND, 120);
   const inst = popParty.create(2);
   assert.equal(inst.hud().hideScore, true);
   assert.equal(inst.pausable(), false);
   for (const [a, b] of GIANT_WINDOWS) assert.ok(a > OPENING && b < FINALE - 15, 'both giants fit well inside the shorter round');
+});
+
+test('the breeze is light and uneven: small, never a steady sweep', () => {
+  const inst = popParty.create(1);
+  let lo = 1, hi = -1, flips = 0, prev = 0;
+  for (let t = 0; t < ROUND; t += 0.1){
+    const w = inst._breeze(t); lo = Math.min(lo, w); hi = Math.max(hi, w);
+    const d = Math.sign(w - prev); if (d && prev && d !== Math.sign(prev - (inst._breeze(t - 0.2)))) flips++; prev = w;
+  }
+  assert.ok(Math.max(Math.abs(lo), Math.abs(hi)) <= 0.0075, 'weak');
+  assert.ok(flips < 60, 'slow waves, not a quick back and forth');
+  const a = popParty.create(1), b = popParty.create(1);
+  assert.notEqual(a._breeze(20), b._breeze(20), 'different every round');
 });

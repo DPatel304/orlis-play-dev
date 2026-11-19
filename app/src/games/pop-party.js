@@ -4,14 +4,16 @@ import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx, music } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
+import { crew } from '../ui/crew.js';
+import { body } from '../ui/avatar-art.js';
 import { ANIMALS, animalParts, animalCol, touches, drawAnimal } from './pop-party-animals.js';
 
 /* Three-minute rounds; the storm is always the last ten seconds. */
-export const ROUND = 180;
+export const ROUND = 120;
 export const FINALE = ROUND - 10;
 /* The opening: one balloon at a time, so the first thing anyone learns is
    simply to reach for it. */
-export const OPENING = 20;
+export const OPENING = 12;
 
 /* Pop Party. Balloons rise, hands pop them. The gentlest game in the set and
    the one a two-year-old can play without being told anything - so nothing
@@ -40,7 +42,7 @@ export const SIZES = [
 export const GIANT_R = 0.425;
 /* Two giants a round, one at a random moment in each window: never in the
    calm opening, and early enough to rise into view well before the storm. */
-export const GIANT_WINDOWS = [[50, 80], [105, 140]];
+export const GIANT_WINDOWS = [[34, 54], [68, 92]];
 /* Something that size would pop the instant any hand reached it, before
    anyone had seen it. Instead it takes slaps - separate ones, so a hand
    resting on it counts once - each one answered with a wobble and a boing
@@ -80,7 +82,7 @@ const PARADE_SPEED = 0.16, PARADE_GAP = 0.075;
 /* A balloon animal walks across the lower sky; one touch pops it, part by
    part, face last. */
 export const ANIMAL_WORTH = 15;
-const ANIMAL_SOUNDS = { dog: 'bark', giraffe: 'squeak', elephant: 'trumpet' };
+const ANIMAL_SOUNDS = { dog: 'bark', giraffe: 'squeak', elephant: 'toot' };
 const STR_N = 7;
 /* The bouquet: everyone gets at least `least` balloons and at most `most`;
    they gather over `gather` seconds, and everyone lifts off at `liftAt`.
@@ -105,6 +107,9 @@ class PopParty {
     this.fx = [];
     this.j = new Juice();
     this.t = 0; this.spawn = 0; this.wind = 0; this.over = false;
+    /* The breeze: a few slow waves at their own speeds and strengths, different
+       every round, so it drifts and never sweeps back and forth in a pattern. */
+    this.waves = Array.from({ length: 4 }, (_, k) => ({ f: 0.04 + Math.random() * 0.16 + k * 0.03, ph: Math.random() * 6.2832, a: 0.4 + Math.random() * 0.6 }));
     this.slowT = 0; this.scale = 1;
     this.parade = null; this.animal = null;
     this.events = planEvents(FINALE);
@@ -165,7 +170,7 @@ class PopParty {
       else this.balloons.push(this._make());
     }
 
-    this.wind = Math.sin(this.t * 0.21) * 0.012 + Math.sin(this.t * 0.07 + 1) * 0.01;
+    this.wind = this._breeze(this.t);
     this.scene.step(dt, {
       t: this.t, p: this.t / FINALE, storm: storm, wind: this.wind,
       joy: Math.max(0, Math.min(1, (Math.max(...this.combo) - 2) / 6)),
@@ -253,12 +258,18 @@ class PopParty {
     };
   }
 
+  _breeze(t){
+    let w = 0, tot = 0;
+    for (const v of this.waves){ w += Math.sin(t * v.f + v.ph) * v.a; tot += v.a; }
+    return (w / tot) * 0.007;
+  }
+
   target(){
-    /* One at a time through the opening - the next waits until the last is
-       popped or gone - then a steady climb to a dozen by the storm. */
-    if (this.t >= FINALE) return 18;
-    if (this.t < OPENING) return 1;
-    return 1 + 11 * (this.t - OPENING) / (FINALE - OPENING);
+    /* A few in the sky from the very start - enough that nobody pops them
+       all - then a steady climb to a crowded sky by the storm. */
+    if (this.t >= FINALE) return 24;
+    if (this.t < OPENING) return 3;
+    return 3 + 13 * (this.t - OPENING) / (FINALE - OPENING);
   }
 
   _giant(){
@@ -466,6 +477,14 @@ class PopParty {
   }
 
   _drawBouquets(c, W, H){
+    /* Each child stands in the meadow as their avatar, holding the strings
+       - so the bunch isn't floating on its own. */
+    for (const g of this.out.groups){
+      const h = H * 0.46, x = g.ax * W, base = H * 0.99;
+      c.save(); c.globalAlpha = 1; c.fillStyle = '#000';
+      try { body(c, x, base, h, crew.lookOf(g.who), this.out.t + g.who, 'stand'); } catch (e){ /* never break the ending over a drawing */ }
+      c.restore();
+    }
     for (const g of this.out.groups){
       const ax = g.ax * W, ay = (g.ay - g.lift) * H;
       c.strokeStyle = 'rgba(70,60,110,.5)'; c.lineWidth = Math.max(1, H * 0.0016);
@@ -717,15 +736,15 @@ class PopParty {
 
 /* Surprises are planned when the round starts so they never pile up. The
    round from just after the opening to fifteen seconds before the storm is
-   cut into windows of about a minute; in each, every kind has its own
+   cut into windows of about forty seconds; in each, every kind has its own
    chance of turning up at a random moment, at least EVENT_GAP from any other
    surprise. Over three minutes that is the two giants, a parade and a
    balloon animal or two on average, and never the same round twice. */
-export const EVENTS = { parade: 0.5, dog: 0.45, giraffe: 0.45, elephant: 0.45 };
+export const EVENTS = { parade: 0.6, dog: 0.6, giraffe: 0.6, elephant: 0.6 };
 export const EVENT_GAP = 12;
 export function planEvents(finale){
   const from = OPENING + 5, to = finale - 15;
-  const n = Math.max(1, Math.round((to - from) / 60)), span = (to - from) / n;
+  const n = Math.max(1, Math.round((to - from) / 40)), span = (to - from) / n;
   /* The giants are placed first, so the smaller surprises make room. */
   const out = GIANT_WINDOWS.map(([a, b]) => ({ kind: 'giant', at: a + Math.random() * (b - a), done: false }));
   for (let w = 0; w < n; w++){

@@ -80,7 +80,8 @@ export class Scene {
     this.flock = null; this.nextFlock = 6 + Math.random() * 10;
     this.rainbow = 0;
     /* One unprompted rainbow a round, besides the parade's. */
-    this.rainbowAt = 70 + Math.random() * 140;
+    this.rainbowAt = 35 + Math.random() * 55;
+    this.gw = Array.from({ length: 3 }, () => ({ f: 0.3 + Math.random() * 0.9, ph: Math.random() * 6.2832 }));
     /* Lite mode: if the laptop really can't keep up - the pose model shares it -
        the scene sheds its extras (the sun's glow, the drifting petals, fewer flowers) for the rest of the round rather than let
        the game stutter. It never switches back, so it can't flicker, and it never takes the grass: a meadow with no grass
@@ -88,6 +89,8 @@ export class Scene {
        don't count. */
     this.lite = false; this.frame = 1 / 60; this.slowFor = 0;
   }
+
+  gustNoise(t){ let n = 0; for (const g of this.gw) n += Math.sin(t * g.f + g.ph); return n / this.gw.length; }
 
   /* s: { t, p, storm (bool: the finale, which only stiffens the breeze), wind,
         joy 0..1, look 0..1, rainbow (bool) } */
@@ -102,7 +105,8 @@ export class Scene {
     /* Eased hard, so a lunge for a balloon nudges the world rather than
        swinging it; plus a slow drift so it never sits dead still. */
     this.look += ((s.look - 0.5) - this.look) * Math.min(1, dt * 1.5);
-    const gust = this.storm * (1.6 + Math.sin(this.t * 3.1) * 0.7 + Math.sin(this.t * 7.3) * 0.3);
+    /* a light, uneven breeze in the storm: slow waves of odd lengths, never a steady sweep */
+    const gust = this.storm * (0.35 + this.gustNoise(this.t) * 0.3);
     this.wind = s.wind / 0.022 + gust;
 
     const wantBow = s.rainbow || (this.t >= this.rainbowAt && this.t < this.rainbowAt + 25);

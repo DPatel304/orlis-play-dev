@@ -508,6 +508,21 @@ export const sfx = {
     o.start(t); lfo.start(t); o.stop(t + 0.82); lfo.stop(t + 0.82);
     hiss({ dur: 0.3, gain: 0.06, hp: 1500, type: 'bandpass', q: 0.8 });
   },
+  /* The elephant: two soft, round toots, like a toy horn - friendly, not a roar. */
+  toot(){
+    const c = ctx(), t0 = c.currentTime;
+    [0, 0.26].forEach((d, k) => {
+      const t = t0 + d, o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain();
+      o.type = 'triangle';
+      const base = k ? 330 : 294;
+      o.frequency.setValueAtTime(base * 0.9, t); o.frequency.exponentialRampToValueAtTime(base, t + 0.08);
+      f.type = 'lowpass'; f.frequency.value = 1300; f.Q.value = 0.7;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      o.connect(f); f.connect(g); g.connect(master);
+      o.start(t); o.stop(t + 0.22);
+    });
+  },
   /* Woof woof, on the beat. */
   bark(){
     const c = ctx(), on = Math.max(0, music.grid(2) - c.currentTime);
