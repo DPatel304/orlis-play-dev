@@ -42,6 +42,7 @@ export const BLURB = {
   'animal-gym': 'Move like the animals: stretch, hop, flap, squat and stomp',
   'keep-it-up': 'Keep the big beach ball floating up together',
   'ptero-flight': 'Spread your arms like wings and glide over a world of dinosaurs',
+  'save-the-harvest': 'Everyone moves together to pick the fruit before the cheeky raven arrives',
   'cubions-long-way-home': 'Sit back and listen: a funny story about a little cube who comes to Earth to learn how to move'
 };
 /* Each game's icon, in the cube's style: a rounded square in two colours,
@@ -57,6 +58,7 @@ export const ICONS = {
   'animal-gym': { cols: ['#34b27b', '#ffd35c'], glyph: 'paw' },
   'keep-it-up': { cols: ['#4da3ff', '#ff7eb3'], glyph: 'ball' },
   'ptero-flight': { cols: ['#e0915b', '#6fc3c0'], glyph: 'wing' },
+  'save-the-harvest': { cols: ['#e0603a', '#ffd35c'], glyph: 'apple' },
   'cubions-long-way-home': { cols: ['#7b6cf6', '#f2b8ff'], glyph: 'book' }
 };
 const GLYPHS = {
@@ -69,6 +71,7 @@ const GLYPHS = {
   blocks: '<rect x="30" y="58" width="40" height="24" rx="6" fill="#fff"/><rect x="34" y="36" width="32" height="22" rx="6" fill="#fff" opacity=".9"/><rect x="38" y="16" width="24" height="20" rx="5" fill="#fff" opacity=".8"/>',
   brush: '<path d="M70 14l16 16-30 30-16-16z" fill="#fff"/><path d="M38 46l16 16c-4 12-14 20-30 22 2-16 8-30 14-38z" fill="#fff" opacity=".85"/>',
   paw: '<ellipse cx="50" cy="64" rx="20" ry="16" fill="#fff"/><ellipse cx="26" cy="46" rx="8" ry="11" fill="#fff"/><ellipse cx="42" cy="32" rx="8" ry="11" fill="#fff"/><ellipse cx="58" cy="32" rx="8" ry="11" fill="#fff"/><ellipse cx="74" cy="46" rx="8" ry="11" fill="#fff"/>',
+  apple: '<path d="M50 30c-14-10-32-2-32 20 0 20 14 36 24 36 4 0 6-2 8-2s4 2 8 2c10 0 24-16 24-36 0-22-18-30-32-20z" fill="#fff"/><path d="M50 30c0-10 4-18 12-22" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="36" cy="48" rx="5" ry="9" transform="rotate(20 36 48)" fill="#000" opacity=".12"/>',
   book: '<path d="M50 28c-9-8-22-10-34-7v52c12-3 25-1 34 7 9-8 22-10 34-7V21c-12-3-25-1-34 7z" fill="#fff"/><path d="M50 28v52" stroke="#000" stroke-opacity=".18" stroke-width="3"/>',
   wing: '<path d="M50 52C40 36 22 30 8 34c10 4 16 12 18 22 6-6 14-8 24-4zM50 52c10-16 28-22 42-18-10 4-16 12-18 22-6-6-14-8-24-4z" fill="#fff"/><ellipse cx="50" cy="58" rx="7" ry="14" fill="#fff"/><path d="M46 44l4-16 4 16z" fill="#fff"/>',
   ball: '<circle cx="50" cy="50" r="34" fill="#fff"/><path d="M50 16v68M16 50h68M26 26l48 48M74 26L26 74" stroke="#000" stroke-opacity=".16" stroke-width="4" fill="none"/><circle cx="50" cy="50" r="7" fill="#000" opacity=".14"/>',

@@ -572,3 +572,9 @@ draws, a grown-up or grandparent can record the voice) is **on hold** until Crea
 - Narration uses the app's voice (the computer's, for now); a beat ends when the voice stops (or after reading time with sound off). Move cards at the four animal stops; anyone can copy, nothing is checked. The refrain gets a pause after it for the kids to say it.
 - `?beat=N` in the address starts the story at beat N (for looking at a scene).
 - Still to do: recorded voice for this story and "your own voice" (grandparent) option; Elders' clicks are the shell's tick for now; real hardware/TV check; more stories (pages format for room-bound stories, other formats from the ideas list). Create-your-own-stories stays on hold.
+
+## Save the Harvest: built (first cut)
+- Co-op, Orchard-style (`app/src/games/save-the-harvest.js`): spin a wheel (apple / pear / strawberry / raven's feather); everyone does the move that picks it (reach / hop / squat) and two fruit fly into the basket; a raven round hops him two steps closer and everyone flaps to shoo him back one. Nothing to lose: if he reaches the tree he nibbles one fruit back on and hops home. Ends when the basket is full (he gets the last apple).
+- Uses the shell's standard pieces: move card, goal bar (the harvest), the corner panel (the raven's distance), the hint words. Moves come from Animal Gym's detectors (`triesOf`) and the jump watch; a fast hand counts with the mouse.
+- `?game=<id>` in the address now goes straight into any game (for looking at one).
+- Still to do: playtest on a real camera and TV (how many tries a round needs; whether a good effort should be required), recorded voice for the hints, the other board games from the mockups (Race to the Treasure with the lean vote is next), and a shared board kit once the second one exists.

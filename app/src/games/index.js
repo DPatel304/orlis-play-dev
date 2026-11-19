@@ -12,6 +12,7 @@ import skyPainter from './sky-painter.js';
 import animalGym from './animal-gym.js';
 import keepItUp from './keep-it-up.js';
 import pteroFlight from './ptero-flight.js';
+import saveTheHarvest from './save-the-harvest.js';
 import { makeStory } from './story-player.js';
 import cubionsLongWayHome from '../stories/cubions-long-way-home.js';
 
@@ -20,7 +21,7 @@ import cubionsLongWayHome from '../stories/cubions-long-way-home.js';
    Opened any other way - the browser, the tests - they're all built in. */
 export const FROM_STORE = new Set([]);
 const inApp = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
-export const GAMES = [popParty, sleepyBear, leafPile, stackItHigh, skyPainter, animalGym, keepItUp, pteroFlight, makeStory(cubionsLongWayHome), lastKnownPosition, castleDefense]
+export const GAMES = [popParty, sleepyBear, leafPile, stackItHigh, skyPainter, animalGym, keepItUp, pteroFlight, saveTheHarvest, makeStory(cubionsLongWayHome), lastKnownPosition, castleDefense]
   .filter(g => !(inApp && FROM_STORE.has(g.id)));
 export const byId = (id) => GAMES.find(g => g.id === id);
 /* Waiting for the owner to let you in: these two, built in, to play

@@ -585,7 +585,7 @@ addEventListener('orlisupdate', () => {
    While a game's being worked on, ?dev on the address goes straight into
    it instead - no boot show, no home screen - so each try starts at the
    moment being worked on. */
-const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : null;
+const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : new URLSearchParams(location.search).get('game');   /* (?game=<id> goes straight into any game) */
 
 /* The boot show, then the front door. (The camera waits for a game.) */
 (async function boot(){
