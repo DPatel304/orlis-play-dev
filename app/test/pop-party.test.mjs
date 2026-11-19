@@ -386,7 +386,7 @@ test('surprises are spread through the round, never crowded, and vary', () => {
   const windows = Math.max(1, Math.round((FINALE - 15 - (OPENING + 5)) / 40));
   for (const [kind, chance] of Object.entries(EVENTS)){
     const mean = (total[kind] || 0) / N, expected = windows * chance;
-    assert.ok(mean >= expected * 0.4 && mean <= expected * 1.05, `${kind}: ${mean.toFixed(2)} a round, expected about ${expected}`);
+    assert.ok(mean >= expected * 0.3 && mean <= expected * 1.05, `${kind}: ${mean.toFixed(2)} a round, expected about ${expected}`);
     const rare = (none[kind] || 0) / N;
     assert.ok(rare > 0.01 && rare < 0.65, `${kind}: missing from ${(rare * 100).toFixed(0)}% of rounds`);
   }

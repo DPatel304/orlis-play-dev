@@ -741,7 +741,7 @@ class PopParty {
    surprise. Over three minutes that is the two giants, a parade and a
    balloon animal or two on average, and never the same round twice. */
 export const EVENTS = { parade: 0.6, dog: 0.6, giraffe: 0.6, elephant: 0.6 };
-export const EVENT_GAP = 12;
+export const EVENT_GAP = 8;
 export function planEvents(finale){
   const from = OPENING + 5, to = finale - 15;
   const n = Math.max(1, Math.round((to - from) / 40)), span = (to - from) / n;
