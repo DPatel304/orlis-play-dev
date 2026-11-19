@@ -1519,7 +1519,7 @@ body.remote .btn.burger.cubebtn.kfocus{ box-shadow:0 0 0 .4vh #6d5efc; }
 .launchveil.hascard::before{ content:''; position:absolute; inset:0; background:rgba(13,11,26,.38); z-index:1; }
 .launchveil.hascard .launchname{ color:transparent; text-shadow:none; }
 .launchveil.hascard .launchdots{ display:none; }
-.launchcard{ position:absolute; z-index:2; left:50%; top:46%; transform:translate(-50%,-50%); width:min(62vw,130vh); padding:4vh 4vw 3vh; box-sizing:border-box; text-align:center; background:rgba(255,255,255,.96); border-radius:5vh; box-shadow:0 1vh 4vh rgba(20,24,50,.3); animation:fadein var(--t-base) ease .3s both; }
+.launchcard{ position:absolute; z-index:2; left:50%; top:46%; transform:translate(-50%,-50%); width:min(62vw,130vh); padding:4vh 4vw 3vh; box-sizing:border-box; text-align:center; background:rgba(255,255,255,.96); border-radius:5vh; box-shadow:0 1vh 4vh rgba(20,24,50,.3); }
 .launchcard h2{ margin:0; font:800 6vh/1.1 var(--sys); color:#16161d; }
 .launchcard p{ margin:1.6vh 0 0; font:600 3.4vh/1.25 var(--sys); color:#4b4f5e; }
 .launchcount{ height:14vh; margin-top:1vh; display:flex; align-items:center; justify-content:center; }
@@ -1788,3 +1788,12 @@ body.remote .btn.slock.kfocus:not(.tvtile):not(.play){ outline:none; box-shadow:
 /* The results: one friendly line (what everyone got together) */
 .gbtext .resultline{ margin:1.2vh 0 0; font-size:3.4vh; font-weight:800; color:#fff; text-shadow:0 .2vh .8vh rgba(0,0,0,.3); }
 .gbtext .resultline .newbest{ display:inline-block; margin-left:.6vh; padding:.3vh 1.4vh; border-radius:999px; background:#f59e0b; font-size:.62em; vertical-align:middle; }
+
+/* The twirling head: something is happening, with no end in sight */
+.launchhead{ position:absolute; z-index:3; top:4vh; right:4vw; width:12vh; height:12vh; perspective:60vh; }
+.launchhead .lh{ position:absolute; inset:0; border-radius:24%; background:linear-gradient(135deg,#8fd4ff,#9b82ff); box-shadow:0 1vh 3vh rgba(20,24,50,.35), inset 0 -1vh 0 rgba(30,20,90,.18); animation:cubotwirl 2.4s cubic-bezier(.5,0,.3,1) infinite; }
+.launchhead .eye{ position:absolute; top:38%; width:11%; height:15%; border-radius:50%; background:#2a2160; backface-visibility:hidden; }
+.launchhead .eye:nth-child(1){ left:28%; } .launchhead .eye:nth-child(2){ right:28%; }
+.launchhead .mouth{ position:absolute; left:42%; top:64%; width:16%; height:10%; border-radius:50%; background:#2a2160; backface-visibility:hidden; }
+@keyframes cubotwirl{ 0%{ transform:translateY(0) rotateY(0) rotateZ(0); } 15%{ transform:translateY(-1.4vh) rotateY(0) rotateZ(-8deg); } 55%{ transform:translateY(-1vh) rotateY(360deg) rotateZ(0); } 75%{ transform:translateY(0) rotateY(360deg) rotateZ(0) scale(1.06,.94); } 100%{ transform:translateY(0) rotateY(360deg) rotateZ(0); } }
+@media (prefers-reduced-motion: reduce){ .launchhead .lh{ animation:none; } }

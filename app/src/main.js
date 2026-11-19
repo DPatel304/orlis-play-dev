@@ -175,7 +175,7 @@ function toGame(g){
   playedLately(g.id);
   ambience.stop();
   players = pose.cap;
-  /* The cover says what to do while the camera starts, and counts 3, 2, 1 when it's ready (the game starts as it goes). */
+  /* The cover says what to do while the game gets ready (a twirling head says it's working); the game starts as it goes. */
   if (launch.el) launch.card({ title: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '' });
   /* The cover the tile opened into stays up while the game gets ready - the
      camera starts underneath it (the first time, a few seconds, while the body
@@ -244,12 +244,12 @@ function startRound(){
   joined = new Set();
   hud.quiet = false;
   veilIntro = !!launch.el && launch.el.classList.contains('hascard') && !game.passive;
-  introLeft = game.passive ? 0 : veilIntro ? 3 : INTRO; introN = 0; moveCard.pose = null; hud.introText = null; hud.spoken = false; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
+  introLeft = 0; introN = 0;      /* (no countdown: the cover goes and the game's on) */ moveCard.pose = null; hud.introText = null; hud.spoken = false; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
   inst = game.create(players);
   /* A game where squatting is a move keeps players who crouch or sit. */
   pose.keepSitters = !!game.keepSitters;
   pose.look(players);
-  if (game.passive) launch.release();                  /* (a story has no 3, 2, 1: the cover just goes) */
+  launch.release();                                    /* (the cover goes as the game starts) */
   /* An endless game has no clock: it runs until it says it's over. */
   roundLeft = game.endless ? Infinity : game.secs;
   played = 0;
@@ -457,7 +457,7 @@ function tick(now){
     crewTick(dt);
     if (introLeft > 0){
       introLeft -= dt;
-      const n = Math.ceil(Math.max(0, introLeft)); if (n !== introN && n >= 1 && n <= 3){ introN = n; sfx.tick?.(); if (veilIntro) launch.count(n); }
+      const n = Math.ceil(Math.max(0, introLeft)); if (n !== introN && n >= 1 && n <= 3){ introN = n; sfx.tick?.(); }
       if (introLeft <= 0){ sfx.select?.(); if (veilIntro){ veilIntro = false; launch.release(); } }
     } else {
     inst.step(dt, W, H);
