@@ -162,9 +162,8 @@ function toCalibration(){
   go('calibrate', () => calibration(toMenu));
 }
 
-/* Straight into the game, no instructions or countdown: every round opens
-   gently enough to be its own introduction, and the games show rather than
-   tell. Every game has room for four, and whoever is there plays: another
+/* Into the game: the tile you picked opens into a cover that says what to do and counts 3, 2, 1
+   once the camera is ready, then the game starts as the cover goes. Every game has room for four, and whoever is there plays: another
    child can step in partway through, and anyone can step out, without
    anything stopping. */
 function toGame(g){
@@ -174,6 +173,8 @@ function toGame(g){
   playedLately(g.id);
   ambience.stop();
   players = pose.cap;
+  /* The cover says what to do while the camera starts, and counts 3, 2, 1 when it's ready (the game starts as it goes). */
+  if (launch.el) launch.card({ title: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '' });
   /* The cover the tile opened into stays up while the game gets ready - the
      camera starts underneath it (the first time, a few seconds, while the body
      tracker loads) and nothing is said about it. It's up at least a moment, so
@@ -184,7 +185,6 @@ function toGame(g){
   const begin = () => {
     music.start(game.music);
     lineUpThenPlay();
-    setTimeout(() => launch.release(), 150);          /* (the game's there; the cover fades away) */
   };
   if (pose.on || pose.mouse.active && pose.reason === 'debug'){
     settled().then(() => { if (game === g && mode !== 'play') begin(); });
@@ -208,6 +208,7 @@ function lineUpThenPlay(){
   crew.profiles = family(); crew.personal = MAKING;
   /* (while everyone plays as the generic avatars, there's nobody to line up) */
   if (!MAKING || crew.lined || crew.profiles.length < 2){ startRound(); return; }
+  launch.release();                                    /* (the line-up is a screen of its own) */
   go('lineup', () => lineUp({ profiles: crew.profiles, onDone: () => { if (mode === 'lineup') startRound(); } }));
 }
 /* Each frame of a game: the tracking keeps each child on their player, and
@@ -223,7 +224,7 @@ function crewTick(dt){
 
 /* The first moments of a round: a card saying what to do, then 3, 2, 1 (the game waits, the hands already work) */
 const INTRO_CARD = 0.9, INTRO = INTRO_CARD + 3;
-let introLeft = 0, introN = 0;
+let introLeft = 0, introN = 0, veilIntro = false;   /* (veilIntro: the card and the countdown are on the launch cover, not drawn over the game) */
 /* The move card: a game says which move to show (inst.card(), or null for none) and the shell draws it, the same way
    for every game: it slides in when the move changes and out when there is none. */
 const moveCard = { pose: null, age: 0, out: -1 };
@@ -240,7 +241,8 @@ function drawMoveCard(c, W, H, dt){
 function startRound(){
   joined = new Set();
   hud.quiet = false;
-  introLeft = INTRO; introN = 0; moveCard.pose = null; hud.introText = null; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
+  veilIntro = !!launch.el && launch.el.classList.contains('hascard');
+  introLeft = veilIntro ? 3 : INTRO; introN = 0; moveCard.pose = null; hud.introText = null; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
   inst = game.create(players);
   /* A game where squatting is a move keeps players who crouch or sit. */
   pose.keepSitters = !!game.keepSitters;
@@ -370,7 +372,7 @@ const scoreSeen = {}, scoreBumpAt = {};
 
 function drawHUD(){
   if (mode !== 'play' || !inst) return;
-  if (introLeft > 0 && !paused && !lost){ drawIntro(); return; }
+  if (introLeft > 0 && !paused && !lost){ if (!veilIntro) drawIntro(); return; }
   const hud = inst.hud();
   c.textBaseline = 'top';
   /* The game's own corner, top left, on the grid (grid.js): the scores in the first row, each in its player's colour, side by
@@ -446,8 +448,8 @@ function tick(now){
     crewTick(dt);
     if (introLeft > 0){
       introLeft -= dt;
-      const n = Math.ceil(Math.max(0, introLeft)); if (n !== introN && n >= 1 && n <= 3){ introN = n; sfx.tick?.(); }
-      if (introLeft <= 0) sfx.select?.();
+      const n = Math.ceil(Math.max(0, introLeft)); if (n !== introN && n >= 1 && n <= 3){ introN = n; sfx.tick?.(); if (veilIntro) launch.count(n); }
+      if (introLeft <= 0){ sfx.select?.(); if (veilIntro){ veilIntro = false; launch.release(); } }
     } else {
     inst.step(dt, W, H);
     roundLeft -= dt; played += dt;

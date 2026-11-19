@@ -29,6 +29,19 @@ export const launch = {
     Object.assign(el.style, { left: 0, top: 0, width: '100vw', height: '100vh' });
   },
 
+  /* The card that says what to do, on the cover while the camera starts: the game's name, a line about it, and three dots
+     that turn into 3, 2, 1 when everything's ready (count). The game starts when the cover goes. */
+  card({ title = '', blurb = '' } = {}){
+    const el = this.el; if (!el || el.querySelector('.launchcard')) return;
+    const esc = (s) => String(s).replace(/[&<>]/g, '');
+    el.classList.add('hascard');
+    el.insertAdjacentHTML('beforeend', `<div class="launchcard"><h2>${esc(title)}</h2><p>${esc(blurb)}</p><div class="launchcount"><span class="ld"><i></i><i></i><i></i></span></div></div>`);
+  },
+  count(n){
+    const box = this.el && this.el.querySelector('.launchcount'); if (!box) return;
+    box.innerHTML = n >= 1 ? `<b>${n}</b>` : '';
+  },
+
   release(now = false){
     const el = this.el; if (!el) return;
     this.el = null;
