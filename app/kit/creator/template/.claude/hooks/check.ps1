@@ -39,7 +39,12 @@ else {
       $problems.Add('game.js uses ' + $w + ', which reaches for ' + $f[1] + '. Games can''t - take it out.')
     }
   }
-  if ($js -notmatch 'Orlis\.run\(') { $problems.Add('game.js must end with Orlis.run({ ... }).') }
+  # the game is a description: Orlis.play( ...JSON... ) with nothing but comments before it
+  $pm = [regex]::Match($js, '(?s)^\s*(?:(?:/\*.*?\*/|//[^\n]*)\s*)*Orlis\.play\((.*)\)\s*;?\s*$')
+  if (-not $pm.Success) { $problems.Add('game.js must be Orlis.play({ ... }) - a description of the game made of the ready-made words in the skill - with nothing but comments before it.') }
+  else {
+    try { $null = $pm.Groups[1].Value | ConvertFrom-Json } catch { $problems.Add('The game inside Orlis.play( ... ) must be valid JSON: names in "double quotes", no comments, no trailing commas, no code.') }
+  }
   if ($js -match '(?m)^\s*(import|export)\s') { $problems.Add('game.js is one plain script: no import or export - everything comes from Orlis.') }
 }
 

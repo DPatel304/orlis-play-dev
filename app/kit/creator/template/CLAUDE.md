@@ -10,8 +10,9 @@ The idea: {{idea}}
 
 ## The two files you work on
 
-- **`game.js`** - the game. Plain JavaScript in one file, no imports: everything
-  comes from the `Orlis` object. It ends with `Orlis.run({ ... })`.
+- **`game.js`** - the game. It is **a description, not a program**: one call, `Orlis.play({ ... })`, holding plain JSON built
+  from Orlis Play's ready-made words (the scene, the pieces, how things move, what happens when a hand touches them). No code,
+  no drawing - the **orlis-game** skill lists every word.
 - **`orlis.json`** - what the Store shows: name, a one-line `blurb`, a longer
   `about`, `players`, `uses` (`"hands"` or `"body"`), `ages`, `tags`, `howto`
   (the moves), `icon` (two colours and a simple white SVG picture), and
@@ -24,29 +25,21 @@ the game itself.
 
 ## How a game works
 
-Read the **orlis-game** skill for the full details (the players' body points,
-the round, the score, sounds). In short:
+Read the **orlis-game** skill first: it has every word you can use. In short:
 
 ```js
-Orlis.run({
-  secs: 90,                       // seconds in a round
-  create(n){                      // a new round, for up to n players
-    return {
-      step(dt, W, H){ },          // move things on by dt seconds
-      draw(c, W, H){ },           // draw everything on canvas context c (W x H pixels)
-      hud(){ return { score }; }, // score: an array, one number per player
-      value(){ return best; },    // the best score, for the results
-      over: false                 // true ends the round early
-    };
-  }
+Orlis.play({
+  "secs": 90, "scene": "meadow", "hint": "\u2B50 Catch the stars!", "card": "reach", "goal": { "score": 40 },
+  "things": [
+    { "piece": "star", "size": 0.085, "appears": { "every": 1.3, "from": "top" }, "moves": "fall",
+      "rules": [ { "when": "touched", "then": ["sparkle", "score", "vanish"] } ] }
+  ]
 });
 ```
 
-Players are `Orlis.pose.players` (4 places; for now only the first two
-fill - Orlis Play is played two at a time). Each has `present`, `hands.left`
-and `hands.right` (`x`, `y` from 0 to 1 across and down the screen, plus
-`speed`), `centre`, and `lm` (33 body points). Sounds: `Orlis.sfx.pop()`,
-`Orlis.sfx.gold()` and others in the skill - only those.
+Strict JSON inside the brackets: names in "double quotes", no comments, no trailing commas, no functions. Orlis Play checks
+every word and says what's wrong. If an idea needs a word that isn't there (a new movement, a new rule, a piece that isn't in
+the library), say so plainly to the grown-up - it can be asked for - and offer the closest game that fits the words.
 
 ## The rules (Orlis Play checks every one)
 
@@ -68,33 +61,25 @@ and `hands.right` (`x`, `y` from 0 to 1 across and down the screen, plus
   score. A child joining, leaving, or the camera losing them for a moment
   partway mustn't break anything - and nobody scores while they're away.
 - **First person.** The players are their hands: a glowing mitt in their
-  colour on each hand (`Orlis.assets.draw(c, 'hand', ...)`). Don't draw the players - no
+  colour on each hand (the engine draws them). Don't draw the players - no
   bodies, stick figures or skeletons. The screen is what they're looking at.
 - **Nothing to lose.** No lives, no game over, nothing that punishes: only
   things to chase, catch, build or make. A two-year-old should get somewhere
   without being told anything - big targets, generous reach, and a little
   help when they're nearly there.
-- **Sealed off.** The game runs in a sandbox with no internet. Never use
-  `fetch`, `XMLHttpRequest`, `WebSocket`, `import()`, `eval`, `new Function`,
-  `localStorage`, `indexedDB`, `document.cookie`, `window.parent`,
-  `window.top`, `window.open`, `navigator`, or workers. No images or files
-  from anywhere.
+- **Sealed off.** The game runs in a sandbox with no internet, and it is only a description - there is no code in it to reach
+  anything. No images or files from anywhere.
 - **The Orlis look - a calm painted world.** The asset library already is it (flat colour, one soft shadow tone, painted
-  skies, far hills fading out): use its scenes and pieces as they are. Lots of room. Words in cream rounded "pill" cards
-  (`Orlis.ui.say`).
-- **The shared screen.** Every Orlis game has the same edges, so players learn them once and your game never fights Orlis
-  Play for space: the clock top centre, the scores top left, a card showing the move card bottom left, a goal bar and
-  the hint words under the clock, one badge bottom right. Use `Orlis.ui` for the words and the goal bar, return the score from
-  `hud()`, and keep anything a player has to touch out of those areas (`Orlis.ui.zones(W, H)`, `Orlis.ui.under(W, H, x, y)`).
-  Hint words are **a picture and a few words** - `\u{1F388} Pop the balloons!` - because many players can't read yet. The skill
-  has the whole layout.
-- **Smooth.** It runs on a family laptop: keep it light (no huge loops every
-  frame).
+  skies, far hills fading out): use its scenes and pieces as they are. Lots of room. Words in cream rounded "pill" cards.
+- **The shared screen.** Every Orlis game has the same edges (the clock top centre, the scores top left, the move card bottom
+  left, a goal bar and the hint words under the clock) and the engine fills them in: say them with `"hint"`, `"card"` and
+  `"goal"`. Hint words are **a picture and a few words** - `\u{1F388} Pop the balloons!` - because many players can't read
+  yet. The skill has the whole layout.
+- **Smooth.** It runs on a family laptop: keep it light (not hundreds of things at once).
 
-- **Pictures come from the asset library, and only from it.** Draw with `Orlis.assets` (backgrounds, animals, food, props, Cubo,
-  effects, a few words): games can't draw shapes, words or pictures of their own - the canvas you're given doesn't allow it
-  (`fillRect`, `arc`, `fillText` and the like), and the checks turn them away. The skill lists every name. If a picture you
-  need isn't there, tell the grown-up (it can be requested) instead of drawing something else.
+- **Pictures come from the asset library, and only from it.** Name a scene and pieces from the library (the skill lists every
+  one); games can't draw shapes, words or pictures of their own, and there's no code to do it with. If a picture you need
+  isn't there, tell the grown-up (it can be requested) instead of drawing something else.
 
 ## After each change
 

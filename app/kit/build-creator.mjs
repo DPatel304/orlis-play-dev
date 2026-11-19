@@ -47,7 +47,12 @@ export async function generate(){
     const rows = assets.list(k);
     return `**${title}:** ` + rows.map(r => r.id + (r.poses ? ` (poses: ${r.poses.join(', ')}; faces: ${r.faces.join(', ')})` : '')).join(', ');
   }).join('\n\n');
-  for (const p of Object.keys(files)) if (p.endsWith('SKILL.md')) files[p] = files[p].replace('{{ASSETS}}', () => catalogue);
+  /* ...and the vocabulary of games (games/play/), with the three example games, so the skill can never disagree with the engine */
+  const V = await import('../src/games/play/vocabulary.js'), EX = await import('../src/games/play/examples.js');
+  const list = (o) => Object.entries(o).map(([k, v]) => `- \`${k}\` - ${v.doc}`).join('\n');
+  const vocab = `**The game** (the top of the description):\n\n${Object.entries(V.GAME_KEYS).map(([k, v]) => `- \`${k}\` - ${v}`).join('\n')}\n\n**A thing** (each one in \`things\`):\n\n${Object.entries(V.THING_KEYS).map(([k, v]) => `- \`${k}\` - ${v}`).join('\n')}\n\n**Movements** (\`"moves"\`):\n\n${list(V.MOVES)}\n\n**Triggers** (a rule's \`"when"\`):\n\n${list(V.TRIGGERS)}\n\n**Results** (a rule's \`"then"\` list - several, in order):\n\n${list(V.RESULTS)}\n\n**Move cards** (\`"card"\`): ${(await import('../src/games/figure.js')).POSE_NAMES.map(n => '`' + n + '`').join(', ')}.\n\n**Sounds:** ${V.SOUNDS.join(', ')}.\n\n**Places things appear from** (\`"from"\`): ${V.FROM.join(', ')}.\n\n**Colours:** ${Object.keys(V.COLORS).join(', ')} (or \`#rrggbb\`).`;
+  const json = (o) => JSON.stringify(o, null, 2);
+  for (const p of Object.keys(files)) if (p.endsWith('SKILL.md')) files[p] = files[p].replace('{{ASSETS}}', () => catalogue).replace('{{VOCAB}}', () => vocab).replace('{{CATCH}}', () => json(EX.CATCH)).replace('{{POP}}', () => json(EX.POP)).replace('{{KEEPUP}}', () => json(EX.KEEP_UP));
   const ps = [...forbidden, ...drawing].map(([w, why]) => `  @('${w.replace(/'/g, "''")}', '${why.replace(/'/g, "''")}')`).join(",\n");
   const words = JSON.parse(readFileSync(join(kit, 'words.json'), 'utf8'));
   const pw = words.map(w => `'${w}'`).join(', ');

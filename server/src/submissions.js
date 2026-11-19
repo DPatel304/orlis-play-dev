@@ -49,7 +49,9 @@ export const DRAWING = [
   ['.strokeText(', 'words of its own'], ['.drawImage(', 'pictures of its own'],
   ['.putImageData(', 'pictures of its own'], ['.createLinearGradient(', 'drawing of its own'],
   ['.createRadialGradient(', 'drawing of its own'], ['.createConicGradient(', 'drawing of its own'],
-  ['.setTransform(', 'the canvas\'s own drawing']
+  ['.setTransform(', 'the canvas\'s own drawing'], ['Orlis.run(', 'game code of its own'],
+  ['=>', 'game code of its own'], ['function', 'game code of its own'],
+  ['class ', 'game code of its own']
 ];
 const OWN = '\nOrlis.manifest=';
 const UNSAFE_PICTURE = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*image/i;
@@ -78,7 +80,8 @@ export function checkGame(bytes){
     const seen = new Set();
     for (const [what, why] of FORBIDDEN) if (js.includes(what) && !seen.has(why)){ seen.add(why); problems.push(`it reaches for ${why} (${what.replace(/\($/, '')})`); }
     const own = js.indexOf(OWN) >= 0 ? js.slice(js.indexOf(OWN)) : '';
-    for (const [what, why] of DRAWING) if (own.includes(what) && !seen.has(why)){ seen.add(why); problems.push(`it has ${why} (${what.replace(/\($/, '')}) - games draw with the Orlis asset library`); }
+    if (own && !own.includes('Orlis.play(')) problems.push('it has no Orlis.play( ... ) - a game made in Create is a description of the game');
+    for (const [what, why] of DRAWING) if (own.includes(what) && !seen.has(why)){ seen.add(why); problems.push(`it has ${why} (${what.replace(/\($/, '').trim()}) - games are described with Orlis.play and draw with the Orlis asset library`); }
   }
   /* words no game for children has - in its code or its Store text */
   const said = badWords([code ? code.toString('utf8') : '', storeText(parts)].join('\n'));

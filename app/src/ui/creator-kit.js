@@ -12,6 +12,8 @@
                              manifest, and the Orlis runtime in front of the
                              game's own code */
 import { RUNTIME, FORBIDDEN, DRAWING, WORDS, TEMPLATE } from './creator-kit.gen.js';
+import { parseGame, validate } from '../games/play/validate.js';
+import { playEnv } from '../games/play/env.js';
 import { badWords } from '../../kit/creator/words.js';
 import { writeOrlis } from './orlis-file.js';
 import { KIT } from '../kit.js';
@@ -92,8 +94,11 @@ export function check({ game, manifest }){
     if (game.length > 1000000) problems.push('game.js is very big - keep it under a megabyte.');
     const seen = new Set();
     for (const [w, why] of FORBIDDEN) if (game.includes(w) && !seen.has(why)){ seen.add(why); problems.push(`game.js uses ${w.replace(/\($/, '')}, which reaches for ${why}. Games can't - take it out.`); }
-    for (const [w, why] of DRAWING) if (game.includes(w) && !seen.has(why)){ seen.add(why); problems.push(`game.js uses ${w.replace(/\($/, '')}, which is ${why}. Games can't draw shapes, words or pictures of their own - draw with Orlis.assets (the skill's Pictures section lists every piece), and ask for a picture that isn't there.`); }
-    if (!/Orlis\.run\(/.test(game)) problems.push('game.js must end with Orlis.run({ ... }).');
+    for (const [w, why] of DRAWING) if (game.includes(w) && !seen.has(why)){ seen.add(why); problems.push(`game.js uses ${w.replace(/\($/, '')}, which is ${why}. Games can't draw or run code of their own: describe the game with Orlis.play, using the ready-made pieces and behaviours the skill lists (and ask for one that isn't there).`); }
+    /* the game is a description, in the ready-made words (games/play/): parsed, and every word checked */
+    const parsed = parseGame(game);
+    if (parsed.error) problems.push(parsed.error);
+    else for (const w of validate(parsed.spec, playEnv())) problems.push('game.js: ' + w);
     if (/^\s*(import|export)\s/m.test(game)) problems.push('game.js is one plain script: no import or export - everything comes from Orlis.');
   }
   let m = manifest;

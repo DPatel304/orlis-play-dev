@@ -82,7 +82,8 @@ test('a new game can start from another: its code and its look, a new id and ver
   const { newGame: make, unpack, guardrails } = await import('../src/ui/creator-kit.js');
   const first = make({ name: 'Bird Hoops', idea: 'Flap to fly' });
   const m0 = JSON.parse(first.files['orlis.json']);
-  const game = 'const x = 1;\nOrlis.run({ create(){ return { step(){}, draw(){}, hud(){ return { score: [0] }; }, value(){ return 0; } }; } });\n';
+  const { POP } = await import('../src/games/play/examples.js');
+  const game = '/* balloons */\nOrlis.play(' + JSON.stringify(POP) + ');\n';
   const { bytes } = await pack({ game, manifest: { ...m0, tags: ['Flying'], icon: { cols: ['#111111', '#222222'], glyph: '<circle cx="50" cy="50" r="20" fill="#fff"/>' }, by: 'Max', version: '0.4' } });
   /* (as the Store hands it back: the runtime in front, then the game) */
   const { parts, manifest } = checkGame(Buffer.from(bytes));
@@ -126,17 +127,17 @@ test('colours and hex numbers are not words (#ff9a55 is no a55), but a word spel
   }
 });
 
-test('the creator kit teaches the shared screen: the helpers are in the runtime, the skill names every move card, the template uses them', async () => {
+test('the creator kit teaches the shared screen: the helpers are in the runtime, the skill names every move card and the words for the hint, goal and card, the starter uses them', async () => {
   const { RUNTIME, TEMPLATE } = await import('../src/ui/creator-kit.gen.js');
   const { POSE_NAMES } = await import('../src/games/figure.js');
   assert.match(RUNTIME, /zones/, 'Orlis.ui.zones is in the runtime');
   assert.match(RUNTIME, /under/, 'Orlis.ui.under is in the runtime');
   const skill = TEMPLATE['.claude/skills/orlis-game/SKILL.md'], claude = TEMPLATE['CLAUDE.md'], game = TEMPLATE['game.js'];
   for (const n of POSE_NAMES) assert.ok(skill.includes('`' + n + '`'), `the skill lists the ${n} card`);
-  for (const w of ['Orlis.ui.say', 'Orlis.ui.goal', 'Orlis.ui.badge', 'Orlis.ui.zones', 'Orlis.ui.under', 'panel', 'card()']) assert.ok(skill.includes(w), `the skill explains ${w}`);
+  for (const w of ['"hint"', '"card"', '"goal"', 'hint words', 'move card', 'goal bar']) assert.ok(skill.includes(w), `the skill explains ${w}`);
   assert.match(claude, /shared screen/i, 'CLAUDE.md points at the shared screen');
-  assert.match(game, /Orlis\.ui\.say/, 'the starter game shows a hint the shared way');
-  assert.match(game, /card\(\)/, 'and asks for a move card');
+  assert.match(game, /"hint"/, 'the starter game shows a hint the shared way');
+  assert.match(game, /"card"/, 'and asks for a move card');
 });
 
 test("games draw only with the asset library: the check turns away drawing of its own, the server's list is the same, and the starter passes", () => {
@@ -149,6 +150,6 @@ test("games draw only with the asset library: the check turns away drawing of it
   const base = { game: g.files['game.js'], manifest: g.files['orlis.json'] };
   assert.deepEqual(check(base), [], 'the starter draws with the library and passes');
   for (const own of ['c.fillRect(0, 0, 9, 9);', 'c.arc(1, 1, 5, 0, 7);', 'c.fillText("Hi", 1, 1);', 'const k = new OffscreenCanvas(9, 9);', 'x.getContext("2d");', 'c.drawImage(a, 0, 0);', 'c.beginPath();', 'c.createRadialGradient(0, 0, 1, 0, 0, 2);'])
-    assert.match(check({ ...base, game: base.game + '\n' + own }).join(' '), /Orlis\.assets/, own);
+    assert.match(check({ ...base, game: base.game + '\n' + own }).join(' '), /Orlis\.play/, own);
   assert.ok(!DRAWING.some(([w]) => base.game.includes(w)), 'nothing drawn by hand in the starter');
 });

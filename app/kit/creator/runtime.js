@@ -10,7 +10,7 @@
      Orlis.assets    the picture library - the only way a game draws: Orlis.assets.draw(c, 'giraffe', x, y, size), .scene(c, W, H, 'meadow'), .text(c, 'Go!', x, y, size)
      Orlis.ui        the shared screen: Orlis.ui.say, goal, badge, zones, under (see the skill)
      Orlis.L, Orlis.BONES, Orlis.MAX_PLAYERS, Orlis.PLAYER_COLORS
-     Orlis.run(game) start it (in the sandbox, as every downloaded game is)
+     Orlis.play(game) start it: a game is a description made of ready-made words (see the skill), in the sandbox like every downloaded game
 
    It also checks the words the game shows (below). */
 import { run } from '../runtime/main.js';
@@ -19,6 +19,9 @@ import { sfx, music, ambience } from '../runtime/sound.js';
 import { clean } from './words.js';
 import { sayBubble, goalBar, badge, hudZones, underHud, hud } from '../../src/games/hud.js';
 import { assets, lock, unwrap } from '../../src/games/assets/index.js';
+import { makePlay } from '../../src/games/play/engine.js';
+import { validate } from '../../src/games/play/validate.js';
+import { playEnv } from '../../src/games/play/env.js';
 
 /* Before the game's own code runs: every line of text it draws on screen
    goes through the words check first (a word that isn't for children comes
@@ -46,6 +49,13 @@ const Orlis = {
   /* The shared screen, the same in every Orlis game (UI-STANDARD): hint words, a goal bar with three stars, one badge, and
      where the shell's pieces are, so nothing the players have to touch goes under them. */
   ui: { say: (c, ...a) => sayBubble(unwrap(c), ...a), goal: (c, ...a) => goalBar(unwrap(c), ...a), badge: (c, ...a) => badge(unwrap(c), ...a), zones: hudZones, under: underHud },
+  /* A game made in Create: a description in the vocabulary of games/play/ (what's there, how it moves, what happens when a hand
+     touches it). Wrong words say what's wrong, and what was probably meant, instead of starting. */
+  play(spec){
+    const problems = validate(spec, playEnv());
+    if (problems.length) return Orlis.run({ secs: 30, create(){ throw new Error(problems.join(' ')); } });
+    return Orlis.run(makePlay(spec, { pose, sfx, assets, ui: Orlis.ui, colors: PLAYER_COLORS, max: MAX_PLAYERS }));
+  },
   run(game){
     const m = Orlis.manifest || {};
     /* (its id and name are the ones in orlis.json, whatever the code says) */

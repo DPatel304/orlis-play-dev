@@ -77,7 +77,7 @@ test("a creator's game gets the library: Orlis.assets is in the runtime, and the
   assert.match(skill, /## Pictures: the asset library/);
   for (const a of list) assert.ok(new RegExp('\\b' + a.id + '\\b').test(skill), a.id + ' is in the skill');
   assert.ok(!/\{\{ASSETS\}\}/.test(skill));
-  assert.ok(TEMPLATE['CLAUDE.md'].includes('Orlis.assets'));
+  assert.ok(TEMPLATE['CLAUDE.md'].includes('asset library'));
   assert.ok(TEMPLATE['CLAUDE.md'].split('\n').length < 200);
 });
 

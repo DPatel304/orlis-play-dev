@@ -90,5 +90,21 @@
  [
   ".setTransform(",
   "the canvas's own drawing"
+ ],
+ [
+  "Orlis.run(",
+  "game code of its own"
+ ],
+ [
+  "=>",
+  "game code of its own"
+ ],
+ [
+  "function",
+  "game code of its own"
+ ],
+ [
+  "class ",
+  "game code of its own"
  ]
 ]
