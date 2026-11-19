@@ -88,6 +88,10 @@ test("the checks: a proper game for the sandbox, reaching for nothing it shouldn
     assert.match((await no(game('a3', { code: 'localStorage.x = 1' }))).message, /storage/);
     assert.match((await no(game('a4', { code: 'window.parent.postMessage(1)' }))).message, /other windows/);
     assert.match((await no(game('a5', { code: 'eval("1")' }))).message, /made up as it runs/);
+    /* a game made in Create draws only with the asset library: its own part (after the runtime's) can't draw shapes, words or pictures */
+    const made = (own) => 'var runtime = 1; /* the library, drawing with c.arc( and c.fillRect( itself */\nOrlis.manifest={};\n' + own;
+    assert.match((await no(game('a8', { code: made('Orlis.run({ create(){ return { draw(c){ c.fillRect(0, 0, 9, 9); } }; } });') }))).message, /asset library/);
+    assert.match((await no(game('a9', { code: made('x.getContext("2d")') }))).message, /canvas of its own/);
     assert.match((await no(game('a6', { blurb: '' }))).message, /what the game is/);
     assert.match((await no(game('a7', { icon: { cols: ['#000'], glyph: '<circle onload="x()"/>' } }))).message, /more than shapes/);
     /* a cover: a picture in shapes - no words, links, images or styles; not too big */

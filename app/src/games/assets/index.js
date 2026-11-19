@@ -3,6 +3,7 @@
 
      Orlis.assets.draw(c, 'giraffe', x, y, size, { flip: true })   a piece, centred on (x, y), `size` pixels tall
      Orlis.assets.scene(c, W, H, 'meadow', { t })                  a whole background, behind everything
+     Orlis.assets.text(c, 'Go!', x, y, size, { color, align })     a few words, in Orlis's lettering (through the words check)
      Orlis.assets.list(kind?)                                      what there is: [{ id, name, kind, tags, aspect, poses, faces }]
      Orlis.assets.has(id)
 
@@ -42,6 +43,31 @@ for (const [id, [name, tags, aspect, draw]] of Object.entries(PROPS)){
 
 export const missing = new Set();
 
+/* ---------- the canvas a creator's game is given ----------
+   A game made in Create never gets the real canvas. It gets a handle that can only move, turn, scale and fade what the library
+   draws (save, restore, translate, rotate, scale, globalAlpha) - anything else says, plainly, to use the library. The library
+   draws on the real canvas inside (unwrap). So a game can't draw a shape, a picture or a letter of its own. */
+const REAL = new WeakMap();
+const ALLOWED = new Set(['save', 'restore', 'translate', 'rotate', 'scale']);
+export function lock(ctx){
+  if (!ctx || REAL.has(ctx)) return ctx;
+  const handle = new Proxy({}, {
+    get(_, k){
+      if (typeof k === 'symbol') return undefined;
+      if (ALLOWED.has(k)) return (...a) => ctx[k](...a.map(Number));
+      if (k === 'globalAlpha') return ctx.globalAlpha;
+      throw new Error(`c.${String(k)} isn't available: games draw with Orlis.assets (scene, draw, text), not their own shapes. See the skill's Pictures section.`);
+    },
+    set(_, k, v){
+      if (k !== 'globalAlpha') throw new Error(`c.${String(k)} can't be set: games draw with Orlis.assets, not their own shapes.`);
+      ctx.globalAlpha = Math.max(0, Math.min(1, Number(v) || 0)); return true;
+    }
+  });
+  REAL.set(handle, ctx);
+  return handle;
+}
+export const unwrap = (c) => REAL.get(c) || c;
+
 /* a name that isn't in the library: a "?" box, so the game still runs */
 function placeholder(c, s){
   c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.roundRect(-s / 2, -s / 2, s, s, s * 0.14); c.fill();
@@ -53,6 +79,7 @@ export const assets = {
   has: (id) => !!ASSETS[id] || !!SCENES[id],
   /* a piece, centred on (x, y), size pixels tall. */
   draw(c, id, x, y, size, o = {}){
+    c = unwrap(c);
     const a = ASSETS[id], s = Math.max(1, Number(size) || 1);
     if (!a) missing.add(String(id).slice(0, 40));
     c.save();
@@ -66,7 +93,18 @@ export const assets = {
   },
   /* a whole background */
   scene(c, W, H, id, o = {}){
+    c = unwrap(c);
     if (!drawScene(c, W, H, id, o)){ missing.add(String(id).slice(0, 40)); c.fillStyle = '#cfe9f3'; c.fillRect(0, 0, W, H); }
+  },
+  /* a few words: o.color, o.align ('center' by default), o.outline (a colour behind them, for reading over anything). Short, and always
+     through the words check (the runtime guards fillText). */
+  text(c, str, x, y, size, o = {}){
+    c = unwrap(c);
+    const t = String(str == null ? '' : str).slice(0, 40), px = Math.max(8, Math.min(400, Number(size) || 24));
+    c.save(); c.font = `800 ${Math.round(px)}px "Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif`;
+    c.textAlign = o.align === 'left' || o.align === 'right' ? o.align : 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+    if (o.outline){ c.lineWidth = px * 0.2; c.strokeStyle = o.outline; c.strokeText(t, x, y); }
+    c.fillStyle = o.color || '#fff'; c.fillText(t, x, y); c.restore();
   },
   list(kind){
     const rows = Object.values(ASSETS).map(a => ({ id: a.id, name: a.name, kind: a.kind, tags: a.tags, aspect: a.aspect, poses: a.poses, faces: a.faces }));

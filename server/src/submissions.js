@@ -34,6 +34,24 @@ export const FORBIDDEN = [
   ['FontFace', 'other letters'], ['createElement', 'parts of a web page'], ['innerHTML', 'parts of a web page'], ['iframe', 'other windows'],
   ['contentWindow', 'other windows'], ['fromCharCode', 'hidden words'], ['fromCodePoint', 'hidden words'], ['atob(', 'hidden words']
 ];
+/* A game made in Create draws only with the Orlis asset library (kit/creator/drawing.json - the same list); its own code, after
+   the runtime's, never reaches for a canvas or draws a shape, a word or a picture itself. (Only the game's own part is looked
+   at: the runtime in front of it is the library and does the drawing.) */
+export const DRAWING = [
+  ['.getContext', 'a canvas of its own'], ['OffscreenCanvas', 'a canvas of its own'],
+  ['CanvasRenderingContext2D', 'the canvas\'s own drawing'], ['Path2D', 'drawing of its own'],
+  ['.fillRect(', 'drawing of its own'], ['.strokeRect(', 'drawing of its own'],
+  ['.clearRect(', 'drawing of its own'], ['.beginPath(', 'drawing of its own'],
+  ['.arc(', 'drawing of its own'], ['.ellipse(', 'drawing of its own'],
+  ['.lineTo(', 'drawing of its own'], ['.moveTo(', 'drawing of its own'],
+  ['.bezierCurveTo(', 'drawing of its own'], ['.quadraticCurveTo(', 'drawing of its own'],
+  ['.roundRect(', 'drawing of its own'], ['.fillText(', 'words of its own'],
+  ['.strokeText(', 'words of its own'], ['.drawImage(', 'pictures of its own'],
+  ['.putImageData(', 'pictures of its own'], ['.createLinearGradient(', 'drawing of its own'],
+  ['.createRadialGradient(', 'drawing of its own'], ['.createConicGradient(', 'drawing of its own'],
+  ['.setTransform(', 'the canvas\'s own drawing']
+];
+const OWN = '\nOrlis.manifest=';
 const UNSAFE_PICTURE = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*image/i;
 
 /* Everything a game's file says about it in the Store. */
@@ -59,6 +77,8 @@ export function checkGame(bytes){
     const js = code.toString('utf8');
     const seen = new Set();
     for (const [what, why] of FORBIDDEN) if (js.includes(what) && !seen.has(why)){ seen.add(why); problems.push(`it reaches for ${why} (${what.replace(/\($/, '')})`); }
+    const own = js.indexOf(OWN) >= 0 ? js.slice(js.indexOf(OWN)) : '';
+    for (const [what, why] of DRAWING) if (own.includes(what) && !seen.has(why)){ seen.add(why); problems.push(`it has ${why} (${what.replace(/\($/, '')}) - games draw with the Orlis asset library`); }
   }
   /* words no game for children has - in its code or its Store text */
   const said = badWords([code ? code.toString('utf8') : '', storeText(parts)].join('\n'));

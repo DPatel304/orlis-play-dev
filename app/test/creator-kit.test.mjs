@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { generate, OUT } from '../kit/build-creator.mjs';
-import { newGame, check, pack, idOf, FORBIDDEN } from '../src/ui/creator-kit.js';
-import { FORBIDDEN as SERVER_FORBIDDEN, checkGame } from '../../server/src/submissions.js';
+import { newGame, check, pack, idOf, FORBIDDEN, DRAWING } from '../src/ui/creator-kit.js';
+import { FORBIDDEN as SERVER_FORBIDDEN, DRAWING as SERVER_DRAWING, checkGame } from '../../server/src/submissions.js';
 
 test('the kit in the app is built from kit/creator as it is now', async () => {
   assert.equal(readFileSync(OUT, 'utf8').replace(/\r\n/g, '\n'), await generate(), 'run: node kit/build-creator.mjs');
@@ -137,4 +137,18 @@ test('the creator kit teaches the shared screen: the helpers are in the runtime,
   assert.match(claude, /shared screen/i, 'CLAUDE.md points at the shared screen');
   assert.match(game, /Orlis\.ui\.say/, 'the starter game shows a hint the shared way');
   assert.match(game, /card\(\)/, 'and asks for a move card');
+});
+
+test("games draw only with the asset library: the check turns away drawing of its own, the server's list is the same, and the starter passes", () => {
+  assert.deepEqual(DRAWING, SERVER_DRAWING);
+  for (const h of ['check.ps1', 'guard.ps1']){
+    const ps = newGame({ name: 'x y' }).files['.claude/hooks/' + h];
+    for (const [w] of DRAWING) assert.ok(ps.includes(`@('${w.replace(/'/g, "''")}'`), `${h} checks ${w} too`);
+  }
+  const g = newGame({ name: 'Star Hop', idea: 'Hop on stars' });
+  const base = { game: g.files['game.js'], manifest: g.files['orlis.json'] };
+  assert.deepEqual(check(base), [], 'the starter draws with the library and passes');
+  for (const own of ['c.fillRect(0, 0, 9, 9);', 'c.arc(1, 1, 5, 0, 7);', 'c.fillText("Hi", 1, 1);', 'const k = new OffscreenCanvas(9, 9);', 'x.getContext("2d");', 'c.drawImage(a, 0, 0);', 'c.beginPath();', 'c.createRadialGradient(0, 0, 1, 0, 0, 2);'])
+    assert.match(check({ ...base, game: base.game + '\n' + own }).join(' '), /Orlis\.assets/, own);
+  assert.ok(!DRAWING.some(([w]) => base.game.includes(w)), 'nothing drawn by hand in the starter');
 });

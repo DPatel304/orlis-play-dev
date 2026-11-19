@@ -7,7 +7,7 @@
      Orlis.pose      the players, from the camera: body points only
      Orlis.sfx       Orlis Play's sounds: Orlis.sfx.pop(), Orlis.sfx.gold()...
      Orlis.music     its music: Orlis.music.intensity(0.8)...
-     Orlis.assets    the picture library: Orlis.assets.draw(c, 'giraffe', x, y, size), Orlis.assets.scene(c, W, H, 'meadow')
+     Orlis.assets    the picture library - the only way a game draws: Orlis.assets.draw(c, 'giraffe', x, y, size), .scene(c, W, H, 'meadow'), .text(c, 'Go!', x, y, size)
      Orlis.ui        the shared screen: Orlis.ui.say, goal, badge, zones, under (see the skill)
      Orlis.L, Orlis.BONES, Orlis.MAX_PLAYERS, Orlis.PLAYER_COLORS
      Orlis.run(game) start it (in the sandbox, as every downloaded game is)
@@ -18,7 +18,7 @@ import { pose, L, BONES, MAX_PLAYERS, PLAYER_COLORS } from '../runtime/pose.js';
 import { sfx, music, ambience } from '../runtime/sound.js';
 import { clean } from './words.js';
 import { sayBubble, goalBar, badge, hudZones, underHud, hud } from '../../src/games/hud.js';
-import { assets } from '../../src/games/assets/index.js';
+import { assets, lock, unwrap } from '../../src/games/assets/index.js';
 
 /* Before the game's own code runs: every line of text it draws on screen
    goes through the words check first (a word that isn't for children comes
@@ -45,11 +45,14 @@ const Orlis = {
   assets,
   /* The shared screen, the same in every Orlis game (UI-STANDARD): hint words, a goal bar with three stars, one badge, and
      where the shell's pieces are, so nothing the players have to touch goes under them. */
-  ui: { say: sayBubble, goal: goalBar, badge, zones: hudZones, under: underHud },
+  ui: { say: (c, ...a) => sayBubble(unwrap(c), ...a), goal: (c, ...a) => goalBar(unwrap(c), ...a), badge: (c, ...a) => badge(unwrap(c), ...a), zones: hudZones, under: underHud },
   run(game){
     const m = Orlis.manifest || {};
     /* (its id and name are the ones in orlis.json, whatever the code says) */
-    run({ ...game, id: m.id, name: m.name || game.name, accent: game.accent || (m.icon && m.icon.cols && m.icon.cols[0]) });
+    /* (a game's round draws on a locked handle, never the real canvas: it can only place what the asset library draws) */
+    const create = game.create;
+    run({ ...game, create(n){ const round = create.call(game, n), draw = round && round.draw; if (typeof draw === 'function') round.draw = (c, W, H) => draw.call(round, lock(c), W, H); return round; },
+      id: m.id, name: m.name || game.name, accent: game.accent || (m.icon && m.icon.cols && m.icon.cols[0]) });
   }
 };
 globalThis.Orlis = Orlis;

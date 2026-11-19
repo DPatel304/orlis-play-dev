@@ -11,12 +11,12 @@
    pack({ game, manifest })  the game as a .orlis file: orlis.json as the
                              manifest, and the Orlis runtime in front of the
                              game's own code */
-import { RUNTIME, FORBIDDEN, WORDS, TEMPLATE } from './creator-kit.gen.js';
+import { RUNTIME, FORBIDDEN, DRAWING, WORDS, TEMPLATE } from './creator-kit.gen.js';
 import { badWords } from '../../kit/creator/words.js';
 import { writeOrlis } from './orlis-file.js';
 import { KIT } from '../kit.js';
 
-export { FORBIDDEN, WORDS };
+export { FORBIDDEN, DRAWING, WORDS };
 const ID = /^[a-z0-9][a-z0-9-]{1,40}$/, VER = /^\d+\.\d+(\.\d+)?$/;
 const UNSAFE_PICTURE = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*image/i;
 /* a cover: an SVG picture in shapes - no words, links or images (the same rule as the server's) */
@@ -92,6 +92,7 @@ export function check({ game, manifest }){
     if (game.length > 1000000) problems.push('game.js is very big - keep it under a megabyte.');
     const seen = new Set();
     for (const [w, why] of FORBIDDEN) if (game.includes(w) && !seen.has(why)){ seen.add(why); problems.push(`game.js uses ${w.replace(/\($/, '')}, which reaches for ${why}. Games can't - take it out.`); }
+    for (const [w, why] of DRAWING) if (game.includes(w) && !seen.has(why)){ seen.add(why); problems.push(`game.js uses ${w.replace(/\($/, '')}, which is ${why}. Games can't draw shapes, words or pictures of their own - draw with Orlis.assets (the skill's Pictures section lists every piece), and ask for a picture that isn't there.`); }
     if (!/Orlis\.run\(/.test(game)) problems.push('game.js must end with Orlis.run({ ... }).');
     if (/^\s*(import|export)\s/m.test(game)) problems.push('game.js is one plain script: no import or export - everything comes from Orlis.');
   }

@@ -91,6 +91,20 @@ export const PROPS = {
     c.save(); c.clip(); c.fillStyle = shade; c.beginPath(); c.arc(s * 0.5, s * 0.3, s * 0.6, 0, 7); c.fill(); c.restore(); shape(); outline(c, s, 0.04);
   }],
   puddle: ['Puddle', 'nature', 2.4, (c, s) => { c.fillStyle = 'rgba(122,190,235,.85)'; c.beginPath(); c.ellipse(0, 0, s * 1.2, s * 0.5, 0, 0, 7); c.fill(); c.fillStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.ellipse(-s * 0.3, -s * 0.12, s * 0.35, s * 0.1, 0, 0, 7); c.fill(); }],
+  /* a player's hand: the glowing mitt every Orlis game shows (o.color: the player's colour) */
+  hand: ['Hand', 'player hand', 1, (c, s, o) => {
+    const r = s * 0.25, col = o.color || '#3da9ff';
+    const g = c.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 2.4); g.addColorStop(0, col + 'aa'); g.addColorStop(1, col + '00');
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 2.4, 0, 7); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.lineWidth = r * 0.28; c.strokeStyle = col; c.stroke();
+    c.fillStyle = col; c.beginPath(); for (let i = 0; i < 8; i++){ const a = i * Math.PI / 4, d = i % 2 ? r * 0.22 : r * 0.55; c.lineTo(Math.cos(a) * d, Math.sin(a) * d); } c.closePath(); c.fill();
+  }],
+  /* a soft glowing dot (o.color), for trails and little lights */
+  dot: ['Glow dot', 'effect light', 1, (c, s, o) => {
+    const col = o.color || '#ffe680', g = c.createRadialGradient(0, 0, 0, 0, 0, s / 2); g.addColorStop(0, col); g.addColorStop(1, col + '00');
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, s / 2, 0, 7); c.fill();
+  }],
+  ring: ['Ring', 'effect', 1, (c, s, o) => { c.strokeStyle = o.color || '#fff'; c.lineWidth = s * 0.08; c.beginPath(); c.arc(0, 0, s * 0.44, 0, 7); c.stroke(); }],
   /* the raven from Save the Harvest */
   raven: ['Raven', 'animal fly', 1.8, (c, s, o) => {
     const k = s / 90, flap = Math.sin((o.t || 0) * 8) * 0.5 + 0.5;

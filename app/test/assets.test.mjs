@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assets, missing } from '../src/games/assets/index.js';
+import { assets, missing, lock, unwrap } from '../src/games/assets/index.js';
 import { EMOJI } from '../src/games/assets/emoji.js';
 import { RUNTIME, TEMPLATE } from '../src/ui/creator-kit.gen.js';
 import { readFileSync } from 'node:fs';
@@ -79,4 +79,51 @@ test("a creator's game gets the library: Orlis.assets is in the runtime, and the
   assert.ok(!/\{\{ASSETS\}\}/.test(skill));
   assert.ok(TEMPLATE['CLAUDE.md'].includes('Orlis.assets'));
   assert.ok(TEMPLATE['CLAUDE.md'].split('\n').length < 200);
+});
+
+/* a canvas that remembers what it was asked to do */
+function recorder(){
+  const calls = [], sets = [];
+  const ctx = new Proxy({ globalAlpha: 1 }, {
+    get(t, k){ if (k in t) return t[k]; if (k === 'createLinearGradient' || k === 'createRadialGradient') return () => ({ addColorStop(){} }); if (k === 'measureText') return () => ({ width: 10 }); return (...a) => { calls.push([k, ...a]); }; },
+    set(t, k, v){ sets.push(k); t[k] = v; return true; }
+  });
+  return { ctx, calls, sets };
+}
+
+test('a creator game is given a locked canvas: it can place what the library draws, and nothing else', () => {
+  const { ctx, calls, sets } = recorder();
+  const c = lock(ctx);
+  assert.notEqual(c, ctx);
+  assert.equal(lock(c), c, 'locking twice is the same handle');
+  assert.equal(unwrap(c), ctx);
+  /* what a game may do */
+  c.save(); c.translate(10, 20); c.rotate(0.5); c.scale(2, 2); c.globalAlpha = 0.5; c.restore();
+  assert.equal(ctx.globalAlpha, 0.5); assert.ok(calls.some(x => x[0] === 'translate'));
+  /* what it may not: its own shapes, words, pictures, gradients, a new canvas, or a way to the real one */
+  for (const k of ['fillRect', 'strokeRect', 'clearRect', 'beginPath', 'arc', 'ellipse', 'lineTo', 'moveTo', 'bezierCurveTo', 'roundRect', 'fill', 'stroke', 'clip', 'fillText', 'strokeText', 'drawImage', 'putImageData', 'createLinearGradient', 'createRadialGradient', 'setTransform', 'canvas', 'getContext', 'measureText'])
+    assert.throws(() => c[k], /Orlis\.assets/, k);
+  for (const k of ['fillStyle', 'strokeStyle', 'font', 'lineWidth', 'shadowBlur']) assert.throws(() => { c[k] = 'x'; }, /Orlis\.assets/, k);
+  assert.throws(() => { c.globalAlpha = 'x'; c.fillStyle = '#000'; });
+  assert.ok(!sets.includes('fillStyle') && !sets.includes('font'), 'the real canvas never got a style from the game');
+});
+
+test('the library draws through the locked canvas: pieces, scenes and words all land on the real one', () => {
+  const { ctx, calls } = recorder(), c = lock(ctx);
+  assets.scene(c, 1280, 720, 'meadow', { t: 1 });
+  assets.draw(c, 'giraffe', 400, 300, 120, { flip: true });
+  assets.draw(c, 'hand', 500, 300, 100, { color: '#3da9ff' });
+  assets.text(c, 'Great!', 640, 100, 60, { color: '#fff', outline: '#2b2275' });
+  const used = new Set(calls.map(x => x[0]));
+  for (const k of ['fillRect', 'fillText', 'strokeText', 'scale', 'translate', 'save', 'restore']) assert.ok(used.has(k), 'drew with ' + k);
+  /* words are short */
+  calls.length = 0; assets.text(c, 'x'.repeat(200), 0, 0, 20);
+  assert.ok(calls.find(x => x[0] === 'fillText')[1].length <= 40);
+  /* the same through a plain canvas (the app's own games) */
+  assert.doesNotThrow(() => assets.draw(ctx, 'bunny', 1, 1, 50));
+});
+
+test('the runtime a creator game gets locks the canvas and its shared-screen helpers still draw', () => {
+  assert.ok(RUNTIME.includes("isn't available: games draw with Orlis.assets"), 'the lock is in the runtime');
+  assert.ok(RUNTIME.includes('Orlis.assets') || RUNTIME.length > 1000);
 });

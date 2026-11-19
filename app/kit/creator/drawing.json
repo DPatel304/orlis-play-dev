@@ -1,0 +1,94 @@
+[
+ [
+  ".getContext",
+  "a canvas of its own"
+ ],
+ [
+  "OffscreenCanvas",
+  "a canvas of its own"
+ ],
+ [
+  "CanvasRenderingContext2D",
+  "the canvas's own drawing"
+ ],
+ [
+  "Path2D",
+  "drawing of its own"
+ ],
+ [
+  ".fillRect(",
+  "drawing of its own"
+ ],
+ [
+  ".strokeRect(",
+  "drawing of its own"
+ ],
+ [
+  ".clearRect(",
+  "drawing of its own"
+ ],
+ [
+  ".beginPath(",
+  "drawing of its own"
+ ],
+ [
+  ".arc(",
+  "drawing of its own"
+ ],
+ [
+  ".ellipse(",
+  "drawing of its own"
+ ],
+ [
+  ".lineTo(",
+  "drawing of its own"
+ ],
+ [
+  ".moveTo(",
+  "drawing of its own"
+ ],
+ [
+  ".bezierCurveTo(",
+  "drawing of its own"
+ ],
+ [
+  ".quadraticCurveTo(",
+  "drawing of its own"
+ ],
+ [
+  ".roundRect(",
+  "drawing of its own"
+ ],
+ [
+  ".fillText(",
+  "words of its own"
+ ],
+ [
+  ".strokeText(",
+  "words of its own"
+ ],
+ [
+  ".drawImage(",
+  "pictures of its own"
+ ],
+ [
+  ".putImageData(",
+  "pictures of its own"
+ ],
+ [
+  ".createLinearGradient(",
+  "drawing of its own"
+ ],
+ [
+  ".createRadialGradient(",
+  "drawing of its own"
+ ],
+ [
+  ".createConicGradient(",
+  "drawing of its own"
+ ],
+ [
+  ".setTransform(",
+  "the canvas's own drawing"
+ ]
+]

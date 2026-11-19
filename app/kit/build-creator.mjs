@@ -28,6 +28,8 @@ export async function generate(){
   const out = await build({ entryPoints: [join(kit, 'runtime.js')], bundle: true, format: 'iife', target: 'es2020', minify: true, write: false, legalComments: 'none', logLevel: 'warning', plugins: [coded] });
   const runtime = out.outputFiles[0].text.trim();
   const forbidden = JSON.parse(readFileSync(join(kit, 'forbidden.json'), 'utf8'));
+  /* what a game made in Create never needs, because it draws with the asset library (the check, the hooks and the server all stop it) */
+  const drawing = JSON.parse(readFileSync(join(kit, 'drawing.json'), 'utf8'));
   const files = {};
   const walk = (d) => {
     for (const f of readdirSync(d).sort()){
@@ -46,13 +48,14 @@ export async function generate(){
     return `**${title}:** ` + rows.map(r => r.id + (r.poses ? ` (poses: ${r.poses.join(', ')}; faces: ${r.faces.join(', ')})` : '')).join(', ');
   }).join('\n\n');
   for (const p of Object.keys(files)) if (p.endsWith('SKILL.md')) files[p] = files[p].replace('{{ASSETS}}', () => catalogue);
-  const ps = forbidden.map(([w, why]) => `  @('${w.replace(/'/g, "''")}', '${why.replace(/'/g, "''")}')`).join(",\n");
+  const ps = [...forbidden, ...drawing].map(([w, why]) => `  @('${w.replace(/'/g, "''")}', '${why.replace(/'/g, "''")}')`).join(",\n");
   const words = JSON.parse(readFileSync(join(kit, 'words.json'), 'utf8'));
   const pw = words.map(w => `'${w}'`).join(', ');
   for (const [p, t] of Object.entries(files)) if (p.endsWith('.ps1')) files[p] = t.replace('{{FORBIDDEN}}', () => ps).replace('{{WORDS}}', () => pw);
   return `/* Made by kit/build-creator.mjs - don't edit; change kit/creator/ and run it again. */
 export const RUNTIME = ${JSON.stringify(runtime)};
 export const FORBIDDEN = ${JSON.stringify(forbidden)};
+export const DRAWING = ${JSON.stringify(drawing)};
 export const WORDS = ${JSON.stringify(words)};
 export const TEMPLATE = ${JSON.stringify(files, null, 1)};
 `;

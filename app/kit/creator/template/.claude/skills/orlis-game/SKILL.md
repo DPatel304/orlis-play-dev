@@ -180,7 +180,9 @@ something to touch. Don't draw your own score, clock or move cards.
 ## Pictures: the asset library (use it for every picture)
 
 Orlis games don't draw their own art: they ask the **asset library** for it, so every game looks like an Orlis game and
-only pieces that have been looked at can appear. Draw with `Orlis.assets`, not with your own shapes:
+only pieces that have been looked at can appear. This is enforced: the canvas `c` a game is given has no `fillRect`, `arc`,
+`fillText` or the like (they say "use Orlis.assets"), and the checks turn those calls away before a game can be sent.
+Draw with `Orlis.assets`:
 
 ```js
 Orlis.assets.scene(c, W, H, 'meadow', { t });                 // a whole background, first (t: seconds, the clouds drift)
@@ -189,6 +191,7 @@ Orlis.assets.draw(c, 'cubo', x, y, size, { pose: 'jump', face: 'grin', t });   /
 Orlis.assets.draw(c, 'balloon', x, y, size, { color: '#ff5d6c' });   // some take a colour
 Orlis.assets.draw(c, 'bunny', x, y, size, { flip: true, rotate: 0.2, alpha: 0.8, shadow: true });
 Orlis.assets.draw(c, 'sparkle', x, y, size, { t: age / 0.6 });        // effects: t goes 0 to 1 and the piece fades
+Orlis.assets.text(c, 'Great!', x, y, size, { color: '#fff', outline: '#2b2275' });   // a few words (up to 40 letters)
 Orlis.assets.list('animal');   // what there is: [{ id, name, kind, tags, aspect, poses, faces }]
 ```
 
@@ -210,23 +213,8 @@ writing `draw`, read this.
 
 - Don't draw the players - no bodies, avatars, stick figures or skeletons.
   The screen is the world they're reaching into.
-- Each hand is a **glowing mitt** in its player's colour: a soft glow, a
-  white disc, a ring in their colour, a little four-point star inside.
-
-```js
-function mitt(c, x, y, r, col){              // x, y in pixels; r about H * 0.03
-  const g = c.createRadialGradient(x, y, r * 0.4, x, y, r * 2.4);
-  g.addColorStop(0, col + 'aa'); g.addColorStop(1, col + '00');
-  c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 2.4, 0, Math.PI * 2); c.fill();
-  c.fillStyle = '#fff'; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
-  c.lineWidth = r * 0.28; c.strokeStyle = col; c.stroke();
-  c.fillStyle = col; c.beginPath();
-  for (let i = 0; i < 8; i++){ const a = i * Math.PI / 4, d = i % 2 ? r * 0.22 : r * 0.55; c.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d); }
-  c.closePath(); c.fill();
-}
-```
-
-Draw the mitts **last**, on top of everything, so a child never loses them.
+- Each hand is a **glowing mitt** in its player's colour: `Orlis.assets.draw(c, 'hand', x * W, y * H, H * 0.12, { color })`.
+  Draw the mitts **last**, on top of everything, so a child never loses them.
 
 ### Two players for now
 
@@ -246,45 +234,11 @@ screen), and still check `present` for every player every frame.
   pull when something's nearly there. Test it as a toddler would: slow,
   wobbly, standing in one spot.
 
-### The painted house style
+### The painted house style (the library does it for you)
 
-- **Flat colour, no outlines.** Shapes are filled, not stroked.
-- **One light.** The sun is up on the left: everything has **one flat
-  shadow tone on its right side** (clip to the shape, fill an offset circle
-  with `rgba(52,40,96,.2)`), and shadows on the ground fall to the right.
-- **A painted sky.** A soft wash from blue overhead to cream at the
-  horizon, a warm glow where the sun is, long soft clouds.
-- **Distance.** Hills further away fade toward the sky colour.
-- **Calm world, bright players.** The world is a few muted colours; the
-  players' mitts and the things they catch are the brightest, most
-  saturated things on screen.
-- **Room to breathe.** Big open areas; a few small details for fun (a bird
-  on a branch, a critter peeking).
-- **Words** sit in cream pill cards, short: a few words, never paragraphs.
-
-Colours to start from:
-
-| what | colour |
-|---|---|
-| sky, top to horizon | `#9fc8e6` -> `#f6ead2` |
-| far hills / near hills / grass | `#a9c98f` / `#93bb7c` / `#8fbf6a` |
-| tree leaves (lit, shade) | `#6f9a5e` (`#9fbf78`, `#4f7350`) |
-| tree trunks | `#7a6550` |
-| the shadow tone (over any colour) | `rgba(52,40,96,.2)` |
-| word cards | fill `rgba(250,247,238,.95)`, text `#33322e`, bold |
-| bright things to catch | `#ff7aa8` `#ffd25a` `#79b3aa` `#a98bff` `#f2a65a` |
-
-```js
-/* a word card, centred at (x, y) */
-function say(c, text, x, y, H){
-  const size = Math.round(H * 0.04);
-  c.font = `800 ${size}px Inter, Segoe UI, sans-serif`;
-  const w = c.measureText(text).width + size * 1.6;
-  c.fillStyle = 'rgba(250,247,238,.95)';
-  c.beginPath(); c.roundRect(x - w / 2, y - size * 0.95, w, size * 1.9, size * 0.95); c.fill();
-  c.fillStyle = '#33322e'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, x, y + 2);
-}
-```
-
-Keep the top middle of the screen clear (Orlis Play shows the round's clock
-there): put word cards a little lower, around `H * 0.19`.
+The asset library is drawn in the Orlis house style: flat colour, one soft shadow tone on the right of things (the sun is up
+on the left), painted skies with a warm glow, hills fading into the distance, a calm world with bright players. Use its
+scenes and pieces as they are, and your game looks like part of the family. **Don't draw shapes, pictures or letters of your
+own: games can't** - the canvas `c` you're given only lets you place what the library draws (`save`, `restore`, `translate`,
+`rotate`, `scale`, `globalAlpha`). For words on screen (a short "+1" or "Go!"), use
+`Orlis.assets.text(c, '+1', x, y, size, { color: '#fff', outline: '#2b2275' })`.

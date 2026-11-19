@@ -67,8 +67,8 @@ and `hands.right` (`x`, `y` from 0 to 1 across and down the screen, plus
   for one alone, too); each has their own colour (`Orlis.PLAYER_COLORS`) and
   score. A child joining, leaving, or the camera losing them for a moment
   partway mustn't break anything - and nobody scores while they're away.
-- **First person.** The players are their hands: a glowing circle in their
-  colour on each hand (the skill shows how). Don't draw the players - no
+- **First person.** The players are their hands: a glowing mitt in their
+  colour on each hand (`Orlis.assets.draw(c, 'hand', ...)`). Don't draw the players - no
   bodies, stick figures or skeletons. The screen is what they're looking at.
 - **Nothing to lose.** No lives, no game over, nothing that punishes: only
   things to chase, catch, build or make. A two-year-old should get somewhere
@@ -77,14 +77,11 @@ and `hands.right` (`x`, `y` from 0 to 1 across and down the screen, plus
 - **Sealed off.** The game runs in a sandbox with no internet. Never use
   `fetch`, `XMLHttpRequest`, `WebSocket`, `import()`, `eval`, `new Function`,
   `localStorage`, `indexedDB`, `document.cookie`, `window.parent`,
-  `window.top`, `window.open`, `navigator`, or workers. Draw everything
-  yourself on the canvas - no images or files from anywhere.
-- **The Orlis look - a calm painted world.** Flat colour, no outlines, one
-  soft shadow tone on the right of things (the sun is up on the left), a
-  sky that fades to cream at the horizon, far hills fading into it. A few
-  muted colours for the world; the players' hands and the things they
-  catch are the brightest on screen. Lots of room. Words in cream rounded
-  "pill" cards. The skill has the colours and how - follow it.
+  `window.top`, `window.open`, `navigator`, or workers. No images or files
+  from anywhere.
+- **The Orlis look - a calm painted world.** The asset library already is it (flat colour, one soft shadow tone, painted
+  skies, far hills fading out): use its scenes and pieces as they are. Lots of room. Words in cream rounded "pill" cards
+  (`Orlis.ui.say`).
 - **The shared screen.** Every Orlis game has the same edges, so players learn them once and your game never fights Orlis
   Play for space: the clock top centre, the scores top left, a card showing the move card bottom left, a goal bar and
   the hint words under the clock, one badge bottom right. Use `Orlis.ui` for the words and the goal bar, return the score from
@@ -94,9 +91,10 @@ and `hands.right` (`x`, `y` from 0 to 1 across and down the screen, plus
 - **Smooth.** It runs on a family laptop: keep it light (no huge loops every
   frame).
 
-- **Pictures come from the asset library.** Draw with `Orlis.assets` (backgrounds, animals, food, props, Cubo, effects), not with
-  shapes of your own: the skill lists every name. If a picture you need isn't there, say so - it can be requested - instead
-  of drawing something else.
+- **Pictures come from the asset library, and only from it.** Draw with `Orlis.assets` (backgrounds, animals, food, props, Cubo,
+  effects, a few words): games can't draw shapes, words or pictures of their own - the canvas you're given doesn't allow it
+  (`fillRect`, `arc`, `fillText` and the like), and the checks turn them away. The skill lists every name. If a picture you
+  need isn't there, tell the grown-up (it can be requested) instead of drawing something else.
 
 ## After each change
 
