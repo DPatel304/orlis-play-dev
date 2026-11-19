@@ -177,6 +177,30 @@ something to touch. Don't draw your own score, clock or move cards.
   just ends and everyone gets their score.
 
 
+## Pictures: the asset library (use it for every picture)
+
+Orlis games don't draw their own art: they ask the **asset library** for it, so every game looks like an Orlis game and
+only pieces that have been looked at can appear. Draw with `Orlis.assets`, not with your own shapes:
+
+```js
+Orlis.assets.scene(c, W, H, 'meadow', { t });                 // a whole background, first (t: seconds, the clouds drift)
+Orlis.assets.draw(c, 'giraffe', x * W, y * H, 0.12 * H);      // a piece, centred on (x, y), this many pixels tall
+Orlis.assets.draw(c, 'cubo', x, y, size, { pose: 'jump', face: 'grin', t });   // Cubo does his moves (t: seconds)
+Orlis.assets.draw(c, 'balloon', x, y, size, { color: '#ff5d6c' });   // some take a colour
+Orlis.assets.draw(c, 'bunny', x, y, size, { flip: true, rotate: 0.2, alpha: 0.8, shadow: true });
+Orlis.assets.draw(c, 'sparkle', x, y, size, { t: age / 0.6 });        // effects: t goes 0 to 1 and the piece fades
+Orlis.assets.list('animal');   // what there is: [{ id, name, kind, tags, aspect, poses, faces }]
+```
+
+`size` is the piece's height; its width is `size * aspect` (from `list()`). A name that isn't in the library draws a
+dashed "?" box - the game still runs, but it isn't ready: **use only the names below**. If a game truly needs a piece that
+isn't here (a boat, a particular animal), tell the grown-up it isn't in the library yet (a picture can be requested and
+added for everyone). Don't draw one yourself.
+
+What's in the library:
+
+{{ASSETS}}
+
 ## The Orlis look and feel (follow this)
 
 Every Orlis Play game looks and plays like part of one family. Before

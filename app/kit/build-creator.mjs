@@ -38,6 +38,14 @@ export async function generate(){
     }
   };
   walk(join(kit, 'template'));
+  /* the asset library's catalogue, written into the skill so Claude Code only names pieces that exist */
+  const { assets } = await import('../src/games/assets/index.js');
+  const KINDS = [['scene', 'Backgrounds (scene)'], ['character', 'Cubo (draw)'], ['animal', 'Animals'], ['food', 'Food'], ['nature', 'Nature'], ['thing', 'Things, props and places'], ['effect', 'Effects']];
+  const catalogue = KINDS.map(([k, title]) => {
+    const rows = assets.list(k);
+    return `**${title}:** ` + rows.map(r => r.id + (r.poses ? ` (poses: ${r.poses.join(', ')}; faces: ${r.faces.join(', ')})` : '')).join(', ');
+  }).join('\n\n');
+  for (const p of Object.keys(files)) if (p.endsWith('SKILL.md')) files[p] = files[p].replace('{{ASSETS}}', () => catalogue);
   const ps = forbidden.map(([w, why]) => `  @('${w.replace(/'/g, "''")}', '${why.replace(/'/g, "''")}')`).join(",\n");
   const words = JSON.parse(readFileSync(join(kit, 'words.json'), 'utf8'));
   const pw = words.map(w => `'${w}'`).join(', ');

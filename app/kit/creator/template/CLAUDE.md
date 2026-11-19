@@ -94,6 +94,10 @@ and `hands.right` (`x`, `y` from 0 to 1 across and down the screen, plus
 - **Smooth.** It runs on a family laptop: keep it light (no huge loops every
   frame).
 
+- **Pictures come from the asset library.** Draw with `Orlis.assets` (backgrounds, animals, food, props, Cubo, effects), not with
+  shapes of your own: the skill lists every name. If a picture you need isn't there, say so - it can be requested - instead
+  of drawing something else.
+
 ## After each change
 
 A check runs by itself after every edit and tells you about any rule the

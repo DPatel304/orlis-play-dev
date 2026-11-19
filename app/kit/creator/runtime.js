@@ -7,6 +7,7 @@
      Orlis.pose      the players, from the camera: body points only
      Orlis.sfx       Orlis Play's sounds: Orlis.sfx.pop(), Orlis.sfx.gold()...
      Orlis.music     its music: Orlis.music.intensity(0.8)...
+     Orlis.assets    the picture library: Orlis.assets.draw(c, 'giraffe', x, y, size), Orlis.assets.scene(c, W, H, 'meadow')
      Orlis.ui        the shared screen: Orlis.ui.say, goal, badge, zones, under (see the skill)
      Orlis.L, Orlis.BONES, Orlis.MAX_PLAYERS, Orlis.PLAYER_COLORS
      Orlis.run(game) start it (in the sandbox, as every downloaded game is)
@@ -17,6 +18,7 @@ import { pose, L, BONES, MAX_PLAYERS, PLAYER_COLORS } from '../runtime/pose.js';
 import { sfx, music, ambience } from '../runtime/sound.js';
 import { clean } from './words.js';
 import { sayBubble, goalBar, badge, hudZones, underHud, hud } from '../../src/games/hud.js';
+import { assets } from '../../src/games/assets/index.js';
 
 /* Before the game's own code runs: every line of text it draws on screen
    goes through the words check first (a word that isn't for children comes
@@ -39,6 +41,8 @@ hud.speak = (text) => { try { parent.postMessage({ t: 'say', text: String(clean(
 const Orlis = {
   manifest: {},
   pose, sfx, music, ambience, L, BONES, MAX_PLAYERS, PLAYER_COLORS,
+  /* The picture library: a game asks for a piece by name and the library draws it, the same in every game (see the skill). */
+  assets,
   /* The shared screen, the same in every Orlis game (UI-STANDARD): hint words, a goal bar with three stars, one badge, and
      where the shell's pieces are, so nothing the players have to touch goes under them. */
   ui: { say: sayBubble, goal: goalBar, badge, zones: hudZones, under: underHud },
