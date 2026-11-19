@@ -17,6 +17,8 @@
    create(n), and its rounds step, draw, report their score and end. They
    answer a frame late - the picture shown is the one it sent last. */
 import { pose, PLAYER_COLORS } from '../tracking/pose.js';
+import { POSE_NAMES } from '../games/figure.js';
+import { voice } from '../audio/voice.js';
 import { sfx, music, ambience, isQuiet } from '../audio/sound.js';
 
 const POLICY = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:";
@@ -85,6 +87,7 @@ class Round {
       this.state = m.state || this.state;
     }
     else if (m.t === 'sound') play(m, this.quiet);
+    else if (m.t === 'say'){ if (!this.quiet && typeof m.text === 'string' && m.text.length <= 80) voice.say(m.text); }      /* (the game's first words, said once: already through the words check) */
     else if (m.t === 'error'){ this.failed = m.message; this.waiting = false; }
   }
   _ask(dt, W, H, kind){
@@ -103,6 +106,8 @@ class Round {
   get over(){ return !!(this.state && this.state.over) || !!this.failed; }
   get mood(){ return this.state && typeof this.state.mood === 'number' ? this.state.mood : null; }
   pausable(){ return !this.state || this.state.pausable !== false; }
+  /* which move card to show (one of Cubo's, or none) */
+  card(){ const k = this.state && this.state.card; return typeof k === 'string' && POSE_NAMES.includes(k) ? k : null; }
   hud(){
     const h = this.state && this.state.hud;
     return h && typeof h === 'object' ? { score: [], ...h } : { score: [0, 0, 0, 0], hideScore: true };

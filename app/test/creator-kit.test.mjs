@@ -125,3 +125,16 @@ test('colours and hex numbers are not words (#ff9a55 is no a55), but a word spel
     assert.deepEqual(f('you are an a55'), ['ass']);
   }
 });
+
+test('the creator kit teaches the shared screen: the helpers are in the runtime, the skill names every move card, the template uses them', async () => {
+  const { RUNTIME, TEMPLATE } = await import('../src/ui/creator-kit.gen.js');
+  const { POSE_NAMES } = await import('../src/games/figure.js');
+  assert.match(RUNTIME, /zones/, 'Orlis.ui.zones is in the runtime');
+  assert.match(RUNTIME, /under/, 'Orlis.ui.under is in the runtime');
+  const skill = TEMPLATE['.claude/skills/orlis-game/SKILL.md'], claude = TEMPLATE['CLAUDE.md'], game = TEMPLATE['game.js'];
+  for (const n of POSE_NAMES) assert.ok(skill.includes('`' + n + '`'), `the skill lists the ${n} card`);
+  for (const w of ['Orlis.ui.say', 'Orlis.ui.goal', 'Orlis.ui.badge', 'Orlis.ui.zones', 'Orlis.ui.under', 'panel', 'card()']) assert.ok(skill.includes(w), `the skill explains ${w}`);
+  assert.match(claude, /shared screen/i, 'CLAUDE.md points at the shared screen');
+  assert.match(game, /Orlis\.ui\.say/, 'the starter game shows a hint the shared way');
+  assert.match(game, /card\(\)/, 'and asks for a move card');
+});

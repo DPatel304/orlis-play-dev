@@ -33,9 +33,13 @@ Orlis.run({
   0..1 units and multiply by `W`/`H` when drawing.
 - `draw(c, W, H)` - draw the whole picture on canvas context `c`, every frame,
   from scratch (clear or paint a background first).
-- `hud()` - the scores shown at the top: `{ score: [p1, p2, p3, p4] }`. Also
-  `hideScore: true` (a team game), `hideClock: true`, `showLives: true` with
-  `lives: [3, 3, 3, 3]`.
+- `hud()` - what Orlis Play shows for the game (see **The shared screen**):
+  `{ score: [p1, p2, p3, p4] }` for the scores in the top-left corner; also
+  `hideScore: true` (a team game), `hideClock: true`, and `panel: [ ... ]` for
+  your own counters and bars there.
+- `card()` (optional) - which move card Orlis Play shows, bottom left: one of
+  `reach`, `flap`, `wave`, `clap`, `hug`, `jump`, `squat`, `march`, `lean`, `duck`,
+  `run`, `dance`, `freeze`, `side`, or `null` for none. It slides in and out by itself.
 - `value()` - the round's result: the best score.
 - `over` - set it to `true` to end the round early.
 - `mood` (optional, 0..1) - how big the music is right now.
@@ -121,6 +125,48 @@ and `g`; gradients are fine (`<linearGradient>` inside `<defs>`, used as
 `fill="url(#sky)"`). No `<text>`, `<style>`, `<use>`, `<image>`, links or
 scripts. Keep it under 12,000 letters. Inside the JSON it's one line, so use
 single quotes for the SVG's attributes (`fill='#fff'`) to avoid escaping.
+
+## The shared screen
+
+Every Orlis Play game has the same edges. The screen is a grid of 20 columns by
+11 rows of square cells; Orlis Play and a few helpers draw these, always in the
+same place:
+
+```
+clock          top centre (Orlis Play draws it)
+goal bar       under the clock       Orlis.ui.goal(c, W, H, k)           k from 0 to 1; three stars light up as it fills
+hint words     under the goal bar    Orlis.ui.say(c, W, H, { text, t })  t = seconds since the words changed
+scores         top left              hud() -> { score: [..] }            a coloured pill for each player
+your counters  top left, under them  hud() -> { panel: [..] }            see below
+move card      bottom left           card() -> 'reach' ...               Orlis Play draws Cubo doing the move
+one badge      bottom right          Orlis.ui.badge(c, W, H, { icon, value })
+```
+
+**Hint words are a picture and at most four words**: `\u{1F388} Pop the balloons!`.
+Many players can't read yet, so the picture does the job. The first words of a
+round arrive big in the middle, shrink into place and are said aloud once, by
+Orlis Play; later words just appear. Fade a hint that has done its job with
+`until` (seconds): `Orlis.ui.say(c, W, H, { text, t, until: 8 })`.
+
+**Your counters** go in `hud().panel`, up to four rows in all with the scores,
+as pictures and numbers only (no words):
+
+```js
+hud(){ return { score, panel: [
+  { icon: '\u{1F48E}', value: crystals },                          // a chip: a picture and a number
+  { icon: '\u2B50', fill: xp / xpNeeded, color: 'gold' },          // a bar: color is 'gold', 'rose' or 'indigo'
+] }; }
+```
+
+**Keep anything the players have to touch, catch or read out of the shared
+areas** - Orlis Play draws on top of them, so it would be hidden. `Orlis.ui.zones(W, H)`
+gives their rectangles (`top`, `score`, `card`, `badge`, in pixels) and
+`Orlis.ui.under(W, H, x, y)` says whether a point is under one. Targets can pass
+behind them briefly (a balloon floating up), but nothing should *stay* there.
+
+Colours mean one thing: a player's colour is always theirs, orange arrows (the
+move card's) always mean "move this way", and cream pills are information, never
+something to touch. Don't draw your own score, clock or move cards.
 
 ## Good games for little ones
 

@@ -33,7 +33,7 @@ export function run(game){
     if (!inst) return null;
     const call = (f) => { try { return typeof inst[f] === 'function' ? plain(inst[f]()) : undefined; } catch { return undefined; } };
     return {
-      hud: call('hud'), value: call('value'),
+      hud: call('hud'), value: call('value'), card: call('card'),
       over: !!inst.over, mood: typeof inst.mood === 'number' ? inst.mood : null,
       pausable: typeof inst.pausable === 'function' ? !!inst.pausable() : true,
       outroDone

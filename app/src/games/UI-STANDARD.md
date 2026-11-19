@@ -101,6 +101,15 @@ bounce when they go up by themselves. A game with no per-player scores sets `hid
 11. **Results are the shell's.** A game gives `tally()`, `winner()` and optionally `summary()`; it draws nothing of its own
     while `hud.quiet` is on.
 
+## Games made in Create
+
+A game made in Create (or with the `orlis` tool) follows the same standard. The creator kit gives its Claude the layout in
+`CLAUDE.md` and the `orlis-game` skill, the starter game uses it, and the sandbox runtime offers the helpers as `Orlis.ui`
+(`say`, `goal`, `badge`, `zones`, `under`). `hud()` (score, `panel`) and `card()` come back to Orlis Play, which draws them; the
+first hint is said aloud once, after the same words check. If you change this file, change `kit/creator/template/`
+(CLAUDE.md, the skill, game.js) to match and run `node kit/build-creator.mjs`; a test checks the skill still lists every
+move card.
+
 ## Where the standard stops
 
 - Last Known Position (a story game) uses the game's corner for the team's level and XP (`hud().panel`), but has its own

@@ -60,6 +60,8 @@ function makeRound(players){
         drawStar(c, s.r * H, s.gold ? '#ffb02e' : '#ffe680', s.caught >= 0 ? Orlis.PLAYER_COLORS[s.caught] : null);
         c.restore();
       }
+      /* the hint: a picture and a few words, on the shared screen (it arrives big, then docks under the clock) */
+      Orlis.ui.say(c, W, H, { text: '\u2B50 Catch the stars!', t, until: 8 });
       /* each player's hands: glowing mitts in their colour, on top of everything */
       Orlis.pose.players.forEach((p, i) => {
         if (!p.present) return;
@@ -67,8 +69,9 @@ function makeRound(players){
       });
     },
 
-    /* the scores at the top, one for each player */
+    /* the scores (top left, a pill for each player) - Orlis Play draws them; the card shows the move for a few seconds */
     hud(){ return { score }; },
+    card(){ return t < 8 ? 'reach' : null; },
     /* the best score, for the results */
     value(){ return Math.max(...score.slice(0, players)); },
     over: false

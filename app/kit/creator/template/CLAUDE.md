@@ -85,6 +85,12 @@ and `hands.right` (`x`, `y` from 0 to 1 across and down the screen, plus
   muted colours for the world; the players' hands and the things they
   catch are the brightest on screen. Lots of room. Words in cream rounded
   "pill" cards. The skill has the colours and how - follow it.
+- **The shared screen.** Every Orlis game has the same edges, so players learn them once and your game never fights Orlis
+  Play for space: the clock top centre, the scores top left, a card showing the move card bottom left, a goal bar and
+  the hint words under the clock, one badge bottom right. Use `Orlis.ui` for the words and the goal bar, return the score from
+  `hud()`, and keep anything a player has to touch out of those areas (`Orlis.ui.zones(W, H)`, `Orlis.ui.under(W, H, x, y)`).
+  Hint words are **a picture and a few words** - `\u{1F388} Pop the balloons!` - because many players can't read yet. The skill
+  has the whole layout.
 - **Smooth.** It runs on a family laptop: keep it light (no huge loops every
   frame).
 

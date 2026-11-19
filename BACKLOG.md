@@ -538,3 +538,9 @@ ball no longer goes up behind the clock and the words.
 Looked at, left as they are: Pop Party's balloons rise through the top and past the bottom-left card (they are only briefly
 hidden); Stack It High's blocks fall through the top; Leaf Pile's leaves can lie behind the card while it shows a jump.
 Still not done: dim the HUD when idle, a HUD size setting (both held back on purpose).
+
+### The kit knows the standard now
+The creator kit (CLAUDE.md, the orlis-game skill, the starter game) teaches the shared screen: `Orlis.ui.say / goal / badge /
+zones / under`, `hud().panel`, `card()`, picture-and-few-words hints, and keeping targets out of the shell's areas. The sandbox
+forwards `card()` and the first hint (said once, after the words check). Not done: nothing stops a creator's game drawing its own
+score or clock (it is only asked not to); a check for that could go in the guard hook.
