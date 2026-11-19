@@ -14,7 +14,7 @@ import { pose, L } from '../src/tracking/pose.js';
 import { music } from '../src/audio/sound.js';
 import popParty from '../src/games/pop-party.js';
 import sleepyBear from '../src/games/sleepy-bear.js';
-import leafPile, { PILE } from '../src/games/leaf-pile.js';
+import leafPile, { PILE, SWEEP_END } from '../src/games/leaf-pile.js';
 import stackItHigh, { TOWER, TOWER_FULL } from '../src/games/stack-it-high.js';
 import skyPainter from '../src/games/sky-painter.js';
 
@@ -269,23 +269,21 @@ test('stack-it-high: a child who walks off carrying a block drops it, and the ot
   assert.ok(g.towers >= 0 && g.blocks.length < 20, 'no pile-up of blocks');
 });
 
-test('leaf-pile: a full pile with nobody left to jump still bursts; one child alone only has to jump once', () => {
+test('leaf-pile: at the end it bursts even with nobody left to jump, and one child alone only has to jump once', () => {
   const [g, kids] = fresh(2, leafPile);
-  g.pile = g.need - 1;
+  g.t = SWEEP_END - 0.2;
   while (!g.ready) play(g, leafPile, kids, DT);
   kids[0].here = kids[1].here = false;
   play(g, leafPile, kids, 7, () => {}, { lateCredit: true });
   assert.equal(g.ready, 0, 'burst by itself');
   /* alone */
   const [h, k2] = fresh(1, leafPile);
-  h.pile = h.need - 1;
+  h.t = SWEEP_END - 0.2;
   let n = 0; while (!h.ready && n++ < 3000) play(h, leafPile, k2, DT);
   assert.ok(h.ready, 'ready');
-  const piles = h.piles;
   play(h, leafPile, k2, 2);
-  /* (sweeping is easier now, so the next pile may fill and burst in those two seconds too) */
-  assert.ok(h.piles >= piles + 1, 'one child jumping is everyone');
-  assert.ok(h.leaves.length <= 90, 'leaves stay bounded');
+  assert.ok(h.piles >= 1, 'one child jumping is everyone');
+  assert.ok(h.leaves.length <= 180, 'leaves stay bounded');
 });
 
 test('sky-painter: a hand that vanishes and reappears across the screen does not paint a line between', () => {
@@ -318,7 +316,7 @@ test('pop-party: a child who joins late can pop, and an empty room pops nothing'
 const ENOUGH = {
   'pop-party': (g) => g.score[0] >= 150,
   'sleepy-bear': (g) => g.score[0] >= 6,
-  'leaf-pile': (g) => g.piles >= 2,
+  'leaf-pile': (g) => g.piles >= 1 && g.peak >= 40,
   'stack-it-high': (g) => g.towers >= 3,
   'sky-painter': (g) => g.done >= 2
 };

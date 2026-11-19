@@ -1,8 +1,9 @@
 /* Leaf Pile: an autumn afternoon. Leaves lie all over the grass and keep
    drifting down from the trees; sweep them with your hands into the pile in
-   the middle. When the pile's big enough it's "Jump in!" - everyone jumps,
-   and the pile bursts into the air and comes down all over again. Then you
-   sweep it up again, bigger.
+   the middle. The pile grows slowly and steadily, a little with every leaf,
+   from a small heap to a really big one - and only at the very end of the
+   game is it "Jump in!": everyone jumps, and the whole pile bursts into the
+   air and comes down all over you.
 
    Sweeping is a hand moving through the leaves: a leaf the hand passes
    over is pushed the way it was going. The leaves lie low, so it's a game
@@ -20,9 +21,11 @@ import { Scene, rgbOf } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
 
 export const ROUND = 180;
-/* leaves in the pile before it's ready to jump in, the first time (each
-   pile after that wants a few more) */
-export const PILE_FULL = 14, PILE_MORE = 6;
+/* The pile is one pile for the whole game. Its size follows how many leaves are in it, slowly: GROW leaves make it
+   about two thirds of its biggest, and it is still growing long after. BIG is the pile the goal bar's last star is for.
+   Sweeping goes on until SWEEP_END; then it's "Jump in!", and after the burst the leaves come down for FINALE seconds. */
+export const GROW = 70, BIG = 120;
+export const SWEEP_END = ROUND - 24, FINALE = 6;
 /* a sweep: a hand moving at least this fast (screen widths a second)
    within REACH (screen heights) of a leaf pushes it */
 export const SWEEP_SPEED = 0.3, REACH = 0.09;
@@ -36,7 +39,7 @@ export const JUMP_WAIT = 6;
 /* where the pile sits (screen fractions), and how far its pull reaches */
 export const PILE = { x: 0.5, y: 0.86 }, PULL = 0.28;
 /* where leaves lie: knee to shin height, where bending hands reach */
-const GROUND_TOP = 0.7, GROUND_BOTTOM = 0.9, START_LEAVES = 46, MAX_LEAVES = 90;
+const GROUND_TOP = 0.7, GROUND_BOTTOM = 0.9, START_LEAVES = 46, MAX_LEAVES = 180;
 const COLS = ['#e0893b', '#d4643a', '#e8b44a', '#c9503a', '#d99a3b'];
 
 /* (the words when the pile is big enough: the move card shows a jump while they're up) */
@@ -64,7 +67,8 @@ class LeafPile {
     this.score = Array.from({ length: MAX_PLAYERS }, () => 0);
     this.leaves = [];
     for (let i = 0; i < START_LEAVES; i++) this._leaf(true);
-    this.pile = 0; this.piles = 0; this.need = PILE_FULL;
+    this.pile = 0; this.piles = 0; this.peak = 0; this.finale = 0;      /* (piles: 1 once it has burst) */
+    this.told = new Set();
     this.ready = 0;             /* seconds the pile's been ready to jump in (0: not ready) */
     this.jumped = new Set();
     this.burstT = 0;
@@ -106,7 +110,7 @@ class LeafPile {
     /* leaves keep drifting down from the trees */
     this.fallT -= dt;
     if (this.fallT <= 0){
-      this.fallT = 0.8 + Math.random() * 1.2;
+      this.fallT = 0.5 + Math.random() * 0.8;
       /* they come down near someone who's playing, within reach */
       const here = pose.players.slice(0, this.players).filter(p => p && p.present && p.centre);
       const near = here.length ? here[(Math.random() * here.length) | 0].centre.x + (Math.random() - 0.5) * 0.5 : Math.random();
@@ -166,17 +170,19 @@ class LeafPile {
          what's at its edge - nobody's sweep, so nobody's count) */
       else if (!L.air && d < PULL * 0.6){ L.x += (px / aspect) / d * 0.05 * dt; L.y += py / d * 0.05 * dt; }
       /* in! */
-      if (!this.ready && d < this._pileR()){
+      if (!this.ready && !this.piles && d < this._pileR()){
         L.inPile = true; this.pile++;
         if (L.who >= 0) this.score[L.who]++;
-        sfx.pop?.(0.6 + Math.min(1, this.pile / this.need) * 0.6);
-        if (this.pile >= this.need) this._full();
+        sfx.pop?.(0.5 + this._k() * 0.7);
+        this._milestone();
       }
     }
     this.leaves = this.leaves.filter(L => !L.inPile);
     /* leaves come back down after a burst; keep the lawn stocked */
     while (this.leaves.length < 18) this._leaf(true);
 
+    /* the end of the sweeping: now, at last, jump in */
+    if (!this.ready && !this.piles && this.t >= SWEEP_END) this._full();
     /* ready to jump in: whoever jumps; a little wait, then it bursts anyway */
     if (this.ready){
       this.ready += dt;
@@ -185,12 +191,22 @@ class LeafPile {
       if ((here && this.jumped.size >= here) || this.ready > JUMP_WAIT) this._burst();
     } else this.jumps.step(dt, pose.players, this.players);
     this.burstT = Math.max(0, this.burstT - dt);
+    /* after the burst, the leaves come down, and that's the end */
+    if (this.piles && (this.finale += dt) >= FINALE) this.over = true;
 
     this.scene.step(dt, { t: this.t, p: 0.65 + 0.3 * Math.min(1, this.t / ROUND), storm: false, wind: 0.01, joy: this.ready ? 1 : 0.4, look: 0.5, rainbow: false });
     this.avatars.step(dt, this.players);
   }
 
-  _pileR(){ return 0.06 + Math.min(1, this.pile / this.need) * 0.08; }
+  /* how big the pile is, 0 to 1: steady, a little with every leaf, never quite full */
+  _k(){ return 1 - Math.exp(-this.pile / GROW); }
+  /* how far from its middle a leaf has to be to count as in (screen heights) */
+  _pileR(){ return 0.04 + this._k() * 0.22; }
+  /* the words as it grows (each said once) */
+  _milestone(){
+    const says = [[BIG / 3, '\u{1F342} It\u2019s getting big!'], [BIG * 2 / 3, '\u{1F342} Huge! Keep going!'], [BIG, '\u{1F342} What a pile!']];
+    for (const [n, text] of says) if (this.pile >= n && !this.told.has(n)){ this.told.add(n); this.say = { text, t: 0 }; sfx.twinkle?.(); }
+  }
   _full(){
     this.ready = 0.001; this.jumped.clear();
     this.say = { text: JUMP_IN, t: 0 };
@@ -198,18 +214,18 @@ class LeafPile {
   }
   /* everyone jumped in: the pile bursts, and comes down all over */
   _burst(){
-    this.piles++; this.ready = 0; this.burstT = 1.2;
-    const n = Math.min(this.pile, 60);
+    this.piles++; this.ready = 0; this.burstT = 1.2; this.finale = 0;
+    const n = Math.min(this.pile, 140);
     for (let k = 0; k < n; k++){
       this._leaf(false, PILE.x + (Math.random() - 0.5) * 0.1, PILE.y - 0.02);
       const L = this.leaves[this.leaves.length - 1];
       if (!L) break;
       L.vx = (Math.random() - 0.5) * 1.4; L.vy = -0.5 - Math.random() * 0.6; L.spin = (Math.random() - 0.5) * 14;
     }
-    this.pile = 0; this.need += PILE_MORE;
+    this.peak = this.pile; this.pile = 0;
     sfx.hooray?.(); sfx.whoosh?.();
     this.j.kick(10);
-    this.say = { text: this.piles === 1 ? 'Wheee! Sweep them up again!' : 'Wheee!', t: 0 };
+    this.say = { text: '\u{1F342} Wheee!', t: 0 };
   }
 
   draw(c, W, H){
@@ -230,10 +246,10 @@ class LeafPile {
 
   /* the pile: a mound of leaves, growing; bouncing when it's ready */
   _pile(c, W, H){
-    const k = Math.min(1, this.pile / this.need), r = (0.06 + k * 0.14) * H, cx = PILE.x * W, cy = PILE.y * H;
+    const k = this._k(), r = (0.035 + k * 0.28) * H, cx = PILE.x * W, cy = PILE.y * H;
     const bounce = this.ready ? Math.abs(Math.sin(this.t * 6)) * H * 0.008 : 0;
     c.fillStyle = 'rgba(58,51,96,.16)'; c.beginPath(); c.ellipse(cx + r * 0.25, cy + r * 0.12, r * 1.6, r * 0.32, 0, 0, 6.2832); c.fill();
-    const n = 20 + Math.round(k * 140);
+    const n = 14 + Math.round(k * 230);
     let sd = 7; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < n; i++){
       const a = R() * Math.PI, rr = Math.sqrt(R());
@@ -243,7 +259,7 @@ class LeafPile {
 
   _say(c, W, H){ sayBubble(c, W, H, { text: this.say.text, t: this.say.t }); }
   /* how big the pile is: a bar under the words */
-  _meter(c, W, H){ goalBar(c, W, H, this.ready ? 1 : this.pile / this.need, { color: this.ready ? '#e8b44a' : '#e0893b' }); }
+  _meter(c, W, H){ goalBar(c, W, H, this.ready || this.piles ? 1 : Math.min(1, this.pile / BIG)); }
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it when the game says to jump in) */
   card(){ return this.say.text === JUMP_IN && this.say.t < 6 ? 'jump' : null; }

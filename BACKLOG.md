@@ -578,3 +578,7 @@ draws, a grown-up or grandparent can record the voice) is **on hold** until Crea
 - Uses the shell's standard pieces: move card, goal bar (the harvest), the corner panel (the raven's distance), the hint words. Moves come from Animal Gym's detectors (`triesOf`) and the jump watch; a fast hand counts with the mouse.
 - `?game=<id>` in the address now goes straight into any game (for looking at one).
 - Still to do: playtest on a real camera and TV (how many tries a round needs; whether a good effort should be required), recorded voice for the hints, the other board games from the mockups (Race to the Treasure with the lean vote is next), and a shared board kit once the second one exists.
+
+## Leaf Pile: one slow, steady pile
+- One pile for the whole game: it grows a little with every leaf (a small heap to a really big one, never quite full), and "Jump in!" only comes at the end (the last 24 seconds). The whole pile bursts and the leaves rain down for a few seconds, then it's over. Goal bar: three stars up to a 120-leaf pile; the hints cheer at a third, two thirds and the big one.
+- To tune on a real camera: how fast the pile grows (`GROW`), how many leaves fall, and whether the last 24 seconds is the right time to jump in.

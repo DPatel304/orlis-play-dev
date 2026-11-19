@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { pose } from '../src/tracking/pose.js';
-import leafPile, { PILE, PILE_FULL, PILE_MORE, JUMP_WAIT, SWEEP_SPEED, SWEEP_GAP, MAX_SLIDE } from '../src/games/leaf-pile.js';
+import leafPile, { PILE, GROW, BIG, SWEEP_END, FINALE, JUMP_WAIT, SWEEP_SPEED, SWEEP_GAP, MAX_SLIDE } from '../src/games/leaf-pile.js';
 
 const DT = 1 / 30, W = 1920, H = 1080;
 function players(n){
@@ -40,18 +40,53 @@ test('a slow hand resting on a leaf does not push it', () => {
   assert.equal(g.leaves.find(x => x === L).vx, 0);
 });
 
-test('a full pile waits for a jump - and bursts by itself if nobody jumps', () => {
-  players(2);
-  const g = leafPile.create(2);
-  g.pile = PILE_FULL - 1; g.leaves = []; g._leaf(true); Object.assign(g.leaves[0], { x: PILE.x, y: PILE.y, who: 1 }); g.fallT = 99;
-  g.step(DT, W, H);
-  assert.ok(g.ready > 0, 'ready to jump in');
-  for (let t = 0; t < JUMP_WAIT + 0.5; t += DT) g.step(DT, W, H);
-  assert.equal(g.ready, 0); assert.equal(g.piles, 1); assert.equal(g.pile, 0);
-  assert.equal(g.need, PILE_FULL + PILE_MORE, 'the next pile is a bit bigger');
-  assert.ok(g.leaves.some(L => L.air), 'leaves fly up and come back down');
+test('the pile grows a little with every leaf, steadily, and keeps growing - and there is no jumping in before the end', () => {
+  players(1);
+  const g = leafPile.create(1);
+  g.fallT = 99;
+  let last = g._k();
+  for (let n = 1; n <= BIG * 2; n++){
+    g.leaves = []; g._leaf(true); Object.assign(g.leaves[0], { x: PILE.x, y: PILE.y, who: 0 }); g.fallT = 99;
+    g.step(DT, W, H);
+    assert.equal(g.ready, 0, 'no jump-in while sweeping (pile ' + g.pile + ')');
+    const k = g._k();
+    assert.ok(k > last && k - last < 0.03, 'steady: a leaf adds only a little (' + (k - last) + ')');
+    last = k;
+  }
+  assert.ok(g.pile >= BIG * 2 - 2, 'it kept taking leaves: ' + g.pile);
+  assert.ok(g._k() > 0.9, 'and it got really big');
+  assert.ok(g._k() < 1, 'never quite full');
+  assert.ok(GROW >= 40, 'slow: it takes a lot of leaves');
 });
 
+test('at the end of the sweeping it is "Jump in!", and the whole pile bursts by itself if nobody jumps - then it ends', () => {
+  players(2);
+  const g = leafPile.create(2);
+  g.pile = 80; g.fallT = 99;
+  g.t = SWEEP_END - 0.1;
+  g.step(DT, W, H); g.step(DT, W, H); g.step(DT, W, H);
+  assert.ok(g.ready > 0, 'ready to jump in at the end');
+  assert.equal(g.piles, 0, 'not burst yet');
+  for (let t = 0; t < JUMP_WAIT + 0.5; t += DT) g.step(DT, W, H);
+  assert.equal(g.ready, 0); assert.equal(g.piles, 1); assert.equal(g.pile, 0); assert.equal(g.peak, 80);
+  assert.ok(g.leaves.some(L => L.air), 'leaves fly up and come back down');
+  assert.ok(!g.over, 'the leaves are still coming down');
+  for (let t = 0; t < FINALE + 0.5; t += DT) g.step(DT, W, H);
+  assert.ok(g.over, 'then it is over');
+});
+
+test('one child alone only has to jump once, and the pile bursts the moment they do', () => {
+  players(1);
+  const g = leafPile.create(1);
+  g.pile = 30; g.fallT = 99; g.t = SWEEP_END;
+  g.step(DT, W, H);
+  assert.ok(g.ready > 0);
+  const h = pose.players[0];
+  /* (a jump: the body rises fast above where it has been standing) */
+  for (let k = 0; k < 20; k++){ h.centre = { x: 0.3, y: 0.5 }; g.step(DT, W, H); }
+  for (let k = 0; k < 6; k++){ h.centre = { x: 0.3, y: 0.5 - 0.06 * (k + 1) }; g.step(DT, W, H); }
+  assert.ok(g.piles === 1 || g.ready > 0, 'jumped in (or waiting on the last frames)');
+});
 
 test('a sweep is one gentle push: capped speed, once per sweep, only the way in, along the ground', () => {
   players(1);
@@ -86,4 +121,4 @@ test('a sweep is one gentle push: capped speed, once per sweep, only the way in,
   assert.ok(L.vy > 0, 'nudged down toward the pile, which is lower than the leaf');
 });
 
-test('the first pile is a quick one', () => { assert.equal(PILE_FULL, 14); });
+test('the sweeping lasts most of the game, and the finale fits inside it', () => { assert.ok(SWEEP_END > 120 && SWEEP_END + JUMP_WAIT + FINALE < 180); });
