@@ -599,3 +599,19 @@ Decision: games made in Create are built only from ready-made words - pieces fro
 - **To add a word:** put it in `vocabulary.js` (with its `doc`), make the engine do it (`engine.js`), teach `validate.js` if it takes a value, add a test - then `node kit/build-creator.mjs` so the skill lists it (a test fails if the engine doesn't know a word the vocabulary has).
 - Phase 2: "Request a behaviour" (same queue as "Request a picture"). Phase 3: widen the words - follow/chase a hand, timers and stages, lives-free progress, collecting into a basket or pile, music beats, unlocking pieces by playing.
 - The creator hook (PowerShell) checks the shape and the JSON; the full word-by-word validation runs in Orlis Play's Check/Try it (and the maker). A later step could generate the word lists into the hook so Claude Code hears "did you mean" while it works.
+
+## Orlis look: the style kit (planning only - nothing is built yet)
+**Decision:** Last Known Position is the reference look (the style the owner has spent the most time on). Meadow games (Pop Party, Leaf Pile, Keep It Up, Stack It High, Sleepy Bear, Animal Gym) are on a shared flat scene; Save the Harvest, Ptero Flight, Castle Defense and Sky Painter each have their own plainer look. The plan is a shared style kit that creators and the asset library build from. It is designed and agreed on paper first; no kit code until the design is settled.
+
+**Rules the kit must follow (so the graphics can be upgraded in three years):**
+1. Games say what and never how: names and meaning (`scene('meadow')`, `draw('giraffe')`), never canvas drawing. Our own games move to this over time.
+2. Every asset carries its own facts apart from its picture: size, ground point, hit area, colours by role (main / shadow / accent), plus a depth slot that v1 ignores.
+3. The look is a swappable, versioned skin (palette, light direction, haze, outlines, HUD style); the renderer sits behind a small interface.
+4. A game records the skin version it was made for; most upgrade automatically, a game that depends on the old layout can stay pinned.
+5. Asset names are stable forever; only the picture changes (same idea as word versioning in the behaviour engine).
+6. Reference screenshots per asset and scene per skin, so a skin change shows exactly what moved.
+Limit: a move to true 3D is bigger than a repaint; games that compute from pixels (Last Known Position) are the last to move.
+
+**Order of work:** (1) write the rules of the look from the real code and screenshots (palette, light, shape language, haze, outlines, HUD) as a one-page style sheet; (2) fix the rough spots in LKP first (oversized foreground tree and rock in the climbing scenes); (3) prove the rules by re-skinning Pop Party's scene (does it belong with LKP and still read for toddlers? a brighter second palette in the same style may be needed); (4) only then extract the kit, with tests.
+
+**Open design questions:** how bright/saturated the party games may be; one skin or a "calm" and "party" palette in one style; how much of the faceted-prop language the asset library takes on; the HUD in one look; where the depth slot lives; how a creator's game picks a skin version; what is checked by screenshot.
