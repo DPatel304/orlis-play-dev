@@ -1,6 +1,6 @@
 /* Keep It Up!: one big beach ball, and everybody keeps it in the air together. A hand that meets the ball bats it
    back up; the longer it stays up, the bigger the number grows, with a cheer at 10, 25, 50 and every 25 after that.
-   A second ball joins in once the first has been kept up 15 times. A breeze sometimes blows it sideways.
+   Another ball joins in every 10 in a row, up to ten balls at once. A breeze sometimes blows them sideways.
 
    Nothing to lose: if the ball reaches the ground it just bounces back up and the count starts again. The best run
    is the round's best. Gentle by design - a hit always sends the ball up, a little toward where the hand was going. */
@@ -15,7 +15,8 @@ export const ROUND = 180;
 /* in screen heights and seconds */
 export const GRAV = 0.5, BALL_R = 0.065, REACH = 0.075, FLOOR = 0.9, LIFT = 0.62, MAX_SIDE = 0.45, COOL = 0.25;
 export const MILESTONES = [10, 25, 50, 75, 100, 125, 150];
-export const SECOND_BALL_AT = 15;
+/* a new ball every BALL_EVERY in a row (10, 20, 30...), up to MAX_BALLS in the air at once */
+export const BALL_EVERY = 10, MAX_BALLS = 10;
 export const BREEZE_EVERY = [9, 15];
 const BALL_COLS = ['#ff5d6c', '#ffb84d', '#ffe36e', '#4cc9a0', '#4da3ff', '#a98bff'];
 
@@ -39,6 +40,12 @@ class KeepItUp {
     this.avatars = new Avatars();
   }
 
+  /* where a new ball starts: the place across the screen furthest from the balls already there */
+  _freeSpot(){
+    let best = 0.5, far = -1;
+    for (let x = 0.12; x <= 0.88; x += 0.04){ const d = Math.min(...this.balls.map(b => Math.abs(b.x - x))); if (d > far){ far = d; best = x; } }
+    return best;
+  }
   _ball(x){ return { x, y: 0.5, vx: 0, vy: 0, rot: 0, spin: 0, cool: 0 }; }
 
   _next(){ return MILESTONES.find(m => m > this.streak) || (Math.floor(this.streak / 25) + 1) * 25; }
@@ -103,9 +110,14 @@ class KeepItUp {
     if (this.streak > this.best) this.best = this.streak;
     this.j.burst(b.x * W, b.y * H, PLAYER_COLORS[who], 6, 0.6);
     sfx.pop?.(0.5 + Math.min(1, this.streak / 40) * 0.6);
-    if (this.streak === SECOND_BALL_AT && this.balls.length < 2){ this.balls.push(this._ball(b.x < 0.5 ? 0.75 : 0.25)); this.say = { text: 'A second ball!', t: 0 }; }
-    else if (MILESTONES.includes(this.streak) || (this.streak > 150 && this.streak % 25 === 0)){
-      this.say = { text: `${this.streak} in a row! Wow!`, t: 0 };
+    const added = this.streak % BALL_EVERY === 0 && this.balls.length < MAX_BALLS;
+    if (added){
+      this.balls.push(this._ball(this._freeSpot()));
+      this.say = { text: this.balls.length === 2 ? 'A second ball!' : `${this.balls.length} balls!`, t: 0 };
+      sfx.tada?.(this.balls.length);
+    }
+    if (MILESTONES.includes(this.streak) || (this.streak > 150 && this.streak % 25 === 0)){
+      if (!added) this.say = { text: `${this.streak} in a row! Wow!`, t: 0 };
       this.j.kick(8); sfx.hooray?.();
       for (let k = 0; k < 16; k++) this.j.burst(W * (0.2 + Math.random() * 0.6), H * (0.2 + Math.random() * 0.4), ['#ffd35c', '#ff7eb3', '#7fd6a2', '#7ab8ff'][k % 4], 4, 1);
     } else if (this.streak >= 3) this.say = { text: `${this.streak} in a row!`, t: Math.min(this.say.t, 0.2) };

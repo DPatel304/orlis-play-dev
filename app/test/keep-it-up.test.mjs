@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { pose } from '../src/tracking/pose.js';
-import keepItUp, { FLOOR, LIFT, SECOND_BALL_AT, ROUND } from '../src/games/keep-it-up.js';
+import keepItUp, { FLOOR, LIFT, BALL_EVERY, MAX_BALLS, ROUND } from '../src/games/keep-it-up.js';
 
 const DT = 1 / 30, W = 1920, H = 1080;
 function players(n){
@@ -51,13 +51,22 @@ test('the ground is soft: the ball bounces back up, the run starts again, the be
   assert.equal(g.value(), 7, 'the best run is the round\'s best');
 });
 
-test('a second ball joins at 15 in a row, and goes when the ground is touched', () => {
+test('a new ball joins every 10 in a row, up to ten, and they all go when the ground is touched', () => {
   players(1);
   const g = keepItUp.create(1);
-  g.streak = SECOND_BALL_AT - 1;
+  g.streak = BALL_EVERY - 1;
   const b = g.balls[0]; Object.assign(b, { x: 0.5, y: 0.6, vx: 0, vy: 0.3 });
   bat(g, 0, b.x, b.y);
-  assert.equal(g.balls.length, 2);
+  assert.equal(g.balls.length, 2, 'the second at 10');
+  assert.ok(Math.abs(g.balls[1].x - g.balls[0].x) > 0.2, 'it starts away from the other');
+  /* every 10 more adds one, and no more than the most */
+  for (let n = 3; n <= MAX_BALLS + 2; n++){
+    g.streak = BALL_EVERY * (n - 1) - 1;
+    const x = g.balls[0]; Object.assign(x, { y: 0.6, vx: 0, vy: 0.3, cool: 0 });
+    bat(g, 0, x.x, x.y);
+    assert.equal(g.balls.length, Math.min(n, MAX_BALLS), 'ball ' + n);
+  }
+  assert.equal(g.balls.length, MAX_BALLS);
   Object.assign(g.balls[1], { y: FLOOR - 0.01, vy: 0.8 });
   g.step(DT, W, H);
   assert.equal(g.balls.length, 1, 'back to one');
