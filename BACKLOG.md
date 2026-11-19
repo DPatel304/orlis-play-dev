@@ -488,6 +488,8 @@ It lives on the left, so it stays clear of the scores and the bear's cave. All t
 ## The game screen standard (written)
 `app/src/games/UI-STANDARD.md`: where the clock, hint words, goal bar, scores (top left, one column), move card (top right,
 26%) and one optional badge (under the card) go, who draws each, and ten rules for new games. `hudZones` / `underHud` /
-`badge` in `hud.js`, with a test that the shell's areas never overlap. It is a standard, not a law: exceptions are written
+`badge` in `hud.js`, with a test that the shell's areas never overlap. The top-left corner is the flexible status panel:
+coloured score pills first, then the game's own chips and bars (`hud().panel`, five rows at most). Not yet used by Last
+Known Position or Castle Defense (they could swap their own displays for it). It is a standard, not a law: exceptions are written
 down at the end of the file. Next steps: tell the Create flow and the creator kit's instructions about it, so a game made
 in Create follows it; and have the games that place targets use `underHud`.

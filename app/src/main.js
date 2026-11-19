@@ -5,7 +5,7 @@ import { toast } from './ui/toast.js';
 import { pose } from './tracking/pose.js';
 import { appMode } from './ui/mode.js';
 import { watchTests } from './ui/tvwatch.js';
-import { hud } from './games/hud.js';
+import { hud, scorePill, chip, statusBar, panelRow, PANEL_ROWS } from './games/hud.js';
 import { figureCard, MOTION } from './games/figure.js';
 import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
@@ -239,7 +239,7 @@ function drawMoveCard(c, W, H, dt){
 function startRound(){
   joined = new Set();
   hud.quiet = false;
-  introLeft = INTRO; introN = 0; moveCard.pose = null; scoreSeen.length = 0; scoreBumpAt.length = 0;
+  introLeft = INTRO; introN = 0; moveCard.pose = null; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
   inst = game.create(players);
   /* A game where squatting is a move keeps players who crouch or sit. */
   pose.keepSitters = !!game.keepSitters;
@@ -364,25 +364,8 @@ function drawIntro(){
   }
   c.restore();
 }
-/* The score pill every game shares: the player's colour, a star, and the number. It bounces and the star twinkles
-   each time the number goes up (bump: 1 right then, back to 0). xLeft is where its left edge goes. */
-const scoreSeen = [], scoreBumpAt = [];
-function drawScorePill(c, xLeft, y, h, color, n, bump){
-  const font = `800 ${Math.round(h * 0.62)}px "Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif`;
-  c.save(); c.font = font; const tw = c.measureText(String(n)).width, w = h * 1.65 + tw;
-  c.translate(xLeft + w / 2, y + h / 2); const k = 1 + 0.28 * Math.sin(Math.min(1, bump) * Math.PI); c.scale(k, k); c.translate(-w / 2, -h / 2);
-  c.shadowColor = 'rgba(20,20,60,.25)'; c.shadowBlur = h * 0.25; c.shadowOffsetY = h * 0.07;
-  c.fillStyle = 'rgba(252,250,244,.96)'; c.beginPath(); c.roundRect(0, 0, w, h, h / 2); c.fill(); c.shadowColor = 'transparent';
-  c.fillStyle = color; c.beginPath(); c.arc(h / 2, h / 2, h * 0.3, 0, 6.2832); c.fill();                       /* the player's colour */
-  const sx = h * 1.12, sy = h / 2, r = h * 0.27;                                                              /* the star */
-  c.save(); c.translate(sx, sy); c.rotate(bump * 1.2); c.beginPath();
-  for (let j = 0; j < 10; j++){ const ang = -Math.PI / 2 + j * Math.PI / 5, rr = j % 2 ? r * 0.45 : r; c.lineTo(Math.cos(ang) * rr, Math.sin(ang) * rr); }
-  c.closePath(); c.fillStyle = color; c.fill(); c.lineJoin = 'round'; c.lineWidth = r * 0.18; c.strokeStyle = '#fff'; c.stroke(); c.fill(); c.restore();
-  c.fillStyle = '#33322e'; c.font = font; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(String(n), h * 1.5, h / 2 + 2);
-  if (bump > 0.05) for (let j = 0; j < 4; j++){ const ang = j * 1.6 + bump * 3; c.globalAlpha = bump; c.fillStyle = color;
-    c.beginPath(); c.arc(sx + Math.cos(ang) * h * 0.46, sy + Math.sin(ang) * h * 0.46, Math.max(1.5, h * 0.05), 0, 6.2832); c.fill(); }
-  c.restore();
-}
+/* what changed in the status panel, for the bounce: when a number goes up, its row bounces */
+const scoreSeen = {}, scoreBumpAt = {};
 
 function drawHUD(){
   if (mode !== 'play' || !inst) return;
@@ -390,14 +373,20 @@ function drawHUD(){
   const hud = inst.hud();
   const pad = Math.max(14, H * 0.03);
   c.textBaseline = 'top';
-  /* A cooperative game can keep score privately and show only the clock. Otherwise a score for each child who has played
-     this round, the same for every game: top left, in one column (first player on top), each in their own colour. */
-  const shown = hud.hideScore ? [] : [...joined].filter(i => i < players).sort();
-  shown.forEach((i, row) => {
-    const n = hud.score[i], h = H * 0.08;
-    if (scoreSeen[i] !== undefined && n > scoreSeen[i]) scoreBumpAt[i] = performance.now();
-    scoreSeen[i] = n;
-    drawScorePill(c, pad, pad + row * h * 1.28, h, PLAYER_COLORS[i], n, Math.max(0, 1 - (performance.now() - (scoreBumpAt[i] || -1e9)) / 450));
+  /* The status panel, top left: one column, the same for every game. A score for each child who has played this round
+     (in their colour) comes first, unless the game keeps score privately; then the rows the game asks for (hud.panel:
+     chips and bars), five rows at most. */
+  const rows = [];
+  for (const i of hud.hideScore ? [] : [...joined].filter(i => i < players).sort()) rows.push({ kind: 'score', key: 'p' + i, n: hud.score[i], color: PLAYER_COLORS[i] });
+  for (const [j, r] of (hud.panel || []).entries()) rows.push(r.fill !== undefined ? { kind: 'bar', key: 'b' + j, ...r } : { kind: 'chip', key: 'c' + j, n: r.value, ...r });
+  const { h, step } = panelRow(H);
+  rows.slice(0, PANEL_ROWS).forEach((r, row) => {
+    const y = pad + row * step;
+    if (r.n !== undefined){ if (scoreSeen[r.key] !== undefined && r.n > scoreSeen[r.key]) scoreBumpAt[r.key] = performance.now(); scoreSeen[r.key] = r.n; }
+    const bump = Math.max(0, 1 - (performance.now() - (scoreBumpAt[r.key] || -1e9)) / 450);
+    if (r.kind === 'score') scorePill(c, pad, y, h, r.color, r.n, bump);
+    else if (r.kind === 'chip') chip(c, pad, y, h, { icon: r.icon, value: r.value, bump });
+    else statusBar(c, pad, y, h, r);
   });
   /* A game that lasts as long as you hold out has no clock to show. */
   if (hud.hideClock){ c.textAlign = 'start'; c.textBaseline = 'alphabetic'; return; }
