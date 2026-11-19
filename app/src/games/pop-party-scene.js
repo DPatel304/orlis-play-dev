@@ -81,9 +81,11 @@ export class Scene {
     this.rainbow = 0;
     /* One unprompted rainbow a round, besides the parade's. */
     this.rainbowAt = 70 + Math.random() * 140;
-    /* Lite mode: if the laptop can't keep up - the pose model shares it -
-       the scene sheds its extras for the rest of the round rather than let
-       the game stutter. It never switches back, so it can't flicker. */
+    /* Lite mode: if the laptop really can't keep up - the pose model shares it -
+       the scene sheds its extras (the sun's glow, the drifting petals, fewer flowers) for the rest of the round rather than let
+       the game stutter. It never switches back, so it can't flicker, and it never takes the grass: a meadow with no grass
+       looks broken. A stall (the camera starting, the window switching) isn't the laptop struggling, and the first seconds
+       don't count. */
     this.lite = false; this.frame = 1 / 60; this.slowFor = 0;
   }
 
@@ -91,9 +93,10 @@ export class Scene {
         joy 0..1, look 0..1, rainbow (bool) } */
   step(dt, s){
     this.t = s.t; this.p = Math.min(1, s.p);
-    this.frame += (dt - this.frame) * 0.05;
-    this.slowFor = this.frame > 1 / 42 ? this.slowFor + dt : 0;
-    if (this.slowFor > 3) this.lite = true;
+    const stall = dt > 0.25;
+    if (!stall) this.frame += (dt - this.frame) * 0.05;
+    this.slowFor = !stall && this.t > 8 && this.frame > 1 / 42 ? this.slowFor + dt : 0;
+    if (this.slowFor > 4) this.lite = true;
     this.storm += ((s.storm ? 1 : 0) - this.storm) * Math.min(1, dt * 0.7);
     this.joy += (s.joy - this.joy) * Math.min(1, dt * 3);
     /* Eased hard, so a lunge for a balloon nudges the world rather than
@@ -148,7 +151,7 @@ export class Scene {
   drawFront(c, W, H){
     const L = lighting(this.p);
     const ground = (base) => mix(mix(base, L.light, L.amt), BLACK, L.dark);
-    if (!this.lite) this._grass(c, W, H, ground);
+    this._grass(c, W, H, ground);
     this._flowers(c, W, H);
     if (!this.lite) this._petals(c, W, H);
     this._grain(c, W, H);
@@ -204,9 +207,10 @@ export class Scene {
     c.beginPath();
     for (let i = 0; i < 12; i++){
       const a = i * Math.PI / 6, ca = Math.cos(a), sa = Math.sin(a);
-      c.moveTo(0, 0);
-      c.lineTo(len * ca + sr * 0.35 * sa, len * sa - sr * 0.35 * ca);
-      c.lineTo(len * ca - sr * 0.35 * sa, len * sa + sr * 0.35 * ca);
+      /* a wedge that is wide where it leaves the sun and tapers to a point, so the rays fade out instead of ending in hard edges */
+      c.moveTo(sr * 1.05 * ca + sr * 0.38 * sa, sr * 1.05 * sa - sr * 0.38 * ca);
+      c.lineTo(len * ca, len * sa);
+      c.lineTo(sr * 1.05 * ca - sr * 0.38 * sa, sr * 1.05 * sa + sr * 0.38 * ca);
       c.closePath();
     }
     c.fill();

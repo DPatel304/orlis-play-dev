@@ -88,7 +88,24 @@ test('a laptop that cannot keep up gets a lighter scene, and keeps it', () => {
 
   for (let i = 0; i < 30 * 5; i++) sc.step(1 / 30, calm({ t: 12 + i / 30 }));
   assert.equal(sc.lite, true, 'five seconds at 30fps should drop to the lighter scene');
+  assert.ok(sc.lite && typeof sc._grass === 'function', 'but the grass is never one of the extras it drops');
 
   for (let i = 0; i < 60 * 10; i++) sc.step(1 / 60, calm({ t: 17 + i / 60 }));
   assert.equal(sc.lite, true, 'and stay there, rather than flicker back and forth');
+});
+
+test('a stall (the camera starting) or the first seconds do not tip the scene into lite mode, and lite mode keeps the grass', () => {
+  const sc = new Scene();
+  /* a few long stalls at the start, as the camera wakes */
+  for (const dt of [0.8, 1.2, 0.6, 0.9]) sc.step(dt, calm({ t: 0 }));
+  for (let i = 0; i < 60 * 6; i++) sc.step(1 / 60, calm({ t: i / 60 }));
+  assert.equal(sc.lite, false, 'stalls are not a struggling laptop');
+  /* slow in the first seconds does not count either */
+  const early = new Scene();
+  for (let i = 0; i < 30 * 7; i++) early.step(1 / 20, calm({ t: i / 20 }));
+  assert.equal(early.lite, false, 'the first eight seconds are free');
+  /* lite or not, the front of the meadow draws the grass */
+  const drawn = [];
+  const c = new Proxy({}, { get(t, k){ if (k in t) return t[k]; if (k === 'createLinearGradient' || k === 'createRadialGradient') return () => ({ addColorStop(){} }); if (k === 'measureText') return () => ({ width: 1 }); return (...a) => { drawn.push(k); }; }, set(t, k, v){ t[k] = v; return true; } });
+  for (const lite of [false, true]){ const s2 = new Scene(); s2.lite = lite; drawn.length = 0; let strokes = 0; const g = s2._grass; s2._grass = function(...a){ strokes++; return g.apply(this, a); }; s2.drawFront(c, 1920, 1080); assert.equal(strokes, 1, 'the grass is drawn (lite: ' + lite + ')'); }
 });

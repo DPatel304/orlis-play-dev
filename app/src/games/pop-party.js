@@ -578,15 +578,15 @@ class PopParty {
        see, and their hands are the glowing mitts, on top of everything. */
     const shook = this.j.applyShake(c);
 
+    /* The meadow's grass and flowers go down first, and the balloons, their strings and the animal go on top of them: a balloon is
+       always the top layer, so it never slips under a flower. */
+    this.scene.drawFront(c, W, H);
     c.lineCap = 'round'; c.lineJoin = 'round';
     c.strokeStyle = 'rgba(70,60,110,.55)';
     c.lineWidth = Math.max(1.5, H * 0.0022);
     for (const b of this.balloons) rope(c, b.str);
     for (const b of this.balloons) this._balloon(c, b, W, H);
     if (this.animal) drawAnimal(c, this.animal, W, H);
-    /* Grass and flowers stand in front of the balloons, so a new one rises
-       from behind the meadow rather than appearing over it. */
-    this.scene.drawFront(c, W, H);
     this._drawFx(c, H);
     this.j.draw(c, H);
     if (shook) c.restore();

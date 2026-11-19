@@ -989,9 +989,13 @@ const ownBand = {
    lift() is asked for a moment. */
 let ambT = null, ambStep = 0, ambLift = 0;
 const AMB = [[60, 64, 67], [57, 60, 64], [53, 57, 60], [55, 59, 62]];
+/* Music is off for now: Orlis's own songs are on their way (five of them), and until they arrive there is no music anywhere - not the
+   home screen's drifting chords, not a game's band. Sounds (pops, chimes, voices) are untouched. Turn it back on here. */
+export const MUSIC = { on: false };
+
 export const ambience = {
   start(){
-    if (ambT) return;
+    if (!MUSIC.on || ambT) return;
     ctx();
     const play = () => {
       if (!AC || state.muted) return;
@@ -1008,6 +1012,7 @@ export const ambience = {
 
 export const music = {
   start(kind = null){
+    if (!MUSIC.on) return;
     /* A game with music of its own plays that. */
     if (kind && OWN[kind]){ ownBand.start(kind); return; }
     /* Quiet from the first note, rather than starting loud and sinking. */

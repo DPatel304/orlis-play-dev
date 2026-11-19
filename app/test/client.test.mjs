@@ -171,3 +171,10 @@ test('one app, modes by install: Player has Play, Discover and Create; Creator h
   const rust = readFileSync(new URL('../client/src-tauri/src/main.rs', import.meta.url), 'utf8');
   assert.ok(rust.includes('option_env!("ORLIS_MODE").unwrap_or("")') && rust.includes('window.ORLIS_MODE'), 'the build says which mode it is, if it was told');
 });
+
+test('no music for now: the home screen and the games start none (sounds stay), and the switch is one line', async () => {
+  const src = readFileSync(new URL('../src/audio/sound.js', import.meta.url), 'utf8');
+  assert.match(src, /export const MUSIC = \{ on: false \};/, 'music is off until the songs arrive');
+  assert.match(src, /start\(\)\{\n    if \(!MUSIC\.on \|\| ambT\) return;/, 'the home screen\'s chords wait for it');
+  assert.match(src, /start\(kind = null\)\{\n    if \(!MUSIC\.on\) return;/, 'and so does a game\'s band');
+});

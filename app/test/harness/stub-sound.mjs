@@ -16,6 +16,7 @@ export const sfx = recorder();
 export const music = recorder();
 /* (muted and quiet can be switched on by a test: stub.muted, stub.quiet) */
 export const stub = { muted: false, quiet: false };
+export const MUSIC = { on: false };
 const sound = { volume: 0.7, get muted(){ return stub.muted; } };
 export const audio = new Proxy({}, { get: (t, k) => k in sound ? sound[k] : k === 'then' ? undefined : noop });
 export const ambience = recorder();
