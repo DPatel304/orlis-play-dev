@@ -1,4 +1,5 @@
 import { worldOverlook } from './lkp-world.js';
+import { cell } from './grid.js';
 import { clamp, scores } from './common.js';
 import { pose, L, PLAYER_COLORS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
@@ -2061,7 +2062,8 @@ class LastKnownPosition {
 
   /* Where the XP bar's crystal sits, top right: where picked-up crystals
      fly to. */
-  _xpAt(W, H){ return { x: W - H * 0.42, y: H * 0.07 }; }
+  /* where the crystals fly to: the XP bar's picture, in the game's corner (its second row, after the level) */
+  _xpAt(W, H){ const b = cell(W, H, 1, 1, 5, 1); return { x: b.x + b.h * 0.5, y: b.y + b.h / 2 }; }
 
   _drawHud(c, W, H){
     if (this.demo) return;
@@ -2078,26 +2080,7 @@ class LastKnownPosition {
     }
     /* The boss's health, big across the top. */
     if (this.boss && !this.boss.done) this.boss.hud(c, W, H);
-    /* The team's level and XP, top right: a crystal, the level, the bar
-       filling - flashing as crystals land in it. */
-    {
-      const at = this._xpAt(W, H), x0 = at.x - H * 0.045, x1 = W - H * 0.04, y = at.y, pulse = this.xpPulse;
-      const bx = at.x + H * 0.13, bw = x1 - H * 0.025 - bx, bh = H * 0.02;
-      c.save();
-      card(c, x0, y - H * 0.04, x1 - x0, H * 0.08, H * 0.04);
-      drawCrystal(c, at.x, y, H * 0.022 * (1 + 0.35 * pulse), this.t);
-      c.font = `700 ${Math.round(H * 0.038)}px Fredoka, sans-serif`; c.textAlign = 'left'; c.textBaseline = 'middle';
-      c.fillStyle = INK; c.fillText(`LV ${this.lvl}`, at.x + H * 0.035, y + H * 0.003);
-      c.fillStyle = 'rgba(58,51,96,.12)'; c.beginPath(); c.roundRect(bx, y - bh / 2, bw, bh, bh / 2); c.fill();
-      c.fillStyle = pulse > 0 ? `rgb(${Math.round(127 + 100 * pulse)},${Math.round(184 + 50 * pulse)},${Math.round(201 + 40 * pulse)})` : '#7fb8c9';
-      c.beginPath(); c.roundRect(bx, y - bh / 2, Math.max(bh, bw * Math.min(1, this.xp / needFor(this.lvl))), bh, bh / 2); c.fill();
-      /* Under it, a star for each level up waiting to be picked - gold for a gold pick. */
-      const stars = '\u2605'.repeat(Math.min(5, this.golds));
-      c.textAlign = 'right'; c.font = `700 ${Math.round(H * 0.03)}px Fredoka, sans-serif`;
-      if (this.pending > 0){ c.fillStyle = SOFT_INK; c.fillText('\u2605'.repeat(Math.min(5, this.pending)), x1 - H * 0.02, y + H * 0.065); }
-      if (this.golds > 0){ c.fillStyle = '#ffd24a'; c.fillText(stars, x1 - H * 0.02 - (this.pending > 0 ? H * 0.03 * Math.min(5, this.pending) : 0), y + H * 0.065); }
-      c.restore();
-    }
+    /* (the team's level and XP are in the game's corner now: the shell draws them, from hud().panel) */
     /* The floor, as a row of pips along the top: where the crew are. */
     /* (this level's part of the plan: up to its end) */
     const plan = this.level.plan.slice(0, this.level.plan.indexOf('end') + 1), n = plan.length - 1, w = H * 0.034;
@@ -2176,7 +2159,16 @@ class LastKnownPosition {
   /* No pausing by gesture: hands up is how you grab the zip line, and
      reach for the treasure. */
   pausable(){ return false; }
-  hud(){ return { score: pose.players.map(() => this.crystals), showLives: false, hideScore: true, hideClock: true }; }
+  /* The team's level and XP in the game's corner (top left): the level, the bar filling with XP, and a chip for each level up
+     waiting to be picked. (Nothing while the intro or a demo plays.) */
+  hud(){
+    const show = !this.demo && !this.inIntro && !this.noHud, panel = [];
+    if (show){
+      panel.push({ icon: '\u2B50', value: this.lvl }, { icon: '\u{1F48E}', fill: Math.min(1, this.xp / needFor(this.lvl)), color: 'gold' });
+      if (this.pending > 0) panel.push({ icon: '\u2728', value: this.pending });
+    }
+    return { score: pose.players.map(() => this.crystals), showLives: false, hideScore: true, hideClock: true, panel };
+  }
   /* The tally: what the score's made of - each [picture, count, worth]. */
   tallyLines(){
     return [['\u{1F48E}', this.crystals, this.crystals], ['\u{1F916}', this.kills, this.kills * SCORE.kill], ['\u{1F451}', this.bosses, this.bosses * SCORE.boss]];

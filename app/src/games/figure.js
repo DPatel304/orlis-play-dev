@@ -142,20 +142,14 @@ const easeOut = (k) => 1 - Math.pow(1 - k, 3), easeIn = (k) => k * k * k;
 
 /* draw the card for a pose. K: the card's side in pixels. cx, cy: its middle. t: seconds into the move. alpha: fade (0..1).
    face: force a face (for looking at them). */
-export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
+/* Cubo on his own, without the card: for the cover, the pause and the results. s: a body size in pixels (the card uses a quarter
+   of its side). (cx, cy) is where the middle of the figure goes. face: force a face. marks: draw the arrows and twinkles too. */
+export function drawFigure(c, pose, cx, cy, s, t, face = null, marks = false){
   const make = POSES[pose]; if (!make) return;
-  const fr = frameAt(pose, t), q = make(fr.p), s = K * 0.25, yo = q.yOff || 0, lean = q.lean || 0;
+  const fr = frameAt(pose, t), q = make(fr.p), yo = q.yOff || 0, lean = q.lean || 0;
   const sh = { x: lean * 0.6, y: -0.6 + yo }, hip = { x: lean * 0.1, y: -0.05 + yo };
   const legs = q.legs || [[[-0.15, 0.32], [-0.2, 0.7]], [[0.15, 0.32], [0.2, 0.7]]];
-  const bob = (fr.i % 2 ? 1 : -1) * K * 0.006;                           /* floating: it steps up and down with the drawings */
-  c.save(); c.globalAlpha *= alpha; c.translate(cx, cy + bob);
-  /* the card: white, a thick indigo border, and a big soft shadow well under it, so it lifts off whatever is behind */
-  const e = K * CARD.edgeW, rr = K * 0.17;
-  c.shadowColor = 'rgba(10,10,50,.42)'; c.shadowBlur = K * 0.14; c.shadowOffsetY = K * 0.085;
-  c.fillStyle = CARD.fill; c.beginPath(); c.roundRect(-K / 2, -K / 2, K, K, rr); c.fill();
-  c.shadowColor = 'transparent';
-  c.strokeStyle = CARD.edge; c.lineWidth = e; c.beginPath(); c.roundRect(-K / 2 + e / 2, -K / 2 + e / 2, K - e, K - e, rr - e / 2); c.stroke();
-  c.translate(0, K * 0.12); c.lineCap = 'round'; c.lineJoin = 'round';
+  c.save(); c.translate(cx, cy); c.lineCap = 'round'; c.lineJoin = 'round';
   const line = (pts) => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x * s, y * s) : c.moveTo(x * s, y * s))); c.stroke(); };
   const ends = (r, col) => { c.fillStyle = col; for (const l of [...q.arms, ...legs]){ const p2 = l[l.length - 1]; c.beginPath(); c.arc(p2[0] * s, p2[1] * s, r, 0, 6.2832); c.fill(); } };
   const hr = s * 0.6 * CARD.headSize, hy = sh.y - 0.08 - hr / s;          /* the head sits right on the shoulders, so he's all one piece */
@@ -164,10 +158,26 @@ export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
   pass(s * 0.3, CARD.line); ends(s * 0.17, CARD.line);                    /* the dark outline, then the body over it */
   pass(s * 0.17, CARD.body); ends(s * 0.11, CARD.body);
   head(c, sh.x * s, hy * s, hr, face || fr.face);
-  for (const a of (MARKS[pose] || {})[fr.i] || []) arrow(c, s, a);
-  if (pose === 'freeze') [[-1.3, -1.5], [1.3, -0.9], [-1.25, 0.1], [1.2, 0.35]].forEach(([x, y], j) => { if ((j + fr.i) % 2) return;   /* ice twinkles, a different pair each drawing */
-    const r = s * 0.2; c.beginPath(); c.moveTo(x * s, y * s - r * 1.5); c.lineTo(x * s + r, y * s); c.lineTo(x * s, y * s + r * 1.5); c.lineTo(x * s - r, y * s); c.closePath();
-    c.fillStyle = '#9be0ff'; c.fill(); c.strokeStyle = CARD.line; c.lineWidth = s * 0.07; c.lineJoin = 'round'; c.stroke(); });
+  if (marks){
+    for (const a of (MARKS[pose] || {})[fr.i] || []) arrow(c, s, a);
+    if (pose === 'freeze') [[-1.3, -1.5], [1.3, -0.9], [-1.25, 0.1], [1.2, 0.35]].forEach(([x, y], j) => { if ((j + fr.i) % 2) return;   /* ice twinkles, a different pair each drawing */
+      const r = s * 0.2; c.beginPath(); c.moveTo(x * s, y * s - r * 1.5); c.lineTo(x * s + r, y * s); c.lineTo(x * s, y * s + r * 1.5); c.lineTo(x * s - r, y * s); c.closePath();
+      c.fillStyle = '#9be0ff'; c.fill(); c.strokeStyle = CARD.line; c.lineWidth = s * 0.07; c.lineJoin = 'round'; c.stroke(); });
+  }
+  c.restore();
+}
+
+export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
+  if (!POSES[pose]) return;
+  const fr = frameAt(pose, t), bob = (fr.i % 2 ? 1 : -1) * K * 0.006;     /* floating: it steps up and down with the drawings */
+  c.save(); c.globalAlpha *= alpha; c.translate(cx, cy + bob);
+  /* the card: white, a thick indigo border, and a big soft shadow well under it, so it lifts off whatever is behind */
+  const e = K * CARD.edgeW, rr = K * 0.17;
+  c.shadowColor = 'rgba(10,10,50,.42)'; c.shadowBlur = K * 0.14; c.shadowOffsetY = K * 0.085;
+  c.fillStyle = CARD.fill; c.beginPath(); c.roundRect(-K / 2, -K / 2, K, K, rr); c.fill();
+  c.shadowColor = 'transparent';
+  c.strokeStyle = CARD.edge; c.lineWidth = e; c.beginPath(); c.roundRect(-K / 2 + e / 2, -K / 2 + e / 2, K - e, K - e, rr - e / 2); c.stroke();
+  drawFigure(c, pose, 0, K * 0.12, K * 0.25, t, face, true);
   c.restore();
 }
 

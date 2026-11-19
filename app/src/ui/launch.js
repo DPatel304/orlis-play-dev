@@ -1,3 +1,4 @@
+import { cubo } from './cubo.js';
 /* Going into a game: the tile you picked opens up to fill the screen - its
    own cover, title and all - and stays there while the game gets ready (the
    camera starts underneath; nothing is said about it). When the game's
@@ -35,7 +36,8 @@ export const launch = {
     const el = this.el; if (!el || el.querySelector('.launchcard')) return;
     const esc = (s) => String(s).replace(/[&<>]/g, '');
     el.classList.add('hascard');
-    el.insertAdjacentHTML('beforeend', `<div class="launchcard"><h2>${esc(title)}</h2><p>${esc(blurb)}</p><div class="launchcount"><span class="ld"><i></i><i></i><i></i></span></div></div>`);
+    el.insertAdjacentHTML('beforeend', `<div class="launchcard"><h2>${esc(title)}</h2><p>${esc(blurb)}</p><div class="launchcount"></div></div>`);
+    cubo(el.querySelector('.launchcount'), { pose: 'march', className: 'cubo launchcubo' });      /* Cubo marches while the camera starts */
   },
   count(n){
     const box = this.el && this.el.querySelector('.launchcount'); if (!box) return;

@@ -12,7 +12,7 @@ import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
 import { menu, toggleFullscreen, openSettings, played as playedLately, BLURB } from './ui/menu.js';
 import { remote, typing } from './ui/remote.js';
-import { account, welcome } from './ui/account.js';
+import { account, welcome, AVATARS } from './ui/account.js';
 import { installTitlebar, titlebarPlaying } from './ui/titlebar.js';
 import { library } from './ui/library.js';
 import { storePage } from './ui/store.js';
@@ -242,7 +242,7 @@ function startRound(){
   joined = new Set();
   hud.quiet = false;
   veilIntro = !!launch.el && launch.el.classList.contains('hascard');
-  introLeft = veilIntro ? 3 : INTRO; introN = 0; moveCard.pose = null; hud.introText = null; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
+  introLeft = veilIntro ? 3 : INTRO; introN = 0; moveCard.pose = null; hud.introText = null; hud.spoken = false; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
   inst = game.create(players);
   /* A game where squatting is a move keeps players who crouch or sit. */
   pose.keepSitters = !!game.keepSitters;
@@ -367,6 +367,8 @@ function drawIntro(){
   }
   c.restore();
 }
+/* the first words of a round are said aloud once (for the ones who can't read yet) */
+hud.speak = (text) => voice.say(text);
 /* what changed in the status panel, for the bounce: when a number goes up, its row bounces */
 const scoreSeen = {}, scoreBumpAt = {};
 
@@ -376,19 +378,23 @@ function drawHUD(){
   const hud = inst.hud();
   c.textBaseline = 'top';
   /* The game's own corner, top left, on the grid (grid.js): the scores in the first row, each in its player's colour, side by
-     side (unless the game keeps score privately); then the rows the game asks for (hud.panel: chips and bars) under them,
-     three at most. */
+     side, two to a row (unless the game keeps score privately); then the rows the game asks for (hud.panel: chips and bars)
+     under them, four rows in all. */
   const bumpOf = (key, n) => {
     if (n !== undefined){ if (scoreSeen[key] !== undefined && n > scoreSeen[key]) scoreBumpAt[key] = performance.now(); scoreSeen[key] = n; }
     return Math.max(0, 1 - (performance.now() - (scoreBumpAt[key] || -1e9)) / 450);
   };
-  const first = cell(W, H, 1, 0);
-  let x = first.x;
-  for (const i of hud.hideScore ? [] : [...joined].filter(i => i < players).sort()){
-    x += scorePill(c, x, first.y, first.h, PLAYER_COLORS[i], hud.score[i], bumpOf('p' + i, hud.score[i])) + first.h * 0.15;
-  }
-  (hud.panel || []).slice(0, PANEL_ROWS).forEach((r, j) => {
-    const b = cell(W, H, 1, 1 + j, 5, 1);
+  const ids = hud.hideScore ? [] : [...joined].filter(i => i < players).sort();
+  const xs = [];                                          /* where the next pill in each row goes */
+  ids.forEach((i, k) => {
+    const row = Math.floor(k / 2), at = cell(W, H, 1, row), prof = MAKING && crew.profileOf(i);
+    const mark = prof && AVATARS[prof.avatar] ? { emoji: AVATARS[prof.avatar] } : { shape: i };
+    if (xs[row] === undefined) xs[row] = at.x;
+    xs[row] += scorePill(c, xs[row], at.y, at.h, PLAYER_COLORS[i], hud.score[i], bumpOf('p' + i, hud.score[i]), mark) + at.h * 0.15;
+  });
+  const used = Math.ceil(ids.length / 2);
+  (hud.panel || []).slice(0, PANEL_ROWS - used).forEach((r, j) => {
+    const b = cell(W, H, 1, used + j, 5, 1);
     if (r.fill !== undefined) statusBar(c, b.x, b.y, b.h, { ...r, w: b.w });
     else chip(c, b.x, b.y, b.h, { icon: r.icon, value: r.value, bump: bumpOf('c' + j, r.value) });
   });

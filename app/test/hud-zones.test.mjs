@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hudZones, underHud, badge, hud, sayBubble, PANEL_ROWS, scorePill, chip, statusBar, BAR_COLORS } from '../src/games/hud.js';
+import { hudZones, underHud, badge, hud, sayBubble, spoken, PANEL_ROWS, scorePill, chip, statusBar, BAR_COLORS } from '../src/games/hud.js';
 import { COLS, ROWS, SLOTS, gridOf, block, cell } from '../src/games/grid.js';
 
 const overlap = (a, b) => a.x < b.x + b.w - 0.5 && b.x < a.x + a.w - 0.5 && a.y < b.y + b.h - 0.5 && b.y < a.y + a.h - 0.5;
@@ -59,4 +59,25 @@ test('the three pieces draw, and bars only use the allowed colours', () => {
   assert.ok(calls.filter(x => x === 'roundRect').length >= 5 && calls.includes('fillText'), 'pill, chip and bar all draw');
   const taken = ['#3da9ff', '#ff8a3d', '#3fcf7f', '#c46bff', '#ff7a59'];
   for (const col of Object.values(BAR_COLORS)) assert.ok(!taken.includes(col), `${col} is not a player colour or the arrow orange`);
+});
+
+test('the first words of a round are said once, without their pictures', () => {
+  assert.equal(spoken('\u{1F388} Pop the balloons!'), 'Pop the balloons!');
+  assert.equal(spoken('\u{1F992} Stretch up tall!'), 'Stretch up tall!');
+  const said = []; const c = new Proxy({}, { get: (_, k) => k === 'measureText' ? () => ({ width: 100 }) : () => {}, set: () => true });
+  hud.quiet = false; hud.introText = null; hud.spoken = false; hud.speak = (t) => said.push(t);
+  sayBubble(c, 1600, 900, { text: '\u{1F3D0} Keep it up!', t: 0 });            /* not yet: the game hasn't started */
+  assert.equal(said.length, 0);
+  sayBubble(c, 1600, 900, { text: '\u{1F3D0} Keep it up!', t: 0.3 }); sayBubble(c, 1600, 900, { text: '\u{1F3D0} Keep it up!', t: 0.6 });
+  sayBubble(c, 1600, 900, { text: '3 in a row!', t: 0.3 });
+  assert.deepEqual(said, ['Keep it up!'], 'said once, and later words are not said');
+  hud.speak = null; hud.introText = null; hud.spoken = false;
+});
+
+test('every game\'s first words are short: a picture and at most four words', async () => {
+  const { GAMES } = await import('../src/games/index.js');
+  for (const g of GAMES){ if (g.id === 'last-known-position' || g.id === 'castle-defense' || g.id === 'sky-painter') continue;
+    const i = g.create(1), t = i.say && i.say.text; if (!t) continue;
+    const words = spoken(t).split(' ').filter(Boolean); assert.ok(words.length <= 4, `${g.id}: "${t}" is ${words.length} words`);
+    assert.ok(/\p{Extended_Pictographic}/u.test(t), `${g.id}: "${t}" starts with a picture`); }
 });

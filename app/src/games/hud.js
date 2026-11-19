@@ -7,9 +7,11 @@ export const hud = { quiet: false };
 const INK = '#33322e', PAPER = 'rgba(250,247,238,.95)';
 const FONT = 'Inter, Segoe UI, sans-serif';
 
+/* the words as they are said: no pictures */
+export const spoken = (text) => String(text).replace(/[^\p{L}\p{N}\s'\u2019!?.,\u2026-]/gu, '').replace(/\s+/g, ' ').trim();
 const ease = (k) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
 /* the first words of a round arrive big, in the middle of the screen, then shrink and dock into their place; the shell clears this at each round's start */
-hud.introText = null;
+hud.introText = null; hud.spoken = false; hud.speak = null;   /* (the shell sets speak: the first words of a round are said once, as the game starts) */
 const INTRO = { scale: 2, hold: 2.0, travel: 0.55 };
 
 /* text: the words. t: seconds since they changed (they ease in). x, y: where, as a share of the screen. until: seconds
@@ -18,6 +20,7 @@ export function sayBubble(c, W, H, { text, t = 1, x = null, y = null, until = In
   if (hud.quiet || !text) return;
   const ws = slot(W, H, 'words'); if (x === null) x = ws.cx / W; if (y === null) y = ws.cy / H;   /* the words' place in the grid (a game can still nudge it) */
   if (hud.introText === null) hud.introText = text;
+  if (text === hud.introText && t > 0.05 && !hud.spoken){ hud.spoken = true; if (hud.speak) hud.speak(spoken(text)); }
   const out = isFinite(until) ? Math.max(0, Math.min(1, (until - t) / 0.5)) : 1;
   if (out <= 0) return;
   let k = Math.min(1, t / 0.25), scale = 0.85 + 0.15 * k, px = W * x, py = H * y;
@@ -92,20 +95,38 @@ export function badge(c, W, H, { icon = '', value = '', color = '#7398c4', bump 
 
 /* The colours a bar may be filled with: not a player's colour, and not the arrows' orange. */
 export const BAR_COLORS = { gold: '#f5c542', rose: '#e85d8a', indigo: '#5b5fc7' };
-/* The scores take the first row of the corner; the game's own chips and bars take at most this many rows under them. */
-export const PANEL_ROWS = 3;
+/* The corner has four rows in all: the scores take the first one or two (two players to a row), and the game's own chips and
+   bars take the rest. */
+export const PANEL_ROWS = 4;
 
 const bounce = (bump) => 1 + 0.28 * Math.sin(Math.min(1, Math.max(0, bump)) * Math.PI);
 function lift(c, h){ c.shadowColor = 'rgba(20,20,60,.25)'; c.shadowBlur = h * 0.25; c.shadowOffsetY = h * 0.07; }
 
-/* A player's score: a pill in their colour with a big white number. bump: 1 right as it goes up, easing to 0. */
-export function scorePill(c, x, y, h, color, n, bump = 0){
+/* A player's score: a pill in their colour with the player's mark on the left (their avatar, or a shape: circle, triangle,
+   square, diamond, so players can be told apart without colour) and a big white number with a dark edge, so it reads on any
+   colour. bump: 1 right as it goes up, easing to 0. mark: { emoji } or { shape: 0 to 3 }. Returns the pill's width. */
+export function scorePill(c, x, y, h, color, n, bump = 0, mark = null){
   const font = `800 ${Math.round(h * 0.66)}px ${FONT}`;
-  c.save(); c.font = font; const w = Math.max(h * 1.35, h * 0.9 + c.measureText(String(n)).width);
+  c.save(); c.font = font; const tw = c.measureText(String(n)).width, w = Math.max(h * 2.3, h * 1.25 + tw + h * 0.35);
   c.translate(x + w / 2, y + h / 2); const k = bounce(bump); c.scale(k, k); c.translate(-w / 2, -h / 2);
   lift(c, h); c.fillStyle = color; c.beginPath(); c.roundRect(0, 0, w, h, h / 2); c.fill(); c.shadowColor = 'transparent';
   c.strokeStyle = '#fff'; c.lineWidth = h * 0.07; c.beginPath(); c.roundRect(h * 0.035, h * 0.035, w - h * 0.07, h - h * 0.07, h / 2); c.stroke();
-  c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(n), w / 2, h / 2 + 2);
+  /* the mark, on a white disc */
+  const mx = h * 0.52, my = h / 2, r = h * 0.34;
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(mx, my, r, 0, 6.2832); c.fill();
+  if (mark && mark.emoji){ c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `${Math.round(h * 0.42)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; c.fillStyle = '#000'; c.fillText(mark.emoji, mx, my + 1); }
+  else {
+    const s = mark && mark.shape != null ? mark.shape % 4 : 0, q = r * 0.55; c.fillStyle = '#1e1b4b'; c.beginPath();
+    if (s === 0) c.arc(mx, my, q, 0, 6.2832);
+    else if (s === 1){ c.moveTo(mx, my - q * 1.1); c.lineTo(mx + q * 1.1, my + q * 0.9); c.lineTo(mx - q * 1.1, my + q * 0.9); c.closePath(); }
+    else if (s === 2) c.rect(mx - q, my - q, q * 2, q * 2);
+    else { c.moveTo(mx, my - q * 1.25); c.lineTo(mx + q * 1.1, my); c.lineTo(mx, my + q * 1.25); c.lineTo(mx - q * 1.1, my); c.closePath(); }
+    c.fill();
+  }
+  /* the number: white with a dark edge */
+  c.font = font; c.textAlign = 'center'; c.textBaseline = 'middle'; const nx = h * 1.2 + (w - h * 1.2) / 2, ny = h / 2 + 2;
+  c.lineJoin = 'round'; c.lineWidth = h * 0.16; c.strokeStyle = '#1e1b4b'; c.strokeText(String(n), nx, ny);
+  c.fillStyle = '#fff'; c.fillText(String(n), nx, ny);
   c.restore();
   return w;
 }

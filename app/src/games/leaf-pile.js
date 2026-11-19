@@ -39,6 +39,9 @@ export const PILE = { x: 0.5, y: 0.86 }, PULL = 0.28;
 const GROUND_TOP = 0.7, GROUND_BOTTOM = 0.9, START_LEAVES = 46, MAX_LEAVES = 90;
 const COLS = ['#e0893b', '#d4643a', '#e8b44a', '#c9503a', '#d99a3b'];
 
+/* (the words when the pile is big enough: the move card shows a jump while they're up) */
+const JUMP_IN = '\u{1F342} Jump in!';
+
 export default {
   id: 'leaf-pile', unit: 'leaves', name: 'Leaf Pile', stars: 1, accent: '#d9853b', secs: ROUND,
   moves: ['sweep', 'jump'],
@@ -71,7 +74,7 @@ class LeafPile {
     this.jumps = new JumpWatch({ rise: 0.08, speed: 0.5 });
     this.scene = new Scene(AUTUMN);
     this.avatars = new Avatars();
-    this.say = { text: 'Sweep the leaves into the pile!', t: 0 };
+    this.say = { text: '\u{1F342} Sweep to the pile!', t: 0 };
   }
 
   /* a leaf: lying on the grass (onGround), or falling from the trees */
@@ -190,7 +193,7 @@ class LeafPile {
   _pileR(){ return 0.06 + Math.min(1, this.pile / this.need) * 0.08; }
   _full(){
     this.ready = 0.001; this.jumped.clear();
-    this.say = { text: 'Jump in!', t: 0 };
+    this.say = { text: JUMP_IN, t: 0 };
     sfx.tada?.(0);
   }
   /* everyone jumped in: the pile bursts, and comes down all over */
@@ -243,7 +246,7 @@ class LeafPile {
   _meter(c, W, H){ goalBar(c, W, H, this.ready ? 1 : this.pile / this.need, { color: this.ready ? '#e8b44a' : '#e0893b' }); }
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it when the game says to jump in) */
-  card(){ return this.say.text === 'Jump in!' && this.say.t < 6 ? 'jump' : null; }
+  card(){ return this.say.text === JUMP_IN && this.say.t < 6 ? 'jump' : null; }
   hud(){ return { score: this.score, showLives: false }; }
   /* arms go up a lot (and in the jump); Back on the remote still pauses */
   pausable(){ return false; }

@@ -5,7 +5,7 @@
    Nothing to lose: if the ball reaches the ground it just bounces back up and the count starts again. The best run
    is the round's best. Gentle by design - a hit always sends the ball up, a little toward where the hand was going. */
 import { Juice } from './common.js';
-import { sayBubble, goalBar } from './hud.js';
+import { sayBubble, goalBar, hudZones } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
@@ -33,7 +33,7 @@ class KeepItUp {
     this.streak = 0; this.best = 0; this.hits = 0;
     this.t = 0; this.over = false;
     this.breezeT = 6 + Math.random() * 4; this.breeze = 0; this.breezeLeft = 0;
-    this.say = { text: 'Keep the ball up!', t: 0 };
+    this.say = { text: '\u{1F3D0} Keep it up!', t: 0 };
     this.j = new Juice();
     this.scene = new Scene();
     this.avatars = new Avatars();
@@ -48,6 +48,8 @@ class KeepItUp {
     this.j.step(dt);
     if (this.t >= ROUND) this.over = true;
     const aspect = W / H;
+    /* the ball never goes up behind the clock, the goal bar or the words: there its ceiling is just under them */
+    const top = hudZones(W, H).top, ceilUnder = (top.y + top.h) / H + 0.04;
 
     /* a breeze, now and then */
     this.breezeT -= dt;
@@ -71,7 +73,8 @@ class KeepItUp {
       b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.spin * dt; b.spin *= Math.pow(0.5, dt);
       if (b.x < 0.05){ b.x = 0.05; b.vx = Math.abs(b.vx) * 0.7; }
       if (b.x > 0.95){ b.x = 0.95; b.vx = -Math.abs(b.vx) * 0.7; }
-      if (b.y < 0.1){ b.y = 0.1; b.vy = Math.abs(b.vy) * 0.3; }
+      const ceil = b.x * W > top.x && b.x * W < top.x + top.w ? ceilUnder : 0.1;
+      if (b.y < ceil){ b.y = ceil; b.vy = Math.abs(b.vy) * 0.3; }
       if (b.cool <= 0){
         for (const [i, h] of hands){
           const dx = (b.x - h.x) * aspect, dy = b.y - h.y;

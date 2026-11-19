@@ -110,7 +110,7 @@ class PteroFlight {
     this.found = [];            /* the wonders in the sticker book */
     this.wonders = [];          /* wonders waiting ahead */
     this.nextAt = 4; this.nth = 0;
-    this.say = { text: 'Spread your arms like wings!', t: 0 };
+    this.say = { text: '\u{1F995} Spread your arms!', t: 0 };
     this.hintUntil = 9;
     this.j = new Juice();
     this.avatars = new Avatars();

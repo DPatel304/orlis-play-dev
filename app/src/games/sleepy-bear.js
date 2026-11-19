@@ -70,7 +70,7 @@ class SleepyBear {
     this.bear = { eye: 0, roll: 0, grumble: 0, wake: 0, snore: 2 };
     this.notes = [];
     this.noteT = 0;
-    this.say = { text: 'Dance!', t: 0 };
+    this.say = { text: '\u{1F483} Dance!', t: 0 };
     this.j = new Juice();
     this.scene = new Scene();
     this.avatars = new Avatars();
@@ -151,7 +151,7 @@ class SleepyBear {
     this.phase = 'dance'; this.inPhase = 0;
     this.left = DANCE[0] + Math.random() * (DANCE[1] - DANCE[0]);
     music.hold(false);
-    this.say = { text: still ? 'Hooray! Dance!' : 'Dance!', t: 0 };
+    this.say = { text: still ? 'Hooray! Dance!' : '\u{1F483} Dance!', t: 0 };
   }
   _wobble(i){
     this.caught[i] = true; this.frost[i] = 0;

@@ -528,3 +528,13 @@ just appear. Not done yet from the same round of mockups: **dim the scores, badg
 about 3 s** (Minecraft's idea); **pictures with the hint words** (an emoji and at most three words) and **speaking the hint
 once** (the app has a voice); a **HUD size setting** for the grown-up; a wider safe edge for TVs (the grid insets 1.2%, the
 common advice is about 5%); and checking the big hint never covers something a player has to catch.
+
+### HUD follow-ups done (after the layout settled)
+Score pills: a white number with a dark edge (reads on any player colour), a mark on the left (avatar, or circle / triangle /
+square / diamond), two to a row. First hints: an emoji and at most four words, said aloud once. The cover from the tile now
+carries the how-to card and the 3-2-1 (Cubo marches while the camera starts); pause shows Cubo frozen, results show him
+cheering. The grid insets 4% from every edge. Last Known Position's level and XP moved into the corner panel. Keep It Up!'s
+ball no longer goes up behind the clock and the words.
+Looked at, left as they are: Pop Party's balloons rise through the top and past the bottom-left card (they are only briefly
+hidden); Stack It High's blocks fall through the top; Leaf Pile's leaves can lie behind the card while it shows a jump.
+Still not done: dim the HUD when idle, a HUD size setting (both held back on purpose).

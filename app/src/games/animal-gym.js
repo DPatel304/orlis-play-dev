@@ -20,19 +20,19 @@ export const ROUND = 180;
 /* tries per player that fill one animal's bar */
 export const REPS = 6;
 export const MOVES = {
-  reach: { animal: '\u{1F992}', name: 'Giraffe', text: 'Stretch up tall like a giraffe!' },
-  jump:  { animal: '\u{1F430}', name: 'Bunny', text: 'Hop like a bunny!' },
-  flap:  { animal: '\u{1F426}', name: 'Bird', text: 'Flap your wings like a bird!' },
-  squat: { animal: '\u{1F438}', name: 'Frog', text: 'Squat down low like a frog!' },
-  march: { animal: '\u{1F418}', name: 'Elephant', text: 'Lift your knees like an elephant!' },
-  lean:  { animal: '\u{1F427}', name: 'Penguin', text: 'Wobble side to side like a penguin!' }
+  reach: { animal: '\u{1F992}', name: 'Giraffe', text: '\u{1F992} Stretch up tall!' },
+  jump:  { animal: '\u{1F430}', name: 'Bunny', text: '\u{1F430} Hop like a bunny!' },
+  flap:  { animal: '\u{1F426}', name: 'Bird', text: '\u{1F426} Flap your wings!' },
+  squat: { animal: '\u{1F438}', name: 'Frog', text: '\u{1F438} Squat down low!' },
+  march: { animal: '\u{1F418}', name: 'Elephant', text: '\u{1F418} Lift your knees!' },
+  lean:  { animal: '\u{1F427}', name: 'Penguin', text: '\u{1F427} Wobble side to side!' }
 };
 /* 15 + 6 x 24 + 21 = 180 seconds */
 export const SCHEDULE = [
-  { move: 'reach', len: 15, text: 'Warm up: stretch up tall like a giraffe!' },
+  { move: 'reach', len: 15, text: '\u{1F992} Stretch up tall!' },
   { move: 'jump', len: 24 }, { move: 'flap', len: 24 }, { move: 'squat', len: 24 },
   { move: 'march', len: 24 }, { move: 'lean', len: 24 }, { move: 'jump', len: 24 },
-  { move: 'reach', len: 21, text: 'Slow stretch… and breathe.' }
+  { move: 'reach', len: 21, text: '\u{1F9D8} Slow stretch…' }
 ];
 /* thresholds, in body sizes (pose's scale) */
 export const T = { reachUp: 0.15, flapUp: 0.05, flapDown: 0.1, squatDown: 0.16, squatUp: 0.07, kneeUp: 0.2, lean: 0.1, handFast: 0.5 };

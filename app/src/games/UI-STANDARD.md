@@ -11,7 +11,7 @@ All positions are shares of the screen, so they hold at any size. Code: `hud.js`
 ## The grid
 
 One invisible table over the whole screen: **20 columns by 11 rows of square cells** (`grid.js`). The cells are sized to fit
-the screen, inset a little for TV edges. Columns on the left half hang from the left edge, columns on the right half from
+the screen, inset 4% from every edge (TVs can crop the edges). Columns on the left half hang from the left edge, columns on the right half from
 the right edge, and anything that crosses the middle is centred; rows in the top half hang from the top and rows in the
 bottom half from the bottom. So on a very wide screen the HUD stays at the edges and the clock stays in the middle.
 
@@ -36,7 +36,7 @@ row 10: the bottom row
 |---|---|---|---|
 | Clock | 8, 0, 4, 1 (top centre) | shell | nothing: set the round length (`secs`); `hideClock` to give it back |
 | Goal bar | 7, 1, 6, 1 | `goalBar` | only if there is something to fill; three stars light up on the way |
-| Hint words | 7, 2, 6, 1 | `sayBubble` | a few words; the first ones of a round arrive big and dock; they fade after about 7 s |
+| Hint words | 7, 2, 6, 1 | `sayBubble` | a picture (an emoji) and at most four words, e.g. `🎈 Pop the balloons!`; the first ones of a round arrive big, dock, and are said aloud once; they fade after about 7 s |
 | Move card | 1, 7, 3, 3 (bottom left); slides in from the left edge and out again | shell | answer `card()` with a move name, or `null` |
 | Badge | 14, 9, 5, 1 (bottom right, right-aligned, as wide as its contents) | `badge` | optional: one streak, lives or combo |
 | The game's corner | 1, 0, 6, 4 (top left) | shell, from `scorePill` / `chip` / `statusBar` | return `score` per player from `hud()` (or `hideScore: true`), and optionally `panel` rows (below) |
@@ -78,7 +78,7 @@ bounce when they go up by themselves. A game with no per-player scores sets `hid
 
 1. **Keep targets out of the shell's areas.** Nothing a player has to touch, catch, pop or read goes under the clock, the
    words, the scores, the move card or the badge. The shell draws on top, so it would be hidden.
-2. **Few words.** One hint at a time, under the goal bar, gone after about 7 seconds. The first words of a round arrive big in the middle and shrink into place (later ones just appear). No other text during play. Short words a
+2. **Few words, and a picture.** One hint at a time, under the goal bar, gone after about 7 seconds: an emoji and at most four words (`spoken()` strips the picture for the voice). The first words of a round arrive big in the middle, shrink into place, and are said aloud once; later ones just appear. No other text during play. Short words a
    six-year-old can read, or none: a picture does the job better.
 3. **Two pill looks.** A player's score is a pill in their colour with a big white number. Information (the clock, the
    words, chips, bars, the badge) is a cream pill (`rgba(252,250,244,.96)`) with a bold dark number. Both have a shadow and
@@ -96,14 +96,16 @@ bounce when they go up by themselves. A game with no per-player scores sets `hid
 8. **Same motion.** Things slide in in about 0.45 s and out in about 0.3 s. Numbers bounce when they go up. Nothing flashes
    or strobes.
 9. **Same sounds.** The same cheer, tick and whoosh for the same events everywhere.
-10. **Results are the shell's.** A game gives `tally()`, `winner()` and optionally `summary()`; it draws nothing of its own
+10. **The cover, pause and results show Cubo.** The cover that opens from the tile carries the how-to card and counts 3, 2, 1
+    once the camera is ready (Cubo marches while it starts); pause shows him frozen; results show him cheering (`ui/cubo.js`).
+11. **Results are the shell's.** A game gives `tally()`, `winner()` and optionally `summary()`; it draws nothing of its own
     while `hud.quiet` is on.
 
 ## Where the standard stops
 
-- Last Known Position and Castle Defense (story games) have their own displays for crystals, gold, Nova and so on. They
-  keep the clock and results, and stay out of the move card's box. Their displays count as their own world (Nova lives
-  top left, where the scores would be).
+- Last Known Position (a story game) uses the game's corner for the team's level and XP (`hud().panel`), but has its own
+  boss health, floor pips, Nova and a lesson card top right, which count as its own world. Castle Defense shows how it is
+  doing in the world (hearts, pennants) and has no HUD to move.
 - Pop Party shows no scores on purpose (nobody wins). Sky Painter hides its score (it counts painted cells).
 
 ## Loosening it

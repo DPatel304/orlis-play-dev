@@ -1,4 +1,5 @@
 import { pose, BONES } from '../tracking/pose.js';
+import { cubo } from './cubo.js';
 import { button, onPick } from './cursor.js';
 import { sfx } from '../audio/sound.js';
 
@@ -168,6 +169,7 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null){
   const row = h('div', 'row bigrow');
   row.append(bigButton('again', 'Play again', 'go', onAgain), bigButton('home', back, 'home', onMenu));
   t.appendChild(row);
+  const hero = h('div', 'gbcubo'); s.appendChild(hero); cubo(hero, { pose: 'dance' });      /* Cubo cheers */
   sfx.fanfare();
   return { tick(){}, draw(){} };
 }
@@ -181,6 +183,7 @@ export function pauseOverlay(game, left, onResume, onQuit, back = 'Home'){
   const row = h('div', 'row bigrow');
   row.append(bigButton('play', 'Keep playing', 'go', onResume), bigButton('home', back, 'home', onQuit));
   t.appendChild(row);
+  const hero = h('div', 'gbcubo'); s.appendChild(hero); cubo(hero, { pose: 'freeze' });      /* Cubo holds still */
   return s;
 }
 

@@ -2,14 +2,14 @@
    around the edge (the top four rows, the bottom row, and a column on each side); the middle is the game's world.
    Every HUD piece sits in cells, so the same piece is always in the same place (see UI-STANDARD.md).
 
-   The cells are square, sized to fit the screen (inset a little, for TV edges). A column on the left half hangs from the
+   The cells are square, sized to fit the screen, inset 4% from every edge (TVs can crop the edges, so nothing sits right on one). A column on the left half hangs from the
    left edge, one on the right half from the right edge, and a piece that crosses the middle is centred, so on a very wide
    screen the HUD stays at the edges and the clock stays in the middle. Rows in the top half hang from the top and rows
    in the bottom half from the bottom. */
 export const COLS = 20, ROWS = 11;
 
 export function gridOf(W, H){
-  const s = Math.round(Math.min(W, H) * 0.012), gw = W - 2 * s, gh = H - 2 * s;
+  const s = Math.round(Math.min(W, H) * 0.04), gw = W - 2 * s, gh = H - 2 * s;
   const C = Math.min(gw / COLS, gh / (ROWS + 0.25));
   return { s, gw, gh, C, pad: C * 0.14 };
 }

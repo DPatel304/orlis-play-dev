@@ -48,7 +48,7 @@ class StackItHigh {
     this.scene = new Scene();
     this.avatars = new Avatars();
     this.fx = [];
-    this.say = { text: 'Catch a block and put it on the tower!', t: 0 };
+    this.say = { text: '\u{1F9F1} Stack the blocks!', t: 0 };
   }
 
   _spawn(){

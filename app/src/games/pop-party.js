@@ -596,7 +596,7 @@ class PopParty {
     if (this.out) this._drawBouquets(c, W, H);
     else this.avatars.drawMitts(c, W, H, this.players);
     /* the first seconds: what to do (then it eases away) */
-    if (!this.out) sayBubble(c, W, H, { text: 'Reach up and pop the balloons!', t: this.t, until: 7 });
+    if (!this.out) sayBubble(c, W, H, { text: '\u{1F388} Pop the balloons!', t: this.t, until: 7 });
   }
 
   _balloon(c, b, W, H){
