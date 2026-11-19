@@ -238,10 +238,10 @@ export const TITLES = {
 };
 const ORDER = ['tilt', 'stack', 'ribbon', 'deep', 'pop'];
 /* each built-in game's style; any other by its id (always the same one) */
-const STYLE = { 'animal-gym': 'ribbon', 'keep-it-up': 'pop', 'ptero-flight': 'deep', 'pop-party': 'tilt', 'sky-painter': 'deep', 'leaf-pile': 'stack', 'sleepy-bear': 'ribbon', 'stack-it-high': 'pop', 'last-known-position': 'tilt' };
+const STYLE = { 'animal-gym': 'ribbon', 'keep-it-up': 'pop', 'ptero-flight': 'deep', 'pop-party': 'tilt', 'sky-painter': 'deep', 'leaf-pile': 'stack', 'sleepy-bear': 'ribbon', 'stack-it-high': 'pop', 'last-known-position': 'tilt', 'cubions-long-way-home': 'deep' };
 export const styleOf = (id) => STYLE[id] || ORDER[[...String(id)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7) % ORDER.length];
 /* the title's colour: the game's own, a little deeper */
-const COLS = { 'animal-gym': '#1f9d63', 'keep-it-up': '#2f86e0', 'ptero-flight': '#d4743a', 'pop-party': '#ff4f93', 'sky-painter': '#3f7fd8', 'leaf-pile': '#e2702a', 'sleepy-bear': '#8a5a3b', 'stack-it-high': '#18a596', 'last-known-position': '#2fa36b' };
+const COLS = { 'animal-gym': '#1f9d63', 'keep-it-up': '#2f86e0', 'ptero-flight': '#d4743a', 'pop-party': '#ff4f93', 'sky-painter': '#3f7fd8', 'leaf-pile': '#e2702a', 'sleepy-bear': '#8a5a3b', 'stack-it-high': '#18a596', 'last-known-position': '#2fa36b', 'cubions-long-way-home': '#6a5be0' };
 
 /* ---------- a cover ---------- */
 /* { art, cover }: canvases, w x h. `still` (a canvas of the game playing)

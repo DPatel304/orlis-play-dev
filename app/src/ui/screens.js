@@ -158,7 +158,7 @@ function gameBanner(cls, kicker, name, line){
    sky full of pictures. back: where the other button goes ('Home', or
    'Back to Create' for a game being tried). */
 export function results(game, onAgain, onMenu, back = 'Home', summary = null){
-  const { s, t } = gameBanner('end', 'Well played!', game.name);
+  const { s, t } = gameBanner('end', game.passive ? 'The end' : 'Well played!', game.name);
   s.style.setProperty('--accent', game.accent);
   /* what everyone did together (never a winner or a ranking), and a new best if there is one */
   if (summary && summary.line){
@@ -167,9 +167,9 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null){
     t.appendChild(p);
   }
   const row = h('div', 'row bigrow');
-  row.append(bigButton('again', 'Play again', 'go', onAgain), bigButton('home', back, 'home', onMenu));
+  row.append(bigButton('again', game.passive ? 'Read again' : 'Play again', 'go', onAgain), bigButton('home', back, 'home', onMenu));
   t.appendChild(row);
-  const hero = h('div', 'gbcubo'); s.appendChild(hero); cubo(hero, { pose: 'dance' });      /* Cubo cheers */
+  const hero = h('div', 'gbcubo'); s.appendChild(hero); cubo(hero, { pose: game.passive ? 'wave' : 'dance' });      /* Cubo cheers (or waves goodbye at the end of a story) */
   sfx.fanfare();
   return { tick(){}, draw(){} };
 }

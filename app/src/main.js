@@ -76,7 +76,9 @@ function go(next, build){
   const ghosts = ui && !NOFX && FADEY.has(was) && FADEY.has(next) && !(TABBY.has(was) && TABBY.has(next)) ? [...ui.children] : [];
   if (!INTO_GAME.has(next)) launch.release(true);
   mode = next;
+  /* (a passive game - a story - never turns the camera on: nobody has to do anything) */
   if (CAMERA.has(next)) pose.wake(); else pose.sleep();
+  if (game && game.passive && (INTO_GAME.has(next) || next === 'results')) pose.sleep();
   if (HOMEY.has(next)) updateIfWaiting();
   clearUI();
   cursor.reset();
@@ -186,7 +188,7 @@ function toGame(g){
     music.start(game.music);
     lineUpThenPlay();
   };
-  if (pose.on || pose.mouse.active && pose.reason === 'debug'){
+  if (g.passive || pose.on || pose.mouse.active && pose.reason === 'debug'){
     settled().then(() => { if (game === g && mode !== 'play') begin(); });
     return;
   }
@@ -241,12 +243,13 @@ function drawMoveCard(c, W, H, dt){
 function startRound(){
   joined = new Set();
   hud.quiet = false;
-  veilIntro = !!launch.el && launch.el.classList.contains('hascard');
-  introLeft = veilIntro ? 3 : INTRO; introN = 0; moveCard.pose = null; hud.introText = null; hud.spoken = false; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
+  veilIntro = !!launch.el && launch.el.classList.contains('hascard') && !game.passive;
+  introLeft = game.passive ? 0 : veilIntro ? 3 : INTRO; introN = 0; moveCard.pose = null; hud.introText = null; hud.spoken = false; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
   inst = game.create(players);
   /* A game where squatting is a move keeps players who crouch or sit. */
   pose.keepSitters = !!game.keepSitters;
   pose.look(players);
+  if (game.passive) launch.release();                  /* (a story has no 3, 2, 1: the cover just goes) */
   /* An endless game has no clock: it runs until it says it's over. */
   roundLeft = game.endless ? Infinity : game.secs;
   played = 0;
@@ -275,7 +278,7 @@ function showResults(){
   music.intensity(0.2);
   /* Bests are still kept - the menu tiles show them - just not announced. */
   const n = Math.max(1, joined.size), before = scores.best(game.id, n);
-  const isBest = scores.record(game.id, n, inst.value()) && before > 0;
+  const isBest = !game.passive && scores.record(game.id, n, inst.value()) && before > 0;
   hud.quiet = true;
   /* one friendly line: what everyone got together */
   const total = (() => { try { return inst.tally().reduce((a, r) => a + (Number(r.value) || 0), 0); } catch { return 0; } })();
@@ -283,7 +286,7 @@ function showResults(){
   const summary = own ? { line: own, best: isBest } : total > 0 ? { line: `${n > 1 ? 'Together you got' : 'You got'} ${total} ${game.unit || 'points'}`, best: isBest } : null;
   /* told to the family's server, for this week's challenges (not a game
      being tried out - from Create, or waiting for the owner's OK) */
-  if (!game.back && !game.trial) week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) })
+  if (!game.back && !game.trial && !game.passive) week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) })
     .then((done) => done.forEach((c, i) => setTimeout(() => { sfx.gold?.(); toast(`\u2605 Star earned: ${c.title}`, { ms: 6000 }); }, 900 + i * 1200)), () => {});
   /* (a game being tried goes back where it came from: Create) */
   go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'Home', summary));
@@ -329,7 +332,7 @@ remote.install(() => {
 /* The game waits only when the room is empty - everybody gone for a couple
    of seconds - and carries on the moment anyone is back. */
 function checkLost(dt){
-  if (mode !== 'play'){ empty = 0; if (lost){ lost.remove(); lost = null; } return; }
+  if (mode !== 'play' || game.passive){ empty = 0; if (lost){ lost.remove(); lost = null; } return; }
   pose.players.forEach((p, i) => { if (p.present) joined.add(i); });
   const anyone = pose.mouse.active || pose.players.some(p => p.present);
   empty = anyone ? 0 : empty + dt;

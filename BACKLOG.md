@@ -565,3 +565,10 @@ draws, a grown-up or grandparent can record the voice) is **on hold** until Crea
   long way home, just not the way he planned.
 - **Joining in:** gently, no camera needed: four moments (reach, jump, flap, squat) where the move card shows and Cubo does it;
   anyone can copy him, nothing is checked or scored.
+
+## Storytime: built (first cut)
+- **Story Player** (`app/src/games/story-player.js`) plus the first story as data (`app/src/stories/cubions-long-way-home.js`): a scrolling storybook. Cubo stays put on screen and the world slides behind him; words stay on a fixed plate with the current word lit; a moon shows how much story is left.
+- **Passive game type** (`game.passive`): the shell keeps the camera off, skips the lost-player check, 3-2-1, score/clock/week report, and ends on "The end" with Cubo waving and Read again / Home.
+- Narration uses the app's voice (the computer's, for now); a beat ends when the voice stops (or after reading time with sound off). Move cards at the four animal stops; anyone can copy, nothing is checked. The refrain gets a pause after it for the kids to say it.
+- `?beat=N` in the address starts the story at beat N (for looking at a scene).
+- Still to do: recorded voice for this story and "your own voice" (grandparent) option; Elders' clicks are the shell's tick for now; real hardware/TV check; more stories (pages format for room-bound stories, other formats from the ideas list). Create-your-own-stories stays on hold.
