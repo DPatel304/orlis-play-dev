@@ -519,3 +519,12 @@ game's corner (scores row 0, cols 1-6; chips and bars rows 1-3) all sit in fixed
   overlap or touch the card's block, and rules for giving rows back in steps. The standard already says it can be loosened.
 - **Watch:** more freedom means more chance of clutter. The story-game mockup was already near what counts as full. Hours
   spent on the HUD are hours not spent on games kids play.
+
+### The layout we settled on (HUD grid, "version 3")
+Scores top left (row 0), the clock top centre, the goal bar (fat, three stars that light as it fills, always gold) in row 1,
+the hint words in row 2, the move card bottom left (3 x 3, slides in from the left edge and out again), the one badge bottom
+right. Top right is left empty on purpose (room for a notice). The first words of a round arrive big and dock; later ones
+just appear. Not done yet from the same round of mockups: **dim the scores, badge and goal bar when nothing has changed for
+about 3 s** (Minecraft's idea); **pictures with the hint words** (an emoji and at most three words) and **speaking the hint
+once** (the app has a voice); a **HUD size setting** for the grown-up; a wider safe edge for TVs (the grid insets 1.2%, the
+common advice is about 5%); and checking the big hint never covers something a player has to catch.

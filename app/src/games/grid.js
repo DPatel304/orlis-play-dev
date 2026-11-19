@@ -33,10 +33,10 @@ export function cell(W, H, col, row, cs = 1, rs = 1){
 /* where the pieces the shell draws always go: [column, row, columns wide, rows tall] */
 export const SLOTS = {
   clock: [8, 0, 4, 1],      /* the time, top centre */
-  words: [7, 1, 6, 1],      /* the hint words, under the clock */
-  goal:  [8, 2, 4, 1],      /* the goal bar, under the words */
-  card:  [16, 0, 3, 3],     /* the move card, top right */
-  badge: [14, 3, 5, 1],     /* the game's one badge, under the card, lined up with its right edge */
+  goal:  [7, 1, 6, 1],      /* the goal bar, under the clock */
+  words: [7, 2, 6, 1],      /* the hint words, under the goal bar */
+  card:  [1, 7, 3, 3],      /* the move card, bottom left (it slides in from the left edge) */
+  badge: [14, 9, 5, 1],     /* the game's one badge, bottom right, lined up with the right-hand end of the slot */
   panel: [1, 0, 6, 4],      /* the game's own corner, top left: scores in the first row, then chips and bars */
 };
 export const slot = (W, H, name) => cell(W, H, ...SLOTS[name]);

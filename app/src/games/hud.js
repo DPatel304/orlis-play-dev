@@ -1,35 +1,56 @@
-/* The words and the meter every game puts on its sky, drawn one way: a speech bubble under the clock, and under that, if
-   the game has something to fill, a bar. (The clock is the shell's, top centre; a score, if a game shows one, is the
-   game's own, top right.) They go away on the results screen, so nothing from the game sits behind "Well played!". */
+/* The words and the meter every game puts on its sky, drawn one way: under the clock, a bar with three stars if the game has
+   something to fill, and under that a few words. (The clock is the shell's, top centre; a score, if a game shows one, is in
+   the game's corner, top left.) They go away on the results screen, so nothing from the game sits behind "Well played!". */
 import { slot, slotBlock, gridOf, block } from './grid.js';
 export const hud = { quiet: false };
 
 const INK = '#33322e', PAPER = 'rgba(250,247,238,.95)';
 const FONT = 'Inter, Segoe UI, sans-serif';
 
+const ease = (k) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
+/* the first words of a round arrive big, in the middle of the screen, then shrink and dock into their place; the shell clears this at each round's start */
+hud.introText = null;
+const INTRO = { scale: 2, hold: 2.0, travel: 0.55 };
+
 /* text: the words. t: seconds since they changed (they ease in). x, y: where, as a share of the screen. until: seconds
-   after which they ease away (a hint that has done its job). */
+   after which they ease away (a hint that has done its job). The first words of a round arrive big and dock. */
 export function sayBubble(c, W, H, { text, t = 1, x = null, y = null, until = Infinity }){
   if (hud.quiet || !text) return;
   const ws = slot(W, H, 'words'); if (x === null) x = ws.cx / W; if (y === null) y = ws.cy / H;   /* the words' place in the grid (a game can still nudge it) */
-  const k = Math.min(1, t / 0.25), out = isFinite(until) ? Math.max(0, Math.min(1, (until - t) / 0.5)) : 1;
+  if (hud.introText === null) hud.introText = text;
+  const out = isFinite(until) ? Math.max(0, Math.min(1, (until - t) / 0.5)) : 1;
   if (out <= 0) return;
+  let k = Math.min(1, t / 0.25), scale = 0.85 + 0.15 * k, px = W * x, py = H * y;
+  if (text === hud.introText && t < INTRO.hold + INTRO.travel){
+    const e = ease((t - INTRO.hold) / INTRO.travel), bx = W / 2, by = H * 0.42;
+    scale = INTRO.scale * (0.6 + 0.4 * ease(t / 0.35)) * (1 - e) + e;
+    px = bx + (px - bx) * e; py = by + (py - by) * e;
+  }
   const size = Math.round(H * 0.04);
   c.save(); c.font = `800 ${size}px ${FONT}`;
   const w = c.measureText(text).width + size * 1.6;
-  c.globalAlpha = k * out; c.translate(W * x, H * y); c.scale(0.85 + 0.15 * k, 0.85 + 0.15 * k);
+  c.globalAlpha = k * out; c.translate(px, py); c.scale(scale, scale);
   c.fillStyle = PAPER; c.beginPath(); c.roundRect(-w / 2, -size * 0.95, w, size * 1.9, size * 0.95); c.fill();
   c.fillStyle = INK; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, 0, 2);
   c.restore();
 }
 
-/* k: how full, 0 to 1. color: the fill (gold when done). Under the words. */
-export function goalBar(c, W, H, k, { color = '#7398c4', x = null, y = null } = {}){
+/* The goal bar: a fat cream bar that fills with gold, with three stars on the way that light up as it passes them (the last
+   is the goal). k: how full, 0 to 1. Under the clock. (A game's own fill colour is not used: gold is the goal's colour.) */
+export function goalBar(c, W, H, k, { x = null, y = null } = {}){
   if (hud.quiet) return;
-  const gs = slot(W, H, 'goal'), w = gs.w, h = H * 0.022, bx = (x === null ? gs.cx : W * x) - w / 2, by = y === null ? gs.cy - h / 2 : H * y;
-  c.save();
-  c.fillStyle = 'rgba(250,247,238,.9)'; c.beginPath(); c.roundRect(bx, by, w, h, h / 2); c.fill();
-  if (k > 0){ c.fillStyle = color; c.beginPath(); c.roundRect(bx + 3, by + 3, Math.max(h - 6, (w - 6) * Math.min(1, k)), h - 6, (h - 6) / 2); c.fill(); }
+  const gs = slot(W, H, 'goal'), h = gs.h, w = gs.w, bx = (x === null ? gs.cx : W * x) - w / 2, by = y === null ? gs.y : H * y - h / 2;
+  const th = h * 0.4, tx = bx + h * 0.4, tw = w - h * 0.4 - h * 0.6, ty = by + (h - th) / 2, f = Math.min(1, Math.max(0, k));
+  c.save(); c.shadowColor = 'rgba(20,20,60,.25)'; c.shadowBlur = h * 0.25; c.shadowOffsetY = h * 0.07;
+  c.fillStyle = 'rgba(252,250,244,.96)'; c.beginPath(); c.roundRect(bx, by, w, h, h / 2); c.fill(); c.shadowColor = 'transparent';
+  c.fillStyle = 'rgba(60,60,90,.16)'; c.beginPath(); c.roundRect(tx, ty, tw, th, th / 2); c.fill();
+  if (f > 0){ c.fillStyle = BAR_COLORS.gold; c.beginPath(); c.roundRect(tx, ty, Math.max(th, tw * f), th, th / 2); c.fill(); }
+  for (const p of [1 / 3, 2 / 3, 1]){
+    const on = f >= p - 0.001, sx = tx + tw * p, sy = by + h / 2, r = h * 0.3, pop = on ? Math.max(0, 1 - (f - p) * 8) : 0;
+    c.save(); c.translate(sx, sy); c.scale(1 + pop * 0.5, 1 + pop * 0.5); c.beginPath();
+    for (let i = 0; i < 10; i++){ const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    c.closePath(); c.fillStyle = on ? BAR_COLORS.gold : '#d9d6cf'; c.fill(); c.lineJoin = 'round'; c.lineWidth = r * 0.2; c.strokeStyle = on ? '#fff' : '#bdb9b0'; c.stroke(); c.fillStyle = on ? BAR_COLORS.gold : '#d9d6cf'; c.fill(); c.restore();
+  }
   c.restore();
 }
 
@@ -40,10 +61,10 @@ export function goalBar(c, W, H, k, { color = '#7398c4', x = null, y = null } = 
 export function hudZones(W, H){
   const z = (...b) => { const r = block(W, H, ...b); return { x: r.x, y: r.y, w: r.w, h: r.h }; };
   return {
-    top:   z(7, 0, 6, 3),         /* the clock, the hint words and the goal bar */
+    top:   z(7, 0, 6, 3),         /* the clock, the goal bar and the hint words */
     score: z(0, 0, 7, 4),         /* the game's own corner: scores, chips, bars */
-    card:  z(16, 0, 3, 3),        /* the move card */
-    badge: z(14, 3, 5, 1),        /* the game's one badge, under the card */
+    card:  z(1, 7, 3, 3),         /* the move card, bottom left */
+    badge: z(14, 9, 5, 1),        /* the game's one badge, bottom right */
   };
 }
 /* is this point (pixels) under one of the shell's areas? (for placing targets) */

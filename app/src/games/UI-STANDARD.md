@@ -21,21 +21,24 @@ its world.
 
 ```
 col:  0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
-row 0   . [scores ....] . [ CLOCK  ] .  .  . [  MOVE   ]
-row 1   . [chips  ....] [ HINT WORDS   ] .  .  [  CARD  ]
-row 2   . [bars   ....] . [GOAL BAR ] .  .  .  [        ]
-row 3   . [chips  ....] .  .  .  .  .  .  [ BADGE ....  ]
-rows 4-9: the sides (cols 0 and 19) and the game's world (cols 1-18)
+row 0   . [scores ....] . [ CLOCK  ] .  .  .  .  .  .  .
+row 1   . [chips  ....] [ GOAL BAR (3 stars) ] .  .  .  .  .
+row 2   . [bars   ....] [ HINT WORDS     ] .  .  .  .  .  .
+row 3   . [chips  ....] .  .  .  .  .  .  .  .  .  .  .
+rows 4-6: the sides (cols 0 and 19) and the game's world (cols 1-18)
+row 7   . [CARD   ] .  .  .  .  .  .  .  .  .  .  .  .
+row 8   . [ 3 x 3 ] .  .  .  .  .  .  .  .  .  .  .  .
+row 9   . [       ] .  .  .  .  .  .  .  [ BADGE ....]
 row 10: the bottom row
 ```
 
 | Piece | Cells (col, row, wide, tall) | Who draws it | What a game does |
 |---|---|---|---|
 | Clock | 8, 0, 4, 1 (top centre) | shell | nothing: set the round length (`secs`); `hideClock` to give it back |
-| Hint words | 7, 1, 6, 1 | `sayBubble` | a few words; they fade after about 7 s |
-| Goal bar | 8, 2, 4, 1 | `goalBar` | only if there is something to fill |
-| Move card | 16, 0, 3, 3 (top right) | shell | answer `card()` with a move name, or `null` |
-| Badge | 14, 3, 5, 1 (under the card, right-aligned) | `badge` | optional: one streak, lives or combo |
+| Goal bar | 7, 1, 6, 1 | `goalBar` | only if there is something to fill; three stars light up on the way |
+| Hint words | 7, 2, 6, 1 | `sayBubble` | a few words; the first ones of a round arrive big and dock; they fade after about 7 s |
+| Move card | 1, 7, 3, 3 (bottom left); slides in from the left edge and out again | shell | answer `card()` with a move name, or `null` |
+| Badge | 14, 9, 5, 1 (bottom right, right-aligned, as wide as its contents) | `badge` | optional: one streak, lives or combo |
 | The game's corner | 1, 0, 6, 4 (top left) | shell, from `scorePill` / `chip` / `statusBar` | return `score` per player from `hud()` (or `hideScore: true`), and optionally `panel` rows (below) |
 | Countdown, pause, results | centre, full screen | shell | nothing |
 | The game's world | everything else | the game | everything |
@@ -75,7 +78,7 @@ bounce when they go up by themselves. A game with no per-player scores sets `hid
 
 1. **Keep targets out of the shell's areas.** Nothing a player has to touch, catch, pop or read goes under the clock, the
    words, the scores, the move card or the badge. The shell draws on top, so it would be hidden.
-2. **Few words.** One hint at a time, under the clock, gone after about 7 seconds. No other text during play. Short words a
+2. **Few words.** One hint at a time, under the goal bar, gone after about 7 seconds. The first words of a round arrive big in the middle and shrink into place (later ones just appear). No other text during play. Short words a
    six-year-old can read, or none: a picture does the job better.
 3. **Two pill looks.** A player's score is a pill in their colour with a big white number. Information (the clock, the
    words, chips, bars, the badge) is a cream pill (`rgba(252,250,244,.96)`) with a bold dark number. Both have a shadow and
@@ -87,9 +90,9 @@ bounce when they go up by themselves. A game with no per-player scores sets `hid
 5. **A score is a number.** A whole number a child can follow, in the player's colour pill. A game whose count would climb into the hundreds
    (paint, distance) hides the score or shows progress instead (`goalBar`). A game with no winner can hide it too.
 6. **The move card** shows the move being asked for, when it is asked for (the first seconds of a round, or each time the
-   move changes). It slides in from the right and out again by itself; a game only says which move. It stays big enough to
-   read from the sofa (about 26% of the screen's height; not under 20%).
-7. **One badge at most.** Under the move card, the cream pill, an optional emoji and a number or word. Not a second row.
+   move changes). It slides in from the left edge and out again by itself; a game only says which move. It stays big enough
+   to read from the sofa (3 cells, about 26% of the screen's height; not under 20%).
+7. **One badge at most.** Bottom right, the cream pill as wide as its contents, an optional emoji and a number or word.
 8. **Same motion.** Things slide in in about 0.45 s and out in about 0.3 s. Numbers bounce when they go up. Nothing flashes
    or strobes.
 9. **Same sounds.** The same cheer, tick and whoosh for the same events everywhere.

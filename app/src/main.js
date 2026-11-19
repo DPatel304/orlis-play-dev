@@ -240,7 +240,7 @@ function drawMoveCard(c, W, H, dt){
 function startRound(){
   joined = new Set();
   hud.quiet = false;
-  introLeft = INTRO; introN = 0; moveCard.pose = null; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
+  introLeft = INTRO; introN = 0; moveCard.pose = null; hud.introText = null; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
   inst = game.create(players);
   /* A game where squatting is a move keeps players who crouch or sit. */
   pose.keepSitters = !!game.keepSitters;
