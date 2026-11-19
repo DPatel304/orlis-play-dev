@@ -25,9 +25,8 @@ test('every pose draws a card, with two arms and two legs, at any moment', () =>
   }
 });
 
-test('the card is one fill, one edge, one spot', () => {
+test('the card is one fill, one edge (its spot is the grid\'s)', () => {
   assert.match(CARD.fill, /^#[0-9a-f]{6}$/i); assert.match(CARD.edge, /^#[0-9a-f]{6}$/i);
-  assert.ok(CARD.x > 0 && CARD.x < 1 && CARD.y > 0 && CARD.y < 1);
 });
 
 test('Cubo moves like stop-motion: a few drawings that repeat, each with its own face', () => {

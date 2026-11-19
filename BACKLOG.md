@@ -488,8 +488,34 @@ It lives on the left, so it stays clear of the scores and the bear's cave. All t
 ## The game screen standard (written)
 `app/src/games/UI-STANDARD.md`: where the clock, hint words, goal bar, scores (top left, one column), move card (top right,
 26%) and one optional badge (under the card) go, who draws each, and ten rules for new games. `hudZones` / `underHud` /
-`badge` in `hud.js`, with a test that the shell's areas never overlap. The top-left corner is the flexible status panel:
-coloured score pills first, then the game's own chips and bars (`hud().panel`, five rows at most). Not yet used by Last
-Known Position or Castle Defense (they could swap their own displays for it). It is a standard, not a law: exceptions are written
+`badge` in `hud.js`, with a test that the shell's areas never overlap. The HUD sits on a 20 x 11 grid (`grid.js`); the top-left corner is the game's own: coloured score pills in the first
+row, then its own chips and bars (`hud().panel`, three rows). Not yet used by Last Known Position or Castle Defense (they
+could swap their own displays for it). It is a standard, not a law: exceptions are written
 down at the end of the file. Next steps: tell the Create flow and the creator kit's instructions about it, so a game made
 in Create follows it; and have the games that place targets use `underHud`.
+
+
+## The HUD grid: step 1 done, the rest to do later (decided, not built)
+**Done (step 1):** a 20 columns x 11 rows grid of square cells over the whole screen (`app/src/games/grid.js`), inset a little
+for TV edges. Left columns hang from the left edge, right columns from the right, anything across the middle is centred,
+top rows hang from the top, bottom rows from the bottom. The clock (cols 8-11, row 0), hint words (cols 7-12, row 1), goal
+bar (cols 8-11, row 2), move card (a 3 x 3 block, cols 16-18, rows 0-2), badge (under the card, cols 14-18, row 3) and the
+game's corner (scores row 0, cols 1-6; chips and bars rows 1-3) all sit in fixed cells. The keep-clear zones come from the grid.
+
+**The rest of what was decided (to build when a game needs it, not before):**
+- **The frame:** the top four rows, the bottom row and one column down each side. The middle (18 x 6 cells at 16:9) is the
+  game's world. 20 columns looked right in the mockup.
+- **Games give back everything they do not use.** A game declares which cells it uses; the rest is its world, and only the
+  declared cells are kept clear of targets. A game with no clock hands those cells back; a game with no HUD gets the whole
+  screen. The frame is a ceiling, not a fixed margin.
+- **Step 2: place a piece by cell.** A piece with a column, a row and a span (columns wide x rows tall): a one-cell pill, a
+  horizontal bar over several cells, a **vertical bar** (new) over several rows. Something like
+  `panel: { cols, rows, pieces: [ { col, row, cols, rows, ... } ] }`. First user: Last Known Position (XP bar along the bottom
+  row, crystals as chips, a tall health bar down a side column, a wide notice in the fourth top row).
+- **Places not yet used:** the bottom row (a team or XP bar; keep it for things not read often, it is where hands and avatars
+  often are), the side columns (tall meters such as health and boost), the fourth top row (a wide notice), cells beside the
+  clock (a small badge) and the free cells in the top right (more badges).
+- **Held back until a game runs into trouble:** caps on cells in use (ten top left, six top right), a test that pieces never
+  overlap or touch the card's block, and rules for giving rows back in steps. The standard already says it can be loosened.
+- **Watch:** more freedom means more chance of clutter. The story-game mockup was already near what counts as full. Hours
+  spent on the HUD are hours not spent on games kids play.

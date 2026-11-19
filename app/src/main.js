@@ -5,7 +5,8 @@ import { toast } from './ui/toast.js';
 import { pose } from './tracking/pose.js';
 import { appMode } from './ui/mode.js';
 import { watchTests } from './ui/tvwatch.js';
-import { hud, scorePill, chip, statusBar, panelRow, PANEL_ROWS } from './games/hud.js';
+import { hud, scorePill, chip, statusBar, PANEL_ROWS } from './games/hud.js';
+import { cell, slot } from './games/grid.js';
 import { figureCard, MOTION } from './games/figure.js';
 import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
@@ -371,47 +372,41 @@ function drawHUD(){
   if (mode !== 'play' || !inst) return;
   if (introLeft > 0 && !paused && !lost){ drawIntro(); return; }
   const hud = inst.hud();
-  const pad = Math.max(14, H * 0.03);
   c.textBaseline = 'top';
-  /* The status panel, top left: one column, the same for every game. A score for each child who has played this round
-     (in their colour) comes first, unless the game keeps score privately; then the rows the game asks for (hud.panel:
-     chips and bars), five rows at most. */
-  const rows = [];
-  for (const i of hud.hideScore ? [] : [...joined].filter(i => i < players).sort()) rows.push({ kind: 'score', key: 'p' + i, n: hud.score[i], color: PLAYER_COLORS[i] });
-  for (const [j, r] of (hud.panel || []).entries()) rows.push(r.fill !== undefined ? { kind: 'bar', key: 'b' + j, ...r } : { kind: 'chip', key: 'c' + j, n: r.value, ...r });
-  const { h, step } = panelRow(H);
-  rows.slice(0, PANEL_ROWS).forEach((r, row) => {
-    const y = pad + row * step;
-    if (r.n !== undefined){ if (scoreSeen[r.key] !== undefined && r.n > scoreSeen[r.key]) scoreBumpAt[r.key] = performance.now(); scoreSeen[r.key] = r.n; }
-    const bump = Math.max(0, 1 - (performance.now() - (scoreBumpAt[r.key] || -1e9)) / 450);
-    if (r.kind === 'score') scorePill(c, pad, y, h, r.color, r.n, bump);
-    else if (r.kind === 'chip') chip(c, pad, y, h, { icon: r.icon, value: r.value, bump });
-    else statusBar(c, pad, y, h, r);
+  /* The game's own corner, top left, on the grid (grid.js): the scores in the first row, each in its player's colour, side by
+     side (unless the game keeps score privately); then the rows the game asks for (hud.panel: chips and bars) under them,
+     three at most. */
+  const bumpOf = (key, n) => {
+    if (n !== undefined){ if (scoreSeen[key] !== undefined && n > scoreSeen[key]) scoreBumpAt[key] = performance.now(); scoreSeen[key] = n; }
+    return Math.max(0, 1 - (performance.now() - (scoreBumpAt[key] || -1e9)) / 450);
+  };
+  const first = cell(W, H, 1, 0);
+  let x = first.x;
+  for (const i of hud.hideScore ? [] : [...joined].filter(i => i < players).sort()){
+    x += scorePill(c, x, first.y, first.h, PLAYER_COLORS[i], hud.score[i], bumpOf('p' + i, hud.score[i])) + first.h * 0.15;
+  }
+  (hud.panel || []).slice(0, PANEL_ROWS).forEach((r, j) => {
+    const b = cell(W, H, 1, 1 + j, 5, 1);
+    if (r.fill !== undefined) statusBar(c, b.x, b.y, b.h, { ...r, w: b.w });
+    else chip(c, b.x, b.y, b.h, { icon: r.icon, value: r.value, bump: bumpOf('c' + j, r.value) });
   });
   /* A game that lasts as long as you hold out has no clock to show. */
   if (hud.hideClock){ c.textAlign = 'start'; c.textBaseline = 'alphabetic'; return; }
-  c.textAlign = 'center';
-  c.font = `600 ${Math.round(H * 0.062)}px "Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif`;
   const t = Math.max(0, Math.ceil(roundLeft));
   /* Minutes and seconds once a round runs past one; plain seconds below. */
   const clock = t >= 60 ? `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}` : String(t);
-  pill(c, W / 2, pad, c.measureText(clock).width, H * 0.062, 'center');
-  c.fillStyle = t <= 10 ? '#e11d48' : '#16161d';
-  c.fillText(clock, W / 2, pad);
+  const cs = slot(W, H, 'clock');
+  c.font = `600 ${Math.round(cs.h * 0.72)}px "Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif`;
+  const cw = Math.max(cs.h * 2.2, c.measureText(clock).width + cs.h * 0.9);
+  c.save(); c.shadowColor = 'rgba(20,24,50,.22)'; c.shadowBlur = cs.h * 0.3; c.shadowOffsetY = cs.h * 0.06;
+  c.fillStyle = 'rgba(255,255,255,.92)'; c.beginPath(); c.roundRect(cs.cx - cw / 2, cs.y, cw, cs.h, cs.h / 2); c.fill(); c.restore();
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = t <= 10 ? '#e11d48' : '#16161d';
+  c.fillText(clock, cs.cx, cs.cy + 1);
   c.textAlign = 'start'; c.textBaseline = 'alphabetic';
 }
 
 /* A game can paint any sky it likes; the numbers on top of it must still
    read from the sofa: white frosted pills, edged in the player's colour. */
-function pill(c, x, y, w, h, align, edge = null){
-  const px = h * 0.36, left = align === 'left' ? x : align === 'right' ? x - w : x - w / 2;
-  c.save();
-  c.shadowColor = 'rgba(20,24,50,.22)'; c.shadowBlur = h * 0.35; c.shadowOffsetY = h * 0.06;
-  c.fillStyle = 'rgba(255,255,255,.9)';
-  c.beginPath(); c.roundRect(left - px, y - h * 0.14, w + px * 2, h * 1.16, h * 0.58); c.fill();
-  c.restore();
-  if (edge){ c.strokeStyle = edge; c.lineWidth = Math.max(2, h * 0.06); c.stroke(); }
-}
 
 /* ---------- loop ---------- */
 let last = 0;

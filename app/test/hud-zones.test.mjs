@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hudZones, underHud, badge, hud, panelRow, PANEL_ROWS, scorePill, chip, statusBar, BAR_COLORS } from '../src/games/hud.js';
+import { hudZones, underHud, badge, hud, PANEL_ROWS, scorePill, chip, statusBar, BAR_COLORS } from '../src/games/hud.js';
+import { COLS, ROWS, SLOTS, gridOf, block, cell } from '../src/games/grid.js';
 
-const overlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+const overlap = (a, b) => a.x < b.x + b.w - 0.5 && b.x < a.x + a.w - 0.5 && a.y < b.y + b.h - 0.5 && b.y < a.y + a.h - 0.5;
 
 test('the shell\'s areas never overlap each other, on a wide screen or a squarer one', () => {
   for (const [W, H] of [[1920, 1080], [1280, 720], [1024, 768], [800, 600]]){
@@ -14,12 +15,12 @@ test('the shell\'s areas never overlap each other, on a wide screen or a squarer
 });
 
 test('underHud says where a target must not go', () => {
-  assert.ok(underHud(1600, 900, 800, 40), 'under the clock');
-  assert.ok(underHud(1600, 900, 80, 100), 'under the scores');
-  assert.ok(underHud(1600, 900, 80, 440), 'under the fifth row of the panel');
-  assert.ok(underHud(1600, 900, 1368, 170), 'under the move card');
-  assert.ok(underHud(1600, 900, 1450, 335), 'under the badge');
-  assert.ok(!underHud(1600, 900, 800, 600), 'the middle of the screen is the game\'s');
+  const W = 1600, H = 900, pt = (name, fx = 0.5, fy = 0.5) => { const r = hudZones(W, H)[name]; return [r.x + r.w * fx, r.y + r.h * fy]; };
+  assert.ok(underHud(W, H, ...pt('top')), 'under the clock and words');
+  assert.ok(underHud(W, H, ...pt('score')), 'under the corner');
+  assert.ok(underHud(W, H, ...pt('card')), 'under the move card');
+  assert.ok(underHud(W, H, ...pt('badge')), 'under the badge');
+  assert.ok(!underHud(W, H, 800, 600), 'the middle of the screen is the game\'s');
 });
 
 test('the badge draws a pill, and nothing on the results screen or with nothing to say', () => {
@@ -30,11 +31,16 @@ test('the badge draws a pill, and nothing on the results screen or with nothing 
   hud.quiet = true; badge(c, 1600, 900, { value: 3 }); assert.equal(calls.length, 0, 'quiet: no badge'); hud.quiet = false;
 });
 
-test('the status panel: five rows fit inside their area, at any screen shape', () => {
-  for (const [W, H] of [[1920, 1080], [1280, 720], [1024, 768], [800, 600]]){
-    const z = hudZones(W, H).score, { h, step } = panelRow(H), pad = Math.max(14, H * 0.03);
-    assert.ok(pad + (PANEL_ROWS - 1) * step + h <= z.h, `${PANEL_ROWS} rows fit the height at ${W}x${H}`);
-    assert.ok(h * 3.6 <= z.w, `a bar fits the width at ${W}x${H}`);
+test('the grid: square cells that fit, the same pieces in the same cells, at any screen shape', () => {
+  for (const [W, H] of [[1920, 1080], [1280, 720], [1024, 768], [800, 600], [2560, 1080]]){
+    const { C, s } = gridOf(W, H);
+    assert.ok(COLS * C <= W - 2 * s + 0.01 && (ROWS) * C <= H - 2 * s + 0.01, `${COLS} x ${ROWS} cells fit at ${W}x${H}`);
+    for (const [name, spec] of Object.entries(SLOTS)){ const b = block(W, H, ...spec); assert.ok(b.x >= -0.01 && b.y >= -0.01 && b.x + b.w <= W + 0.01 && b.y + b.h <= H + 0.01, `${name} is on screen at ${W}x${H}`); }
+    const clock = block(W, H, ...SLOTS.clock); assert.ok(Math.abs(clock.x + clock.w / 2 - W / 2) < 1, `the clock is in the middle at ${W}x${H}`);
+    const card = block(W, H, ...SLOTS.card); assert.ok(Math.abs(W - card.x - card.w - (s + C)) < 1, `the card hangs from the right edge at ${W}x${H}`);
+    const first = cell(W, H, 1, 0), last = cell(W, H, 1, 3);
+    assert.ok(last.y + last.h < block(W, H, 0, 4).y + 1, `the corner's four rows stay in the top band at ${W}x${H}`);
+    assert.ok(first.x + first.w * 5 < clock.x, `the scores' row leaves the clock alone at ${W}x${H}`);
   }
 });
 
