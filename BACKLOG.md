@@ -544,3 +544,24 @@ The creator kit (CLAUDE.md, the orlis-game skill, the starter game) teaches the 
 zones / under`, `hud().panel`, `card()`, picture-and-few-words hints, and keeping targets out of the shell's areas. The sandbox
 forwards `card()` and the first hint (said once, after the words check). Not done: nothing stops a creator's game drawing its own
 score or clock (it is only asked not to); a check for that could go in the guard hook.
+
+## Storytime: a passive "game" (design decided, not built)
+Shows that Orlis is more than motion games: the TV reads a story, the children watch. Create-your-own-stories (Claude writes and
+draws, a grown-up or grandparent can record the voice) is **on hold** until Create mode is thought through.
+- **Look:** the "bedtime" mockup's layout for every story: the scene fills the screen, the words sit in a soft plate along the
+  bottom with the word being read lit up, Cubo small in the bottom-left corner reacting (his faces), a moon showing how much
+  story is left. No dimming mode, no switch; a story can be day or night.
+- **Platform changes it needs:** a passive game type (no clock, no score, no move card, no results: "The end" with Again / Another
+  story), camera off by default, remember where each child got to, pause by remote. Stories as data (pages: scene layers, words,
+  narration, sound, Cubo's face), one Story Player. Voices: recorded for the flagship (the Nova pipeline), the computer's voice as
+  the fallback. Three minutes, about 400 words, 8 or 9 pages.
+- **First story, fixed (no kids in it): "Cubion's Long Way Home".** Funny, plain prose, one repeating line:
+  **"Cubes don't do that. But Cubo does."** Cubion!#&-551 comes from the Cube Planet, where everything is perfectly square and
+  still because moving would mess up the tidiness. The Cube Elders (a row of tall, stern cubes who click; the narrator translates)
+  send him on purpose to Earth, where everything wiggles, to learn to move. He lands with a thud and is taught by the Animal Gym
+  animals: giraffe (stretch), bunny (hop), bird (flap), frog (squat). Each lesson: the animal shows, Cubo tries, a slapstick fail,
+  a tiny success, the refrain. He learns that everyone wobbles, and that is the fun of it. He decides to stay and live in the TV
+  with the children; the last page has Cubo waving from the corner and a button into the games. The title pays off: it was a
+  long way home, just not the way he planned.
+- **Joining in:** gently, no camera needed: four moments (reach, jump, flap, squat) where the move card shows and Cubo does it;
+  anyone can copy him, nothing is checked or scored.
