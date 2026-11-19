@@ -94,9 +94,10 @@ class KeepItUp {
       /* the ground: a soft bounce, the count starts again */
       if (b.y > FLOOR){
         b.y = FLOOR; b.vy = -0.55; b.vx *= 0.5; b.spin = (Math.random() - 0.5) * 6;
-        if (this.streak > 0) this._drop();
+        if (this.streak > 0) this._drop(b, W, H);
       }
     }
+    if (this.balls.some(x => x.gone)) this.balls = this.balls.filter(x => !x.gone);
     this.scene.step(dt, { t: this.t, p: 0.3 + 0.5 * Math.min(1, this.t / ROUND), storm: false, wind: 0.01 + Math.abs(this.breeze) * 0.1, joy: Math.min(1, 0.3 + this.streak / 30), look: 0.5, rainbow: false });
     this.avatars.step(dt, this.players);
   }
@@ -123,9 +124,18 @@ class KeepItUp {
     } else if (this.streak >= 3) this.say = { text: `${this.streak} in a row!`, t: Math.min(this.say.t, 0.2) };
   }
 
-  _drop(){
+  /* a ball touched the ground. With others still in the air, only that ball is lost (it pops) and the streak carries on;
+     the last ball just bounces back up and the count starts again. */
+  _drop(b, W, H){
+    const live = this.balls.filter(x => !x.gone).length;
+    if (live > 1){
+      b.gone = true;
+      this.j.burst(b.x * W, b.y * H, '#ffd35c', 10, 0.8);
+      this.say = { text: `Oops! ${live - 1} ${live - 1 === 1 ? 'ball' : 'balls'} left`, t: 0 };
+      sfx.plop?.();
+      return;
+    }
     this.streak = 0;
-    if (this.balls.length > 1) this.balls.length = 1;
     this.say = { text: 'Up we go again!', t: 0 };
     sfx.whoosh?.();
   }

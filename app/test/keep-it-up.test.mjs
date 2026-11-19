@@ -67,9 +67,29 @@ test('a new ball joins every 10 in a row, up to ten, and they all go when the gr
     assert.equal(g.balls.length, Math.min(n, MAX_BALLS), 'ball ' + n);
   }
   assert.equal(g.balls.length, MAX_BALLS);
+});
+
+test('a ball that touches the ground is lost on its own - the others and the streak carry on - and the last one just bounces', () => {
+  players(1);
+  const g = keepItUp.create(1);
+  g.balls.push(g._ball(0.2), g._ball(0.8), g._ball(0.5));
+  g.balls.forEach(b => Object.assign(b, { y: 0.4, vy: 0, vx: 0 }));
+  g.streak = 37;
   Object.assign(g.balls[1], { y: FLOOR - 0.01, vy: 0.8 });
   g.step(DT, W, H);
-  assert.equal(g.balls.length, 1, 'back to one');
+  assert.equal(g.balls.length, 3, 'only that ball went');
+  assert.equal(g.streak, 37, 'the streak carries on');
+  /* two touch down in the same moment: one stays */
+  const h = keepItUp.create(1);
+  h.balls.push(h._ball(0.8));
+  h.balls.forEach(b => Object.assign(b, { y: FLOOR - 0.01, vy: 0.8, vx: 0 }));
+  h.streak = 12;
+  h.step(DT, W, H);
+  assert.equal(h.balls.length, 1, 'never none');
+  /* the last ball: it bounces and the count starts again */
+  Object.assign(h.balls[0], { y: FLOOR - 0.01, vy: 0.8 });
+  h.step(DT, W, H);
+  assert.equal(h.balls.length, 1); assert.equal(h.streak, 0); assert.ok(h.balls[0].vy < 0, 'bouncing back up');
 });
 
 test('a hit never sends the ball down, and it stays on screen', () => {
