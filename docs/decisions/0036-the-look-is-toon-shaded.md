@@ -1,5 +1,5 @@
 # 0036: The look is toon-shaded 3D, drawn flat for 2D games
-Status: Accepted (palette to settle)
+Status: Under review (see 0037); the Pop Party redraw is dropped
 Date: 2026-11-20
 
 ## Context
