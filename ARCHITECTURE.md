@@ -77,6 +77,10 @@ A game is a package with two small programs, both sandboxed (no network, no stor
 
 A game may run with no Box at all (pads only), and most early games use no pads. Build Box-hosted sessions first; keep the host program portable so an iPad or phone can host later (0005).
 
+## Licensing and distribution (0017)
+
+Game packages are signed and tied to an account's entitlements, and the runtime checks them. In Phase 1 builds go only to invited people; in Phase 2 the platform runs on the sold kit and on the iPad/phone app, not as a general Windows download.
+
 ## Not yet designed
 
 - The wire protocol between devices (messages, rates, reconnect) and the game package format as a precise spec.

@@ -40,3 +40,4 @@ Date: YYYY-MM-DD
 | 0014 | No online play | Accepted |
 | 0015 | The first 3D game is Peekaboo Garden | Accepted |
 | 0016 | An Android app first, for Phase 1 | Accepted |
+| 0017 | Phase 1 is a closed beta; in Phase 2 the platform is sold only as a kit | Accepted (terms to confirm) |
