@@ -20,7 +20,7 @@ Create, Settings and sign-in as they look in the Windows app are not reviewed ye
 8. **The Discover tile** is a gradient with a sparkle next to painted covers. Paint it like a cover.
 
 ## HUD (U3, Sonnet from U1)
-9. **Four HUD styles** (white clock pill, blue outlined score pills, heavy navy move card, soft goal bar and hints). One HUD piece style:
+9. **Four HUD styles** (white clock pill, blue outlined score pills, heavy navy move card, soft goal bar and hints). One HUD piece style (owner, 2026-11-20: every piece has an ink border inside a white paper edge):
    paper white, thin ink outline, one soft shadow; the player's colour as a fill swatch. Sizes checked at TV distance.
 10. **The move card** stays too long: a paper card with Cubo that tucks away after the first move. It keeps a strong ink border inside a white paper edge (owner, 2026-11-20), so it never blends into the background.
 

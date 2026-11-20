@@ -29,7 +29,7 @@ h1{ font:600 34px/1.1 var(--display); margin:0 0 6px; } h2{ font:600 24px var(--
 .cmp{ display:grid; grid-template-columns:1fr 1fr; gap:14px; } .cmp p{ margin:6px 0 0; color:var(--ink-soft); font-size:14px; } .cmp img{ width:100%; border-radius:18px; border:10px solid #1d1c22; display:block; }
 /* HUD pieces: paper white, a thin ink line, one soft shadow, Fredoka */
 .hud{ position:absolute; font-family:var(--display); color:#2f2b45; }
-.piece{ background:#fffdf8; border:.35cqh solid rgba(47,43,69,.16); box-shadow:0 .6cqh 0 var(--shade); border-radius:var(--pill); }
+.piece{ background:#fffdf8; border:.6cqh solid #2f2b45; box-shadow:0 0 0 .55cqh #fffdf8, 0 1.1cqh 0 var(--shade); border-radius:var(--pill); }   /* every HUD piece: an ink border inside a white paper edge, so it reads on any background */
 .clock{ left:50%; top:3.5cqh; transform:translateX(-50%); padding:.6cqh 2.6cqh; font-weight:600; font-size:5.2cqh; line-height:1.1; }
 .scores{ left:3cqh; top:3.5cqh; display:flex; gap:1.4cqh; }
 .score{ display:flex; align-items:center; gap:1.1cqh; padding:.5cqh 2cqh .5cqh .6cqh; font-weight:600; font-size:4.4cqh; }
@@ -116,7 +116,7 @@ h1{ font:600 34px/1.1 var(--display); margin:0 0 6px; } h2{ font:600 24px var(--
   <div><b>Fredoka speaks</b>Titles, HUD, buttons and phones use Fredoka. Small print (settings, grown-up pages) uses Inter.</div>
   <div><b>Painted icons only</b>Every icon comes from the asset library. No emoji, no system icons.</div>
   <div><b>Big and few words</b>At TV distance: nothing under 2.6% of screen height; a picture and at most four words.</div>
-  <div><b>Instructions stand out</b>The move card wears a strong ink border inside a white paper edge, so it never blends into a bright sky or a dark night.</div>
+  <div><b>The HUD never blends in</b>Every HUD piece (clock, scores, goal bar, hints, move card, messages) wears an ink border inside a white paper edge, so it reads on a bright sky or a dark night.</div>
   <div><b>Colour means one thing</b>A player's colour is always theirs; rose means "go"; gold means stars.</div>
 </div>
 
