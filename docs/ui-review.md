@@ -36,3 +36,18 @@ Create, Settings and sign-in as they look in the Windows app are not reviewed ye
 ## Why now
 The phone join page, the TV join card, the phone check and Peekaboo's HUD are about to be built (P3, P5, K8, K4/K5). They should be born
 in the kit, so U1 comes before those mockups.
+
+## Hand mode for the home screen (U7, proposed 2026-11-20)
+Today the camera is off on the home screen (to keep the laptop cool), so only a mouse or remote works there. Games already use "point and
+wave" (`app/src/ui/cursor.js`: sticky pointing, a wave clicks). Proposal: bring the same to home, in Big Picture.
+1. **Camera on at home, lightly:** one person, about 10 looks a second, and only while someone is in view (measure the heat).
+2. **A reach box, not the camera frame:** a comfortable box in front of the player's own shoulders maps to the whole screen, so a child
+   points at every tile without stretching or walking.
+3. **Big targets:** one row of four or five big tiles and three big tabs; small things (settings, profile, sign-in) stay for the mouse
+   and remote, behind one big Cubo button.
+4. **Point, then wave to choose,** as in games (a wave is deliberate; holding still never starts anything). The lit tile lifts, ticks, and
+   shows "wave to play"; a ring fills as the wave goes.
+5. **Scrolling** by pointing at big paper arrows at the ends of a row (they page while pointed at). No swipes.
+6. **One driver:** whoever raises a hand first drives, with the cursor in their colour; others take over by waving.
+7. **Back:** one big Home button at the top left on every screen.
+
