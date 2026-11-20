@@ -21,3 +21,12 @@ kept apart: (1) **restyling** each game onto the shared look (the asset library,
 already planned; (2) **moving its drawing onto the stage**, which is optional and becomes mostly mechanical once a game's pictures are
 named library actors. If the measurements show the stage costs nothing noticeable, the simplest end state is one renderer for all games;
 if not, flat games stay on the 2D painter and only 3D games use the stage. The style is the same either way.
+
+## Measurements (2026-11-20, the owner's Legion 5, RTX 3070 Laptop, 2039x1275 canvas)
+- Original Pop Party: 71 frames a second on average, typical frame 12.2 ms, slowest 5% over 18.2 ms, 16 frames slower than 30 fps in 181 s.
+- Stage lab (default, light settings): 52 frames a second, typical 18.1 ms, slowest 5% over 36.4 ms, 368 frames slower than 30 fps in 70 s
+  (about 1 in 10). Steady, no slowdown over time. The stage's own timing is tiny (backdrop 0.1 ms, 3D drawing 0.3 ms, copy 0.0 ms), so the
+  extra cost is on the graphics card or in the page's compositing of a large picture.
+- Canvas variant and the light settings were judged close to the original by the owner; the full-quality settings lagged.
+- Recommendation: keep flat games on the 2D painter; use the stage for games that need 3D or pad views. A layered 3D canvas (no per-frame copy)
+  is the next experiment, to be built when a 3D game needs it.
