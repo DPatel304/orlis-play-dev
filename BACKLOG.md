@@ -715,3 +715,7 @@ Under the paper approach the library stays one set of 2D drawings: the Box draws
 
 ### Stage set = shapes plus skins (owner's idea, Nov 20, 2026)
 A 3D piece such as a house is a simple low-poly shape (a box with a roof wedge) with a 2D picture from the library on each face; the shape gives volume and trivial collisions, the pictures give the painted look. New buildings, walls, ground tiles and bridges become data (a shape and a list of faces' pictures) instead of modelling. Watch: seams at corners (the paper look hides them), flat painting needs gentle side shading to read as form, picture sharpness at near and far, no interiors. Possible next step: a small demo of a few houses built this way.
+
+## Stage lab variants removed (2026-11-20)
+The five Pop Party stage-lab games (light, full, canvas, stress, stress canvas) were deleted; the original Pop Party is the only one. The
+Stage layer (`app/src/stage/stage.js`) and its tests stay for the 3D game in 0024. Line 705 above describes the lab as it was.

@@ -1,10 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Stage, toWorld, fromWorld, WORLD_H, FG_Z } from '../src/stage/stage.js';
-import stageGame, { target } from '../src/games/labs/pop-party-stage.js';
-import { LABS, GAMES, byId } from '../src/games/index.js';
-import { pose } from '../src/tracking/pose.js';
-import { FINALE, OPENING } from '../src/games/pop-party.js';
 
 /* a canvas that records the order of what is drawn, and accepts anything else */
 function recorder(){
@@ -65,34 +61,6 @@ test('confetti rises, falls and goes away', () => {
   assert.equal(stage.shards.length, 0, 'all of it is gone after a couple of seconds');
   for (let i = 0; i < 50; i++) stage.burst(0.5, 0.5);
   assert.ok(stage.shards.length <= 300, 'there is a cap');
-});
-
-test('the lab game: a few balloons from the start, a crowded sky by the end, hands pop and score', () => {
-  assert.equal(target(0), 3);
-  assert.ok(target(OPENING + 1) > 3 && target(FINALE - 1) < 17 && target(FINALE) === 24);
-  pose.mouse.active = false;
-  const p = pose.players[0]; p.present = true; pose.players[1].present = false;
-  p.hands.left = { x: -1, y: -1, vx: 0, vy: 0, speed: 0 }; p.hands.right = { x: -1, y: -1, vx: 0, vy: 0, speed: 0 };
-  const g = stageGame.create(1, { gl: false });
-  for (let i = 0; i < 60 * 3; i++) g.step(1 / 60, 1920, 1080);
-  assert.ok(g.balloons.length >= 3, 'something to reach for');
-  assert.equal(g.stage.actors.length, g.balloons.length, 'each balloon is one actor');
-  const b = g.balloons[0];
-  p.hands.left = { x: b.x, y: b.y, vx: 0, vy: 0, speed: 0 };
-  const before = g.score[0];
-  g.step(1 / 60, 1920, 1080);
-  assert.ok(g.score[0] > before, 'touching a balloon pops it for points');
-  assert.ok(g.stage.shards.length > 0, 'with confetti');
-  g.draw(recorder(), 1920, 1080);
-  g.dispose();
-  assert.equal(g.stage.actors.length, 0);
-});
-
-test('experiments are reachable by name, but never in the menu or the catalogue', () => {
-  assert.ok(LABS.some(g => g.id === 'pop-party-stage'));
-  assert.ok(!GAMES.some(g => g.id === 'pop-party-stage'));
-  assert.equal(byId('pop-party-stage').id, 'pop-party-stage');
-  assert.equal(byId('pop-party').id, 'pop-party');
 });
 
 import { smoothness } from '../src/ui/smoothness.js';
