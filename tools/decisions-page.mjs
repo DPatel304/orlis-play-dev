@@ -6,6 +6,7 @@ const MOCKUPS = [
   ['UI kit (colours, HUD pieces, home, pause, results, phones)', 'https://claude.ai/artifact/PM65z23jr5BDBPrp5kAc1L'],
   ['HUD grid: anchors and docks', 'https://claude.ai/artifact/Xf2sV5sProE7sbeP4rigBQ'],
   ['Clock and player pill options', 'https://claude.ai/artifact/7AbG9QPYwZtMmdRy2nhSWg'],
+  ['Style rulebook and board (six worlds)', 'https://claude.ai/artifact/RD7ecrRybtCjx24DLzzp6Q'],
   ['Cube-headed avatars (sketches)', 'https://claude.ai/artifact/WeYMRAhPUyVbPfrFLgP1Tx'],
   ['Hand mode for the home screen', 'https://claude.ai/artifact/JpqtM4eGRUL1un8kYN21Mg'],
   ['Peekaboo Garden design', 'https://claude.ai/artifact/3FkbPkANwpoojigxvTj1t6'],

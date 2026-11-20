@@ -1,5 +1,5 @@
 # 0035: The Orlis look: cozy, playful, handmade paper, for every kind of game
-Status: Accepted (the white edge to settle with the style board)
+Status: Accepted
 Date: 2026-11-20
 
 ## Context
@@ -30,4 +30,8 @@ paper motion) and a style board of very different games drawn with it.
 - **Cube-headed avatars: confirmed.**
 - **The white paper edge may be too much.** Open: no edge, a thin edge, or the full edge (the avatar page now switches between them);
   settled with the style rulebook and style board, where it is judged on whole scenes, not single figures.
+- **The edge is thin** (owner, 2026-11-20): a thin white paper edge on every cutout, about 1% of the figure's height.
 
+## The rulebook and the board (2026-11-20)
+Draft rules in `docs/style-rulebook.md`; six worlds drawn with them in `docs/style-board.html` (meadow party, space race, under the sea,
+spooky-cute, sports day, puzzle room). Waiting for the owner's verdict.
