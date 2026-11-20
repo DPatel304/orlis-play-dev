@@ -75,19 +75,16 @@ search before they are final.
 - **An artist can be hired later:** the kit has an artist spec, a checker and a viewer for that day.
 - **One HUD** (the invisible-rows grid) in every game; Last Known Position still has to move onto it.
 
-## Where this vision changes earlier decisions (the owner to confirm)
+## Where this vision changes earlier decisions
 
-These are in `BACKLOG.md` as they were decided before this vision. Each one needs a yes or no:
+Settled in `docs/decisions/` (see the index there):
 
-1. **Own console:** on Nov 16 we decided *not to build our own console box for now* (mini PC prices had doubled). The
-   vision now sells a ready-made Orlis Box. Is the Orlis Box the plan again, and when?
-2. **Watches as controllers:** Nov 15-16 chose the Bangle.js 2 watch (and a Starter Kit with watches). The vision now
-   puts iPads and phones, with the Orlis Pro grip, in that role. Do watches stay as another controller, or is the
-   Starter Kit replaced?
-3. **Money:** Nov 16 had game packs ($5-15), a Season Pass and a Starter Kit; the vision says games are free. Is the
-   money now the hardware (Box, Pro) plus the Dev Kit and making credits, with no paid games?
-4. **Operating system of the box:** the app is Windows-only today; the Box could be non-Windows. Undecided.
-5. **Hosting and the Store:** online-only features (the Store, accounts) versus same-room, local-network play.
+1. **Own console:** the Orlis Box is a ready-made product, eventually (0003). Phase 1 uses the owner's laptop (0001).
+2. **Watches as controllers:** open, recommended to shelve (0009).
+3. **Money:** open. Games are free; ideas include an optional family plan and premium kit packs free for a week (0010).
+4. **Operating system:** open, Windows first (0002).
+5. **Accounts and the internet:** an account is required, one online sign-in, offline after; the Store and updates need the
+   internet (0007).
 
 ## The six-month goal
 
