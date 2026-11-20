@@ -1,7 +1,8 @@
 # Phase 1 plan: the closed beta, by March 27, 2027
 
-Draft, Nov 20, 2026 (revised for 0022), for the owner to check. Decisions are in `docs/decisions/`. Phase 1 ships **one perfected game
-(Pop Party) and a finished platform**. When both are done, the owner releases to the brother-in-law and father, then turns to the other games.
+Draft, Nov 20, 2026 (revised for 0026), for the owner to check. Decisions are in `docs/decisions/`. Phase 1 ships **two perfected games
+(Pop Party, and one 3D game for the TV and an Android tablet) and a finished platform**. When all are done, the owner releases to the
+brother-in-law and father, then turns to the other games.
 
 ## The release gate: what must be true on March 27
 
@@ -14,7 +15,10 @@ Draft, Nov 20, 2026 (revised for 0022), for the owner to check. Decisions are in
 4. **Create works for the two testers:** the bigger kit, kit-only, with the owner's approval step.
 5. **The closed beta can be handed out:** an invite-only install, beta terms, sign-in once, offline after (0007), and a way to send feedback.
 6. **Kid profiles live on the Box** (0011), not the server.
-7. The other games stay playable as they are; they are finished after the release (see the roadmap in 0021).
+7. **The 3D game is perfected** (0026): it plays on the TV together with an Android tablet joined by QR or code; one real tablet tested; the
+   house look in 3D checked against the 2D games with the look check; a smoothness line measured on the owner's laptop and on the Box
+   hardware once chosen; the game itself chosen (Peekaboo Garden is the candidate).
+8. The other games stay playable as they are; they are finished after the release (see the roadmap in 0021).
 
 **Stretch:** the native Android app (discovery, tilt), more kit packs.
 
@@ -23,12 +27,12 @@ Draft, Nov 20, 2026 (revised for 0022), for the owner to check. Decisions are in
 | When | Milestone | What is in it |
 |---|---|---|
 | Dec 4 | **M0 Foundations** | Names decided; this plan agreed |
-| Dec 18 | **M1 The look and the stage** | The stage is built; the lab game measured against the real Pop Party on the Legion and the integrated GPU; 0020 decided; the palette roles and asset spec drafted |
+| Dec 18 | **M1 The look and the 3D approach** | The 3D game chosen and designed on paper; the 3D animation approach settled (rigged parts); the look check agreed as the consistency tool; the palette roles and asset spec drafted; Pop Party polish (done) kept |
 | Jan 15 | **M2 Pads connect** | Wire protocol written down; a host session in Orlis Play; the browser pad page joins by QR or code, rejoins; tested on the iPhone 11 |
-| Feb 5 | **M3 Seats and Pop Party on pads** | Game manifest and seats model; Pop Party with pad seats; pause on drop; kid profiles moved to the Box |
-| Feb 26 | **M4 Create and the kit** | A bigger kit (assets, a few stage pieces); Create flow tuned for the two testers; a few games restyled as proofs; Pop Party's tuning pass |
+| Feb 5 | **M3 Seats, Pop Party on pads, the 3D game's first playable** | Game manifest and seats model; Pop Party with pad seats; pause on drop; kid profiles moved to the Box; the 3D game playable on the TV and an Android tablet (rough) |
+| Feb 26 | **M4 The 3D game's look, Create and the kit** | The 3D game's look and animation perfected; a bigger kit (assets, a few stage pieces); Create flow tuned for the two testers; Pop Party's tuning pass |
 | Mar 12 | **M5 Harden** | Closed-beta install and invite; reconnect; network-isolation message; performance pass; bug bash |
-| Mar 27 | **M6 Release to the two testers** | Pop Party perfected and the platform done; handed to the brother-in-law and father |
+| Mar 27 | **M6 Release to the two testers** | Pop Party and the 3D game perfected and the platform done; handed to the brother-in-law and father |
 
 ## Work streams
 
@@ -52,10 +56,11 @@ milestone with the family; say which games to restyle as proofs; set up the two 
 
 ## Dependencies and risks
 
-- **The pad protocol (M2)** is now the main schedule risk. It must land by mid-January.
+- **The pad protocol (M2)** is the main schedule risk. It must land by mid-January.
+- **The 3D game (0026)** adds a second perfected game, a tablet view and a 3D animation approach; the date is at risk. Measure on the Box hardware early; decide the TV-side camera question before M3.
 - **The browser pad page** cannot discover hosts or use tilt (0019); a locked phone can drop the connection, so rejoin must be solid.
 - **Kid profiles** are on the Orlis Server today; moving them to the Box is a real change and must be done before other families' children
   are involved.
 - **Four tracked players** have not been tested on real hardware; do it in M1 or M2.
-- **If the plan slips,** cut in this order: the bigger kit, restyling proofs, Create polish for the testers; never Pop Party's perfection or the pad basics.
+- **If the plan slips,** cut in this order: the bigger kit, restyling proofs, Create polish for the testers; never Pop Party's perfection or the pad basics; if still short, ship the 3D game as the clearly-labelled second game, not a perfected one, or move it to just after the release.
 - **Dates assume steady weekly work and fast feedback from family playtests.**

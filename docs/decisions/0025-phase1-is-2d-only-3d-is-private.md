@@ -1,5 +1,5 @@
 # 0025: Phase 1 is 2D only; 3D is private experiments for now
-Status: Accepted
+Status: Superseded by 0026
 Date: 2026-11-20
 
 ## Context

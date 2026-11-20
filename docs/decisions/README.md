@@ -48,4 +48,5 @@ Date: YYYY-MM-DD
 | 0021 | The games roadmap (six core, three added) | Accepted as roadmap; Phase 1 scope superseded by 0022 |
 | 0022 | Phase 1 ships one perfected game and a finished platform | Accepted ("other stuff" to confirm) |
 | 0024 | Phase 1 also ships one perfected 3D game, on the Box and pads with no camera | Superseded by 0025 |
-| 0025 | Phase 1 is 2D only; 3D is private experiments for now | Accepted |
+| 0025 | Phase 1 is 2D only; 3D is private experiments for now | Superseded by 0026 |
+| 0026 | Phase 1 has two games: Pop Party, and one 3D game for the TV and an Android tablet | Accepted (game, camera use, date to confirm) |
