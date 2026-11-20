@@ -565,6 +565,11 @@ addEventListener('keydown', (e) => {
   if (e.key === 'k' || e.key === 'K') showSkeleton = !showSkeleton;
   if (e.key === 'p' || e.key === 'P') showPerf = !showPerf;
   /* G runs the 3D check (which graphics chip, how fast a plain 3D scene is) and copies the result - for the owner */
+  /* Shift+G switches camera tracking between the main thread and a separate worker, and restarts the page (to compare in the 3D check) */
+  if (e.key === 'G' && e.shiftKey && account.role === 'owner' && mode !== 'play'){
+    try { const on = localStorage.getItem('orlis_trackworker') === '1'; localStorage.setItem('orlis_trackworker', on ? '0' : '1'); toast(`Camera tracking: ${on ? 'main thread' : 'separate worker'}. Restarting…`, { ms: 2500 }); setTimeout(() => location.reload(), 1200); } catch (err){}
+    return;
+  }
   if ((e.key === 'g' || e.key === 'G') && account.role === 'owner' && mode !== 'play'){
     toast('3D check: about 20 seconds…', { ms: 3000 });
     import('./stage/gpucheck.js').then((m) => m.gpuCheck()).then((text) => {

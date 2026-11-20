@@ -71,7 +71,7 @@ export async function gpuCheck(onStatus = () => {}){
       };
       requestAnimationFrame(loop);
     });
-    lines.push(`${label}: ${stats(ms.slice(5))}${camera ? `; camera ${pose.fps.toFixed(0)} fps, ${pose.inferMs.toFixed(1)} ms per look` : ''}${cameraNote}`);
+    lines.push(`${label}: ${stats(ms.slice(5))}${camera ? `; camera tracking in ${pose.worker ? 'a separate worker' : 'the main thread'}: ${pose.fps.toFixed(0)} fps, ${pose.inferMs.toFixed(1)} ms per look` : ''}${cameraNote}`);
     if (camera) pose.sleep();
   }
   r.dispose(); cv.remove();
