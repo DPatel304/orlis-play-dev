@@ -15,11 +15,11 @@ const pick = (a) => a[(Math.random() * a.length) | 0];
 const rand = ([a, b]) => a + Math.random() * (b - a);
 export const BALLOON_SIZE = 2.5;                  /* a balloon's picture is 2.5 radii tall (radii are fractions of the screen height) */
 
-/* Two versions to compare: the stage as built, and a lighter one for slower machines (the backdrop repainted a quarter as often and a
-   little smaller, the 3D picture drawn at 70% and smoothed up, no edge smoothing). */
+/* Versions to compare. The stage's defaults are its light settings (the backdrop repainted every 4th frame at 75% size, the 3D picture drawn at 70% and
+   smoothed up, no edge smoothing): the owner measured those as close to the plain canvas painter. The full-quality settings lagged on the owner's laptop. */
 const make = (id, name, extra) => ({ id, unit: 'points', name, stars: 1, accent: '#ff5d9e', secs: ROUND, moves: ['reach'], create(n, opts){ return new PopPartyStage(n, { ...extra, ...opts }); } });
-export const light = make('pop-party-stage-light', 'Pop Party (stage lab, light)', { backdropEvery: 4, backdropScale: 0.75, scale: 0.7, antialias: false });
-/* The same game with no 3D at all: the stage paints the pictures straight onto the canvas, as the real game does. If this is smooth and the 3D versions are not, the 3D is the cost, not the stage's design. */
+export const full = make('pop-party-stage-full', 'Pop Party (stage lab, full quality)', { backdropEvery: 2, backdropScale: 1.25, scale: 1, antialias: true });
+/* No 3D at all: the stage paints the pictures straight onto the canvas, as the real game does. */
 export const canvas = make('pop-party-stage-canvas', 'Pop Party (stage lab, canvas)', { gl: false });
 export default make('pop-party-stage', 'Pop Party (stage lab)', {});
 

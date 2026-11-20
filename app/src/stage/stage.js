@@ -65,9 +65,10 @@ function trimCutouts(keep = 48){
 }
 
 export class Stage {
-  /* Options for a lighter stage, for slower machines: backdropEvery (repaint the backdrop every N frames), backdropScale (its picture's size,
-     relative to the screen), scale (how big the 3D picture is drawn, relative to the screen) and antialias. */
-  constructor({ backdrop = null, gl = true, backdropEvery = 2, backdropScale = 1.25, scale = 1, antialias = true } = {}){
+  /* Options (the defaults are the light settings the owner measured as close to the plain canvas painter; the full-quality settings lagged):
+     backdropEvery (repaint the backdrop every N frames), backdropScale (its picture's size, relative to the screen), scale (how big the 3D
+     picture is drawn, relative to the screen, then smoothed up) and antialias. */
+  constructor({ backdrop = null, gl = true, backdropEvery = 4, backdropScale = 0.75, scale = 0.7, antialias = false } = {}){
     this.backdrop = backdrop;
     this.opt = { backdropEvery, backdropScale, scale, antialias };
     this.perf = { n: 0, painter: 0, gl: 0, copy: 0 };
