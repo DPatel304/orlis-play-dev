@@ -6,7 +6,7 @@ brother-in-law and father, playing and creating, with the pad app working. 18 we
 ## What "done" means on March 27
 
 1. Orlis Play on the owner's laptop, with a closed-beta install for the brother-in-law and father (invite only).
-2. **Six perfected games** (0021): Pop Party, a board game (Save the Harvest), Storytime, Peekaboo Garden (one pad plus the TV), a simple
+2. **Nine games** (0021): **six perfected** (full bar) and **three more** to a lighter bar (Sky Painter, Sleepy Bear, Pterry Flight; no bugs, house look, standard HUD, one family playtest). The six: Pop Party, a board game (Save the Harvest), Storytime, Peekaboo Garden (one pad plus the TV), a simple
    runner, and a fitness game (Animal Gym), each in the house look, tuned by playtests, playable by under-3s.
 3. A pad page that works on any phone browser (0019): joins by QR or code, rejoins by itself, works as a controller, and shows
    one private screen (a map or cards). The native Android app, with automatic discovery, is a stretch.
@@ -42,7 +42,7 @@ and TV roles; signed packages and entitlements; the closed-beta channel; sign-in
 
 **Create:** a bigger kit; the vocabulary growing as games need it; the approval flow for submitted games; asset requests.
 
-**Games** (0021): Pop Party tuned; Save the Harvest, Storytime and Animal Gym perfected; the runner built (reusing Last Known Position's road);
+**Games** (0021): the three added games restyled to the house look (Pterry Flight, Sky Painter, then Sleepy Bear) and playtested once; Pop Party tuned; Save the Harvest, Storytime and Animal Gym perfected; the runner built (reusing Last Known Position's road);
 Peekaboo Garden built (one pad plus the TV).
 
 **Beta operations:** installs for the two testers, beta terms, a simple way to send feedback and bugs.

@@ -44,4 +44,4 @@ Date: YYYY-MM-DD
 | 0018 | Apple support is deferred to Phase 2 | Accepted |
 | 0019 | Phase 1 pads are a browser page; a native app follows if time allows | Accepted |
 | 0020 | The stage is built; existing flat games are not migrated yet | Proposed |
-| 0021 | The six games for Phase 1 | Accepted (two to confirm) |
+| 0021 | The games for Phase 1 (six core, three added) | Accepted (two to confirm; tiers proposed) |
