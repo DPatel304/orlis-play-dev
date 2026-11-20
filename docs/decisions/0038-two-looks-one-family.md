@@ -48,3 +48,7 @@ wobble on shapes. The same effects, sounds, HUD, transitions and loading screen 
 Keep **the thin ink edge** (button 6): 3D objects that matter (balloons, bushes, characters, touchables) get the same thin dark edge as
 the 2D pieces, around their outline only. This replaces "no dark outlines" above. Dropped: the stronger sun-side light (button 4; rule 4,
 the sun upper left in both looks, still stands), paper texture on surfaces, and the hand-made wobble.
+
+## Owner's addition (2026-11-20): no grass on the floor
+3D scenes do not scatter painted grass tufts on the ground: it looks too busy. The ground keeps its painted texture (soft patches, paths),
+with a few flowers at most.

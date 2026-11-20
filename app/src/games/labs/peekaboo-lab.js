@@ -110,10 +110,9 @@ class PeekabooLab {
       this.spots.push({ x: px, z: pz, m, kind, rustle: 0 });
     }
     for (let i = 0; i < 9; i++){ const a = Math.PI + 0.2 + i / 8 * (Math.PI - 0.4), r = 13; stand(i % 2 ? 'tree' : 'pine', 4 + (i % 3) * 0.8, Math.cos(a) * r, Math.sin(a) * r); }   /* trees along the back and sides only, so none hides the garden; far, so painted */
-    /* painted grass tufts and flowers scattered on the lawn (one draw call each) */
-    const tuftT = paint(64, 64, (x, w, h) => { x.lineCap = 'round'; [['#86b06c', 6], ['#a9c98c', 4]].forEach(([col, lw], k) => { x.strokeStyle = col; x.lineWidth = lw; for (let i = 0; i < 5; i++){ const bx = 14 + i * 9 + k * 3; x.beginPath(); x.moveTo(bx, h - 2); x.quadraticCurveTo(bx + 2, h * .5, bx + 8 - i * 2, 8 + (i % 2) * 8); x.stroke(); } }); });
+    /* a few painted flowers on the lawn (one draw call); no grass tufts: the owner found them too busy */
     const flowerT = paint(64, 64, (x) => { x.strokeStyle = '#6e9a5a'; x.lineWidth = 3; x.beginPath(); x.moveTo(32, 62); x.lineTo(32, 30); x.stroke(); x.save(); x.translate(32, 24); assets.draw(x, 'flower', 0, 0, 34, {}); x.restore(); });
-    this.fields = [[tuftT, 260, 0.8], [flowerT, 40, 0.75]].map(([tex, n, size]) => {
+    this.fields = [[flowerT, 40, 0.75]].map(([tex, n, size]) => {
       const g = new T.PlaneGeometry(size, size); g.translate(0, size / 2, 0);
       const im = new T.InstancedMesh(g, new T.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.3 }), n);
       im.userData.pos = Array.from({ length: n }, () => { for (;;){ const px = (Math.random() - 0.5) * 27, pz = (Math.random() - 0.5) * 27; if (!this.spots.some(s => Math.hypot(s.x - px, s.z - pz) < 1.6) && Math.hypot(px + 9, pz + 9) > 3) return [px, pz]; } });
