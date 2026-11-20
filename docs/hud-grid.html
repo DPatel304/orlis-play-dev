@@ -28,6 +28,7 @@ h1{ font:600 28px var(--display); margin:0 0 4px; } h2{ font:600 21px var(--disp
 .pc .track i{ position:absolute; left:0; top:0; bottom:0; border-radius:999px; }
 .pc.v{ flex-direction:column; border-radius:999px; } .pc.v .track{ margin:var(--tmv); width:auto; flex:1; align-self:stretch; } .pc.v .track i{ top:auto; right:0; }
 .pc.portrait{ border-radius:22%; } .pc.notice{ justify-content:flex-start; padding:0 3%; }
+.pc.dk{ transition:opacity .6s; } .pc.dk.idle{ opacity:.7; } .pc.bump{ animation:bump .5s cubic-bezier(.2,.9,.3,1.3); } @keyframes bump{ 40%{ transform:scale(1.15) } }
 .legend{ display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr)); gap:10px; }
 .legend div{ background:#fffdf8; color:#2f2b45; border:1px solid var(--line); border-radius:16px; padding:12px 14px; } .legend b{ font:600 16px var(--display); display:block; }
 .legend .fx{ color:#b03462; } .legend .fl{ color:#2c6fb0; }
@@ -48,14 +49,15 @@ pre{ background:#fffdf8; color:#2f2b45; border:1px solid var(--line); border-rad
   <div><b class="fx">Clock (fixed)</b>Top centre, always. A game without a clock gives the cells back.</div>
   <div><b class="fx">Hint words (fixed)</b>Under the clock: a painted icon and at most four words. Arrive big, dock, fade.</div>
   <div><b class="fx">Move card (fixed)</b>Bottom left, 3 x 3. Slides in when a move is asked for, then away.</div>
-  <div><b class="fl">Goal (dock)</b>Between clock and words: one goal bar with three stars, if the game has something to fill.</div>
-  <div><b class="fl">Corner (dock)</b>Top left: score pills on the first row (two to a row), then up to three rows of chips and bars.</div>
-  <div><b class="fl">Top right (dock)</b>Badges, or one portrait (a character who talks, like Nova) with a short notice beside it.</div>
-  <div><b class="fl">Side rails (dock)</b>The outside columns: one tall meter each side (health, boost, a found meter).</div>
+  <div><b class="fl">Goal (dock)</b>Under the clock, the same width: one goal bar with three stars. No goal: the hint words move up into its row.</div>
+  <div><b class="fl">Corner (dock)</b>Top left, 4 rows: score pills with each child's face (two to a row: one row for 1 to 2 players, two rows for 3 to 4), then chips and bars in the rows left.</div>
+  <div><b class="fl">Top right (dock)</b>Badges, or one portrait: big (3 x 3) with a short notice while the character talks, small (2 x 2) when quiet.</div>
+  <div><b class="fl">Side rails (dock)</b>The outside columns, 3 cells tall, with a gap above the move card: one tall meter each side.</div>
   <div><b class="fl">Bottom rail (dock)</b>The bottom row: one wide team bar, or the seekers' faces. Things read rarely, since hands are often here.</div>
   <div><b class="fl">Badge (dock)</b>Bottom right: one streak, combo or count, as wide as its contents.</div>
 </div>
 
+<div class="legend" style="margin-top:10px"><div><b>Quiet when nothing changes</b>Dock pieces fade to 70% after 3 seconds without a change and pop back when they change (watch a score bump). Anchors never fade.</div><div><b>A 5% edge</b>Everything sits at least 5% in from the screen's edge, the usual safe margin for TVs.</div></div>
 <h2>How a game asks</h2>
 <pre>hud(){ return {
   score: this.score,                                   // corner, first row (the shell draws these)
@@ -87,25 +89,25 @@ var Orlis2D=(()=>{var X=Object.defineProperty;var S0=Object.getOwnPropertyDescri
   const A = Orlis2D.assets, $ = (id) => document.getElementById(id), tv = $('tv');
   const COLS = 20, ROWS = 11;
   /* the same cell maths as app/src/games/grid.js */
-  function gridOf(W, H){ const s = Math.round(Math.min(W, H) * 0.04), gw = W - 2 * s, gh = H - 2 * s; const C = Math.min(gw / COLS, gh / (ROWS + 0.25)); return { s, gw, gh, C, pad: C * 0.14 }; }
+  function gridOf(W, H){ const s = Math.round(Math.min(W, H) * 0.05), gw = W - 2 * s, gh = H - 2 * s; const C = Math.min(gw / COLS, gh / (ROWS + 0.25)); return { s, gw, gh, C, pad: C * 0.14 }; }
   function block(W, H, col, row, cs = 1, rs = 1){ const { s, gw, gh, C } = gridOf(W, H);
     const x = col + cs <= COLS / 2 ? s + col * C : col >= COLS / 2 ? W - s - (COLS - col) * C : s + (gw - COLS * C) / 2 + col * C;
     const y = row + rs <= ROWS / 2 ? s + row * C : row >= Math.ceil(ROWS / 2) ? H - s - (ROWS - row) * C : s + (gh - ROWS * C) / 2 + row * C;
     return { x, y, w: cs * C, h: rs * C }; }
   const DOCKS = {
     clock:  { at: [8, 0, 4, 1], fixed: true, name: 'clock' },
-    goal:   { at: [7, 1, 6, 1], name: 'goal' },
+    goal:   { at: [8, 1, 4, 1], name: 'goal' },
     words:  { at: [6, 2, 8, 1], fixed: true, name: 'hint words' },
     card:   { at: [1, 7, 3, 3], fixed: true, name: 'move card' },
     corner: { at: [1, 0, 6, 4], name: 'corner' },
     top:    { at: [13, 0, 6, 3], name: 'top right' },
-    left:   { at: [0, 4, 1, 4], name: 'left rail' },
-    right:  { at: [19, 4, 1, 4], name: 'right rail' },
+    left:   { at: [0, 4, 1, 3], name: 'left rail' },
+    right:  { at: [19, 4, 1, 3], name: 'right rail' },
     bottom: { at: [5, 10, 10, 1], name: 'bottom rail' },
     badge:  { at: [14, 9, 5, 1], name: 'badge' }
   };
   const icon = (id, size, o) => { const c = document.createElement('canvas'), d = Math.round(size * 2); c.width = c.height = d; c.style.width = c.style.height = size + 'px'; const x = c.getContext('2d'); x.translate(d / 2, d / 2); A.draw(x, id, 0, 0, d * .82, o || {}); return c; };
-  function piece(r, cls, C){ const e = document.createElement('div'); e.className = 'pc ' + (cls || ''); const p = C * 0.07;
+  function piece(r, cls, C){ const e = document.createElement('div'); e.className = 'pc ' + (cls || '') + (anchorNow ? '' : ' dk'); const p = C * 0.07;
     Object.assign(e.style, { left: (r.x + p) + 'px', top: (r.y + p) + 'px', width: (r.w - 2 * p) + 'px', height: (r.h - 2 * p) + 'px', fontSize: (C * 0.5) + 'px' });
     e.style.setProperty('--bw', Math.max(2, C * 0.06) + 'px'); e.style.setProperty('--tm', `${C * .2}px ${C * .22}px ${C * .2}px 0`); e.style.setProperty('--tmv', `0 ${C * .16}px ${C * .2}px`); e.style.setProperty('--sh', Math.max(2, C * 0.09) + 'px'); $('hud').appendChild(e); return e; }
   const LAYOUTS = {
@@ -115,31 +117,36 @@ var Orlis2D=(()=>{var X=Object.defineProperty;var S0=Object.getOwnPropertyDescri
     peek: { clock: '0:42', words: ['sun', 'Find the hider!'], right: { meter: 'glowstar', fill: .55, color: 'gold' }, bottom: { faces: ['jump', 'wave'] } },
     busy: { clock: '1:10', goal: .7, words: ['star', 'Catch the stars!'], card: 'jump', score: [12, 9, 15, 7], corner: [{ chip: 'apple', v: 5 }, { chip: 'heart', v: 3 }, { bar: 'star', fill: .4, color: 'gold' }], top: { badges: [['crown', 2], ['gift', 1], ['bell', 4]] }, left: { meter: 'heart', fill: .8, color: 'rose' }, right: { meter: 'lightbulb', fill: .3, color: 'indigo' }, bottom: { bar: 'star', fill: .5, color: 'gold' }, badge: ['sparkles', 'x5'] }
   };
+  const FACES = ['joy', 'grin', 'wink', 'smile'];
+  function face(i, size){ const c = document.createElement('canvas'), d = Math.round(size * 2); c.width = c.height = d; Object.assign(c.style, { width: size + 'px', height: size + 'px', borderRadius: '50%', background: '#fff', boxShadow: `0 0 0 ${Math.max(2, size * .12)}px ${PCOL[i]}`, flex: 'none' });
+    const x = c.getContext('2d'); x.beginPath(); x.arc(d / 2, d / 2, d / 2, 0, 6.3); x.clip(); x.translate(d / 2, d * 1.28); A.draw(x, 'cubo', 0, 0, d * 2.3, { pose: 'freeze', face: FACES[i] }); return c; }
   const COL = { gold: '#f5c542', rose: '#e85d8a', indigo: '#5b5fc7' }, PCOL = ['#3da9ff', '#ff8a3d', '#3fcf7f', '#c46bff'];
-  let cur = 'pop';
-  function render(){
-    const W = tv.clientWidth, H = tv.clientHeight, g = gridOf(W, H), C = g.C, L = LAYOUTS[cur];
+  let cur = 'pop', anchorNow = false, talking = true;
+  function render(){ const keepT = {}; document.querySelectorAll('#hud .pc[data-p]').forEach(e => { keepT[e.dataset.p] = e.dataset.t; });
+    const renderedAt = performance.now(); const W = tv.clientWidth, H = tv.clientHeight, g = gridOf(W, H), C = g.C, L = LAYOUTS[cur];
     const grid = $('grid'), hud = $('hud'); grid.innerHTML = ''; hud.innerHTML = '';
     if ($('showgrid').checked){
       for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++){ const b = block(W, H, c, r); const e = document.createElement('div'); e.className = 'gcell'; Object.assign(e.style, { left: b.x + 'px', top: b.y + 'px', width: b.w + 'px', height: b.h + 'px' }); grid.appendChild(e); }
       for (const [k, d] of Object.entries(DOCKS)){ const b = block(W, H, ...d.at), e = document.createElement('div'); e.className = 'dock' + (d.fixed ? ' fixed' : ''); Object.assign(e.style, { left: b.x + 'px', top: b.y + 'px', width: b.w + 'px', height: b.h + 'px' }); e.innerHTML = `<span>${d.name}</span>`; grid.appendChild(e); }
     }
     const B = (k, dc = 0, dr = 0, cs, rs) => { const a = DOCKS[k].at; return block(W, H, a[0] + dc, a[1] + dr, cs || a[2], rs || a[3]); };
-    if (L.clock){ const e = piece(B('clock'), '', C); e.style.fontSize = (C * .62) + 'px'; e.textContent = L.clock; }
-    if (L.goal != null){ const e = piece(B('goal'), '', C); const t = document.createElement('div'); t.className = 'track'; t.style.margin = `${C * .2}px ${C * .25}px`; t.innerHTML = `<i style="width:${L.goal * 100}%;background:linear-gradient(90deg,#f5c542,#f7a94b)"></i>`; e.appendChild(t);
-      [.33, .66, .97].forEach(k => { const s = icon('star', C * .62); s.style.position = 'absolute'; s.style.left = `calc(${k * 100}% - ${C * .31}px)`; s.style.top = (C * .06) + 'px'; s.style.opacity = L.goal >= k ? 1 : .45; e.appendChild(s); }); }
-    if (L.words){ const [id, text, col] = L.words; const b = B('words'), w = text.length * C * .29 + C * 1.3; const r = { x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h }; const e = piece(r, '', C); e.appendChild(icon(id, C * .62, col ? { color: col } : {})); e.appendChild(document.createTextNode(text)); }
-    if (L.card){ const e = piece(B('card'), 'card', C); e.style.setProperty('--bw', (C * .1) + 'px'); e.appendChild(icon('cubo', C * 2, { pose: L.card })); const s = document.createElement('div'); s.textContent = L.card === 'reach' ? 'Reach up!' : 'Jump!'; s.style.fontSize = (C * .4) + 'px'; e.appendChild(s); }
-    if (L.score){ L.score.forEach((n, i) => { const r = B('corner', (i % 2) * 3, Math.floor(i / 2) * 0, 3, 1); if (i >= 2) { r.y += 0; } const rr = i < 2 ? r : B('corner', (i % 2) * 3, 1, 3, 1); const e = piece(rr, '', C); const sw = document.createElement('i'); sw.className = 'sw'; sw.style.width = sw.style.height = (C * .55) + 'px'; sw.style.background = PCOL[i]; e.appendChild(sw); e.appendChild(document.createTextNode(n)); }); }
+    anchorNow = true; if (L.clock){ const e = piece(B('clock'), '', C); e.style.fontSize = (C * .62) + 'px'; e.textContent = L.clock; }
+    anchorNow = false; if (L.goal != null){ const e = piece(B('goal'), '', C); const t = document.createElement('div'); t.className = 'track'; t.style.margin = `${C * .2}px ${C * .25}px`; t.innerHTML = `<i style="width:${L.goal * 100}%;background:linear-gradient(90deg,#f5c542,#f7a94b)"></i>`; e.appendChild(t);
+      [.3, .6, .9].forEach(k => { const s = icon('star', C * .62); s.style.position = 'absolute'; s.style.left = `calc(${k * 100}% - ${C * .31}px)`; s.style.top = (C * .06) + 'px'; s.style.opacity = L.goal >= k ? 1 : .45; e.appendChild(s); }); }
+    anchorNow = true; if (L.words){ const [id, text, col] = L.words; const b = L.goal == null ? B('words', 0, -1) : B('words'), w = text.length * C * .29 + C * 1.3; const r = { x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h }; const e = piece(r, '', C); e.appendChild(icon(id, C * .62, col ? { color: col } : {})); e.appendChild(document.createTextNode(text)); }
+    if (L.card){ anchorNow = true; const e = piece(B('card'), 'card', C); e.style.setProperty('--bw', (C * .1) + 'px'); e.appendChild(icon('cubo', C * 2, { pose: L.card })); const s = document.createElement('div'); s.textContent = L.card === 'reach' ? 'Reach up!' : 'Jump!'; s.style.fontSize = (C * .4) + 'px'; e.appendChild(s); }
+    anchorNow = false; if (L.score){ L.score.forEach((n, i) => { const r = B('corner', (i % 2) * 3, Math.floor(i / 2) * 0, 3, 1); if (i >= 2) { r.y += 0; } const rr = i < 2 ? r : B('corner', (i % 2) * 3, 1, 3, 1); const e = piece(rr, '', C); e.appendChild(face(i, C * .62)); const num = document.createElement('span'); num.textContent = n; num.style.fontSize = (C * .58) + 'px'; e.appendChild(num); e.classList.add('dk'); e.dataset.p = i; }); }
     const startRow = L.score ? (L.score.length > 2 ? 2 : 1) : 0;
     let row = startRow, colAt = 0; (L.corner || []).forEach((p, i) => { if (p.bar && colAt){ row++; colAt = 0; } const r = B('corner', colAt, row, p.bar ? 6 : 3, 1); if (p.bar || colAt){ row++; colAt = 0; } else colAt = L.score && L.score.length > 2 ? 3 : 0, (colAt ? 0 : row++); const e = piece(r, '', C);
       if (p.chip){ e.appendChild(icon(p.chip, C * .6)); e.appendChild(document.createTextNode(p.v)); } else { e.style.justifyContent = 'flex-start'; e.style.paddingLeft = (C * .12) + 'px'; e.appendChild(icon(p.bar, C * .6)); const t = document.createElement('div'); t.className = 'track'; t.innerHTML = `<i style="width:${p.fill * 100}%;background:${COL[p.color]}"></i>`; e.appendChild(t); } });
     ['left', 'right'].forEach(side => { const m = L[side]; if (!m) return; const e = piece(B(side), 'v', C); e.style.paddingTop = (C * .12) + 'px'; e.appendChild(icon(m.meter, C * .6)); const t = document.createElement('div'); t.className = 'track'; t.innerHTML = `<i style="height:${m.fill * 100}%;background:${COL[m.color]}"></i>`; e.appendChild(t); });
     if (L.top){ const t = L.top;
-      if (t.portrait){ const e = piece(B('top', 3, 0, 3, 3), 'portrait', C); e.appendChild(icon(t.portrait, C * 2.6, { pose: 'wave' })); const n = piece(B('top', 0, 0, 3, 1), 'notice', C); n.style.fontSize = (C * .38) + 'px'; n.style.borderRadius = (C * .3) + 'px'; n.textContent = t.notice; }
+      if (t.portrait){ const talk = talking; const e = piece(talk ? B('top', 3, 0, 3, 3) : B('top', 4, 0, 2, 2), 'portrait', C); e.appendChild(icon(t.portrait, C * (talk ? 2.6 : 1.7), { pose: talk ? 'wave' : 'freeze' })); if (talk){ const n = piece(B('top', 0, 0, 3, 1), 'notice', C); n.style.fontSize = (C * .38) + 'px'; n.style.borderRadius = (C * .3) + 'px'; n.textContent = t.notice; } }
       if (t.badges){ t.badges.forEach(([id, v], i) => { const e = piece(B('top', 6 - (i + 1) * 2, 0, 2, 1), '', C); e.appendChild(icon(id, C * .58)); e.appendChild(document.createTextNode(v)); }); } }
     if (L.bottom){ const b = L.bottom; if (b.bar){ const e = piece(B('bottom'), '', C); e.style.justifyContent = 'flex-start'; e.style.paddingLeft = (C * .12) + 'px'; e.appendChild(icon(b.bar, C * .6)); const t = document.createElement('div'); t.className = 'track'; t.innerHTML = `<i style="width:${b.fill * 100}%;background:${COL[b.color]}"></i>`; e.appendChild(t); }
-      if (b.faces){ b.faces.forEach((pose, i) => { const e = piece(B('bottom', 3 + i * 2, 0, 2, 1), '', C); e.appendChild(icon('cubo', C * .7, { pose })); const sw = document.createElement('i'); sw.className = 'sw'; sw.style.width = sw.style.height = (C * .42) + 'px'; sw.style.background = PCOL[i]; e.appendChild(sw); }); } }
+      if (b.faces){ b.faces.forEach((pose, i) => { const e = piece(B('bottom', 3 + i * 2, 0, 2, 1), 'dk', C); e.appendChild(face(i, C * .62)); }); } }
+    document.querySelectorAll('#hud .pc[data-p]').forEach(e => { if (keepT[e.dataset.p]) e.dataset.t = keepT[e.dataset.p]; });
+    document.querySelectorAll('#hud .pc.dk').forEach(e => { if (!e.dataset.t) e.dataset.t = renderedAt; });
     if (L.badge){ const b = B('badge'), w = C * 2.4; const e = piece({ x: b.x + b.w - w, y: b.y, w, h: b.h }, '', C); e.appendChild(icon(L.badge[0], C * .6)); e.appendChild(document.createTextNode(L.badge[1])); }
   }
   /* the painted scene behind: Pop Party's meadow (a darker garden for Peekaboo) */
@@ -150,6 +157,12 @@ var Orlis2D=(()=>{var X=Object.defineProperty;var S0=Object.getOwnPropertyDescri
     if (cur === 'leaf') A.draw(c, 'fallenleaf', W * .5, H * .7, H * .14, {});
     if (cur === 'peek'){ A.draw(c, 'bush', W * .35, H * .7, H * .2, {}); A.draw(c, 'bush', W * .62, H * .62, H * .18, {}); }
     requestAnimationFrame(frame); }
+  let changedAt = performance.now();
+  setInterval(() => { const now = performance.now();
+    document.querySelectorAll('#hud .pc.dk').forEach(e => e.classList.toggle('idle', now - (+e.dataset.t || changedAt) > 3000));
+  }, 250);
+  setInterval(() => { const L = LAYOUTS[cur]; if (L.score){ const i = Math.floor(Math.random() * L.score.length); L.score[i]++; render(); const e = document.querySelector(`#hud .pc[data-p="${i}"]`); if (e){ e.dataset.t = performance.now(); e.classList.add('bump'); } }
+    if (cur === 'lkp'){ talking = !talking; render(); } }, 4000);
   requestAnimationFrame(frame);
   document.querySelectorAll('[data-l]').forEach(b => b.addEventListener('click', () => { cur = b.dataset.l; document.querySelectorAll('[data-l]').forEach(x => x.setAttribute('aria-pressed', x === b)); render(); }));
   $('showgrid').addEventListener('change', render); addEventListener('resize', render); setTimeout(render, 50);

@@ -31,3 +31,15 @@ built. The UI kit (U1) gives every piece one ink border and the paper look. Mock
 ## Replaces
 Extends the HUD grid "version 3" in BACKLOG.md and the fixed-slot table in `UI-STANDARD.md`; the "two pill looks" rule there is
 replaced by the kit's one piece style (player colour as a swatch).
+
+## Owner's changes (2026-11-20)
+The owner accepted the docks and the paper score pills, and asked for all seven refinements:
+1. **Rails are 3 cells tall** (0,4,1,3 and 19,4,1,3), leaving a gap above the move card.
+2. **The goal bar is the clock's width** (8,1,4,1), so the top centre is one column.
+3. **No goal, no goal row:** the hint words move up into row 1.
+4. **Score pills carry the child's avatar face** with their colour as a ring, not just a dot.
+5. **The portrait is 3 x 3 with a notice while the character talks, 2 x 2 when quiet.**
+6. **Dock pieces dim to 70% after 3 s without a change** and come back when they change; anchors never dim.
+7. **The edge margin is 5%** (was 4%).
+**The corner stays 4 rows** so four players fit: scores take one row for 1 to 2 players and two rows for 3 to 4; the game's chips and
+bars fill the rows left (three or two).
