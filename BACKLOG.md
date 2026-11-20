@@ -750,3 +750,12 @@ Owner-only game "Peekaboo Garden (3D test)" (`app/src/games/labs/peekaboo-lab.js
 garden at dusk from a fixed three-quarter view; each tracked player's hand is a lantern (ray from the TV camera onto the ground); a pretend
 hider (paper bunny) hops between hiding places and shows only when lit; bushes rustle. The 3D is its own canvas under the 2D canvas (no copy).
 To measure: play a round with the tracking worker off, then on (Shift+G on home), pressing R at the end of each; paste both reports.
+
+## Phase 2 idea: an AI-made game every month (owner, 2026-11-20)
+Most of the machinery exists: the maker (`server/src/maker.js`) takes a "make this game" job from the queue, builds it with Claude
+Code inside the locked-down creator kit (kit-only, two files), runs Orlis Play's checks, retries once, and the game waits for the
+owner's OK like any game sent in. To make it monthly: (1) a scheduled job writes the request itself: Claude proposes three concepts from
+the kit's vocabulary and what the store lacks, the owner picks one (or it picks); (2) stronger automated checks before the owner sees it:
+a bot plays it (mouse or recorded poses) for crashes, softlocks, a first-minute clarity check and the speed budget; (3) the owner plays
+it about 20 minutes and approves; it goes out labelled "Made by Cubo's workshop" (working name). Keep the human approval (0008, 0013).
+Limits: AI cannot judge motion fun or toddler fit without a playtest; variety is bounded by the kit (that is the safety); API cost per game.
