@@ -94,3 +94,13 @@ test('experiments are reachable by name, but never in the menu or the catalogue'
   assert.equal(byId('pop-party-stage').id, 'pop-party-stage');
   assert.equal(byId('pop-party').id, 'pop-party');
 });
+
+import { smoothness } from '../src/ui/smoothness.js';
+test('the owner\'s smoothness line: a steady round and a stuttery one read differently', () => {
+  const steady = Array.from({ length: 600 }, () => 16.7);
+  const stutter = Array.from({ length: 600 }, (_, i) => (i % 10 === 0 ? 70 : 16.7));
+  assert.match(smoothness(steady, '3D stage'), /60 frames a second on average, the slowest 5% over 17 ms \(3D stage\)/);
+  assert.match(smoothness(stutter), /the slowest 5% over 70 ms/);
+  assert.equal(smoothness([16, 16]), '', 'too few frames to say anything');
+  assert.equal(smoothness(null), '');
+});

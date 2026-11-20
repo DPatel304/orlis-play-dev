@@ -13,6 +13,7 @@ import { cursor, inFront } from './ui/cursor.js';
 import { menu, toggleFullscreen, openSettings, played as playedLately, BLURB } from './ui/menu.js';
 import { remote, typing } from './ui/remote.js';
 import { account, welcome, AVATARS } from './ui/account.js';
+import { smoothness } from './ui/smoothness.js';
 import { installTitlebar, titlebarPlaying } from './ui/titlebar.js';
 import { library } from './ui/library.js';
 import { storePage } from './ui/store.js';
@@ -240,7 +241,10 @@ function drawMoveCard(c, W, H, dt){
   if (moveCard.out > MOTION.slideOut){ moveCard.pose = null; return; }
   figureCard(c, W, H, moveCard.pose, moveCard.age, { age: moveCard.age, left: moveCard.out < 0 ? Infinity : MOTION.slideOut - moveCard.out });
 }
+/* How smoothly a round ran: every frame's time, kept for the owner's results line (the real games and the experiments, side by side). */
+const frameMs = [];
 function startRound(){
+  frameMs.length = 0;
   joined = new Set();
   hud.quiet = false;
   veilIntro = !!launch.el && launch.el.classList.contains('hascard') && !game.passive;
@@ -283,7 +287,12 @@ function showResults(){
   /* one friendly line: what everyone got together */
   const total = (() => { try { return inst.tally().reduce((a, r) => a + (Number(r.value) || 0), 0); } catch { return 0; } })();
   const own = inst.summary ? inst.summary(n) : null;      /* (a game can say it its own way) */
-  const summary = own ? { line: own, best: isBest } : total > 0 ? { line: `${n > 1 ? 'Together you got' : 'You got'} ${total} ${game.unit || 'points'}`, best: isBest } : null;
+  let summary = own ? { line: own, best: isBest } : total > 0 ? { line: `${n > 1 ? 'Together you got' : 'You got'} ${total} ${game.unit || 'points'}`, best: isBest } : null;
+  /* the owner also sees how smoothly it ran, to compare games and machines without any tools */
+  if (account.role === 'owner' && !game.passive){
+    const smooth = smoothness(frameMs, inst.stage ? (inst.stage.mode === 'gl' ? '3D stage' : 'stage, painted on the canvas') : '');
+    if (smooth) summary = { line: summary ? `${summary.line}. ${smooth}` : smooth, best: summary && summary.best };
+  }
   /* told to the family's server, for this week's challenges (not a game
      being tried out - from Create, or waiting for the owner's OK) */
   if (!game.back && !game.trial && !game.passive) week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) })
@@ -443,6 +452,7 @@ function tick(now){
   const gap = away ? AWAY_GAP : CALM.has(mode) ? HOME_GAP : 0;
   if (gap && now - lastFrame < gap){ requestAnimationFrame(tick); return; }
   lastFrame = now;
+  const rawMs = last ? now - last : 16;
   const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
   last = now;
 
@@ -461,6 +471,7 @@ function tick(now){
       if (introLeft <= 0){ sfx.select?.(); if (veilIntro){ veilIntro = false; launch.release(); } }
     } else {
     inst.step(dt, W, H);
+    if (frameMs.length < 40000 && rawMs < 1000) frameMs.push(rawMs);      /* (for the owner's smoothness line on the results) */
     roundLeft -= dt; played += dt;
     /* the owner trying a game that's waiting for their OK: once they've
        played it long enough, the server's told (Approve comes on) */
