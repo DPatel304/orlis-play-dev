@@ -1,5 +1,5 @@
 # 0028: Sessions and seats in code
-Status: Proposed
+Status: Accepted (except the join code, see 0032)
 Date: 2026-11-20
 
 ## Context
@@ -27,3 +27,8 @@ Pop Party and Peekaboo Garden both use, plus a pause rule for phones that drop, 
 
 ## Replaces
 Implements 0004, 0011 and the pause note in 0019.
+
+## Owner's answer (2026-11-20)
+Everything accepted except the 4-letter code, which the owner wants replaced. Proposed instead (see 0032): scan the QR on the TV as the
+main way in (it carries a secret, so nothing to type), and a **picture code** as the fallback: the TV shows three pictures (a balloon, a
+cat, a star) and the phone taps the same three from a grid of nine. No reading needed, so kids can do it.

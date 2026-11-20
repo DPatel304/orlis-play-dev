@@ -1,5 +1,5 @@
 # 0031: How Peekaboo Garden is built
-Status: Proposed
+Status: Accepted
 Date: 2026-11-20
 
 ## Context

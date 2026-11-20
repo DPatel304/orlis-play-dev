@@ -1,5 +1,5 @@
 # 0027: The pad link: Orlis Play runs a small local hub; the game host is a client of it
-Status: Proposed
+Status: Accepted
 Date: 2026-11-20
 
 ## Context

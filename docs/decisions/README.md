@@ -43,15 +43,17 @@ Date: YYYY-MM-DD
 | 0017 | Phase 1 is a closed beta; in Phase 2 the platform is sold only as a kit | Accepted (terms to confirm) |
 | 0018 | Apple support is deferred to Phase 2 | Accepted |
 | 0019 | Phase 1 pads are a browser page; a native app follows if time allows | Accepted |
-| 0020 | The stage is built; existing flat games are not migrated yet | Proposed |
-| 0023 | The Orlis Box draws 2D only; 3D lives on the pads | Proposed |
+| 0020 | The stage is built; existing flat games are not migrated yet | Superseded by 0029 |
+| 0023 | The Orlis Box draws 2D only; 3D lives on the pads | Superseded by 0029 |
 | 0021 | The games roadmap (six core, three added) | Accepted as roadmap; Phase 1 scope superseded by 0022 |
 | 0022 | Phase 1 ships one perfected game and a finished platform | Accepted ("other stuff" to confirm) |
 | 0024 | Phase 1 also ships one perfected 3D game, on the Box and pads with no camera | Superseded by 0025 |
 | 0025 | Phase 1 is 2D only; 3D is private experiments for now | Superseded by 0026 |
 | 0026 | Phase 1 has two games: Pop Party, and one 3D game for the TV and an Android tablet | Accepted (date to confirm); the 3D game is Peekaboo Garden: one hider tablet, camera seekers |
-| 0027 | The pad link: a small local hub in Orlis Play; the game host is its client (spec: `docs/specs/pad-protocol.md`) | Proposed |
-| 0028 | Sessions and seats in code; kid profiles move to the Box | Proposed |
-| 0029 | Drawing: flat games on the 2D painter, 3D games on three.js on the TV and pads (would supersede 0020 and 0023) | Proposed |
-| 0030 | Phase 1 pads are the testers' own phones, with a minimum (replaces 0026's "Android tablet") | Proposed |
-| 0031 | How Peekaboo Garden is built | Proposed |
+| 0027 | The pad link: a small local hub in Orlis Play; the game host is its client (spec: `docs/specs/pad-protocol.md`) | Accepted |
+| 0028 | Sessions and seats in code; kid profiles move to the Box | Accepted (join code replaced, see 0032) |
+| 0029 | Drawing: flat games on the 2D painter, 3D games on three.js on the TV and pads (supersedes 0020 and 0023) | Accepted (most games 2D; 3D must look consistent) |
+| 0030 | Phase 1 pads are the testers' own phones, with a minimum (replaces 0026's "Android tablet") | Accepted: minimum iPhone 15 or equivalent |
+| 0031 | How Peekaboo Garden is built | Accepted |
+| 0032 | Joining without typing: scan the QR, or match three pictures | Proposed |
+| 0033 | Phase 1's 3D game is a trial: consistent and smooth, gameplay may be unfinished | Accepted |

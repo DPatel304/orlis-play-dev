@@ -1,5 +1,5 @@
 # 0029: Drawing: flat games on the 2D painter, 3D games on three.js, on the TV and on pads
-Status: Proposed
+Status: Accepted
 Date: 2026-11-20
 
 ## Context
@@ -27,3 +27,8 @@ it repainted 2D pictures into textures every frame. Phase 1 now has a 3D game wi
 
 ## Replaces
 0020 and 0023 (both Proposed, superseded before being accepted).
+
+## Owner's answer (2026-11-20)
+Accepted, with the intent made explicit: **most Orlis games will be purely 2D.** The ecosystem must also be able to make 3D games that
+look consistent with the 2D ones. In Phase 1 the 3D game is a **trial**: its gameplay may stay a work in progress; what must be true is that
+it **looks consistent with the 2D games and runs well** (see 0033).

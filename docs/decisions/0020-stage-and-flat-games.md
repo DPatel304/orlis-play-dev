@@ -1,5 +1,5 @@
 # 0020: The stage is built; existing flat games are not migrated yet
-Status: Proposed
+Status: Superseded by 0029
 Date: 2026-11-20
 ## Context
 M1 of the Phase 1 plan called for a reusable paper stage layer, with Pop Party rebuilt on it. The stage is built (`app/src/stage/`) and

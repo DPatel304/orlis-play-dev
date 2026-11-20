@@ -9,10 +9,10 @@ something unpolished to family.
 1. **Pop Party is perfected:** played by the owner's under-3s without help; tuned from family playtests; no known bugs; a clean first
    minute; the house look (polish pass done); the standard HUD; a smoothness line measured on the owner's laptop; pad players can join
    as extra hands.
-2. **Peekaboo Garden is perfected** (0026, 0031): one hider on a phone (first-person 3D), one or two camera seekers on the TV; fun for
-   the family in playtests; 60 fps on the TV with tracking on, 30 fps or better on the minimum phone (0030); the house look, checked
-   against Pop Party with the look check.
-3. **Pads work** (0027, 0028): any phone joins by QR or code in its browser, rejoins by itself to the same seat, and the game pauses
+2. **Peekaboo Garden ships as a 3D trial** (0031, 0033): one hider on a phone (first-person 3D), one or two camera seekers on the TV.
+   The bar: it looks like the same world as Pop Party (the look check signed off); it runs well (60 fps on the TV with tracking on, and
+   60 fps on the minimum phone, 0030); it plays start to finish without bugs. Gameplay may still be a work in progress.
+3. **Pads work** (0027, 0028, 0032): any phone at the minimum (iPhone 15 or equivalent) joins by scanning the QR or matching three pictures, rejoins by itself to the same seat, and the game pauses
    kindly when a needed phone drops.
 4. **Create works for the two testers:** the bigger kit, kit-only, with the owner's approval step.
 5. **The closed beta can be handed out:** invite-only install, beta terms, sign in once and offline after (0007), a way to send feedback,
@@ -27,9 +27,9 @@ something unpolished to family.
 | When | Milestone | Done when |
 |---|---|---|
 | Dec 4 | **M0 Architecture agreed** | 0027 to 0031 accepted or changed; the Node hub built and tested (P1); the 3D-plus-tracking spike started (K1); the owner's Shift+G result in |
-| Dec 18 | **M1 Phones connect; the TV 3D question answered** | A phone joins by QR or code, picks who it is, rejoins and pauses correctly, on the owner's iPhone 11 and one Android phone (P2 to P6); K1 says yes or no to 3D on the TV with tracking (else the 2D-overview fallback); the Peekaboo design approved (K2) |
+| Dec 18 | **M1 Phones connect; the TV 3D question answered** | A phone joins by QR or code, picks who it is, rejoins and pauses correctly, on the owner's Android test tablet and an iPhone 15-class phone (P2 to P6); K1 says yes or no to 3D on the TV with tracking (else the 2D-overview fallback); the Peekaboo design approved (K2) |
 | Jan 15 | **M2 Seats, profiles, Peekaboo end to end** | The seats model and manifest (S1); Pop Party pad hands (S2); kid profiles on the Box (S3); Peekaboo greybox playable end to end on TV plus phone (K3 to K5, rough) |
-| Feb 5 | **M3 Peekaboo is fun** | Rules and pacing tuned in the first family playtest; the kit list for Create agreed (C1 started) |
+| Feb 5 | **M3 Peekaboo reads and runs** | First family playtest: the garden reads, it runs at budget, no blocking bugs (gameplay notes kept for later); the kit list for Create agreed (C1 started) |
 | Feb 26 | **M4 The look and Create** | Paper puppets and the found reveal (K6); the look pass on both games with the look check (K7); Create tuned for the testers and the bigger kit (C1, C2) |
 | Mar 12 | **M5 Harden** | Beta install and invites, feedback (B1); reconnect edge cases, the Wi-Fi hint, performance on the minimum phone, bug bash (B2); the phone check page and the testers' phones checked (K8) |
 | Mar 27 | **M6 Release to the two testers** | The gate above; buffer to about Apr 17 if quality needs it |
@@ -47,7 +47,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 |---|---|---|---|---|
 | P1 | Node dev hub `tools/pad-hub.mjs` | Sonnet | spec | spec tests 1, 4, 5 pass with a fake host |
 | P2 | Rust hub in Orlis Play (serve `dist-pad/`, relay, secret, port fallback) | Sonnet, Opus review | P1 | same tests pass against the Windows build; Windows firewall text in setup |
-| P3 | Pad page shell (join, code/QR, who-picker, rejoin, keep-awake, loads the pad program) | Sonnet | mockup approved by owner | spec tests 1 to 3 pass; works on iPhone 11 Safari and Android Chrome |
+| P3 | Pad page shell (join by QR or picture code, who-picker, rejoin, keep-awake, loads the pad program) | Sonnet | mockup approved by owner, 0032 accepted | spec tests 1 to 3 pass; works on iPhone Safari and Android Chrome |
 | P4 | Host session module (session, seats, codes, trusted devices, pause rule) | Opus API, Sonnet build | spec | unit tests for joins, trust, pause, resume |
 | P5 | TV join card (QR, code, who has joined) and Settings list of trusted phones | Sonnet | P4, mockup | owner approves on the TV |
 | P6 | Headless end-to-end tests (Node hub, host page, pad pages) | Sonnet | P1, P3, P4 | all five spec tests in `npm test` |
@@ -58,7 +58,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | K2 | Peekaboo design on paper and a greybox mockup | Opus | — | owner approves layout, hiding places, rules, round flow |
 | K3 | `world.js` and the host rules (found, hiding, clock, swap) with tests | Sonnet | K2 | rules tests pass |
 | K4 | TV view (overview, lanterns, rustles, the reveal hook) | Sonnet, Opus review | K1, K3 | 60 fps with tracking on the owner's laptop |
-| K5 | Phone view (first person, joystick and look, hide button, interpolation) | Sonnet, Opus review | K3, P3 | 30 fps or better on the iPhone 11 |
+| K5 | Phone view (first person, joystick and look, hide button, interpolation) | Sonnet, Opus review | K3, P3 | 60 fps on the Android test tablet (minimum class) |
 | K6 | Paper puppets: avatar split into parts, a small rig, the found reveal | Opus | K4 | the reveal approved by the owner |
 | K7 | Look pass for both games (stage set skins, light, look check) | Opus with owner | K4, K5 | owner signs off the look check |
 | K8 | Phone check page (model class, 3D support, frame rate) | Sonnet | P3 | the testers' phones pass |
@@ -80,6 +80,6 @@ Peekaboo is fun; hardening last.
 - **The owner's time** (under 5 hours a week) is the real bottleneck for playtests and look sign-offs. Claude batches everything into
   the weekly check-in; nothing waits on the owner without being in that list.
 - **Create in the gate** adds weeks of work in M4. If the plan slips, cut in this order: more kit packs, Create polish beyond the
-  approval step, more hiding-place kinds; never Pop Party's perfection, Peekaboo's fun, or the pad basics. The date moves before the
+  approval step, more hiding-place kinds; never Pop Party's perfection, Peekaboo's look and smoothness, or the pad basics. The date moves before the
   quality does.
 - **Kid profiles** must be on the Box before the testers' children play.

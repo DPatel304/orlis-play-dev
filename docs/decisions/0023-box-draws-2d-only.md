@@ -1,5 +1,5 @@
 # 0023: The Orlis Box draws 2D only; 3D lives on the pads
-Status: Proposed
+Status: Superseded by 0029
 Date: 2026-11-20
 ## Context
 The owner measured the stage lab (paper cutouts in 3D on a locked camera) on the Box's stand-in laptop: close to the original only with the light

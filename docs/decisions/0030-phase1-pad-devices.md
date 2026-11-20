@@ -1,5 +1,5 @@
 # 0030: Phase 1 pads are the testers' own phones, with a minimum
-Status: Proposed
+Status: Accepted (minimum: iPhone 15 or equivalent)
 Date: 2026-11-20
 
 ## Context
@@ -21,3 +21,8 @@ spike ran at 30 fps.
 
 ## Replaces
 The "Android tablet" wording in 0026 (the game choice in 0026 stands).
+
+## Owner's answer (2026-11-20)
+**The minimum is an iPhone 15, or an equivalent Android** (a 2023 flagship chip or newer: Snapdragon 8 Gen 2 class, Tensor G3, Dimensity
+9200 class), for every role, including the 3D view. Target 60 fps on the minimum. The owner's iPhone 11 is below the minimum, so it is no
+longer the test floor; an Android tablet at about the minimum's level is bought for testing (recommendation in the chat of this date).

@@ -24,7 +24,7 @@ Status: draft for implementation. Changes after it is built need a version bump 
 **Pad to host**
 | t | fields | when |
 |---|---|---|
-| `hello` | `v` (1), `device` (token or null), `code` (4 letters or null), `screen` `{w,h,dpr}`, `gl` (true if WebGL2 works) | first message after connecting |
+| `hello` | `v` (1), `device` (token or null), `join` (the QR secret, or three picture ids `["balloon","cat","star"]`, or null), `screen` `{w,h,dpr}`, `gl` (true if WebGL2 works) | first message after connecting |
 | `pick` | `who` (profile id) | choosing who you are |
 | `in` | `seq`, game fields | game input; send on change, plus at least every 100 ms while held |
 | `ping` | `n` | every 2 s |
@@ -34,7 +34,8 @@ Status: draft for implementation. Changes after it is built need a version bump 
 |---|---|---|
 | `welcome` | `device` (token to keep), `seat`, `who`, `colour`, `game`, `pad` (URL of the pad program), `need` (`controller`/`view3d`) | joined |
 | `who?` | `people` `[{id,name,avatar}]` | pick who you are (shown after a first join) |
-| `reject` | `why` (`code`, `full`, `version`, `game`) | refused, with a friendly reason on the page |
+| `pics?` | `grid` (nine picture ids) | the phone has no QR secret: show the picture grid |
+| `reject` | `why` (`join`, `wait` (too many tries), `full`, `version`, `game`) | refused, with a friendly reason on the page |
 | `state` | `tick`, game fields | shared state, 15 to 20 times a second |
 | `ev` | `e` (name), game fields | one-off events (found, popped, round over) |
 | `pause` / `resume` | `why` | the game paused or carried on |
@@ -42,8 +43,9 @@ Status: draft for implementation. Changes after it is built need a version bump 
 
 ## Rules
 - **Version:** the pad page comes from the Box, so it always matches; if `v` differs, `reject` with `version` and the page reloads.
-- **Trust:** a `hello` with a device token the Box knows joins straight back to its seat. A new phone needs the session's `code`
-  (shown on the TV, also in the QR as `#CODE`). The Box stores trusted tokens (Settings can list and remove them).
+- **Trust (0032):** a `hello` with a device token the Box knows joins straight back to its seat. A new phone needs the session's join:
+  the QR's secret (the QR opens `http://BOX:PORT/#j=SECRET`), or the three pictures shown on the TV, tapped in order from a grid of nine.
+  Five wrong tries: `reject` with `wait` for a minute. The Box stores trusted tokens (Settings can list and remove them).
 - **Rejoin:** the pad page reconnects by itself on close, on `visibilitychange` to visible, and on `online`, with backoff 0.5, 1, 2, 4 s
   (max 4 s). Same token, same seat.
 - **Smoothness:** a pad draws other things 100 ms behind the latest `state` and interpolates; its own player is moved locally at once.
@@ -53,8 +55,8 @@ Status: draft for implementation. Changes after it is built need a version bump 
   some guest Wi-Fi blocks this."
 
 ## Tests (headless, Node hub plus Playwright pages)
-1. A pad joins with the code, picks who, gets a seat; a wrong code is rejected.
+1. A pad joins with the QR secret, picks who, gets a seat; another joins with the picture code; wrong pictures are rejected, five wrong tries wait.
 2. Kill the pad's socket: a required seat pauses the game; reconnect: same seat, resume.
-3. A second phone with an old token rejoins without a code.
+3. A second phone with an old token rejoins without a join secret.
 4. Host restarts: pads see "Start Orlis on the TV", then rejoin when the host is back.
 5. Limits: oversized and too-fast messages are dropped, not crashing the hub.
