@@ -1,5 +1,5 @@
 # 0035: The Orlis look: cozy, playful, handmade paper, for every kind of game
-Status: Accepted
+Status: Accepted in part; superseded in part by 0036 (the material and edge)
 Date: 2026-11-20
 
 ## Context

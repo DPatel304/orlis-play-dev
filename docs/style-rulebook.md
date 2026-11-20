@@ -1,3 +1,6 @@
+> **Superseded in part (2026-11-20):** the look is now toon-shaded 3D (decision 0036). The paper rules below (1 to 4) are replaced;
+> the feel, shapes, faces, world palettes and motion ideas still guide the toon look.
+
 # Orlis Paper: the style rulebook (draft for the owner)
 
 The look in one line: **cozy, playful, handmade paper**, for every kind of game (decision 0035). Visual board with six worlds:
