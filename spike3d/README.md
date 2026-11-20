@@ -1,0 +1,2 @@
+# 3D spike (throwaway)
+A single-page three.js (r128) scene in the Orlis palette: five assets (tree, rock, balloon, Cubo, giraffe), a hazy low-poly world, four cameras (three-quarter, top-down, side-on, behind), a "busy-ness" load setting and a 12-second performance test. It exists to answer: does flat-shaded 3D look right, and does it run on the target devices? It is not part of the app and is not tested. Palette values were sampled from Last Known Position frames (see BACKLOG.md, "Orlis look").
