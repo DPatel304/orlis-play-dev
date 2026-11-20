@@ -2,6 +2,7 @@
    painted sides and paper-like standees, nothing repainted per frame. It answers "can this machine do 3D?" apart from any game. */
 import { loadThree } from './stage.js';
 import { gpuName } from '../ui/perfreport.js';
+import { pose } from '../tracking/pose.js';
 
 const stats = (ms) => {
   if (ms.length < 10) return 'too few frames';
@@ -30,22 +31,48 @@ export async function gpuCheck(onStatus = () => {}){
     const m = i % 3 ? new T.Mesh(box, mats[i % 4]) : new T.Mesh(plane, new T.MeshBasicMaterial({ map: tex('#7fd0b0'), transparent: true }));
     m.position.set((Math.random() - 0.5) * 80, 1, (Math.random() - 0.5) * 80); scene.add(m); things.push(m);
   }
-  const phases = [['light scene (100 things)', 100], ['busy scene (400 things)', 400]];
-  for (const [label, n] of phases){
-    things.forEach((m, i) => { m.visible = i < n; });
+  /* a lit scene with animated characters: each is a few boxes whose arms, legs and head swing (rigged parts, nothing repainted) */
+  const lit = new T.Group(); lit.visible = false; scene.add(lit);
+  const sun = new T.DirectionalLight(0xffffff, 1.6); sun.position.set(20, 40, 10); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 120 }); lit.add(sun, new T.HemisphereLight(0xffffff, 0x88aa88, 1.2));
+  const floor = new T.Mesh(new T.PlaneGeometry(100, 100), new T.MeshStandardMaterial({ color: 0x8cb07b })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; lit.add(floor);
+  const part = (w, h, d, col, x, y, z) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), new T.MeshStandardMaterial({ color: col })); m.position.set(x, y, z); m.castShadow = true; return m; };
+  const crew = [];
+  for (let i = 0; i < 24; i++){
+    const g = new T.Group(), col = [0x6f8cff, 0xe0705a, 0x7fd0b0, 0xffd24a][i % 4];
+    const head = part(1, 1, 1, col, 0, 2.6, 0), body = part(1.2, 1.4, 0.8, col, 0, 1.4, 0);
+    const armL = part(0.3, 1.2, 0.3, col, -0.9, 1.6, 0), armR = part(0.3, 1.2, 0.3, col, 0.9, 1.6, 0), legL = part(0.4, 1, 0.4, col, -0.35, 0.5, 0), legR = part(0.4, 1, 0.4, col, 0.35, 0.5, 0);
+    g.add(head, body, armL, armR, legL, legR); g.position.set((Math.random() - 0.5) * 70, 0, (Math.random() - 0.5) * 70); g.userData = { armL, armR, legL, legR, head, ph: Math.random() * 6 };
+    lit.add(g); crew.push(g);
+  }
+  for (let i = 0; i < 40; i++) lit.add(Object.assign(part(3, 3 + Math.random() * 4, 3, 0xd9d2c3, (Math.random() - 0.5) * 80, 2, (Math.random() - 0.5) * 80), { receiveShadow: true }));
+  r.shadowMap.enabled = true;
+  const phases = [
+    ['plain scene, 400 things', 400, false, false],
+    ['lit scene, shadows, 24 animated characters', 0, true, false],
+    ['the same, with camera tracking running', 0, true, true]
+  ];
+  for (const [label, n, isLit, camera] of phases){
+    things.forEach((m, i) => { m.visible = !isLit && i < n; }); lit.visible = isLit; scene.background = new T.Color(isLit ? 0xbfdff2 : 0xe9f0f0);
     onStatus(label);
+    let cameraNote = '';
+    if (camera){ try { const ok = await pose.wake(); cameraNote = ok ? '' : ' (no camera found, so this is not a real camera test)'; } catch (e){ cameraNote = ' (camera failed)'; } }
     const ms = []; let last = performance.now(), t0 = last;
     await new Promise((done) => {
       const loop = (now) => {
-        ms.push(now - last); last = now;
-        cam.position.set(Math.sin((now - t0) / 3000) * 30, 8, Math.cos((now - t0) / 3000) * 30); cam.lookAt(0, 1, 0);
+        const dt = Math.min(0.05, (now - last) / 1000); ms.push(now - last); last = now;
+        if (camera) pose.update(now, dt);
+        const k = (now - t0) / 1000;
+        cam.position.set(Math.sin(k / 3) * 30, 12, Math.cos(k / 3) * 30); cam.lookAt(0, 1, 0);
         things.forEach((m, i) => { if (i % 3 === 0) m.rotation.y += 0.02; });
+        crew.forEach((g) => { const u = g.userData, w = Math.sin(k * 6 + u.ph); u.armL.rotation.x = w; u.armR.rotation.x = -w; u.legL.rotation.x = -w; u.legR.rotation.x = w; u.head.rotation.y = Math.sin(k * 2 + u.ph) * 0.5; g.position.z += Math.sin(k + u.ph) * 0.02; });
         r.render(scene, cam);
-        if (now - t0 < 4000) requestAnimationFrame(loop); else done();
+        if (now - t0 < 5000) requestAnimationFrame(loop); else done();
       };
       requestAnimationFrame(loop);
     });
-    lines.push(`${label}: ${stats(ms.slice(5))}`);
+    lines.push(`${label}: ${stats(ms.slice(5))}${camera ? `; camera ${pose.fps.toFixed(0)} fps, ${pose.inferMs.toFixed(1)} ms per look` : ''}${cameraNote}`);
+    if (camera) pose.sleep();
   }
   r.dispose(); cv.remove();
   return lines.join('\n');

@@ -566,7 +566,7 @@ addEventListener('keydown', (e) => {
   if (e.key === 'p' || e.key === 'P') showPerf = !showPerf;
   /* G runs the 3D check (which graphics chip, how fast a plain 3D scene is) and copies the result - for the owner */
   if ((e.key === 'g' || e.key === 'G') && account.role === 'owner' && mode !== 'play'){
-    toast('3D check: about 10 seconds…', { ms: 3000 });
+    toast('3D check: about 20 seconds…', { ms: 3000 });
     import('./stage/gpucheck.js').then((m) => m.gpuCheck()).then((text) => {
       (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(text) : Promise.reject()).catch(() => {});
       toast(text.replace(/\n/g, ' · ') + ' (copied)', { ms: 15000 });
