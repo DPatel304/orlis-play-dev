@@ -651,3 +651,9 @@ Limit: a move to true 3D is bigger than a repaint; games that compute from pixel
 - **Joining:** a code or QR on the TV, a name and colour per player, shown with the player's avatar.
 - **iPad floor (proposal, to confirm against Apple's current lineup):** by chip, not by year: A14 Bionic or newer; the official Orlis Pro target is the iPad mini class (the picture's shell size), from the iPad mini 6 (A15) up. One shell size means one product. Keep one used iPad mini 6 as the floor test device.
 - **The floor sets a budget for the kit** (triangles, draw calls, effects) so a scene that runs on the iPad floor is easy on the box; the box is then chosen for 3D at TV resolution plus body tracking.
+
+### Orlis as a platform (owner's intent) and devices
+- **Orlis is a console/platform.** Motion is the main focus and the identity, but a game does not have to use it. Games declare their inputs (motion, a pad, either, both), and the platform API must never assume body tracking.
+- **Free games, and a community that builds and shares games** (the pull toward Steam and Roblox). The differentiators: same-room play, motion, and a kit-only creator pipeline that keeps the visuals family-safe.
+- **Phones as well as iPads:** "give the kids mom or dad's old iPhone" is a selling point. Two tiers: (1) *controller tier* - any phone or tablet with a modern browser: touch buttons, tilt, private text and cards; (2) *full-view tier* - a newer chip (A14 or newer) for a private 3D view or a map. Phone grips are different sizes, so the Pro shell stays iPad-mini-first.
+- **Spike scope:** skip the iPad for now; the owner's iPhone 11 is the extra data point (below the A14 floor, so a pessimistic reading).
