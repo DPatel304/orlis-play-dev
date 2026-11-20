@@ -10,3 +10,6 @@ colour, after a drop. A code or QR is kept as a fallback.
 ## Consequences
 Discovery needs the native iPad app (a browser page cannot do it), and iOS asks for Local Network permission. Trusted devices
 need a way to be listed and removed in settings.
+
+## Staging (2026-11-20)
+In Phase 1 the code or QR fallback is the way in (0019); automatic discovery arrives with the native app.

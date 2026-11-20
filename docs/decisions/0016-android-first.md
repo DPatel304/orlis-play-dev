@@ -17,3 +17,5 @@ Accepted. The owner's family mostly has iPhones, so the iOS shell still follows 
 
 ## Update (2026-11-20)
 Superseded in part by 0018: Apple support is deferred to Phase 2, so Phase 1 is Android only.
+
+Superseded in part by 0019: the browser pad page comes first; the native Android app follows if time allows.
