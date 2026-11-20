@@ -31,3 +31,15 @@ Why: it keeps the painted charm, it is lighter to draw, and there is less 3D art
 the scene's light so they sit in it, and games whose camera looks steeply down should use 3D for what would otherwise look flat from above.
 Each kit asset says whether it exists as a painted piece, a 3D model, or both, and the game uses the painted one unless the rule says 3D.
 
+
+## Owner's addition (2026-11-20): what keeps the siblings close
+Agreed rules for both looks:
+1. **One avatar, drawn two ways.** Each cube-headed avatar is made once as a 3D model; 2D games use painted sprites rendered from it,
+   3D games use the model.
+2. **The same motion.** One shared motion file: squash and stretch, idle breathing, pop timing and easing curves, used by both.
+3. **One palette.** 3D colours come only from the master palette that the 2D pieces use (palette still to be approved).
+4. **The same light side.** The sun is upper left in both; shadows fall to the right and highlights sit upper left.
+
+On trial, owner to judge in `spike3d/siblings.html` (buttons 4 to 7): a clearer light from the sun's side, paper texture printed on
+3D surfaces, the thin ink edge around balloons and bushes (this would replace "no dark outlines" above if kept), and soft hand-made
+wobble on shapes. The same effects, sounds, HUD, transitions and loading screen are shared as already stated.
