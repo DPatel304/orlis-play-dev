@@ -1,5 +1,5 @@
 # 0010: How Orlis makes money
-Status: Open
+Status: Open (deferred to after Phase 1)
 Date: 2026-11-20
 ## Context
 Hardware sales are the main income. Games are free. The owner wants other income, possibly an optional small subscription, and
@@ -26,3 +26,6 @@ Nov 16 decided "no subscriptions". An optional subscription would reverse that.
 
 ## Never (unchanged)
 Ads to kids, selling data, loot boxes, purchases by kids.
+
+## Update (2026-11-20)
+Deferred by the owner: decide after Phase 1 with real family feedback. Phase 1 is free; the ideas above stay noted.

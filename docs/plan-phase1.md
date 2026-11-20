@@ -1,7 +1,7 @@
-# Phase 1 plan: the closed beta, target March 27, 2027
+# Phase 1 plan: the closed beta, target May 28, 2027
 
 Revised Nov 20, 2026 (architecture pass). Decisions are in `docs/decisions/` (the new ones: 0027 to 0031, Proposed until the owner
-accepts them). **Target March 27; quality comes first, so a slip of a few weeks (to mid-April) is acceptable** rather than shipping
+accepts them). **Target May 28, 2027 (moved from March 27 for the toon redraw of Pop Party); quality comes first** rather than shipping
 something unpolished to family.
 
 ## The release gate: what must be true at release
@@ -12,7 +12,7 @@ something unpolished to family.
 2. **Peekaboo Garden ships as a 3D trial** (0031, 0033): one hider on a phone (first-person 3D), one or two camera seekers on the TV.
    The bar: it looks like the same world as Pop Party (the look check signed off); it runs well (60 fps on the TV with tracking on, and
    60 fps on the minimum phone, 0030); it plays start to finish without bugs. Gameplay may still be a work in progress.
-3. **Pads work** (0027, 0028, 0032): any phone at the minimum (iPhone 15 or equivalent) joins by scanning the QR or matching three pictures, rejoins by itself to the same seat, and the game pauses
+3. **Pads work** (0027, 0028, 0032): any phone at the minimum (iPhone 15 or equivalent) opens Orlis and joins by tapping the three pictures on the TV, rejoins by itself to the same seat, and the game pauses
    kindly when a needed phone drops.
 4. **Create works for the two testers:** the bigger kit, kit-only, with the owner's approval step.
 5. **The closed beta can be handed out:** invite-only install, beta terms, sign in once and offline after (0007), a way to send feedback,
@@ -28,11 +28,11 @@ something unpolished to family.
 |---|---|---|
 | Dec 4 | **M0 Architecture agreed** | 0027 to 0031 accepted or changed; the Node hub built and tested (P1); the 3D-plus-tracking spike started (K1); the owner's Shift+G result in |
 | Dec 18 | **M1 Phones connect; the TV 3D question answered; the UI kit** | The UI kit approved (U1) and quick fixes in (U2); a phone joins by QR or code, picks who it is, rejoins and pauses correctly, on the owner's Android test tablet and an iPhone 15-class phone (P2 to P6); K1 says yes or no to 3D on the TV with tracking (else the 2D-overview fallback); the Peekaboo design approved (K2) |
-| Jan 15 | **M2 Seats, profiles, Peekaboo end to end** | The HUD on the kit and emoji out (U3, U4); the seats model and manifest (S1); Pop Party pad hands (S2); kid profiles on the Box (S3); Peekaboo greybox playable end to end on TV plus phone (K3 to K5, rough) |
-| Feb 5 | **M3 Peekaboo reads and runs** | First family playtest: the garden reads, it runs at budget, no blocking bugs (gameplay notes kept for later); the kit list for Create agreed (C1 started) |
-| Feb 26 | **M4 The look and Create** | Home, pause and results on the kit (U5); paper puppets and the found reveal (K6); the look pass on both games with the look check (K7); Create tuned for the testers and the bigger kit (C1, C2) |
-| Mar 12 | **M5 Harden** | Beta install and invites, feedback (B1); reconnect edge cases, the Wi-Fi hint, performance on the minimum phone, bug bash (B2); the phone check page and the testers' phones checked (K8) |
-| Mar 27 | **M6 Release to the two testers** | The gate above; buffer to about Apr 17 if quality needs it |
+| Jan 22 | **M2 Seats, profiles, Peekaboo end to end** | The HUD on the kit and emoji out (U3, U4); the seats model and manifest (S1); Pop Party pad hands (S2); kid profiles on the Box (S3); Peekaboo greybox playable end to end on TV plus phone (K3 to K5, rough) |
+| Feb 19 | **M3 Peekaboo reads and runs** | First family playtest: the garden reads, it runs at budget, no blocking bugs (gameplay notes kept for later); the kit list for Create agreed (C1 started) |
+| Mar 26 | **M4 The look and Create** | Home, pause and results on the kit (U5); paper puppets and the found reveal (K6); the look pass on both games with the look check (K7); Create tuned for the testers and the bigger kit (C1, C2) |
+| Apr 30 | **M5 Harden** | Beta install and invites, feedback (B1); reconnect edge cases, the Wi-Fi hint, performance on the minimum phone, bug bash (B2); the phone check page and the testers' phones checked (K8) |
+| May 28 | **M6 Release to the two testers** | The gate above |
 
 Holidays: Thanksgiving week and Dec 21 to Jan 3 are light; M2 has the most calendar time for that reason.
 

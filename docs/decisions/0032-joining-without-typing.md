@@ -1,5 +1,5 @@
 # 0032: Joining without typing: scan the QR, or match three pictures
-Status: Proposed
+Status: Accepted (pictures, not a QR secret)
 Date: 2026-11-20
 
 ## Context
@@ -21,3 +21,8 @@ and the three pictures beside it, small.
 
 ## Replaces
 The 4-letter code in 0028 and in `docs/specs/pad-protocol.md`.
+
+## Owner's answer (2026-11-20)
+**Joining is by the three pictures.** A phone user opens Orlis on the phone (in Phase 1 the pad page, saved to the home screen; the QR on
+the TV only opens that page and carries no secret), and is then asked to tap the three pictures the TV shows. After a phone has joined
+once it is trusted and rejoins by itself. The native app (Phase 2) finds the Box on its own (0006) and asks for the pictures the same way.

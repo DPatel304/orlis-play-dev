@@ -1,5 +1,5 @@
 # 0026: Phase 1 has two games: Pop Party, and one 3D game for the TV and an Android tablet
-Status: Accepted (the date to confirm)
+Status: Accepted
 Date: 2026-11-20
 
 ## Context
@@ -47,3 +47,6 @@ tablets (start with one), and the date.
 - **The TV seekers are tracked by the camera** (one or two), so the TV runs real 3D and camera tracking together. This needs the tracking
   worker (Shift+G in the 3D check) and a measurement on the Box hardware early (M1). Fallback if it will not run well: draw the TV overview
   in 2D (the same world, a painted top-down map as in `spike3d/spike7.html`) and keep 3D on the tablet only. The decision stands either way.
+
+## Update (2026-11-20, date)
+The target moves to **late May 2027** (May 28), quality first, because Pop Party is redrawn in the toon look (0036).

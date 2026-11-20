@@ -32,8 +32,8 @@ Date: YYYY-MM-DD
 | 0006 | Pairing: automatic discovery on the home network, a confirmation code the first time | Accepted |
 | 0007 | Accounts and data: sign in once online; offline after; kid data on the owner's server | Accepted (data handling to review) |
 | 0008 | Publishing and guardrails | Accepted |
-| 0009 | Watches as controllers | Open |
-| 0010 | How Orlis makes money | Open |
+| 0009 | Watches as controllers | Shelved |
+| 0010 | How Orlis makes money | Open (deferred to after Phase 1) |
 | 0011 | Children's profiles stay in the house | Accepted |
 | 0012 | Two ways games are made: Create and premium | Accepted |
 | 0013 | A safety floor for every game; age fit is separate | Accepted |
@@ -49,13 +49,13 @@ Date: YYYY-MM-DD
 | 0022 | Phase 1 ships one perfected game and a finished platform | Accepted ("other stuff" to confirm) |
 | 0024 | Phase 1 also ships one perfected 3D game, on the Box and pads with no camera | Superseded by 0025 |
 | 0025 | Phase 1 is 2D only; 3D is private experiments for now | Superseded by 0026 |
-| 0026 | Phase 1 has two games: Pop Party, and one 3D game for the TV and an Android tablet | Accepted (date to confirm); the 3D game is Peekaboo Garden: one hider tablet, camera seekers |
+| 0026 | Phase 1 has two games: Pop Party, and one 3D game for the TV and an Android tablet | Accepted; Peekaboo Garden (one hider phone, camera seekers); target late May 2027 |
 | 0027 | The pad link: a small local hub in Orlis Play; the game host is its client (spec: `docs/specs/pad-protocol.md`) | Accepted |
 | 0028 | Sessions and seats in code; kid profiles move to the Box | Accepted (join code replaced, see 0032) |
 | 0029 | Drawing: flat games on the 2D painter, 3D games on three.js on the TV and pads (supersedes 0020 and 0023) | Accepted (most games 2D; 3D must look consistent) |
 | 0030 | Phase 1 pads are the testers' own phones, with a minimum (replaces 0026's "Android tablet") | Accepted: minimum iPhone 15 or equivalent |
 | 0031 | How Peekaboo Garden is built | Accepted |
-| 0032 | Joining without typing: scan the QR, or match three pictures | Proposed |
+| 0032 | Joining without typing: tap the three pictures shown on the TV | Accepted |
 | 0033 | Phase 1's 3D game is a trial: consistent and smooth, gameplay may be unfinished | Accepted |
 | 0034 | The HUD: fixed anchors and flexible docks on the 20 x 11 grid | Accepted |
 | 0035 | The Orlis look: cozy, playful, handmade paper, for every kind of game | Accepted in part; material and edge superseded by 0036 |
