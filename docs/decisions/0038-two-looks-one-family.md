@@ -43,3 +43,8 @@ Agreed rules for both looks:
 On trial, owner to judge in `spike3d/siblings.html` (buttons 4 to 7): a clearer light from the sun's side, paper texture printed on
 3D surfaces, the thin ink edge around balloons and bushes (this would replace "no dark outlines" above if kept), and soft hand-made
 wobble on shapes. The same effects, sounds, HUD, transitions and loading screen are shared as already stated.
+
+## Owner's verdict on the trial (2026-11-20)
+Keep **the thin ink edge** (button 6): 3D objects that matter (balloons, bushes, characters, touchables) get the same thin dark edge as
+the 2D pieces, around their outline only. This replaces "no dark outlines" above. Dropped: the stronger sun-side light (button 4; rule 4,
+the sun upper left in both looks, still stands), paper texture on surfaces, and the hand-made wobble.
