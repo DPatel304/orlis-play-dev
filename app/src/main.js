@@ -247,8 +247,8 @@ const frameMs = [];
 let lastReport = '';
 function makeReport(){
   return buildReport({ build: typeof __BUILD__ === 'string' ? __BUILD__ : 'dev', game: game ? `${game.name} [${game.id}]` : '', mode: inst && inst.stage ? inst.stage.mode : '', frames: frameMs,
-    gpu: gpuName(), screen: `${W}x${H} css px, pixel ratio ${dpr.toFixed(2)}, canvas ${stage.width}x${stage.height}`,
-    round: game ? `${Math.round(played)} s of a ${game.endless ? 'no-limit' : game.secs + ' s'} round` : '', pose: { fps: pose.fps, inferMs: pose.inferMs, people: pose.personCount }, stagePerf: inst && inst.stage && inst.stage.perfLine ? inst.stage.perfLine() : '' });
+    gpu: gpuName(), screen: `${W}x${H} css px, pixel ratio ${dpr.toFixed(2)}, canvas ${stage.width}x${stage.height}, display ${Math.round(1000 / vsync)} Hz, a game draws every ${drawEvery() === 1 ? 'vsync' : drawEvery() + ' vsyncs'}`,
+    round: game ? `${Math.round(played)} s of a ${game.endless ? 'no-limit' : game.secs + ' s'} round` : '', pose: { fps: pose.fps, inferMs: pose.inferMs, people: pose.personCount, worker: !!pose.worker }, stagePerf: inst && inst.stage && inst.stage.perfLine ? inst.stage.perfLine() : '' });
 }
 function startRound(){
   frameMs.length = 0;
@@ -450,7 +450,13 @@ const TRY_SECS = 20;
 const CALM = new Set(['boot', 'menu', 'store', 'create', 'pro', 'who', 'starting']);
 const HOME_GAP = 1000 / 30 - 2, AWAY_GAP = 250;
 let lastFrame = 0, wasAway = false;
+/* In a game, draw on every vsync of a 60 Hz screen (a TV), and on every other vsync of a faster one (a 120 to 165 Hz laptop
+   screen): smooth, and it leaves the graphics chip free for the camera tracker, which otherwise waits behind extra frames. */
+let vsync = 1000 / 60, lastRaf = 0, vsyncN = 0;
+const drawEvery = () => Math.max(1, Math.floor(1000 / vsync / 60 + 0.1));
 function tick(now){
+  if (lastRaf){ const d = now - lastRaf; if (d > 2 && d < 40) vsync += (d - vsync) * 0.05; }
+  lastRaf = now;
   const away = !inFront();
   if (away !== wasAway){
     wasAway = away;
@@ -459,6 +465,7 @@ function tick(now){
   }
   const gap = away ? AWAY_GAP : CALM.has(mode) ? HOME_GAP : 0;
   if (gap && now - lastFrame < gap){ requestAnimationFrame(tick); return; }
+  if (!gap && (++vsyncN % drawEvery())){ requestAnimationFrame(tick); return; }
   lastFrame = now;
   const rawMs = last ? now - last : 16;
   const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
