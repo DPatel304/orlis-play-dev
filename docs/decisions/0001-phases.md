@@ -13,6 +13,7 @@ The product is large. It needs a first stage that is small enough to finish and 
 - **Target date for the Phase 1 beta on the family's devices: March 27, 2027.**
 - A video game developer may be hired to help "vibe code" premium games for the marketplace (see 0012).
 ## Consequences
+- The pad app is built for Android first, then iOS (see 0016).
 - Phase 1 needs the iPad app early: an Apple developer account (about $99 a year), TestFlight for family devices, and a Mac
   (or a cloud Mac build) because iOS apps are built with Xcode.
 - Children under 3 mostly play through the camera, not through iPads.

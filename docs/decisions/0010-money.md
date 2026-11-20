@@ -13,6 +13,7 @@ likes the League of Legends "free for a week, then pay to keep" idea, without ma
 ## Conflict
 Nov 16 decided "no subscriptions". An optional subscription would reverse that.
 ## Update (2026-11-20)
+- **An in-game currency is deferred:** skipped for now (the owner's call). The earn-only idea below stays as a note for later.
 - The owner likes: more making slots, premium kit packs, a rotation of premium games, and is open to an optional premium
   subscription ("Orlis Plus").
 - **An in-game currency** is wanted. Recommended shape: an *earn-only* soft currency (earned by playing and making, spent on

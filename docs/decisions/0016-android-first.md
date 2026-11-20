@@ -1,5 +1,5 @@
 # 0016: An Android app first, for Phase 1
-Status: Proposed
+Status: Accepted
 Date: 2026-11-20
 ## Context
 The iPad app needs a Mac to build, an Apple developer account (about $99 a year) and TestFlight. The owner asked whether an Android app
@@ -11,3 +11,6 @@ next, as soon as the Mac is available, and test it early because iOS differs (th
 ## Consequences
 Two shells over one codebase. The Orlis Pro grip is designed for the iPad mini class, so Android tablets are a separate fit question.
 Android hardware varies, so a real test device is needed; an emulator is poor for testing local-network discovery.
+
+## Update (2026-11-20)
+Accepted. The owner's family mostly has iPhones, so the iOS shell still follows in Phase 1 (a Mac is available); the owner will buy an Android device for testing.

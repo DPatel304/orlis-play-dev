@@ -1,5 +1,5 @@
 # 0012: Two ways games are made
-Status: Proposed
+Status: Accepted
 Date: 2026-11-20
 ## Context
 Create mode in the app is for kids and families to make regular games with the kit. The owner wants premium games too, and may

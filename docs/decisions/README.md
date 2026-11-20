@@ -34,9 +34,9 @@ Date: YYYY-MM-DD
 | 0008 | Publishing and guardrails | Accepted |
 | 0009 | Watches as controllers | Open |
 | 0010 | How Orlis makes money | Open |
-| 0011 | Children's profiles stay in the house | Proposed |
-| 0012 | Two ways games are made: Create and premium | Proposed |
-| 0013 | A safety floor for every game; age fit is separate | Proposed |
+| 0011 | Children's profiles stay in the house | Accepted |
+| 0012 | Two ways games are made: Create and premium | Accepted |
+| 0013 | A safety floor for every game; age fit is separate | Accepted |
 | 0014 | No online play | Accepted |
 | 0015 | The first 3D game is Peekaboo Garden | Accepted |
-| 0016 | An Android app first, for Phase 1 | Proposed |
+| 0016 | An Android app first, for Phase 1 | Accepted |

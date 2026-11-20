@@ -1,5 +1,5 @@
 # 0013: A safety floor for every game; age fit is separate
-Status: Proposed
+Status: Accepted
 Date: 2026-11-20
 ## Context
 The owner wants a family-safe platform that also hosts older games (for example an FPS), and asked whether every game can simply

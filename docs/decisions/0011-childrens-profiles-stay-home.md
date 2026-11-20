@@ -1,5 +1,5 @@
 # 0011: Children's profiles stay in the house
-Status: Proposed
+Status: Accepted
 Date: 2026-11-20
 ## Context
 0007 put kid profiles on the owner's server. The owner is unsure about storing children's data and asked what happens if none
