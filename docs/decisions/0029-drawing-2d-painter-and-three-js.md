@@ -1,5 +1,5 @@
 # 0029: Drawing: flat games on the 2D painter, 3D games on three.js, on the TV and on pads
-Status: Accepted
+Status: Accepted in part; "flat games stay on the 2D painter" superseded by 0036
 Date: 2026-11-20
 
 ## Context
@@ -32,3 +32,8 @@ it repainted 2D pictures into textures every frame. Phase 1 now has a 3D game wi
 Accepted, with the intent made explicit: **most Orlis games will be purely 2D.** The ecosystem must also be able to make 3D games that
 look consistent with the 2D ones. In Phase 1 the 3D game is a **trial**: its gameplay may stay a work in progress; what must be true is that
 it **looks consistent with the 2D games and runs well** (see 0033).
+
+## Update (2026-11-20)
+By 0036 the look is toon-shaded 3D for every game: 2D games draw the same 3D models with a flat camera, so flat games move off the
+2D painter (Pop Party first, before the beta). The rest (three.js on the TV and pads, tracking in its worker, budgets, the 2D-overview
+fallback) stands.
