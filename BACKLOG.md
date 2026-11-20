@@ -739,3 +739,8 @@ Soft grass shadows under balloons (one pre-painted blob, stamped), a warm light 
 clip), horizon haze (gradient made once per screen height), a little more balloon breathing. Cost kept low on purpose: no per-balloon
 gradients or extra clips. Headless timing showed no measurable difference (about 0.05 ms of drawing commands per frame; the real cost is
 in the graphics chip, so confirm with P / R on the owner's laptop).
+
+## Pop Party 3D lab (spike8, private, 2026-11-20)
+`spike3d/spike8.html`: Pop Party as a real 3D scene with no camera: mouse or touch aims, click or tap pops. Toon-shaded teardrop balloons
+(three-step cel ramp), painted sky, low-poly mountains, rolling hills, the 2D asset library's trees as paper cutouts, a smiling sun,
+confetti. Same round shape as the real game (2:00, balloon count rising 5 to 16). Not part of Phase 1 (0025).
