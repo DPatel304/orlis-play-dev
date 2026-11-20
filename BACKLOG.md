@@ -688,3 +688,6 @@ The owner wants 3D for the multi-device setup: one box + a TV + up to 4 (or 16) 
 
 ### Faked 3D: rejected (owner)
 Raycast / pseudo-3D / billboard approaches were considered for first-person iPad views and rejected: no free camera is a deal-breaker. The plan stays: painted 2D for flat games plus a real 3D renderer for games that need a free camera (first/third person, iPad cameras).
+
+### Paper look (Paper Mario style) - spike 5 (`spike3d/spike5.html`)
+The painted 2D assets (tree, pine, bush, rock, flower, duck, bird, cloud, balloon, giraffe, Cubo with poses) are bundled from `app/src/games/assets` (esbuild, 25 KB) and painted onto flat panels with a white cut-out edge and a blob shadow; each cutout turns to face the camera (cylindrical billboard); the ground, house, windmill and paving stay 3D. Same scene has a toggle to the solid 3D look. Findings (software render only; owner's reaction pending): it keeps the painted colours and small details, needs about 265-380 draw calls against about 730 for solid 3D, and needs no new art or modelling because the 2D library is reused. Characters always show their front (Paper Mario convention); large buildings stay real 3D; art resolution must match how close the camera comes (the giraffe needed a bigger picture).
