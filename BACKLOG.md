@@ -672,3 +672,7 @@ Look: owner said round one's shapes were the main problem and the lighting neede
 - A style sheet with reference assets (the round-two giraffe and Cubo) and the written lessons: rounded chunky forms, ambient-heavy light, soft shadows, accents more saturated than the world.
 - A checker and a viewer: drop in a file, get pass/fail (size, materials, triangles, naming) and a picture under the kit's lighting from the standard cameras.
 - Business side (the owner's): an agreement that gives the owner the work, source files kept in the repo, a small paid trial asset first; hire for props before animated characters.
+
+### Decision: 3D kit, mostly flat-looking games
+Most games stay 2D-looking (a locked side-on or top-down orthographic camera); the kit and engine are 3D-capable so a true 3D game can come later without an overhaul. A game declares its view: flat (side or top) or free. In a flat view the game's rules stay in 2D screen coordinates (so existing game logic can be reused) and only the drawing becomes 3D assets placed on the play plane, with a depth slot for parallax. A body-tracked hand lands on that plane exactly as today. Full 3D hand targeting is deferred until a real 3D game needs it.
+Next slice: Pop Party in the new look with a side-on camera, the mouse as the hand, the existing balloon rules reused.
