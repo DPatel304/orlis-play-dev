@@ -27,7 +27,7 @@ brother-in-law and father, then turns to the other games.
 | When | Milestone | What is in it |
 |---|---|---|
 | Dec 4 | **M0 Foundations** | Names decided; this plan agreed |
-| Dec 18 | **M1 The look and the 3D approach** | The 3D game chosen and designed on paper; the 3D animation approach settled (rigged parts); the look check agreed as the consistency tool; the palette roles and asset spec drafted; Pop Party polish (done) kept |
+| Dec 18 | **M1 The look and the 3D approach** | Peekaboo Garden designed on paper (one hider tablet, camera seekers on the TV); 3D plus camera tracking measured on the laptop with the tracking worker, and a fallback chosen (2D overview on the TV); the 3D animation approach settled (rigged parts); the look check agreed as the consistency tool; the palette roles and asset spec drafted; Pop Party polish (done) kept |
 | Jan 15 | **M2 Pads connect** | Wire protocol written down; a host session in Orlis Play; the browser pad page joins by QR or code, rejoins; tested on the iPhone 11 |
 | Feb 5 | **M3 Seats, Pop Party on pads, the 3D game's first playable** | Game manifest and seats model; Pop Party with pad seats; pause on drop; kid profiles moved to the Box; the 3D game playable on the TV and an Android tablet (rough) |
 | Feb 26 | **M4 The 3D game's look, Create and the kit** | The 3D game's look and animation perfected; a bigger kit (assets, a few stage pieces); Create flow tuned for the two testers; Pop Party's tuning pass |
@@ -57,7 +57,7 @@ milestone with the family; say which games to restyle as proofs; set up the two 
 ## Dependencies and risks
 
 - **The pad protocol (M2)** is the main schedule risk. It must land by mid-January.
-- **The 3D game (0026)** adds a second perfected game, a tablet view and a 3D animation approach; the date is at risk. Measure on the Box hardware early; decide the TV-side camera question before M3.
+- **The 3D game (0026)** adds a second perfected game, a tablet view and a 3D animation approach; the date is at risk. Measure on the Box hardware early; the TV runs 3D with camera tracking (0026), so test the tracking worker in M1; fallback is a 2D painted overview on the TV.
 - **The browser pad page** cannot discover hosts or use tilt (0019); a locked phone can drop the connection, so rejoin must be solid.
 - **Kid profiles** are on the Orlis Server today; moving them to the Box is a real change and must be done before other families' children
   are involved.
