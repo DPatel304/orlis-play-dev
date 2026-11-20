@@ -24,7 +24,7 @@ decision is only *Proposed* or *Open*, that is marked. Status: first draft, Nov 
 - **The platform** (the Tauri app, `app/`): menu, games, Store, Create, body tracking, drawing the TV.
 - **The Orlis Server** (`server/`): accounts, kid profiles, the Store, submissions and approval. Needed for sign-in, the Store
   and updates; not needed to play an installed game.
-- **The Orlis app on iPad/iPhone** (not built): the same web code in a native shell, so it can discover hosts on the network.
+- **The pad app** (not built): the same web code in a native shell, so it can discover hosts on the network. Android in Phase 1; iPad and iPhone in Phase 2 (0018).
 - **The kit** (`app/src/games/assets`, the creator kit): the closed library of pictures, behaviours and stage pieces that every
   game draws from.
 

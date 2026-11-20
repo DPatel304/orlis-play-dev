@@ -14,3 +14,6 @@ Android hardware varies, so a real test device is needed; an emulator is poor fo
 
 ## Update (2026-11-20)
 Accepted. The owner's family mostly has iPhones, so the iOS shell still follows in Phase 1 (a Mac is available); the owner will buy an Android device for testing.
+
+## Update (2026-11-20)
+Superseded in part by 0018: Apple support is deferred to Phase 2, so Phase 1 is Android only.
