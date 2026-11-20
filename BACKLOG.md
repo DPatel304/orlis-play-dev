@@ -660,3 +660,7 @@ Limit: a move to true 3D is bigger than a repaint; games that compute from pixel
 
 ### 3D spike - first result (owner's Legion 5, RTX 3070 Laptop, small pane 638x568, shadows on)
 x1: 165 fps, 117 calls, 25k triangles; x4: 165 fps, 293 calls; x16: 163 fps, 962 calls, 43k triangles (worst frame 12 ms). 165 fps is probably the display's refresh cap, so the GPU had headroom we have not found the end of. Not yet measured: full-screen 1080p/4K, with body tracking running, on the integrated AMD GPU (the floor case), on the iPhone 11. The owner's reaction to the look is still to come.
+
+### 3D spike round 2 - result (Legion 5, RTX 3070 Laptop, 1920x1230, shadows on)
+x1: 165 fps, 198 calls, 63k triangles; x4: 165 fps, 430 calls, 81k; x16: 128 fps, 1358 calls, 152k (12 ms frames). The first sign of strain is the draw-call count, not the pixels. **Kit rule:** assets are merged into one mesh each and repeated props are instanced; a typical scene stays within a few hundred draw calls (this protects the weak devices, which are more likely to be limited by calls). Still unmeasured: the integrated AMD GPU, the iPhone 11 with Low Power Mode off, body tracking running at the same time.
+Look: owner said round one's shapes were the main problem and the lighting needed work (references: Untitled Goose Game and Katamari Damacy). Round two uses chunky rounded forms, ambient-heavy light and soft shadows; the owner's reaction to round two is pending.
