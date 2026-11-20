@@ -657,3 +657,6 @@ Limit: a move to true 3D is bigger than a repaint; games that compute from pixel
 - **Free games, and a community that builds and shares games** (the pull toward Steam and Roblox). The differentiators: same-room play, motion, and a kit-only creator pipeline that keeps the visuals family-safe.
 - **Phones as well as iPads:** "give the kids mom or dad's old iPhone" is a selling point. Two tiers: (1) *controller tier* - any phone or tablet with a modern browser: touch buttons, tilt, private text and cards; (2) *full-view tier* - a newer chip (A14 or newer) for a private 3D view or a map. Phone grips are different sizes, so the Pro shell stays iPad-mini-first.
 - **Spike scope:** skip the iPad for now; the owner's iPhone 11 is the extra data point (below the A14 floor, so a pessimistic reading).
+
+### 3D spike - first result (owner's Legion 5, RTX 3070 Laptop, small pane 638x568, shadows on)
+x1: 165 fps, 117 calls, 25k triangles; x4: 165 fps, 293 calls; x16: 163 fps, 962 calls, 43k triangles (worst frame 12 ms). 165 fps is probably the display's refresh cap, so the GPU had headroom we have not found the end of. Not yet measured: full-screen 1080p/4K, with body tracking running, on the integrated AMD GPU (the floor case), on the iPhone 11. The owner's reaction to the look is still to come.
