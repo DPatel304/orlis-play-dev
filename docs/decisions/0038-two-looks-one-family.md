@@ -21,3 +21,13 @@ to keep the finished 2D look and still make 3D games.
 
 ## Replaces
 0036 (the toon look), if accepted. 0035's feel, cube-headed avatars, any genre and fully 3D world stand.
+
+## Owner's addition (2026-11-20): 3D is "as little as needed"
+3D games prefer painted 2D pieces and use real 3D only where it makes sense. The rule: **a thing is 3D only if the player walks on it,
+goes around or inside it, bumps into it, or sees it turn** (ground, hills, walls, buildings, vehicles, things with physics, the
+characters). Everything else stays a painted 2D piece standing in the world: the sky, sun and clouds, mountains far away, grass, flowers,
+petals, distant trees, effects (confetti, sparkles), signs and decals. Far things can be painted even if near things are 3D.
+Why: it keeps the painted charm, it is lighter to draw, and there is less 3D art to make. Care needed: painted pieces must be tinted by
+the scene's light so they sit in it, and games whose camera looks steeply down should use 3D for what would otherwise look flat from above.
+Each kit asset says whether it exists as a painted piece, a 3D model, or both, and the game uses the painted one unless the rule says 3D.
+
