@@ -564,6 +564,14 @@ addEventListener('keydown', (e) => {
   if (e.key === 'f' || e.key === 'F') toggleFullscreen();
   if (e.key === 'k' || e.key === 'K') showSkeleton = !showSkeleton;
   if (e.key === 'p' || e.key === 'P') showPerf = !showPerf;
+  /* G runs the 3D check (which graphics chip, how fast a plain 3D scene is) and copies the result - for the owner */
+  if ((e.key === 'g' || e.key === 'G') && account.role === 'owner' && mode !== 'play'){
+    toast('3D check: about 10 seconds…', { ms: 3000 });
+    import('./stage/gpucheck.js').then((m) => m.gpuCheck()).then((text) => {
+      (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(text) : Promise.reject()).catch(() => {});
+      toast(text.replace(/\n/g, ' · ') + ' (copied)', { ms: 15000 });
+    }, () => toast('The 3D check could not run.', { ms: 4000 }));
+  }
   /* R copies a performance report for the last round (or the one being played) to paste to the assistant - for the owner */
   if ((e.key === 'r' || e.key === 'R') && account.role === 'owner'){
     const text = mode === 'play' || !lastReport ? makeReport() : lastReport;
