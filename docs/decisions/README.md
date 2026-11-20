@@ -44,5 +44,6 @@ Date: YYYY-MM-DD
 | 0018 | Apple support is deferred to Phase 2 | Accepted |
 | 0019 | Phase 1 pads are a browser page; a native app follows if time allows | Accepted |
 | 0020 | The stage is built; existing flat games are not migrated yet | Proposed |
+| 0023 | The Orlis Box draws 2D only; 3D lives on the pads | Proposed |
 | 0021 | The games roadmap (six core, three added) | Accepted as roadmap; Phase 1 scope superseded by 0022 |
 | 0022 | Phase 1 ships one perfected game and a finished platform | Accepted ("other stuff" to confirm) |

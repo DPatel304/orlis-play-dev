@@ -62,6 +62,8 @@ A game is a package with two small programs, both sandboxed (no network, no stor
 
 ## Drawing
 
+*Proposed (0023): the Box and the TV draw 2D only; 3D is drawn on the pads. The text below describes the earlier plan and will be updated when 0023 is accepted.*
+
 - **Flat games (about 80%):** the painted 2D backdrop and foreground behind paper cutouts, on a locked camera.
 - **3D games:** the same paper cutouts in a 3D world made of a small **stage set** (ground, walls, ramps, buildings, water),
   with a free camera: an overview on the TV, third- or first-person on a pad.
