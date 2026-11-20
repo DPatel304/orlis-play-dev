@@ -1,5 +1,5 @@
 # 0021: The games for Phase 1
-Status: Accepted (two games to confirm; the tiers are proposed)
+Status: Accepted as the games roadmap; its Phase 1 scope is superseded by 0022
 Date: 2026-11-20
 ## Context
 Phase 1 should have a set of games, each perfected, each showing a different style of play. The owner first named six, then added three more
@@ -25,3 +25,7 @@ first minute; in the house look; the standard HUD; a measured smoothness line on
 ## Consequences
 Restyling work, biggest first: Pterry Flight, Sky Painter, Save the Harvest; Sleepy Bear and Animal Gym are close. Peekaboo Garden is now part of the plan, not a stretch goal (this updates 0015). It depends on M2 (the browser pad page) landing by
 mid-January and on the 3D stage. The runner and Peekaboo Garden are the schedule risk; the other four exist already.
+
+## Update (2026-11-20)
+Save the Harvest and Animal Gym confirmed as the board game and the fitness game. Scope for Phase 1 changed in 0022: only Pop Party is perfected
+before the beta; this list is the roadmap for after.

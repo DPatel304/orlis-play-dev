@@ -10,3 +10,6 @@ hiding place are enough. Non-violent, small in scope.
 ## Consequences
 It needs the 3D world pieces, pad seats with a first-person view, and a tracked pointer on the overview. Update (0021): it is now
 the Phase 1 pad-plus-TV game, starting with one pad, not a stretch goal.
+
+## Update (2026-11-20)
+By 0022 Peekaboo Garden is no longer in the Phase 1 schedule; it is one of the first games after the beta is released.
