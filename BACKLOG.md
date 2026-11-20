@@ -625,3 +625,13 @@ Limit: a move to true 3D is bigger than a repaint; games that compute from pixel
 - **A checker for the kit:** an asset using a colour outside the palette, or breaking the light direction, is rejected automatically.
 - **Assets are shapes with colour roles**, not fixed colours; shading comes from the skin's light direction.
 - **Next steps:** (1) extract and lock the palette; (2) settle the asset format (code, data shapes, or painted sprites); (3) move LKP onto the standard HUD.
+
+## Orlis + iPads (the bigger vision) and the move to 3D - planning only
+**Vision (owner):** Orlis today is one PC plus a webcam on the TV. Add an Orlis iPad/iPhone app: up to four iPads (in a gamepad-style grip) used as controllers with their own screens, like Zelda: Four Swords Adventures (GameCube + four GBAs) - a shared TV plus a private screen for each player. This is why 3D now makes more sense: the same world can be shown from a different camera on each device.
+**Decisions so far:** go toward 3D, Roblox/Minecraft level of graphics (low-poly, flat-shaded, one palette, runs on many devices; higher-end devices are an acceptable target). A locked camera can still make 2D-style games. Existing games need not be kept as they are: only Pop Party is ported first, then new games. Creators only place kit assets by name and choose the camera; they never make assets.
+**Architecture notes:**
+- The game's rules run on the host (the Orlis PC); iPads send touches / buttons / (later) motion and render their own view of the shared world. The game contract already keeps `step` (rules) apart from `draw` (picture), and tests run `step` with no canvas, so this separation mostly exists.
+- iPad app: build it with the same web code so the 3D kit and the sandbox are shared. Start as a web page opened in Safari (pairing by code or QR on the TV; MFi/USB-C controllers work through the Gamepad API), then wrap it (Capacitor) for the App Store / TestFlight when it's worth it. Local network only keeps family data in the house.
+- 3D engine candidate: three.js (small, flexible, runs in the Tauri webview and in iPad Safari).
+- Later: an iPad's own camera could track its own player (the "phone as camera" idea), lifting the single-webcam limit.
+**Order of work:** (1) 3D spike - five flat-shaded assets (tree, rock, balloon, Cubo, one animal) and one hazy scene in the one palette; compare against the 2D look from two or three camera angles; measure performance on the PC with the pose model running and on a real iPad; (2) iPad as a controller prototype (pairing, a few buttons, a private screen); (3) port Pop Party to 3D, with a locked camera, as the proof; (4) one Four-Swords-style game (shared TV plus private iPad screens). Then the palette roles and the kit proper.
