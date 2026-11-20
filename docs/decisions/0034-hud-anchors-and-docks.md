@@ -56,4 +56,4 @@ bars fill the rows left (three or two).
 - **Player pills: face and number by default** (option A); a game may choose **big face with a small number on it** (option B) to save
   corner rows (four fit in one row). Both share the face, the colour ring and the grey-out.
 - **Faces are each child's own avatar** from the avatar maker; a guest (seen by the camera, no profile picked) shows as Cubo in their colour.
-
+- **Games without a winner** (Pop Party) show a **faces-only row** in the corner: who is playing and whether the camera sees them, no numbers.
