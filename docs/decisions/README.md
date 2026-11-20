@@ -30,7 +30,7 @@ Date: YYYY-MM-DD
 | 0004 | Seats: up to 8 players, up to 4 tracked, any mix of devices | Accepted |
 | 0005 | A session is hosted by any one device; the Box by default | Accepted |
 | 0006 | Pairing: automatic discovery on the home network, a confirmation code the first time | Accepted |
-| 0007 | Accounts and data: sign in once online; offline after; kid data on the owner's server | Accepted (data handling to review) |
+| 0007 | Accounts and data: sign in once online; offline after; kid data on the owner's server | Accepted (beta sign-in via the owner's server) |
 | 0008 | Publishing and guardrails | Accepted |
 | 0009 | Watches as controllers | Shelved |
 | 0010 | How Orlis makes money | Open (deferred to after Phase 1) |
@@ -40,13 +40,13 @@ Date: YYYY-MM-DD
 | 0014 | No online play | Accepted |
 | 0015 | The first 3D game is Peekaboo Garden | Accepted |
 | 0016 | An Android app first, for Phase 1 | Accepted |
-| 0017 | Phase 1 is a closed beta; in Phase 2 the platform is sold only as a kit | Accepted (terms to confirm) |
+| 0017 | Phase 1 is a closed beta; in Phase 2 the platform is sold only as a kit | Accepted (beta note to approve) |
 | 0018 | Apple support is deferred to Phase 2 | Accepted |
 | 0019 | Phase 1 pads are a browser page; a native app follows if time allows | Accepted |
 | 0020 | The stage is built; existing flat games are not migrated yet | Superseded by 0029 |
 | 0023 | The Orlis Box draws 2D only; 3D lives on the pads | Superseded by 0029 |
 | 0021 | The games roadmap (six core, three added) | Accepted as roadmap; Phase 1 scope superseded by 0022 |
-| 0022 | Phase 1 ships one perfected game and a finished platform | Accepted ("other stuff" to confirm) |
+| 0022 | Phase 1 ships one perfected game and a finished platform | Accepted (gate confirmed, hand mode added) |
 | 0024 | Phase 1 also ships one perfected 3D game, on the Box and pads with no camera | Superseded by 0025 |
 | 0025 | Phase 1 is 2D only; 3D is private experiments for now | Superseded by 0026 |
 | 0026 | Phase 1 has two games: Pop Party, and one 3D game for the TV and an Android tablet | Accepted; Peekaboo Garden (one hider phone, camera seekers); target late May 2027 |

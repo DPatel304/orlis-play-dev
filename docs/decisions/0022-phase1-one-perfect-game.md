@@ -1,5 +1,5 @@
 # 0022: Phase 1 ships one perfected game and a finished platform; the other games come after
-Status: Accepted (what counts as "the other stuff" to confirm)
+Status: Accepted
 Date: 2026-11-20
 ## Context
 0021 planned nine games for Phase 1. The owner changed course: perfect Pop Party (Balloon Pop) and that is all; feel good about the
@@ -22,3 +22,7 @@ The Phase 1 scope in 0021 (superseded in scope; its list and "perfected" bar sti
 
 ## Update (2026-11-20)
 Phase 1 now also includes one 3D, no-camera game; see 0024 (proposed).
+
+## Update (2026-11-20)
+The owner confirmed the gate list in `docs/plan-phase1.md` and added **hand mode on the home screen** (pick and start a game with your
+hands from the couch, U7). The game scope is set by 0026 and 0033.

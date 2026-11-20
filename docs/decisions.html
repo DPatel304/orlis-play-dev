@@ -90,9 +90,9 @@ ul{ margin:8px 0; padding-left:20px; } li{ margin:3px 0; } .note,.up{ color:var(
   <p class="up"><b>Update (2026-11-20):</b> The Box may draw 3D for games that do not use the camera; see 0024 (proposed).</p>
   <p class="src"><a href="https://github.com/DPatel304/hello-world/blob/main/docs/decisions/0023-box-draws-2d-only.md">The full record on GitHub</a></p></details>
 <details class="rec ok" open><summary><span class="n">0022</span><span class="t">Phase 1 ships one perfected game and a finished platform; the other games come after</span><span class="st">Accepted</span></summary>
-  <p class="note">Accepted (what counts as "the other stuff" to confirm)</p>
+  
   <ul><li><b>Release gate for the closed beta (target March 27, 2027):</b> Pop Party perfected (the full bar in 0021), and the platform done: the look and the kit settled, pads working (browser page, seats, reconnect and pause), Create usable by the two testers with the bigger kit and the approval step, the closed-beta install and invite flow, and kid profiles on the Box (0011).</li><li><b>The other games</b> (Save the Harvest, Storytime, Animal Gym, Sky Painter, Sleepy Bear, Pterry Flight, and the new Peekaboo Garden and runner) stay playable as they are and are finished after the beta is released. The owner wants to feel good about their graphics and the kit now, so some are restyled to the house look as proofs (which ones: to confirm).</li><li><b>Pads are proven on Pop Party:</b> pad players join Pop Party as extra hands (up to 8 seats, up to 4 tracked), which exercises the seats model, the pad page, reconnect and pause on a game that is already perfect.</li></ul>
-  <p class="up"><b>Update (2026-11-20):</b> Phase 1 now also includes one 3D, no-camera game; see 0024 (proposed).</p>
+  <p class="up"><b>Update (2026-11-20):</b> The owner confirmed the gate list in <code>docs/plan-phase1.md</code> and added <b>hand mode on the home screen</b> (pick and start a game with your hands from the couch, U7). The game scope is set by 0026 and 0033.</p>
   <p class="src"><a href="https://github.com/DPatel304/hello-world/blob/main/docs/decisions/0022-phase1-one-perfect-game.md">The full record on GitHub</a></p></details>
 <details class="rec ok" open><summary><span class="n">0021</span><span class="t">The games for Phase 1</span><span class="st">Accepted as the games roadmap; its Phase 1 scope is superseded by 0022</span></summary>
   
@@ -115,9 +115,9 @@ ul{ margin:8px 0; padding-left:20px; } li{ margin:3px 0; } .note,.up{ color:var(
   
   <p class="src"><a href="https://github.com/DPatel304/hello-world/blob/main/docs/decisions/0018-apple-support-in-phase-2.md">The full record on GitHub</a></p></details>
 <details class="rec ok" open><summary><span class="n">0017</span><span class="t">Phase 1 is a closed beta; in Phase 2 the platform is sold only as a kit</span><span class="st">Accepted</span></summary>
-  
+  <p class="note">Accepted (beta note to approve)</p>
   <ul><li><b>Phase 1:</b> builds go only to invited people (family, brother-in-law, father), by invitation, with beta terms.</li><li><b>Phase 2:</b> the platform runs on the sold kit (the Orlis Box with a webcam) and, for pad-capable games, on the iPad and phone app. It is not offered as a general Windows download.</li></ul>
-  
+  <p class="up"><b>Update (2026-11-20):</b> Beta terms: a short plain note shown once before installing (draft in <code>docs/beta-terms.md</code>, for the owner to approve).</p>
   <p class="src"><a href="https://github.com/DPatel304/hello-world/blob/main/docs/decisions/0017-closed-distribution.md">The full record on GitHub</a></p></details>
 <details class="rec ok" open><summary><span class="n">0016</span><span class="t">An Android app first, for Phase 1</span><span class="st">Accepted</span></summary>
   
@@ -164,10 +164,10 @@ ul{ margin:8px 0; padding-left:20px; } li{ margin:3px 0; } .note,.up{ color:var(
   <ul><li><b>Phase 1:</b> the owner publishes. The brother-in-law and the father may also make and publish games.</li><li><b>Phase 2:</b> every grown-up account can submit a game for approval; the owner approves.</li><li><b>Guardrails:</b> creators use only what is in the kit and cannot make assets; visuals are guarded (nothing visually questionable); the word filter and prompt guard stay; the kit keeps games looking consistent.</li><li>Content spans all ages. Each game carries an age band; the box has parental controls (to design).</li></ul>
   
   <p class="src"><a href="https://github.com/DPatel304/hello-world/blob/main/docs/decisions/0008-publishing.md">The full record on GitHub</a></p></details>
-<details class="rec ok" open><summary><span class="n">0007</span><span class="t">Accounts and data</span><span class="st">Accepted, in part superseded by 0011</span></summary>
-  <p class="note">Accepted, in part superseded by 0011 (kid profiles)</p>
-  <ul><li>An account is required. The first sign-in needs the internet. After that, installed games work offline.</li><li>The Store and updates need the internet.</li><li>Kid profiles live on the owner's server (the Orlis Server).</li></ul>
+<details class="rec ok" open><summary><span class="n">0007</span><span class="t">Accounts and data</span><span class="st">Accepted</span></summary>
   
+  <ul><li>An account is required. The first sign-in needs the internet. After that, installed games work offline.</li><li>The Store and updates need the internet.</li><li>Kid profiles live on the owner's server (the Orlis Server).</li></ul>
+  <p class="up"><b>Update (2026-11-20):</b> For the beta, grown-ups sign in once to the owner's Orlis Server over Tailscale, as today; after that everything works offline. Kid profiles live on each family's Box (0011, 0028), so no child's data leaves their house. Moving the server to the cloud waits for Phase 2.</p>
   <p class="src"><a href="https://github.com/DPatel304/hello-world/blob/main/docs/decisions/0007-accounts-and-data.md">The full record on GitHub</a></p></details>
 <details class="rec ok" open><summary><span class="n">0006</span><span class="t">Pairing</span><span class="st">Accepted</span></summary>
   

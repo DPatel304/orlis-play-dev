@@ -18,7 +18,8 @@ something unpolished to family.
 5. **The closed beta can be handed out:** invite-only install, beta terms, sign in once and offline after (0007), a way to send feedback,
    and each tester's phone passed the phone check.
 6. **Kid profiles live on the Box** (0011, 0028), not the server.
-7. The other games stay playable as they are; they are finished after the release (roadmap in 0021).
+7. **Hand mode on the home screen** (U7): a child picks and starts a game with their hands from the couch, no remote.
+8. The other games stay playable as they are; they are finished after the release (roadmap in 0021).
 
 **Stretch:** the native Android app (discovery, tilt); more pads in Peekaboo Garden; more kit packs.
 
@@ -74,7 +75,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | U4 | Emoji out: painted icons for hints and UI; Create's hints use library icons | Sonnet | U1 | no emoji left on screen in any built-in game |
 | U5 | Home, pause and results onto the kit; the celebration results card | Opus mockup, Sonnet build | U1 | owner approves on the TV |
 | U6 | Review the Windows-only screens (Discover, Create, Settings, sign-in) | Opus | owner screenshots or the Windows build | findings added to `docs/ui-review.md` |
-| U7 | Hand mode for the home screen: point and wave with the camera (design in `docs/ui-review.md`, "Hand mode") | Opus design and mockup, Sonnet build | U1, owner approves the mockup | a child can pick and start Pop Party from the couch with no remote, three times out of three |
+| U7 | Hand mode for the home screen, in the release gate (0022): point and wave with the camera (design in `docs/ui-review.md`, "Hand mode"); by M4 | Opus design and mockup, Sonnet build | U1, owner approves the mockup | a child can pick and start Pop Party from the couch with no remote, three times out of three |
 
 **Order:** P1, K1, K2, U1 and U2 start now (in parallel; U1 before the P3 and P5 mockups); then P3/P4 (pads), then S1 to S3 and K3 to K5; the look (K6, K7) and Create (C1, C2) after
 Peekaboo is fun; hardening last.

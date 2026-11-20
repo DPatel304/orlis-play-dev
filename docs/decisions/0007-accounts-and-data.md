@@ -1,5 +1,5 @@
 # 0007: Accounts and data
-Status: Accepted, in part superseded by 0011 (kid profiles)
+Status: Accepted
 Date: 2026-11-20
 ## Context
 Families need to sign in once; the box must still play without the internet.
@@ -13,3 +13,7 @@ and an avatar, never photos; camera pictures never leave the device), deletion o
 must work offline, so it carries its assets and rules; live features (leaderboards) degrade gracefully.
 ## Replaces
 "Hosting: as much as possible on our laptop" for Phase 2 (fine for Phase 1).
+
+## Update (2026-11-20)
+For the beta, grown-ups sign in once to the owner's Orlis Server over Tailscale, as today; after that everything works offline. Kid
+profiles live on each family's Box (0011, 0028), so no child's data leaves their house. Moving the server to the cloud waits for Phase 2.

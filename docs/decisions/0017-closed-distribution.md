@@ -1,5 +1,5 @@
 # 0017: Phase 1 is a closed beta; in Phase 2 the platform is sold only as a kit
-Status: Accepted
+Status: Accepted (beta note to approve)
 Date: 2026-11-20
 ## Context
 The owner said Phase 1 is a closed beta, and that from Phase 2 Orlis cannot be installed on any Windows laptop: the only ways to
@@ -17,3 +17,6 @@ play are the kit the owner sells, or the iPad (and phone) app.
 ## Resolved
 The sold "dev kit" is the Orlis Box: an off-the-shelf mini PC with a webcam and Orlis preinstalled (0003). The creation tools are
 a separate matter, to be named.
+
+## Update (2026-11-20)
+Beta terms: a short plain note shown once before installing (draft in `docs/beta-terms.md`, for the owner to approve).
