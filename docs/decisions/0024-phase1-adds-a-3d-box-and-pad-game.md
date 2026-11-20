@@ -1,5 +1,5 @@
 # 0024: Phase 1 also ships one perfected 3D game, on the Box and pads with no camera
-Status: Proposed (which game, and the date, to confirm)
+Status: Superseded by 0025
 Date: 2026-11-20
 
 ## Context

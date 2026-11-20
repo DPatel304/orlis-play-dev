@@ -726,3 +726,10 @@ A plain 3D scene (painted boxes plus paper-style standees, no per-frame repainti
 100 things and with 400 things (165 is probably the screen's refresh rate, so the real headroom is unknown). Conclusion: the wrong-GPU
 theory is out, plain 3D is cheap here, and the stage lab's slowness came from how it drew (repainting 2D pictures into textures) and
 from the camera running alongside. Next: measure the same scene with camera tracking running, then with lighting and animated characters.
+
+## Shapes + skins demo (spike7) and Phase 1 is 2D only (2026-11-20)
+`spike3d/spike7.html`: one world, two views. A 2D painted TV map and a 3D pad view (first or third person, walk with WASD or buttons)
+draw the same data; houses are boxes wearing painted pictures; trees and Cubo are paper cutouts from the 2D asset library. The "Look
+check" button shows the same assets 2D and 3D side by side. Findings: the box-with-pictures house reads well, the roof picture doubles
+as the map symbol, side faces need a slightly darker tint to read as form; limits are seams at box edges, flat windows, no interiors.
+Decision 0025: Phase 1 ships 2D only; 3D stays private experiments (0024 superseded).
