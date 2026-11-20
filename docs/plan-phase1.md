@@ -69,7 +69,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | PP | Pop Party tuning from playtests; P/R check of the polish cost | Sonnet with owner | — | the owner's under-3s play it unaided |
 | U1 | The Orlis UI kit: tokens, paper cards, one HUD piece style, Fredoka, painted icons, motion rules (see `docs/ui-review.md`) | Opus, owner approves | — | a kit page (mockup) approved; used by the P3 and P5 mockups |
 | U2 | UI quick fixes: hero contrast, ghost label, units and plurals, first-load flash | Sonnet | — | before and after screenshots; tests pass |
-| U3 | HUD onto the kit for every game (shared HUD code); the lighter move card | Sonnet | U1 | all games checked by screenshot at TV size |
+| U3 | HUD onto the kit and the docks (0034) for every game (shared HUD code); `UI-STANDARD.md` and the creator kit updated | Sonnet | U1, 0034 | all games checked by screenshot at TV size |
 | U4 | Emoji out: painted icons for hints and UI; Create's hints use library icons | Sonnet | U1 | no emoji left on screen in any built-in game |
 | U5 | Home, pause and results onto the kit; the celebration results card | Opus mockup, Sonnet build | U1 | owner approves on the TV |
 | U6 | Review the Windows-only screens (Discover, Create, Settings, sign-in) | Opus | owner screenshots or the Windows build | findings added to `docs/ui-review.md` |

@@ -57,3 +57,4 @@ Date: YYYY-MM-DD
 | 0031 | How Peekaboo Garden is built | Accepted |
 | 0032 | Joining without typing: scan the QR, or match three pictures | Proposed |
 | 0033 | Phase 1's 3D game is a trial: consistent and smooth, gameplay may be unfinished | Accepted |
+| 0034 | The HUD: fixed anchors and flexible docks on the 20 x 11 grid | Proposed |

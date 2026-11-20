@@ -1,0 +1,33 @@
+# 0034: The HUD: fixed anchors and flexible docks on the 20 x 11 grid
+Status: Proposed
+Date: 2026-11-20
+
+## Context
+The owner wants a HUD that is consistent across games but flexible in layout, which is why the invisible grid exists (20 x 11 square
+cells, `app/src/games/grid.js`, `UI-STANDARD.md`). Step 1 (fixed slots) is built; "place a piece by cell" (step 2) was decided but not
+built. The UI kit (U1) gives every piece one ink border and the paper look. Mockup: `docs/hud-grid.html`.
+
+## Decision
+- **The grid stays** (20 x 11, 4% inset, left half from the left edge, right half from the right, the middle centred).
+- **Fixed anchors**, the same place in every game: the clock (8,0,4,1), the hint words (6,2,8,1) and the move card (1,7,3,3). A game
+  can give an anchor back (no clock) but never move it.
+- **Docks**, where a game chooses what goes, each with a cap:
+  goal (7,1,6,1: one goal bar), corner (1,0,6,4: score pills two to a row, then up to three rows of chips and bars), top right
+  (13,0,6,3: up to three badges, or one portrait with a short notice), left and right rails (0,4,1,4 and 19,4,1,4: one tall meter each),
+  bottom rail (5,10,10,1: one wide bar, or the players' faces), badge (14,9,5,1: one).
+- **Games ask by dock, not by cell or pixel**: `hud()` returns `score`, `goal`, `corner`, `top`, `left`, `right`, `bottom`, `badge`;
+  the shell places, sizes and spaces the pieces. Explicit cells stay possible for the shell's own use, not for games or Create.
+- **Six piece types only**: score pill, chip, bar (horizontal), meter (vertical), badge, portrait-with-notice. All in the kit look
+  (one ink border, paper, painted icons, Fredoka).
+- **Give back:** a dock a game leaves empty is its world; the keep-clear zones come only from what is drawn.
+- Still held back (from the backlog): dimming the HUD when idle, and a HUD size setting.
+
+## Consequences
+- Last Known Position's own boss health, Nova and lesson card can move into the rails and the top-right dock; Peekaboo's found meter
+  goes in a rail and the seekers' faces in the bottom rail.
+- `UI-STANDARD.md`, the creator kit and Create's vocabulary change with it (plan package U3).
+- The busiest allowed screen is already near full (see the mockup); the caps are the guard against clutter.
+
+## Replaces
+Extends the HUD grid "version 3" in BACKLOG.md and the fixed-slot table in `UI-STANDARD.md`; the "two pill looks" rule there is
+replaced by the kit's one piece style (player colour as a swatch).
