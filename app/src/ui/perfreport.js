@@ -4,7 +4,7 @@ const pct = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.
 
 export function buildReport({ build = 'dev', game = '', mode = '', frames = [], gpu = '', screen = '', pose = null, stagePerf = '', round = '' } = {}){
   const lines = [`Orlis performance report`, `build: ${build}`, `game: ${game}${mode ? ` (${mode})` : ''}`, `graphics: ${gpu || 'unknown'}`, `screen: ${screen || 'unknown'}`];
-  if (pose) lines.push(`camera tracking: ${pose.fps.toFixed(0)} fps, inference ${pose.inferMs.toFixed(1)} ms, ${pose.people} player(s) tracked`);
+  if (pose) lines.push(`camera tracking: ${pose.fps.toFixed(0)} fps, inference ${pose.inferMs.toFixed(1)} ms, ${pose.people} player(s) tracked, in ${pose.worker ? 'a separate worker' : 'the main thread'}`);
   if (!frames || frames.length < 60){ lines.push('not enough frames to report (play a round first)'); return lines.join('\n'); }
   const sorted = frames.slice().sort((a, b) => a - b), n = frames.length, sum = frames.reduce((a, b) => a + b, 0), avg = sum / n;
   const over = (ms) => frames.filter(f => f > ms).length;
