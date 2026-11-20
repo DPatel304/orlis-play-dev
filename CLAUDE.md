@@ -3,6 +3,7 @@
 - `VISION.md` - what Orlis is and why (rarely changes).
 - `ARCHITECTURE.md` - how the pieces fit together.
 - `docs/decisions/` - one record per decision; the authoritative record. See its README for statuses and the index.
+  After changing a record, run `node tools/decisions-page.mjs` and republish `docs/decisions.html` (the owner's one-page view).
 - `BACKLOG.md` - ideas and to-dos, plus decisions made before the records existed.
 - `app/`, `server/`, `spike3d/` (throwaway experiments), `kit/`.
 
