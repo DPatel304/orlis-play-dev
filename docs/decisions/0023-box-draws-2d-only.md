@@ -19,3 +19,6 @@ iPad (and phone) can draw both 2D and 3D.
 - Cutout animation (squash and stretch, frames) is still to be built when a pad game needs it.
 ## Replaces
 The plan to use the stage for flat games on the Box (0020), which becomes final: flat games stay on the painter.
+
+## Update (2026-11-20)
+The Box may draw 3D for games that do not use the camera; see 0024 (proposed).

@@ -19,3 +19,6 @@ Removes the runner and Peekaboo Garden from the Phase 1 schedule (they become th
 to the platform work, mainly the pad protocol (M2). The 0021 list stays as the roadmap for the games after release.
 ## Replaces
 The Phase 1 scope in 0021 (superseded in scope; its list and "perfected" bar still stand) and the Phase 1 timing in 0015.
+
+## Update (2026-11-20)
+Phase 1 now also includes one 3D, no-camera game; see 0024 (proposed).

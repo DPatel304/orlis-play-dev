@@ -47,3 +47,4 @@ Date: YYYY-MM-DD
 | 0023 | The Orlis Box draws 2D only; 3D lives on the pads | Proposed |
 | 0021 | The games roadmap (six core, three added) | Accepted as roadmap; Phase 1 scope superseded by 0022 |
 | 0022 | Phase 1 ships one perfected game and a finished platform | Accepted ("other stuff" to confirm) |
+| 0024 | Phase 1 also ships one perfected 3D game, on the Box and pads with no camera | Proposed |
