@@ -50,3 +50,8 @@ Date: YYYY-MM-DD
 | 0024 | Phase 1 also ships one perfected 3D game, on the Box and pads with no camera | Superseded by 0025 |
 | 0025 | Phase 1 is 2D only; 3D is private experiments for now | Superseded by 0026 |
 | 0026 | Phase 1 has two games: Pop Party, and one 3D game for the TV and an Android tablet | Accepted (date to confirm); the 3D game is Peekaboo Garden: one hider tablet, camera seekers |
+| 0027 | The pad link: a small local hub in Orlis Play; the game host is its client (spec: `docs/specs/pad-protocol.md`) | Proposed |
+| 0028 | Sessions and seats in code; kid profiles move to the Box | Proposed |
+| 0029 | Drawing: flat games on the 2D painter, 3D games on three.js on the TV and pads (would supersede 0020 and 0023) | Proposed |
+| 0030 | Phase 1 pads are the testers' own phones, with a minimum (replaces 0026's "Android tablet") | Proposed |
+| 0031 | How Peekaboo Garden is built | Proposed |

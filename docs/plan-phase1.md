@@ -1,66 +1,85 @@
-# Phase 1 plan: the closed beta, by March 27, 2027
+# Phase 1 plan: the closed beta, target March 27, 2027
 
-Draft, Nov 20, 2026 (revised for 0026), for the owner to check. Decisions are in `docs/decisions/`. Phase 1 ships **two perfected games
-(Pop Party, and one 3D game for the TV and an Android tablet) and a finished platform**. When all are done, the owner releases to the
-brother-in-law and father, then turns to the other games.
+Revised Nov 20, 2026 (architecture pass). Decisions are in `docs/decisions/` (the new ones: 0027 to 0031, Proposed until the owner
+accepts them). **Target March 27; quality comes first, so a slip of a few weeks (to mid-April) is acceptable** rather than shipping
+something unpolished to family.
 
-## The release gate: what must be true on March 27
+## The release gate: what must be true at release
 
-1. **Pop Party is perfected** (the full bar: played by the owner's under-3s without help; tuned from family playtests; no known bugs and a
-   clean first minute; the house look; the standard HUD; a smoothness line measured on the owner's laptop).
-2. **The look and the kit are settled:** the palette, the asset spec, the stage, and a kit big enough for Create. The owner feels good about
-   the graphics. Some existing games are restyled to the house look as proofs (which ones: to confirm).
-3. **Pads work** (0004, 0019): a pad page in any phone browser joins by QR or code, rejoins by itself, and pauses the seat when it drops.
-   Pop Party has pad seats: pad players join as extra hands (up to 8 seats in all, up to 4 tracked).
+1. **Pop Party is perfected:** played by the owner's under-3s without help; tuned from family playtests; no known bugs; a clean first
+   minute; the house look (polish pass done); the standard HUD; a smoothness line measured on the owner's laptop; pad players can join
+   as extra hands.
+2. **Peekaboo Garden is perfected** (0026, 0031): one hider on a phone (first-person 3D), one or two camera seekers on the TV; fun for
+   the family in playtests; 60 fps on the TV with tracking on, 30 fps or better on the minimum phone (0030); the house look, checked
+   against Pop Party with the look check.
+3. **Pads work** (0027, 0028): any phone joins by QR or code in its browser, rejoins by itself to the same seat, and the game pauses
+   kindly when a needed phone drops.
 4. **Create works for the two testers:** the bigger kit, kit-only, with the owner's approval step.
-5. **The closed beta can be handed out:** an invite-only install, beta terms, sign-in once, offline after (0007), and a way to send feedback.
-6. **Kid profiles live on the Box** (0011), not the server.
-7. **The 3D game is perfected** (0026): it plays on the TV together with an Android tablet joined by QR or code; one real tablet tested; the
-   house look in 3D checked against the 2D games with the look check; a smoothness line measured on the owner's laptop and on the Box
-   hardware once chosen; the game itself chosen (Peekaboo Garden, see the 0026 update).
-8. The other games stay playable as they are; they are finished after the release (see the roadmap in 0021).
+5. **The closed beta can be handed out:** invite-only install, beta terms, sign in once and offline after (0007), a way to send feedback,
+   and each tester's phone passed the phone check.
+6. **Kid profiles live on the Box** (0011, 0028), not the server.
+7. The other games stay playable as they are; they are finished after the release (roadmap in 0021).
 
-**Stretch:** the native Android app (discovery, tilt), more kit packs.
+**Stretch:** the native Android app (discovery, tilt); more pads in Peekaboo Garden; more kit packs.
 
 ## Milestones
 
-| When | Milestone | What is in it |
+| When | Milestone | Done when |
 |---|---|---|
-| Dec 4 | **M0 Foundations** | Names decided; this plan agreed |
-| Dec 18 | **M1 The look and the 3D approach** | Peekaboo Garden designed on paper (one hider tablet, camera seekers on the TV); 3D plus camera tracking measured on the laptop with the tracking worker, and a fallback chosen (2D overview on the TV); the 3D animation approach settled (rigged parts); the look check agreed as the consistency tool; the palette roles and asset spec drafted; Pop Party polish (done) kept |
-| Jan 15 | **M2 Pads connect** | Wire protocol written down; a host session in Orlis Play; the browser pad page joins by QR or code, rejoins; tested on the iPhone 11 |
-| Feb 5 | **M3 Seats, Pop Party on pads, the 3D game's first playable** | Game manifest and seats model; Pop Party with pad seats; pause on drop; kid profiles moved to the Box; the 3D game playable on the TV and an Android tablet (rough) |
-| Feb 26 | **M4 The 3D game's look, Create and the kit** | The 3D game's look and animation perfected; a bigger kit (assets, a few stage pieces); Create flow tuned for the two testers; Pop Party's tuning pass |
-| Mar 12 | **M5 Harden** | Closed-beta install and invite; reconnect; network-isolation message; performance pass; bug bash |
-| Mar 27 | **M6 Release to the two testers** | Pop Party and the 3D game perfected and the platform done; handed to the brother-in-law and father |
+| Dec 4 | **M0 Architecture agreed** | 0027 to 0031 accepted or changed; the Node hub built and tested (P1); the 3D-plus-tracking spike started (K1); the owner's Shift+G result in |
+| Dec 18 | **M1 Phones connect; the TV 3D question answered** | A phone joins by QR or code, picks who it is, rejoins and pauses correctly, on the owner's iPhone 11 and one Android phone (P2 to P6); K1 says yes or no to 3D on the TV with tracking (else the 2D-overview fallback); the Peekaboo design approved (K2) |
+| Jan 15 | **M2 Seats, profiles, Peekaboo end to end** | The seats model and manifest (S1); Pop Party pad hands (S2); kid profiles on the Box (S3); Peekaboo greybox playable end to end on TV plus phone (K3 to K5, rough) |
+| Feb 5 | **M3 Peekaboo is fun** | Rules and pacing tuned in the first family playtest; the kit list for Create agreed (C1 started) |
+| Feb 26 | **M4 The look and Create** | Paper puppets and the found reveal (K6); the look pass on both games with the look check (K7); Create tuned for the testers and the bigger kit (C1, C2) |
+| Mar 12 | **M5 Harden** | Beta install and invites, feedback (B1); reconnect edge cases, the Wi-Fi hint, performance on the minimum phone, bug bash (B2); the phone check page and the testers' phones checked (K8) |
+| Mar 27 | **M6 Release to the two testers** | The gate above; buffer to about Apr 17 if quality needs it |
 
-## Work streams
+Holidays: Thanksgiving week and Dec 21 to Jan 3 are light; M2 has the most calendar time for that reason.
 
-**Look and kit:** palette roles; asset spec; the stage (done); a bigger kit; a small stage set later; the artist spec and a checker (not urgent).
+## Work packages (who does what)
 
-**Pads:** protocol and host session; the browser pad page; seats; reconnect and pause; a message when the network blocks devices from seeing
-each other; the native Android shell later if time allows.
+**Opus** designs, de-risks and reviews: specs and APIs, risk spikes, game design, look decisions, the puppet rig, milestone reviews.
+**Sonnet** builds from a written spec with tests: plumbing, UI from approved mockups, migrations, assets, bug fixes.
+**Owner** (under 5 hours a week): one 45 to 60 minute check-in a week from a checklist Claude prepares (play this, paste these
+numbers, answer these questions), plus the family playtests at M3 and M4.
 
-**Platform:** the game manifest and seats model; signed packages and entitlements; the closed-beta channel; sign-in once; kid profiles on the Box.
+| ID | Work | Model | Needs | Done when |
+|---|---|---|---|---|
+| P1 | Node dev hub `tools/pad-hub.mjs` | Sonnet | spec | spec tests 1, 4, 5 pass with a fake host |
+| P2 | Rust hub in Orlis Play (serve `dist-pad/`, relay, secret, port fallback) | Sonnet, Opus review | P1 | same tests pass against the Windows build; Windows firewall text in setup |
+| P3 | Pad page shell (join, code/QR, who-picker, rejoin, keep-awake, loads the pad program) | Sonnet | mockup approved by owner | spec tests 1 to 3 pass; works on iPhone 11 Safari and Android Chrome |
+| P4 | Host session module (session, seats, codes, trusted devices, pause rule) | Opus API, Sonnet build | spec | unit tests for joins, trust, pause, resume |
+| P5 | TV join card (QR, code, who has joined) and Settings list of trusted phones | Sonnet | P4, mockup | owner approves on the TV |
+| P6 | Headless end-to-end tests (Node hub, host page, pad pages) | Sonnet | P1, P3, P4 | all five spec tests in `npm test` |
+| S1 | Manifest fields and the game API for pads (`seats`, `pads.on`, `pads.send`) | Opus spec, Sonnet build | P4 | existing 655 tests pass; a tiny test game uses a pad |
+| S2 | Pop Party pad hands (drag a finger to move a mitt) | Sonnet | S1 | playable with 1 tracked + 2 phones |
+| S3 | Kid profiles to the Box; one-time move; server keeps grown-ups only | Sonnet, Opus review | — | migration tested both sides; nothing about a child left on the server |
+| K1 | Spike: TV 3D garden with tracking in its worker; hand-to-ground lantern | Opus | owner Shift+G result | measured on the owner's laptop; go or fallback decided |
+| K2 | Peekaboo design on paper and a greybox mockup | Opus | — | owner approves layout, hiding places, rules, round flow |
+| K3 | `world.js` and the host rules (found, hiding, clock, swap) with tests | Sonnet | K2 | rules tests pass |
+| K4 | TV view (overview, lanterns, rustles, the reveal hook) | Sonnet, Opus review | K1, K3 | 60 fps with tracking on the owner's laptop |
+| K5 | Phone view (first person, joystick and look, hide button, interpolation) | Sonnet, Opus review | K3, P3 | 30 fps or better on the iPhone 11 |
+| K6 | Paper puppets: avatar split into parts, a small rig, the found reveal | Opus | K4 | the reveal approved by the owner |
+| K7 | Look pass for both games (stage set skins, light, look check) | Opus with owner | K4, K5 | owner signs off the look check |
+| K8 | Phone check page (model class, 3D support, frame rate) | Sonnet | P3 | the testers' phones pass |
+| C1 | The bigger kit for Create: what to add (Opus), painting it (Sonnet) | Opus then Sonnet | — | the agreed list is in the kit and the asset viewer |
+| C2 | Create tuned for the two testers, with the approval step | Sonnet | C1 | the owner makes and approves one game as a tester would |
+| B1 | Beta install, invites, beta terms, feedback button | Sonnet | — | a fresh Windows laptop goes from invite to playing |
+| B2 | Hardening: reconnect edge cases, the Wi-Fi hint, performance, bug bash | Sonnet, Opus triage | most of the above | no known bugs in either game |
+| PP | Pop Party tuning from playtests; P/R check of the polish cost | Sonnet with owner | — | the owner's under-3s play it unaided |
 
-**Create:** a bigger kit; the vocabulary growing as games need it; the approval flow for submitted games; asset requests.
+**Order:** P1, K1 and K2 start now (in parallel); then P3/P4 (pads), then S1 to S3 and K3 to K5; the look (K6, K7) and Create (C1, C2) after
+Peekaboo is fun; hardening last.
 
-**Pop Party:** tuning from family playtests; pad seats; the smoothness check; the final polish.
+## Risks
 
-**Beta operations:** installs for the two testers, beta terms, a simple way to send feedback and bugs.
-
-## What the owner does
-
-Pick names; run the smoothness test on the laptop (stage lab versus the real Pop Party, with and without the integrated GPU); playtest each
-milestone with the family; say which games to restyle as proofs; set up the two testers; start outsourcing the Box hardware to a contractor.
-
-## Dependencies and risks
-
-- **The pad protocol (M2)** is the main schedule risk. It must land by mid-January.
-- **The 3D game (0026)** adds a second perfected game, a tablet view and a 3D animation approach; the date is at risk. Measure on the Box hardware early; the TV runs 3D with camera tracking (0026), so test the tracking worker in M1; fallback is a 2D painted overview on the TV.
-- **The browser pad page** cannot discover hosts or use tilt (0019); a locked phone can drop the connection, so rejoin must be solid.
-- **Kid profiles** are on the Orlis Server today; moving them to the Box is a real change and must be done before other families' children
-  are involved.
-- **Four tracked players** have not been tested on real hardware; do it in M1 or M2.
-- **If the plan slips,** cut in this order: the bigger kit, restyling proofs, Create polish for the testers; never Pop Party's perfection or the pad basics; if still short, ship the 3D game as the clearly-labelled second game, not a perfected one, or move it to just after the release.
-- **Dates assume steady weekly work and fast feedback from family playtests.**
+- **3D on the TV with tracking (K1).** Measured: 67 fps with tracking on the main thread; the worker is untested. Fallback decided in
+  advance: a painted 2D overview on the TV; the phone keeps 3D. Decided by M1.
+- **The Box hardware** is still unknown and weaker than the owner's laptop. Measure K1's scene on candidate hardware as soon as there is any.
+- **Phones in the browser** (0027, 0030): no wake lock or tilt over http; a locked phone drops. Rejoin must be solid (P3, P6).
+- **The owner's time** (under 5 hours a week) is the real bottleneck for playtests and look sign-offs. Claude batches everything into
+  the weekly check-in; nothing waits on the owner without being in that list.
+- **Create in the gate** adds weeks of work in M4. If the plan slips, cut in this order: more kit packs, Create polish beyond the
+  approval step, more hiding-place kinds; never Pop Party's perfection, Peekaboo's fun, or the pad basics. The date moves before the
+  quality does.
+- **Kid profiles** must be on the Box before the testers' children play.

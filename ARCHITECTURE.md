@@ -24,8 +24,9 @@ decision is only *Proposed* or *Open*, that is marked. Status: first draft, Nov 
 - **The platform** (the Tauri app, `app/`): menu, games, Store, Create, body tracking, drawing the TV.
 - **The Orlis Server** (`server/`): accounts, kid profiles, the Store, submissions and approval. Needed for sign-in, the Store
   and updates; not needed to play an installed game.
-- **The pad** (not built): in Phase 1 a web page served by the host, opened by QR or code on any phone (0019). Later a native app
-  (Android first, then iPad and iPhone in Phase 2, 0018) that can discover hosts and use tilt.
+- **The pad** (being built): in Phase 1 a web page served by the Box, opened by QR or code on any phone (0019, 0030). A small hub in
+  Orlis Play's Rust side serves it and relays messages; the game host is a client of that hub (0027, spec in `docs/specs/pad-protocol.md`).
+  Later a native app (Android first, then iPad and iPhone in Phase 2, 0018) that can discover hosts and use tilt.
 - **The kit** (`app/src/games/assets`, the creator kit): the closed library of pictures, behaviours and stage pieces that every
   game draws from.
 
@@ -62,7 +63,8 @@ A game is a package with two small programs, both sandboxed (no network, no stor
 
 ## Drawing
 
-*Proposed (0023): the Box and the TV draw 2D only; 3D is drawn on the pads. The text below describes the earlier plan and will be updated when 0023 is accepted.*
+*Proposed (0029, replacing 0020 and 0023): flat games stay on the 2D painter; 3D games use three.js on the TV and on pads, with camera
+tracking in its worker; a painted 2D overview is the TV fallback. Characters that move are paper puppets (cutout parts on a skeleton).*
 
 - **Flat games (about 80%):** the painted 2D backdrop and foreground behind paper cutouts, on a locked camera.
 - **3D games:** the same paper cutouts in a 3D world made of a small **stage set** (ground, walls, ramps, buildings, water),
@@ -86,8 +88,8 @@ Game packages are signed and tied to an account's entitlements, and the runtime 
 
 ## Not yet designed
 
-- The wire protocol between devices (messages, rates, reconnect) and the game package format as a precise spec.
-- How a tracked hand targets something in a true 3D world.
+- The game package format as a precise spec (the wire protocol is now in `docs/specs/pad-protocol.md`).
+- How a tracked hand targets a 3D world from a moving camera (overview views are solved: a ray from the TV camera to the ground, 0031).
 - The Box's hardware and operating system (outsourced); the router for many pads.
 - The 3D vocabulary creators use, and how Create describes 3D games.
 - Age bands and parental controls; the privacy and consent work before other families' children's data is stored.
