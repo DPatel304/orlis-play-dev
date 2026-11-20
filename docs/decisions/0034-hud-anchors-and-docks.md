@@ -51,3 +51,9 @@ bars fill the rows left (three or two).
 - **No pause control on screen** for now; how to pause during camera play is an open question.
 - **The clock** and **the pill style** are being chosen from options (`docs/clock-pills.html`).
 
+## Owner's choices (2026-11-20): clock and pills
+- **The clock is numbers with a thin sun-coloured ring** that empties as time runs out (option B in `docs/clock-pills.html`).
+- **Player pills: face and number by default** (option A); a game may choose **big face with a small number on it** (option B) to save
+  corner rows (four fit in one row). Both share the face, the colour ring and the grey-out.
+- **Faces are each child's own avatar** from the avatar maker; a guest (seen by the camera, no profile picked) shows as Cubo in their colour.
+
