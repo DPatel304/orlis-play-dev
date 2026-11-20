@@ -248,7 +248,7 @@ let lastReport = '';
 function makeReport(){
   return buildReport({ build: typeof __BUILD__ === 'string' ? __BUILD__ : 'dev', game: game ? `${game.name} [${game.id}]` : '', mode: inst && inst.stage ? inst.stage.mode : '', frames: frameMs,
     gpu: gpuName(), screen: `${W}x${H} css px, pixel ratio ${dpr.toFixed(2)}, canvas ${stage.width}x${stage.height}`,
-    pose: { fps: pose.fps, inferMs: pose.inferMs, people: pose.personCount }, stagePerf: inst && inst.stage && inst.stage.perfLine ? inst.stage.perfLine() : '' });
+    round: game ? `${Math.round(played)} s of a ${game.endless ? 'no-limit' : game.secs + ' s'} round` : '', pose: { fps: pose.fps, inferMs: pose.inferMs, people: pose.personCount }, stagePerf: inst && inst.stage && inst.stage.perfLine ? inst.stage.perfLine() : '' });
 }
 function startRound(){
   frameMs.length = 0;
