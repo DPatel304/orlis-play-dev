@@ -1,5 +1,5 @@
 # 0038: Two looks, one family: painted 2D for 2D games, a painted-style 3D sibling for 3D games
-Status: Proposed
+Status: Accepted (2026-11-20); supersedes 0036
 Date: 2026-11-20
 
 ## Context

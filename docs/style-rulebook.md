@@ -1,5 +1,7 @@
-> **Superseded in part (2026-11-20):** the look is now toon-shaded 3D (decision 0036). The paper rules below (1 to 4) are replaced;
-> the feel, shapes, faces, world palettes and motion ideas still guide the toon look.
+> **Superseded in part (2026-11-20):** the look is set by decision 0038 (two looks, one family): painted 2D for 2D games and a
+> painted-style 3D sibling for 3D games, with a thin ink edge, 3D only where needed, one avatar drawn two ways, shared motion, one
+> palette and the sun upper left. The paper material rules below (1 to 4) are replaced; the feel, shapes, faces, world palettes and motion
+> ideas still guide both looks.
 
 # Orlis Paper: the style rulebook (draft for the owner)
 

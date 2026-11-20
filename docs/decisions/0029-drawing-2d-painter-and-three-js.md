@@ -1,5 +1,5 @@
 # 0029: Drawing: flat games on the 2D painter, 3D games on three.js, on the TV and on pads
-Status: Accepted in part; "flat games stay on the 2D painter" superseded by 0036
+Status: Accepted; "flat games stay on the 2D painter" was superseded by 0036, which 0038 has superseded, so it stands again
 Date: 2026-11-20
 
 ## Context

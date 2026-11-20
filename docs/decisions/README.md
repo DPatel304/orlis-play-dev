@@ -52,13 +52,13 @@ Date: YYYY-MM-DD
 | 0026 | Phase 1 has two games: Pop Party, and one 3D game for the TV and an Android tablet | Accepted; Peekaboo Garden (one hider phone, camera seekers); target late May 2027 |
 | 0027 | The pad link: a small local hub in Orlis Play; the game host is its client (spec: `docs/specs/pad-protocol.md`) | Accepted |
 | 0028 | Sessions and seats in code; kid profiles move to the Box | Accepted (join code replaced, see 0032) |
-| 0029 | Drawing: flat games on the 2D painter, 3D games on three.js on the TV and pads (supersedes 0020 and 0023) | Accepted in part; the 2D painter part superseded by 0036 |
+| 0029 | Drawing: flat games on the 2D painter, 3D games on three.js on the TV and pads (supersedes 0020 and 0023) | Accepted (the 2D painter part stands again: 0036 superseded by 0038) |
 | 0030 | Phase 1 pads are the testers' own phones, with a minimum (replaces 0026's "Android tablet") | Accepted: minimum iPhone 15 or equivalent |
 | 0031 | How Peekaboo Garden is built | Accepted |
 | 0032 | Joining without typing: tap the three pictures shown on the TV | Accepted |
 | 0033 | Phase 1's 3D game is a trial: consistent and smooth, gameplay may be unfinished | Accepted |
 | 0034 | The HUD: fixed anchors and flexible docks on the 20 x 11 grid | Accepted |
-| 0035 | The Orlis look: cozy, playful, handmade paper, for every kind of game | Accepted in part; material and edge superseded by 0036 |
-| 0036 | The look is toon-shaded 3D, drawn flat for 2D games | Under review (0037): tested against the painted look |
+| 0035 | The Orlis look: cozy, playful, handmade paper, for every kind of game | Accepted in part; material and edge set by 0038 |
+| 0036 | The look is toon-shaded 3D, drawn flat for 2D games | Superseded by 0038 |
 | 0037 | Pop Party stays painted for Phase 1; the toon look is tested fairly before it is final | Accepted |
-| 0038 | Two looks, one family: painted 2D for 2D games, a painted-style 3D sibling for 3D games | Proposed |
+| 0038 | Two looks, one family: painted 2D for 2D games, a painted-style 3D sibling for 3D games | Accepted |

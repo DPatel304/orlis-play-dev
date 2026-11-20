@@ -1,5 +1,5 @@
 # 0036: The look is toon-shaded 3D, drawn flat for 2D games
-Status: Under review (see 0037); the Pop Party redraw is dropped
+Status: Superseded by 0038 (two looks, one family); the Pop Party redraw was dropped by 0037
 Date: 2026-11-20
 
 ## Context
