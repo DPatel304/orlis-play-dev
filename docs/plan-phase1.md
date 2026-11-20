@@ -67,6 +67,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | B1 | Beta install, invites, beta terms, feedback button | Sonnet | — | a fresh Windows laptop goes from invite to playing |
 | B2 | Hardening: reconnect edge cases, the Wi-Fi hint, performance, bug bash | Sonnet, Opus triage | most of the above | no known bugs in either game |
 | PP | Pop Party tuning from playtests; P/R check of the polish cost | Sonnet with owner | — | the owner's under-3s play it unaided |
+| PP2 | Pop Party redrawn in the toon look (0036): balloons, sky, meadow, animals, bouquet as toon models on a flat camera; same rules and tuning | Opus look, Sonnet build | 0036 palette, K1 speed result | looks like Peekaboo's world; 60 fps with tracking on the owner's laptop |
 | U1 | The Orlis UI kit: tokens, paper cards, one HUD piece style, Fredoka, painted icons, motion rules (see `docs/ui-review.md`) | Opus, owner approves | — | a kit page (mockup) approved; used by the P3 and P5 mockups |
 | U2 | UI quick fixes: hero contrast, ghost label, units and plurals, first-load flash | Sonnet | — | before and after screenshots; tests pass |
 | U3 | HUD onto the kit and the docks (0034) for every game (shared HUD code); `UI-STANDARD.md` and the creator kit updated | Sonnet | U1, 0034 | all games checked by screenshot at TV size |
@@ -80,6 +81,7 @@ Peekaboo is fun; hardening last.
 
 ## Risks
 
+- **Pop Party in the toon look (PP2, 0036)** adds weeks and puts 3D with tracking into the perfected game too; K1's worker result decides how safe this is.
 - **3D on the TV with tracking (K1).** Measured: 67 fps with tracking on the main thread; the worker is untested. Fallback decided in
   advance: a painted 2D overview on the TV; the phone keeps 3D. Decided by M1.
 - **The Box hardware** is still unknown and weaker than the owner's laptop. Measure K1's scene on candidate hardware as soon as there is any.

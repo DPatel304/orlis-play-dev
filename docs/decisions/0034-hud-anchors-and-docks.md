@@ -1,5 +1,5 @@
 # 0034: The HUD: fixed anchors and flexible docks on the 20 x 11 grid
-Status: Proposed
+Status: Accepted
 Date: 2026-11-20
 
 ## Context
@@ -57,3 +57,6 @@ bars fill the rows left (three or two).
   corner rows (four fit in one row). Both share the face, the colour ring and the grey-out.
 - **Faces are each child's own avatar** from the avatar maker; a guest (seen by the camera, no profile picked) shows as Cubo in their colour.
 - **Games without a winner** (Pop Party) show a **faces-only row** in the corner: who is playing and whether the camera sees them, no numbers.
+
+## Approved (2026-11-20)
+The owner approved the HUD as written here, with all refinements and answers above.

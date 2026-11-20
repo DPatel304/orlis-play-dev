@@ -57,6 +57,6 @@ Date: YYYY-MM-DD
 | 0031 | How Peekaboo Garden is built | Accepted |
 | 0032 | Joining without typing: scan the QR, or match three pictures | Proposed |
 | 0033 | Phase 1's 3D game is a trial: consistent and smooth, gameplay may be unfinished | Accepted |
-| 0034 | The HUD: fixed anchors and flexible docks on the 20 x 11 grid | Proposed |
+| 0034 | The HUD: fixed anchors and flexible docks on the 20 x 11 grid | Accepted |
 | 0035 | The Orlis look: cozy, playful, handmade paper, for every kind of game | Accepted in part; material and edge superseded by 0036 |
-| 0036 | The look is toon-shaded 3D, drawn flat for 2D games | Accepted (touchable cue, palette, Phase 1 fit open) |
+| 0036 | The look is toon-shaded 3D, drawn flat for 2D games | Accepted (palette to settle); Pop Party redrawn in toon for Phase 1 |

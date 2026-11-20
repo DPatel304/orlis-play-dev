@@ -1,5 +1,5 @@
 # 0036: The look is toon-shaded 3D, drawn flat for 2D games
-Status: Accepted (details to settle: see "Open")
+Status: Accepted (palette to settle)
 Date: 2026-11-20
 
 ## Context
@@ -28,3 +28,11 @@ showed that paper cutouts struggle in 3D games where the camera moves around thi
 
 ## Replaces
 The material, edge and paper rules in 0035 (its other parts stand).
+
+## Owner's answers (2026-11-20)
+- **Pop Party is redrawn in the toon look before the beta**, so Phase 1 shows one look (0033's "same world as Pop Party" stands).
+  Consequences: a new plan package (Pop Party's balloons, sky, meadow, animals and bouquet as toon models drawn with a flat camera);
+  Pop Party then draws 3D with camera tracking on, so the tracking worker and the speed check (K1) matter for both games; the date is
+  at more risk.
+- **Touchables stand out by colour:** they use the brightest colours of the palette; scenery uses calmer ones. Outlines stay the same
+  thickness everywhere.
