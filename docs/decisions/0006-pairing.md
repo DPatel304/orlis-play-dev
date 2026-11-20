@@ -1,5 +1,5 @@
 # 0006: Pairing
-Status: Proposed
+Status: Accepted
 Date: 2026-11-20
 ## Context
 The owner wants joining to feel like laptops on a LAN, more solid than a code or a QR.

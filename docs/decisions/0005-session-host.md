@@ -1,5 +1,5 @@
 # 0005: A session is hosted by any one device
-Status: Proposed
+Status: Accepted
 Date: 2026-11-20
 ## Context
 The owner wants it to feel like laptops at a LAN party, with each iPad doing as much work as it can locally, and the Box not
@@ -15,3 +15,6 @@ required (eight iPads and no TV must work).
 ## Consequences
 The host program of a game must be able to run on an iPad as well as on the Box. A host that drops ends the session (host
 migration is not planned). The game package needs two small programs, a host one and a pad one (see ARCHITECTURE.md).
+
+## Staging (2026-11-20)
+The owner confirmed, and asked that games may run without the Box. Design for it from the start (the host program is portable), but build Box-hosted sessions first. A no-Box session means the iPad/phone app must also hold the game library and run host programs, so it is a Phase 2 job.

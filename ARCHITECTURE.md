@@ -73,6 +73,10 @@ A game is a package with two small programs, both sandboxed (no network, no stor
 - Games are checked (words, kit-only) and approved by the owner before they reach anyone outside the family.
 - Every game works offline once installed.
 
+## Pads and the Box
+
+A game may run with no Box at all (pads only), and most early games use no pads. Build Box-hosted sessions first; keep the host program portable so an iPad or phone can host later (0005).
+
 ## Not yet designed
 
 - The wire protocol between devices (messages, rates, reconnect) and the game package format as a precise spec.
