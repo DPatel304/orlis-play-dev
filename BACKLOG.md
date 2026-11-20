@@ -719,3 +719,10 @@ A 3D piece such as a house is a simple low-poly shape (a box with a roof wedge) 
 ## Stage lab variants removed (2026-11-20)
 The five Pop Party stage-lab games (light, full, canvas, stress, stress canvas) were deleted; the original Pop Party is the only one. The
 Stage layer (`app/src/stage/stage.js`) and its tests stay for the 3D game in 0024. Line 705 above describes the lab as it was.
+
+## 3D check result on the owner's laptop (2026-11-20)
+Key G (owner, home screen) in the app: graphics = NVIDIA GeForce RTX 3070 Laptop GPU (Direct3D 11), so the right chip is in use.
+A plain 3D scene (painted boxes plus paper-style standees, no per-frame repainting) ran at 165 fps average, slowest 5% under 6 ms, with
+100 things and with 400 things (165 is probably the screen's refresh rate, so the real headroom is unknown). Conclusion: the wrong-GPU
+theory is out, plain 3D is cheap here, and the stage lab's slowness came from how it drew (repainting 2D pictures into textures) and
+from the camera running alongside. Next: measure the same scene with camera tracking running, then with lighting and animated characters.
