@@ -6,15 +6,16 @@ brother-in-law and father, playing and creating, with the pad app working. 18 we
 ## What "done" means on March 27
 
 1. Orlis Play on the owner's laptop, with a closed-beta install for the brother-in-law and father (invite only).
-2. Pop Party and at least two more games on the new look (painted backdrop plus paper cutouts), tuned and playable by under-3s.
+2. **Six perfected games** (0021): Pop Party, a board game (Save the Harvest), Storytime, Peekaboo Garden (one pad plus the TV), a simple
+   runner, and a fitness game (Animal Gym), each in the house look, tuned by playtests, playable by under-3s.
 3. A pad page that works on any phone browser (0019): joins by QR or code, rejoins by itself, works as a controller, and shows
    one private screen (a map or cards). The native Android app, with automatic discovery, is a stretch.
-4. At least one game that uses pads, and the seats model (tracked or pad, up to 8) working.
+4. Peekaboo Garden uses a pad, and the seats model (tracked or pad, up to 8) works.
 5. Create mode works for the brother-in-law and father with a bigger kit, kit-only, with the owner's approval step.
 6. Kid profiles stay on the Box (0011).
 7. Reconnect, pause when a pad drops, and a clear message when the network blocks devices from seeing each other.
 
-**Stretch:** Peekaboo Garden (0015), the 3D world pieces, and a third pad game.
+**Stretch:** the native Android app, more kit packs, a seventh game.
 
 ## Milestones
 
@@ -23,8 +24,8 @@ brother-in-law and father, playing and creating, with the pad app working. 18 we
 | Dec 4 | **M0 Foundations** | Names decided; this plan agreed |
 | Dec 18 | **M1 The look** | A reusable paper stage layer (painted backdrop and foreground, cutouts, locked camera), built; a lab game (Pop Party's core loop on the stage) measured against the real Pop Party on the Legion and the integrated GPU; the decision whether to migrate flat games (0020) |
 | Jan 15 | **M2 Pads connect** | Wire protocol written down; a host session in Orlis Play; the browser pad page joins by QR or code, rejoins, controller role; tested on the iPhone 11 |
-| Feb 5 | **M3 Seats and a first pad game** | Game manifest and seats model; pad program in a game package; one simple pad game; kid profiles moved to the Box |
-| Feb 26 | **M4 Create and the kit** | A bigger kit (assets, a few stage pieces); Create flow tuned for the brother-in-law and father; two more games on the new look; Peekaboo Garden prototype if time |
+| Feb 5 | **M3 Seats and Peekaboo Garden** | Game manifest and seats model; pad program in a game package; Peekaboo Garden playable with one pad; kid profiles moved to the Box; the runner playable |
+| Feb 26 | **M4 Create and the kit** | A bigger kit (assets, a few stage pieces); Create flow tuned for the brother-in-law and father; Animal Gym and Save the Harvest perfected |
 | Mar 12 | **M5 Harden** | Reconnect and pause; network-isolation message; performance pass; closed-beta install and invite flow; bug bash |
 | Mar 27 | **M6 Beta** | Family and the two invited testers playing; feedback loop running |
 
@@ -55,8 +56,9 @@ contractor (a spec can be written from this plan).
 
 - **Apple support moved to Phase 2** (0018), which removes the Apple enrolment, Mac and TestFlight risks from Phase 1 and leaves a buffer.
 - **The browser pad page** cannot discover hosts or use tilt (0019); a locked phone can drop the connection, so rejoin must be solid.
-- **Peekaboo Garden is the biggest item.** If the plan slips, cut in this order: Peekaboo Garden, the 3D world pieces, the third
-  game, the bigger kit.
+- **Peekaboo Garden and the runner are the biggest items** (the other four games exist). If the plan slips, cut in this order: the
+  bigger kit, Create polish for the testers, a simpler runner, then fewer hiding-place types in Peekaboo Garden. M2 (pads) must land
+  by mid-January.
 - **Kid profiles** are already on the Orlis Server today; moving them to the Box is a real change and must be done before other
   families' children are involved.
 - **Four tracked players** have not been tested on real hardware; do it in M1 or M2.

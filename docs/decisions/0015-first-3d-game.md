@@ -8,5 +8,5 @@ A small first 3D game is needed that shows what Orlis can do: a shared world, pr
 players on the TV are the seekers and sweep a lantern across the TV's overview with their arms. One level and three kinds of
 hiding place are enough. Non-violent, small in scope.
 ## Consequences
-It needs the 3D world pieces, pad seats with a first-person view, and a tracked pointer on the overview. For the March 27, 2027
-target it is a stretch goal; a simpler pad game comes first (see BACKLOG.md and 0001).
+It needs the 3D world pieces, pad seats with a first-person view, and a tracked pointer on the overview. Update (0021): it is now
+the Phase 1 pad-plus-TV game, starting with one pad, not a stretch goal.
