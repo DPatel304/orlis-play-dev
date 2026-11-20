@@ -56,7 +56,7 @@ contractor (a spec can be written from this plan).
 - **Apple support moved to Phase 2** (0018), which removes the Apple enrolment, Mac and TestFlight risks from Phase 1 and leaves a buffer.
 - **Discovery on Android** needs the native shell; test it on a real device early.
 - **Peekaboo Garden is the biggest item.** If the plan slips, cut in this order: Peekaboo Garden, the 3D world pieces, the third
-  game, iOS (moved after March 27 with Android only), the bigger kit.
+  game, the bigger kit.
 - **Kid profiles** are already on the Orlis Server today; moving them to the Box is a real change and must be done before other
   families' children are involved.
 - **Four tracked players** have not been tested on real hardware; do it in M1 or M2.
