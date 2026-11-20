@@ -42,7 +42,8 @@ and TV roles; signed packages and entitlements; the closed-beta channel; sign-in
 
 **Create:** a bigger kit; the vocabulary growing as games need it; the approval flow for submitted games; asset requests.
 
-**Games:** Pop Party (tuned); two more ported; a first pad game; Peekaboo Garden as a stretch.
+**Games** (0021): Pop Party tuned; Save the Harvest, Storytime and Animal Gym perfected; the runner built (reusing Last Known Position's road);
+Peekaboo Garden built (one pad plus the TV).
 
 **Beta operations:** installs for the two testers, beta terms, a simple way to send feedback and bugs.
 
