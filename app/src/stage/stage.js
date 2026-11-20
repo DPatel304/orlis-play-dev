@@ -24,19 +24,19 @@ export const toWorld = (nx, ny, aspect) => ({ x: (nx * 2 - 1) * (WORLD_H / 2) * 
 export const fromWorld = (wx, wy, aspect) => ({ x: (wx / ((WORLD_H / 2) * aspect) + 1) / 2, y: 1 - wy / WORLD_H });
 
 /* three.js is loaded the first time a stage starts, so no other game pays for it */
-let T = null, loading = null, glr = null, glFailed = false;
+let T = null, loading = null, glFailed = false;
+const renderers = new Map();
 export function loadThree(){
   if (!loading) loading = import('three').then((m) => (T = m)).catch(() => { glFailed = true; return null; });
   return loading;
 }
-function renderer(){
-  if (glr || glFailed || !T) return glr;
+function renderer(aa = true){
+  if (renderers.has(aa) || glFailed || !T) return renderers.get(aa) || null;
   try {
     const cv = document.createElement('canvas');
-    glr = new T.WebGLRenderer({ canvas: cv, antialias: true, alpha: false, powerPreference: 'high-performance' });
-    glr.setClearColor(0xe9f0f0);
-  } catch (e){ glFailed = true; glr = null; }
-  return glr;
+    const r = new T.WebGLRenderer({ canvas: cv, antialias: aa, alpha: false, powerPreference: 'high-performance' });
+    r.setClearColor(0xe9f0f0); renderers.set(aa, r); return r;
+  } catch (e){ glFailed = true; return null; }
 }
 
 /* ---------- cutouts: a library picture, painted onto a canvas with a paper edge ---------- */
@@ -64,8 +64,12 @@ function trimCutouts(keep = 48){
 }
 
 export class Stage {
-  constructor({ backdrop = null, gl = true } = {}){
+  /* Options for a lighter stage, for slower machines: backdropEvery (repaint the backdrop every N frames), backdropScale (its picture's size,
+     relative to the screen), scale (how big the 3D picture is drawn, relative to the screen) and antialias. */
+  constructor({ backdrop = null, gl = true, backdropEvery = 2, backdropScale = 1.25, scale = 1, antialias = true } = {}){
     this.backdrop = backdrop;
+    this.opt = { backdropEvery, backdropScale, scale, antialias };
+    this.perf = { n: 0, painter: 0, gl: 0, copy: 0 };
     this.actors = []; this.shards = [];
     this.t = 0; this.n = 0;
     this.mode = '2d';                 /* '2d' until three.js is ready (and always, if there is no 3D here) */
@@ -131,7 +135,7 @@ export class Stage {
 
   /* ----- 3D ----- */
   _start(){
-    const r = renderer(); if (!r) return;
+    const r = renderer(this.opt.antialias); if (!r) return;
     const S = new T.Scene();
     this.scene = S; this.r = r;
     this.cam = new T.OrthographicCamera(-1, 1, WORLD_H / 2, -WORLD_H / 2, 1, 700);
@@ -147,7 +151,7 @@ export class Stage {
     this.mode = 'gl';
   }
   _plane(p, W, H, dpr){
-    const w = Math.max(2, Math.round(W * Math.min(dpr, 1.25))), h = Math.max(2, Math.round(H * Math.min(dpr, 1.25)));
+    const k = Math.min(dpr, this.opt.backdropScale), w = Math.max(2, Math.round(W * k)), h = Math.max(2, Math.round(H * k));
     if (!p.cv || p.w !== w || p.h !== h){
       const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
       p.tex.dispose(); p.tex = new T.CanvasTexture(cv); p.tex.colorSpace = T.SRGBColorSpace; p.tex.generateMipmaps = false; p.tex.minFilter = p.tex.magFilter = T.LinearFilter;
@@ -164,18 +168,19 @@ export class Stage {
     m.userData.cut = cut; this.scene.add(m); a._m = m; return m;
   }
   _drawGL(c, W, H){
-    const r = this.r, tr = c.getTransform ? c.getTransform() : null, dpr = tr ? tr.a : 1, pw = Math.round(W * dpr), ph = Math.round(H * dpr), asp = W / H;
+    const r = this.r, tr = c.getTransform ? c.getTransform() : null, dpr = tr ? tr.a : 1, pw = Math.round(W * dpr * this.opt.scale), ph = Math.round(H * dpr * this.opt.scale), asp = W / H, now = performance.now();
     const size = r.getSize(new T.Vector2());
     if (size.x !== pw || size.y !== ph){ r.setPixelRatio(1); r.setSize(pw, ph, false); }
     this.cam.left = -asp * WORLD_H / 2; this.cam.right = asp * WORLD_H / 2; this.cam.updateProjectionMatrix();
     /* the painted backdrop and foreground, redrawn every other frame: they barely move */
     const bd = this._plane(this._bd, W, H, dpr), fg = this._plane(this._fg, W, H, dpr);
-    if (this.n % 2 === 0 || !bd.drawn){
+    if (this.n % this.opt.backdropEvery === 0 || !bd.drawn){
       const bx = bd.cv.getContext('2d'), fx = fg.cv.getContext('2d');
       if (this.backdrop && this.backdrop.drawBack) this.backdrop.drawBack(bx, bd.w, bd.h);
       fx.clearRect(0, 0, fg.w, fg.h); if (this.backdrop && this.backdrop.drawFront) this.backdrop.drawFront(fx, fg.w, fg.h);
       bd.tex.needsUpdate = fg.tex.needsUpdate = true; bd.drawn = true;
     }
+    const t1 = performance.now();
     /* the actors: each a paper cutout in the world */
     for (const a of this.actors){
       if (!a.visible){ if (a._m) a._m.visible = false; continue; }
@@ -194,7 +199,18 @@ export class Stage {
       sm.setMatrixAt(i, dummy.matrix); sm.setColorAt(i, (this._col || (this._col = new T.Color())).set(s.color)); i++;
     }
     sm.count = i; sm.instanceMatrix.needsUpdate = true; if (sm.instanceColor) sm.instanceColor.needsUpdate = true;
+    const t2 = performance.now();
     r.render(this.scene, this.cam);
+    const t3 = performance.now();
     c.drawImage(r.domElement, 0, 0, W, H);
+    const t4 = performance.now(), p = this.perf;
+    p.n++; p.painter += t1 - now; p.gl += t3 - t2; p.copy += t4 - t3;
+  }
+
+  /* where the time went, per frame, for the owner's results line */
+  perfLine(){
+    const p = this.perf; if (!p.n) return '';
+    const f = (v) => (v / p.n).toFixed(1);
+    return `per frame: backdrop painting ${f(p.painter)} ms, 3D drawing ${f(p.gl)} ms, copying to the screen ${f(p.copy)} ms`;
   }
 }

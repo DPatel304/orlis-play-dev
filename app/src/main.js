@@ -290,7 +290,7 @@ function showResults(){
   let summary = own ? { line: own, best: isBest } : total > 0 ? { line: `${n > 1 ? 'Together you got' : 'You got'} ${total} ${game.unit || 'points'}`, best: isBest } : null;
   /* the owner also sees how smoothly it ran, to compare games and machines without any tools */
   if (account.role === 'owner' && !game.passive){
-    const smooth = smoothness(frameMs, inst.stage ? (inst.stage.mode === 'gl' ? '3D stage' : 'stage, painted on the canvas') : '');
+    const smooth = smoothness(frameMs, inst.stage ? (inst.stage.mode === 'gl' ? '3D stage' : 'stage, painted on the canvas') : '') + (inst.stage && inst.stage.perfLine ? '. ' + inst.stage.perfLine() : '');
     if (smooth) summary = { line: summary ? `${summary.line}. ${smooth}` : smooth, best: summary && summary.best };
   }
   /* told to the family's server, for this week's challenges (not a game

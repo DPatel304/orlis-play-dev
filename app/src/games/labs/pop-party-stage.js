@@ -15,11 +15,11 @@ const pick = (a) => a[(Math.random() * a.length) | 0];
 const rand = ([a, b]) => a + Math.random() * (b - a);
 export const BALLOON_SIZE = 2.5;                  /* a balloon's picture is 2.5 radii tall (radii are fractions of the screen height) */
 
-export default {
-  id: 'pop-party-stage', unit: 'points', name: 'Pop Party (stage lab)', stars: 1, accent: '#ff5d9e', secs: ROUND,
-  moves: ['reach'],
-  create(n, opts){ return new PopPartyStage(n, opts); }
-};
+/* Two versions to compare: the stage as built, and a lighter one for slower machines (the backdrop repainted a quarter as often and a
+   little smaller, the 3D picture drawn at 70% and smoothed up, no edge smoothing). */
+const make = (id, name, extra) => ({ id, unit: 'points', name, stars: 1, accent: '#ff5d9e', secs: ROUND, moves: ['reach'], create(n, opts){ return new PopPartyStage(n, { ...extra, ...opts }); } });
+export const light = make('pop-party-stage-light', 'Pop Party (stage lab, light)', { backdropEvery: 4, backdropScale: 0.75, scale: 0.7, antialias: false });
+export default make('pop-party-stage', 'Pop Party (stage lab)', {});
 
 /* a few balloons from the start, a steady climb to a crowded sky, then a storm for the last seconds */
 export function target(t){
@@ -36,7 +36,7 @@ class PopPartyStage {
     this.balloons = [];
     this.scene = new Scene();
     this.avatars = new Avatars();
-    this.stage = new Stage({ backdrop: this.scene, gl: opts.gl !== false });
+    this.stage = new Stage({ backdrop: this.scene, gl: opts.gl !== false, backdropEvery: opts.backdropEvery, backdropScale: opts.backdropScale, scale: opts.scale, antialias: opts.antialias });
   }
 
   step(dt, W, H){
