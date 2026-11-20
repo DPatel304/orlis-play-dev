@@ -150,6 +150,9 @@ export class Scene {
     if (this.flock) this._birds(c, W, H);
     this._clouds(c, W, H, L, 0.8, 9);
     this._hills(c, W, H, ground, L);
+    /* far things fade toward the sky, the nearer the horizon the more (the gradient is made once per screen height) */
+    if (this._hzH !== H){ this._hzH = H; const hz = c.createLinearGradient(0, H * 0.38, 0, H * 0.78); hz.addColorStop(0, 'rgba(235,242,246,0)'); hz.addColorStop(0.55, 'rgba(235,242,246,.30)'); hz.addColorStop(1, 'rgba(235,242,246,0)'); this._hz = hz; }
+    c.fillStyle = this._hz; c.fillRect(0, H * 0.38, W, H * 0.4);
   }
 
   drawFront(c, W, H){

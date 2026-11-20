@@ -733,3 +733,9 @@ draw the same data; houses are boxes wearing painted pictures; trees and Cubo ar
 check" button shows the same assets 2D and 3D side by side. Findings: the box-with-pictures house reads well, the roof picture doubles
 as the map symbol, side faces need a slightly darker tint to read as form; limits are seams at box edges, flat windows, no interiors.
 Decision 0025: Phase 1 ships 2D only; 3D stays private experiments (0024 superseded).
+
+## Pop Party polish pass 1 (2026-11-20)
+Soft grass shadows under balloons (one pre-painted blob, stamped), a warm light edge on each balloon (one gradient inside the existing
+clip), horizon haze (gradient made once per screen height), a little more balloon breathing. Cost kept low on purpose: no per-balloon
+gradients or extra clips. Headless timing showed no measurable difference (about 0.05 ms of drawing commands per frame; the real cost is
+in the graphics chip, so confirm with P / R on the owner's laptop).

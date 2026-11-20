@@ -96,6 +96,7 @@ function pick(table){
 }
 const rand = ([a, b]) => a + Math.random() * (b - a);
 
+let blob = null;
 class PopParty {
   constructor(players){
     this.players = players;
@@ -603,6 +604,7 @@ class PopParty {
     c.lineCap = 'round'; c.lineJoin = 'round';
     c.strokeStyle = 'rgba(70,60,110,.55)';
     c.lineWidth = Math.max(1.5, H * 0.0022);
+    for (const b of this.balloons) this._shadow(c, b, W, H);
     for (const b of this.balloons) rope(c, b.str);
     for (const b of this.balloons) this._balloon(c, b, W, H);
     if (this.animal) drawAnimal(c, this.animal, W, H);
@@ -618,10 +620,22 @@ class PopParty {
     if (!this.out) sayBubble(c, W, H, { text: '\u{1F388} Pop the balloons!', t: this.t, until: 7 });
   }
 
+  /* a soft shadow on the grass under a balloon: smaller and fainter the higher it floats, leaning away from the sun
+     (one soft blob, painted once and stamped) */
+  _shadow(c, b, W, H){
+    if (blob === null){
+      try { const cv = document.createElement('canvas'); cv.width = cv.height = 96; const x = cv.getContext('2d'), g = x.createRadialGradient(48, 48, 0, 48, 48, 48); g.addColorStop(0, 'rgba(40,60,50,1)'); g.addColorStop(1, 'rgba(40,60,50,0)'); x.fillStyle = g; x.fillRect(0, 0, 96, 96); blob = cv; }
+      catch (e){ blob = false; }
+    }
+    if (!blob) return;
+    const gy = H * 0.93, up = Math.max(0, Math.min(1, (gy - b.y * H) / (H * 0.9))), r = b.r * H * (1.5 - up * 0.6);
+    c.globalAlpha = 0.5 - up * 0.28; c.drawImage(blob, b.x * W + b.r * H * (0.4 + up * 0.8) - r, gy - r * 0.22, r * 2, r * 0.44); c.globalAlpha = 1;
+  }
+
   _balloon(c, b, W, H){
     const x = b.x * W, y = b.y * H, r = b.r * H;
     /* A slow breath in the rubber, out of step between balloons. */
-    const br = 1 + Math.sin(this.t * 2.6 + b.ph) * 0.018 + (b.wob ? Math.sin(this.t * 32) * 0.07 * b.wob : 0);
+    const br = 1 + Math.sin(this.t * 2.6 + b.ph) * 0.018 + (b.wob ? Math.sin(this.t * 32) * 0.07 * b.wob : 0) + Math.sin(this.t * 2.6 + b.ph) * 0.03 + Math.sin(this.t * 5.3 + b.ph * 2) * 0.012;
     c.save(); c.translate(x, y); c.rotate(b.tilt); c.scale(br, 2 - br);
 
     let fill;
@@ -641,6 +655,8 @@ class PopParty {
     c.save(); balloonPath(c, r); c.clip();
     c.fillStyle = 'rgba(52,40,96,.2)';
     c.beginPath(); c.ellipse(r * 0.62, r * 0.35, r * 0.85, r * 1.25, 0, 0, 6.2832); c.fill();
+    const rim = c.createLinearGradient(-r, 0, -r * 0.72, 0); rim.addColorStop(0, 'rgba(255,246,222,.6)'); rim.addColorStop(1, 'rgba(255,246,222,0)');   /* a warm light along the sunny edge */
+    c.fillStyle = rim; c.fillRect(-r * 1.1, -r * 1.3, r * 0.5, r * 2.6);
     c.restore();
 
     c.fillStyle = 'rgba(255,255,255,.8)';
