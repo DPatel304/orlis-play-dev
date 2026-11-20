@@ -14,6 +14,7 @@ import { menu, toggleFullscreen, openSettings, played as playedLately, BLURB } f
 import { remote, typing } from './ui/remote.js';
 import { account, welcome, AVATARS } from './ui/account.js';
 import { smoothness } from './ui/smoothness.js';
+import { buildReport, gpuName } from './ui/perfreport.js';
 import { installTitlebar, titlebarPlaying } from './ui/titlebar.js';
 import { library } from './ui/library.js';
 import { storePage } from './ui/store.js';
@@ -243,6 +244,12 @@ function drawMoveCard(c, W, H, dt){
 }
 /* How smoothly a round ran: every frame's time, kept for the owner's results line (the real games and the experiments, side by side). */
 const frameMs = [];
+let lastReport = '';
+function makeReport(){
+  return buildReport({ build: typeof __BUILD__ === 'string' ? __BUILD__ : 'dev', game: game ? `${game.name} [${game.id}]` : '', mode: inst && inst.stage ? inst.stage.mode : '', frames: frameMs,
+    gpu: gpuName(), screen: `${W}x${H} css px, pixel ratio ${dpr.toFixed(2)}, canvas ${stage.width}x${stage.height}`,
+    pose: { fps: pose.fps, inferMs: pose.inferMs, people: pose.personCount }, stagePerf: inst && inst.stage && inst.stage.perfLine ? inst.stage.perfLine() : '' });
+}
 function startRound(){
   frameMs.length = 0;
   joined = new Set();
@@ -288,6 +295,7 @@ function showResults(){
   const total = (() => { try { return inst.tally().reduce((a, r) => a + (Number(r.value) || 0), 0); } catch { return 0; } })();
   const own = inst.summary ? inst.summary(n) : null;      /* (a game can say it its own way) */
   let summary = own ? { line: own, best: isBest } : total > 0 ? { line: `${n > 1 ? 'Together you got' : 'You got'} ${total} ${game.unit || 'points'}`, best: isBest } : null;
+  lastReport = makeReport();
   /* the owner also sees how smoothly it ran, to compare games and machines without any tools */
   if (account.role === 'owner' && !game.passive){
     const smooth = smoothness(frameMs, inst.stage ? (inst.stage.mode === 'gl' ? '3D stage' : 'stage, painted on the canvas') : '') + (inst.stage && inst.stage.perfLine ? '. ' + inst.stage.perfLine() : '');
@@ -556,6 +564,11 @@ addEventListener('keydown', (e) => {
   if (e.key === 'f' || e.key === 'F') toggleFullscreen();
   if (e.key === 'k' || e.key === 'K') showSkeleton = !showSkeleton;
   if (e.key === 'p' || e.key === 'P') showPerf = !showPerf;
+  /* R copies a performance report for the last round (or the one being played) to paste to the assistant - for the owner */
+  if ((e.key === 'r' || e.key === 'R') && account.role === 'owner'){
+    const text = mode === 'play' || !lastReport ? makeReport() : lastReport;
+    (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast('Performance report copied. Paste it to Claude.', { ms: 4000 }), () => toast('Could not copy the report.', { ms: 4000 }));
+  }
 });
 
 /* ---------- keep the screen alive ----------

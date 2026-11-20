@@ -21,6 +21,9 @@ const make = (id, name, extra) => ({ id, unit: 'points', name, stars: 1, accent:
 export const full = make('pop-party-stage-full', 'Pop Party (stage lab, full quality)', { backdropEvery: 2, backdropScale: 1.25, scale: 1, antialias: true });
 /* No 3D at all: the stage paints the pictures straight onto the canvas, as the real game does. */
 export const canvas = make('pop-party-stage-canvas', 'Pop Party (stage lab, canvas)', { gl: false });
+/* A crowded sky: eight times as many balloons, to see how the drawing copes when a game is busier (3D, then canvas). */
+export const stress = make('pop-party-stage-stress', 'Pop Party (stage lab, 8x balloons)', { stress: 8 });
+export const stressCanvas = make('pop-party-stage-canvas-stress', 'Pop Party (stage lab, canvas, 8x balloons)', { gl: false, stress: 8 });
 export default make('pop-party-stage', 'Pop Party (stage lab)', {});
 
 /* a few balloons from the start, a steady climb to a crowded sky, then a storm for the last seconds */
@@ -33,7 +36,7 @@ export function target(t){
 class PopPartyStage {
   constructor(players, opts = {}){
     this.players = players;
-    this.t = 0; this.spawn = 0; this.over = false;
+    this.t = 0; this.spawn = 0; this.over = false; this.stress = opts.stress || 1;
     this.score = Array.from({ length: MAX_PLAYERS }, () => 0);
     this.balloons = [];
     this.scene = new Scene();
@@ -45,7 +48,7 @@ class PopPartyStage {
     this.t += dt;
     this.scene.step(dt, { t: this.t, p: Math.min(1, this.t / FINALE), storm: this.t >= FINALE, wind: Math.sin(this.t * 0.3) * 0.006, joy: 0.3, look: this._look(), rainbow: false });
     this.spawn -= dt;
-    if (this.spawn <= 0 && this.balloons.length < target(this.t)){ this.balloons.push(this._make()); this.spawn = this.t >= FINALE ? 0.18 : 0.5; }
+    if (this.spawn <= 0 && this.balloons.length < target(this.t) * this.stress){ this.balloons.push(this._make()); this.spawn = (this.t >= FINALE ? 0.18 : 0.5) / this.stress; }
     for (const b of this.balloons){
       b.age += dt; b.y -= b.rise * dt; b.x = b.x0 + Math.sin(b.age * b.f + b.ph) * 0.02;
       this._place(b);

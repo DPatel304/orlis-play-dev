@@ -104,3 +104,14 @@ test('the owner\'s smoothness line: a steady round and a stuttery one read diffe
   assert.equal(smoothness([16, 16]), '', 'too few frames to say anything');
   assert.equal(smoothness(null), '');
 });
+
+import { buildReport } from '../src/ui/perfreport.js';
+test('the performance report says how a round went, and where it stuttered', () => {
+  const frames = Array.from({ length: 1200 }, (_, i) => (i > 600 && i < 620 ? 90 : 16.7));
+  const r = buildReport({ build: 'b1', game: 'Pop Party [pop-party]', mode: 'gl', frames, gpu: 'NVIDIA RTX', screen: '1920x1080', pose: { fps: 30, inferMs: 12.34, people: 2 }, stagePerf: 'per frame: x' });
+  assert.match(r, /build: b1/); assert.match(r, /graphics: NVIDIA RTX/); assert.match(r, /camera tracking: 30 fps, inference 12.3 ms, 2 player/);
+  assert.match(r, /19 over 100 ms|stutters: 19 frames slower than 30 fps/);
+  assert.match(r, /frames a second, every 5 s: \d+( \d+)+/);
+  assert.match(r, /per frame: x/);
+  assert.match(buildReport({ frames: [16] }), /not enough frames/);
+});
