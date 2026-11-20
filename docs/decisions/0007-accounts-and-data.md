@@ -1,5 +1,5 @@
 # 0007: Accounts and data
-Status: Accepted (data handling to review before Phase 2)
+Status: Accepted, in part superseded by 0011 (kid profiles)
 Date: 2026-11-20
 ## Context
 Families need to sign in once; the box must still play without the internet.

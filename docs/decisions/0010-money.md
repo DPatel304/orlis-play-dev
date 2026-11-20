@@ -12,5 +12,16 @@ likes the League of Legends "free for a week, then pay to keep" idea, without ma
 - A revenue share on premium games.
 ## Conflict
 Nov 16 decided "no subscriptions". An optional subscription would reverse that.
+## Update (2026-11-20)
+- The owner likes: more making slots, premium kit packs, a rotation of premium games, and is open to an optional premium
+  subscription ("Orlis Plus").
+- **An in-game currency** is wanted. Recommended shape: an *earn-only* soft currency (earned by playing and making, spent on
+  cosmetics and unlocks) kept separate from real money; real money buys things for the family through a parent (plans, packs,
+  premium games). Selling a currency for real money to children is where regulators and the "never" list say no.
+  Name ideas: Cubits, Pops, Sparks, Moves, Pips.
+- **Bitcoin for hardware:** possible through a payment processor that handles it and can settle in dollars; it is a business
+  side addition, not an architecture question. Check tax treatment and refunds with an accountant.
+- **Premium games** are made by a vetted developer, not by Create (see 0012).
+
 ## Never (unchanged)
 Ads to kids, selling data, loot boxes, purchases by kids.

@@ -9,6 +9,7 @@ Games should work with one person in front of the TV, with many people on iPads,
 - The TV has a role chosen by the game: the play surface, a map or scoreboard, or nothing.
 - Games declare what they need, like Steam's VR tags: no pad, pads optional, or pads required (and how many), and how many
   tracked seats.
+- **Pads are optional.** Most early games will not use them; a pad program is an option a game may add.
 - Motion is the selling point, but no game or player is required to use it. There is one webcam for everyone.
 ## Consequences
 The platform API describes players as seats (tracked or pad), never as "the person at the camera". 16 players is a dream, not

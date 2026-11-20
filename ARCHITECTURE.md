@@ -44,11 +44,18 @@ decision is only *Proposed* or *Open*, that is marked. Status: first draft, Nov 
 - Joining: the iPad app discovers hosts on the network; the first time a confirmation code appears on the TV; afterwards the
   device is trusted and rejoins by itself.
 
+## The home network
+
+- Pads and the Box talk over the family's own Wi-Fi. For small homes that is enough; for many pads, a small dedicated router
+  connected to the Box by cable is more reliable than a PC's own hotspot. Some guest networks block devices from reaching each
+  other ("client isolation"); the app should detect this and say so plainly.
+
 ## A game package
 
 A game is a package with two small programs, both sandboxed (no network, no storage of their own, only the kit):
 - a **host** program: the rules, which run on whichever device hosts;
-- a **pad** program: what an iPad or phone shows and does (controller, map, private hand, a view of the world);
+- a **pad** program, optional (most early games have none): what an iPad or phone shows and does (controller, map, private hand,
+  a view of the world);
 - plus a manifest: its name, age band, what devices it needs (none / optional / required, how many pads, how many tracked
   seats), and which view it uses.
 
@@ -70,7 +77,7 @@ A game is a package with two small programs, both sandboxed (no network, no stor
 
 - The wire protocol between devices (messages, rates, reconnect) and the game package format as a precise spec.
 - How a tracked hand targets something in a true 3D world.
-- The Box's hardware and operating system; the router for many pads.
+- The Box's hardware and operating system (outsourced); the router for many pads.
 - The 3D vocabulary creators use, and how Create describes 3D games.
 - Age bands and parental controls; the privacy and consent work before other families' children's data is stored.
 - Money (0010) and watches (0009) are open.

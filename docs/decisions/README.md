@@ -34,3 +34,7 @@ Date: YYYY-MM-DD
 | 0008 | Publishing and guardrails | Accepted |
 | 0009 | Watches as controllers | Open |
 | 0010 | How Orlis makes money | Open |
+| 0011 | Children's profiles stay in the house | Proposed |
+| 0012 | Two ways games are made: Create and premium | Proposed |
+| 0013 | A safety floor for every game; age fit is separate | Proposed |
+| 0014 | No online play | Accepted |
