@@ -17,7 +17,7 @@ brother-in-law and father, then turns to the other games.
 6. **Kid profiles live on the Box** (0011), not the server.
 7. **The 3D game is perfected** (0026): it plays on the TV together with an Android tablet joined by QR or code; one real tablet tested; the
    house look in 3D checked against the 2D games with the look check; a smoothness line measured on the owner's laptop and on the Box
-   hardware once chosen; the game itself chosen (Pop Party 3D, see the 0026 update).
+   hardware once chosen; the game itself chosen (Peekaboo Garden, see the 0026 update).
 8. The other games stay playable as they are; they are finished after the release (see the roadmap in 0021).
 
 **Stretch:** the native Android app (discovery, tilt), more kit packs.
