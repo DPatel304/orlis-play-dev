@@ -664,3 +664,11 @@ x1: 165 fps, 117 calls, 25k triangles; x4: 165 fps, 293 calls; x16: 163 fps, 962
 ### 3D spike round 2 - result (Legion 5, RTX 3070 Laptop, 1920x1230, shadows on)
 x1: 165 fps, 198 calls, 63k triangles; x4: 165 fps, 430 calls, 81k; x16: 128 fps, 1358 calls, 152k (12 ms frames). The first sign of strain is the draw-call count, not the pixels. **Kit rule:** assets are merged into one mesh each and repeated props are instanced; a typical scene stays within a few hundred draw calls (this protects the weak devices, which are more likely to be limited by calls). Still unmeasured: the integrated AMD GPU, the iPhone 11 with Low Power Mode off, body tracking running at the same time.
 Look: owner said round one's shapes were the main problem and the lighting needed work (references: Untitled Goose Game and Katamari Damacy). Round two uses chunky rounded forms, ambient-heavy light and soft shadows; the owner's reaction to round two is pending.
+
+### Preparing for an artist (kit design requirements)
+- The kit accepts model files (glTF/GLB) as well as code-made assets, behind the same stable names, so an artist's asset can replace a code-made one without any game noticing.
+- Artists paint with named palette roles (material slots such as "foliage mid", "rock shadow"); the kit substitutes the real colours, so the palette stays enforced and a later palette change restyles their work too.
+- An artist spec (one page): 1 unit = 1 metre, origin at the feet, which way it faces, triangle limits by asset type, one mesh and few materials per asset (the draw-call rule), naming, and animation names (idle, walk, wave) with one standard skeleton for characters.
+- A style sheet with reference assets (the round-two giraffe and Cubo) and the written lessons: rounded chunky forms, ambient-heavy light, soft shadows, accents more saturated than the world.
+- A checker and a viewer: drop in a file, get pass/fail (size, materials, triangles, naming) and a picture under the kit's lighting from the standard cameras.
+- Business side (the owner's): an agreement that gives the owner the work, source files kept in the repo, a small paid trial asset first; hire for props before animated characters.
