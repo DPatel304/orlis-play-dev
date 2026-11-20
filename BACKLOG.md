@@ -744,3 +744,9 @@ in the graphics chip, so confirm with P / R on the owner's laptop).
 `spike3d/spike8.html`: Pop Party as a real 3D scene with no camera: mouse or touch aims, click or tap pops. Toon-shaded teardrop balloons
 (three-step cel ramp), painted sky, low-poly mountains, rolling hills, the 2D asset library's trees as paper cutouts, a smiling sun,
 confetti. Same round shape as the real game (2:00, balloon count rising 5 to 16). Not part of Phase 1 (0025).
+
+## K1: the Peekaboo TV test (2026-11-20)
+Owner-only game "Peekaboo Garden (3D test)" (`app/src/games/labs/peekaboo-lab.js`, in the owner's menu or `?game=peekaboo-lab`). A paper
+garden at dusk from a fixed three-quarter view; each tracked player's hand is a lantern (ray from the TV camera onto the ground); a pretend
+hider (paper bunny) hops between hiding places and shows only when lit; bushes rustle. The 3D is its own canvas under the 2D canvas (no copy).
+To measure: play a round with the tracking worker off, then on (Shift+G on home), pressing R at the end of each; paste both reports.
