@@ -1,5 +1,5 @@
 # 0026: Phase 1 has two games: Pop Party, and one 3D game for the TV and an Android tablet
-Status: Accepted (which game, camera use and the date to confirm)
+Status: Accepted (camera use, the tablet's role and the date to confirm)
 Date: 2026-11-20
 
 ## Context
@@ -25,3 +25,11 @@ characters ran at 165 fps on the owner's laptop (BACKLOG "3D check result"); cam
 
 ## Replaces
 0025 (Phase 1 2D only) and the one-game limit in 0022.
+
+## Update (2026-11-20, later)
+**The 3D game is Pop Party 3D**, so Phase 1 is Pop Party and Pop Party 3D. Peekaboo Garden (0015) moves to after the release.
+Why: one rule set to tune and perfect; the private lab (`spike3d/spike8.html`) already exists; it makes the best consistency test
+(the same game in 2D and 3D, same look); a smaller scope than a new game.
+Still open: what the tablet does (candidates: each tablet is a player who aims and pops in a first-person view of the meadow while
+the TV shows the wide overview; or the tablet is a controller only), whether the TV side uses the camera, and whether the two games
+are listed as two games or as one game with two modes.
