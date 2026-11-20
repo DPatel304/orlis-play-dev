@@ -1,4 +1,4 @@
-<title>Orlis Balloon Pop Paper</title>
+<title>Orlis Balloon Pop Hybrid</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Balloon Pop as a paper world on a locked camera, next to the game's real 2D scene for comparison. A full-screen stage with a stats card and a bar of three views. */
@@ -32,8 +32,9 @@ button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 </div>
 <div class="panel" id="bar"><span>View</span>
   <button data-v="2d" aria-pressed="false">Current 2D game</button>
-  <button data-v="paper" aria-pressed="true">Paper, locked camera</button>
-  <button data-v="peek" aria-pressed="false">Paper, peek from the side</button>
+  <button data-v="hybrid" aria-pressed="true">Painted backdrop + paper</button>
+  <button data-v="paper" aria-pressed="false">All paper</button>
+  <button data-v="peek" aria-pressed="false">All paper, peek</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>/* the game's real 2D scene and the Orlis asset library */
@@ -73,7 +74,7 @@ const skyPlane = new THREE.Mesh(new THREE.PlaneGeometry(2400, 260), new THREE.Sh
   vertexShader: 'varying float y; void main(){ y = position.y + 6.0; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
   fragmentShader: 'uniform vec3 top; uniform vec3 low; varying float y; void main(){ gl_FragColor = vec4(mix(low, top, smoothstep(2.0, 12.0, y)), 1.0); }' }));
 skyPlane.position.set(0, 0, -320); scene.add(skyPlane); sky.visible = false;
-const V = 6, state = { view: 'paper', t: 0, popped: 0 }, A = () => stage.clientWidth / Math.max(1, stage.clientHeight);
+const V = 6, state = { view: 'hybrid', t: 0, popped: 0, frame: 0 }, A = () => stage.clientWidth / Math.max(1, stage.clientHeight);
 let look = 0, lookT = 0;
 
 /* ---------- paper machinery: the painted 2D assets as cutouts ---------- */
@@ -188,13 +189,29 @@ function draw2d(dt){
   if (hand.on) { const x = sx(hand.x), y = sy(hand.y), r = H * .03; ctx2.fillStyle = 'rgba(255,93,158,.3)'; ctx2.beginPath(); ctx2.arc(x, y, r * 2.2, 0, 6.2832); ctx2.fill(); ctx2.fillStyle = '#fff'; ctx2.beginPath(); ctx2.arc(x, y, r, 0, 6.2832); ctx2.fill(); ctx2.lineWidth = r * .28; ctx2.strokeStyle = '#ff5d9e'; ctx2.stroke(); }
 }
 
+/* ---------- the painted backdrop and foreground, from the game's own 2D painter ---------- */
+const bdc = document.createElement('canvas'), fgc = document.createElement('canvas'), bdx = bdc.getContext('2d'), fgx = fgc.getContext('2d');
+const mkT = (c) => { const t = new THREE.CanvasTexture(c); t.generateMipmaps = false; t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter; return t; };
+const bdTex = mkT(bdc), fgTex = mkT(fgc);
+const bdPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: bdTex, fog: false, depthWrite: false })); bdPlane.position.set(0, V, -300); scene.add(bdPlane);
+const fgPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: fgTex, transparent: true, fog: false, depthWrite: false })); fgPlane.position.set(0, V, 2); scene.add(fgPlane);
+function hybridFrame(dt){
+  const dpr = Math.min(devicePixelRatio || 1, 1.25), W = Math.round(stage.clientWidth * dpr), H = Math.round(stage.clientHeight * dpr);
+  if (bdc.width !== W || bdc.height !== H) { bdc.width = fgc.width = W; bdc.height = fgc.height = H; }
+  scene2d.step(dt, { t: state.t, p: Math.min(1, state.t / 110), storm: false, wind: Math.sin(state.t * .3) * .007, joy: .3, look: .5 + look * .12, rainbow: false });
+  if (state.frame % 2 === 0) { scene2d.drawBack(bdx, W, H); bdTex.needsUpdate = true; fgx.clearRect(0, 0, W, H); scene2d.drawFront(fgx, W, H); fgTex.needsUpdate = true; }
+}
+
 /* ---------- cameras and views ---------- */
 let camera;
 function setView(v){
-  state.view = v; const a = A(), flat = v !== 'peek';
-  if (flat) { camera = new THREE.OrthographicCamera(-V * a, V * a, V, -V, 1, 700); camera.position.set(0, V, 60); camera.lookAt(0, V, 0); scene.fog.near = 90; scene.fog.far = 300; sky.visible = false; skyPlane.visible = true; }
+  state.view = v; const a = A(), flat = v !== 'peek', hy = v === 'hybrid';
+  bdPlane.visible = fgPlane.visible = hy; bdPlane.scale.set(2 * V * a, 2 * V, 1); fgPlane.scale.set(2 * V * a, 2 * V, 1);
+  layers.forEach(L => { L.g.visible = !hy; }); [sunG, pm, tg, ...rays, ...clouds, ...flw].forEach(o => { o.visible = !hy; });
+  (hy ? scene : h4.g).add(gir);
+  if (flat) { camera = new THREE.OrthographicCamera(-V * a, V * a, V, -V, 1, 700); camera.position.set(0, V, 60); camera.lookAt(0, V, 0); scene.fog.near = 90; scene.fog.far = 300; sky.visible = false; skyPlane.visible = !hy; }
   else { camera = new THREE.PerspectiveCamera(40, a, .5, 700); camera.position.set(22, 9, 36); camera.lookAt(-2, 5, -20); scene.fog.near = 40; scene.fog.far = 230; sky.visible = true; skyPlane.visible = false; }
-  gl.style.display = v === '2d' ? 'none' : 'block'; c2d.style.display = v === '2d' ? 'block' : 'none';
+  gl.style.display = v === '2d' ? 'none' : 'block'; if (state.view !== 'hybrid') { /* (the paper views draw their own sky) */ } c2d.style.display = v === '2d' ? 'block' : 'none';
   document.querySelectorAll('[data-v]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
 }
 function resize(){ const dpr = Math.min(devicePixelRatio || 1, 2); renderer.setPixelRatio(dpr); renderer.setSize(stage.clientWidth, stage.clientHeight, false); setView(state.view); }
@@ -215,7 +232,7 @@ function loop(now){
   /* the giraffe */
   const gu = gir.userData; gu.next -= dt;
   if (!gir.visible && gu.next <= 0) { gu.dir = Math.random() < .5 ? 1 : -1; gu.x = -gu.dir * (V * A() + 5); gir.visible = true; }
-  if (gir.visible) { gu.x += gu.dir * 1.3 * dt; gu.vx = gu.dir; gir.position.set(gu.x, h4.f(gu.x) + .05 + Math.abs(Math.sin(t * 5)) * .06, -6); gu.mesh.rotation.z = Math.sin(t * 5) * .03; if (Math.abs(gu.x) > V * A() + 6 && gu.x * gu.dir > 0) { gir.visible = false; gu.next = 14 + Math.random() * 10; } }
+  if (gir.visible) { gu.x += gu.dir * 1.3 * dt; gu.vx = gu.dir; gir.position.set(gu.x, (state.view === 'hybrid' ? 1.0 : h4.f(gu.x) + .05) + Math.abs(Math.sin(t * 5)) * .06, -6); gu.mesh.rotation.z = Math.sin(t * 5) * .03; if (Math.abs(gu.x) > V * A() + 6 && gu.x * gu.dir > 0) { gir.visible = false; gu.next = 14 + Math.random() * 10; } }
   /* balloons: a few at the start, then a gentle climb to a crowded sky */
   const want = Math.min(9, 3 + Math.floor(t / 7)); spawnT -= dt; if (spawnT <= 0 && balls.length < want) { spawn(false); spawnT = .7 + Math.random() * .6; }
   for (const b of balls.slice()) { b.y += b.vy * dt; b.x = b.x0 + Math.sin(t * .9 + b.ph) * .35; b.st.position.set(b.x, b.y - BH * (.5 + .08 * BFIT), b.z); b.st.userData.mesh.rotation.z = Math.sin(t * 1.5 + b.ph) * .08; if (b.y > 17) { scene.remove(b.st); balls.splice(balls.indexOf(b), 1); } }
@@ -228,6 +245,8 @@ function loop(now){
   for (const s of shards.slice()) { s.life += dt; const k = s.life / s.max; s.vy -= 9 * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.m.position.x = s.x; s.m.position.y = s.y; s.m.rotation.z += dt * 6; s.mat.opacity = Math.max(0, 1 - k * k); if (k >= 1) { scene.remove(s.m); s.mat.dispose(); shards.splice(shards.indexOf(s), 1); } }
   for (const r of rings.slice()) { r.life += dt; const k = r.life / r.max; paint(r.s.userData.tex, 'popring', { t: Math.min(1, k) }); if (k >= 1) { scene.remove(r.s); r.s.userData.tex.dispose(); standees.splice(standees.indexOf(r.s), 1); rings.splice(rings.indexOf(r), 1); } }
   for (const p of pops2d.slice()) { p.life += dt; if (p.life >= p.max) pops2d.splice(pops2d.indexOf(p), 1); }
+  state.frame++;
+  if (state.view === 'hybrid') hybridFrame(dt);
   if (state.view === '2d') draw2d(dt); else { faceCam(camera); flw.forEach(f => { f.userData.mesh.rotation.z = Math.sin(t * 1.3 + f.position.x) * .1; }); renderer.info.reset(); renderer.render(scene, camera); }
   acc += ms; fr++;
   if (acc > 500) { $('fps').textContent = (1000 / (acc / fr)).toFixed(0); $('calls').textContent = state.view === '2d' ? '(2D canvas)' : renderer.info.render.calls; acc = 0; fr = 0; }
