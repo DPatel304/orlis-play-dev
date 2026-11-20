@@ -15,8 +15,8 @@ main{ max-width:1180px; margin:0 auto; padding:22px 16px 50px; } h1{ font:600 28
 </style>
 <main>
 <h1>Cube-headed avatars: how personal can they be?</h1>
-<p class="sub">Every player is a paper figure with a cube head, but nobody looks the same: face, hair, hats, skin tone, head shape, glasses and clothes all change. Cubo is just one of them: today he has stick limbs (first); on the shared body he'd look like the second. All drawn in one style: flat colour, one shade tone, a white paper edge and a soft shadow on the layer behind.</p>
-<div class="btns"><button id="shuffle">Make 12 more</button><button id="flip">Flip them (turning around)</button></div>
+<p class="sub">Every player is a paper figure with a cube head, but nobody looks the same: face, hair, hats, skin tone, head shape, glasses and clothes all change. Cubo is just one of them: today he has stick limbs (first); on the shared body he'd look like the second. All drawn in one style: flat colour, one shade tone, a soft shadow on the layer behind, and a white paper edge (try none, thin or full with the buttons).</p>
+<div class="btns"><button id="shuffle">Make 12 more</button><button data-edge="0">No white edge</button><button data-edge="0.009">Thin edge</button><button data-edge="0.022">Full edge (first sketch)</button><button id="flip">Flip them (turning around)</button></div>
 <div class="stage" id="stage"></div>
 <h2>In a game: same figures, any world</h2>
 <div class="row" id="scene"></div>
@@ -102,9 +102,10 @@ var Orlis2D=(()=>{var lt=Object.defineProperty;var _t=Object.getOwnPropertyDescr
     const sh = document.createElement('canvas'); sh.width = W; sh.height = H; const xs = sh.getContext('2d'); xs.drawImage(a, 0, 0); xs.globalCompositeOperation = 'source-in'; xs.fillStyle = 'rgba(52,40,96,.22)'; xs.fillRect(0, 0, W, H);
     const o = document.createElement('canvas'); o.width = W + 20; o.height = H + 20; const xo = o.getContext('2d');
     xo.filter = 'blur(3px)'; xo.drawImage(sh, 10 + S * .04, 10 + S * .04); xo.filter = 'none';
-    for (let k = 0; k < 16; k++){ const an = k / 16 * 6.283; xo.drawImage(w, 10 + Math.cos(an) * S * .022, 10 + Math.sin(an) * S * .022); }
+    if (EDGE > 0) for (let k = 0; k < 16; k++){ const an = k / 16 * 6.283; xo.drawImage(w, 10 + Math.cos(an) * S * EDGE, 10 + Math.sin(an) * S * EDGE); }
     xo.drawImage(a, 10, 10); return o;
   }
+  let EDGE = 0.009;
   const NAMES = ['Cubo today', 'Cubo, same body', 'Mia', 'Leo', 'Ava', 'Dad', 'Mom', 'Sam', 'Noor', 'Kai', 'Zoe', 'Grandpa', 'Ivy', 'Raj'];
   function fill(){ const st = document.getElementById('stage'); st.innerHTML = '';
     const CUBO = { skin: '#9b8cff', hair: '#000', style: 'none', hat: 'none', hatc: '#fff', eyes: 'wide', mouth: 'smile', shirt: '#3da9ff', pants: '#5b5fc7', shoes: '#fffdf8', w: 1, h: 1, round: .16, glasses: false, freckles: false, blush: false, brows: false };
@@ -113,6 +114,7 @@ var Orlis2D=(()=>{var lt=Object.defineProperty;var _t=Object.getOwnPropertyDescr
   }
   fill();
   document.getElementById('shuffle').addEventListener('click', fill);
+  document.querySelectorAll('[data-edge]').forEach(b => b.addEventListener('click', () => { EDGE = +b.dataset.edge; seed = 3; fill(); }));
   document.getElementById('flip').addEventListener('click', () => { document.querySelectorAll('.av canvas, .row canvas').forEach((c, i) => { c.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0.05)' }, { transform: 'scaleX(-1)' }, { transform: 'scaleX(0.05)' }, { transform: 'scaleX(1)' }], { duration: 1100, delay: i * 40, easing: 'ease-in-out' }); }); });
 })();
 </script>

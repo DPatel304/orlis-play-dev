@@ -1,5 +1,5 @@
 # 0035: The Orlis look: cozy, playful, handmade paper, for every kind of game
-Status: Accepted (the cube-head avatars to confirm after the owner sees the sketches)
+Status: Accepted (the white edge to settle with the style board)
 Date: 2026-11-20
 
 ## Context
@@ -25,3 +25,9 @@ paper motion) and a style board of very different games drawn with it.
 ## Consequences
 - The avatar maker and the avatar art change to cube heads; existing profiles need converting.
 - Cubo's look changes (same head, the shared body).
+
+## Owner's answer (2026-11-20)
+- **Cube-headed avatars: confirmed.**
+- **The white paper edge may be too much.** Open: no edge, a thin edge, or the full edge (the avatar page now switches between them);
+  settled with the style rulebook and style board, where it is judged on whole scenes, not single figures.
+
