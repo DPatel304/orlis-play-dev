@@ -43,3 +43,11 @@ The owner accepted the docks and the paper score pills, and asked for all seven 
 7. **The edge margin is 5%** (was 4%).
 **The corner stays 4 rows** so four players fit: scores take one row for 1 to 2 players and two rows for 3 to 4; the game's chips and
 bars fill the rows left (three or two).
+
+## Owner's answers (2026-11-20, later)
+- **Pop-up messages** ("Star earned") drop in at the **top right**, never over the clock or the hint words.
+- **Player pills stay in a fixed order** (player 1 first); they are not re-ordered by where children stand (too confusing as people move).
+- **A player who steps out of the camera's view greys out** in their pill and comes back in colour when seen.
+- **No pause control on screen** for now; how to pause during camera play is an open question.
+- **The clock** and **the pill style** are being chosen from options (`docs/clock-pills.html`).
+
