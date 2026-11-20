@@ -21,7 +21,7 @@ brother-in-law and father, playing and creating, with the pad app working. 18 we
 | When | Milestone | What is in it |
 |---|---|---|
 | Dec 4 | **M0 Foundations** | Names decided; this plan agreed |
-| Dec 18 | **M1 The look** | A reusable paper stage layer (painted backdrop and foreground, cutouts, locked camera); Pop Party rebuilt on it; measured on the Legion, on the integrated GPU, and on the Android phone |
+| Dec 18 | **M1 The look** | A reusable paper stage layer (painted backdrop and foreground, cutouts, locked camera), built; a lab game (Pop Party's core loop on the stage) measured against the real Pop Party on the Legion and the integrated GPU; the decision whether to migrate flat games (0020) |
 | Jan 15 | **M2 Pads connect** | Wire protocol written down; a host session in Orlis Play; the browser pad page joins by QR or code, rejoins, controller role; tested on the iPhone 11 |
 | Feb 5 | **M3 Seats and a first pad game** | Game manifest and seats model; pad program in a game package; one simple pad game; kid profiles moved to the Box |
 | Feb 26 | **M4 Create and the kit** | A bigger kit (assets, a few stage pieces); Create flow tuned for the brother-in-law and father; two more games on the new look; Peekaboo Garden prototype if time |

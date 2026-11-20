@@ -13,6 +13,7 @@ import animalGym from './animal-gym.js';
 import keepItUp from './keep-it-up.js';
 import pteroFlight from './ptero-flight.js';
 import saveTheHarvest from './save-the-harvest.js';
+import popPartyStage from './labs/pop-party-stage.js';
 import { makeStory } from './story-player.js';
 import cubionsLongWayHome from '../stories/cubions-long-way-home.js';
 
@@ -23,7 +24,9 @@ export const FROM_STORE = new Set([]);
 const inApp = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
 export const GAMES = [popParty, sleepyBear, leafPile, stackItHigh, skyPainter, animalGym, keepItUp, pteroFlight, saveTheHarvest, makeStory(cubionsLongWayHome), lastKnownPosition, castleDefense]
   .filter(g => !(inApp && FROM_STORE.has(g.id)));
-export const byId = (id) => GAMES.find(g => g.id === id);
+/* Experiments: reachable only by name (?game=pop-party-stage), never in the menu, and not part of the catalogue the tests walk. */
+export const LABS = [popPartyStage];
+export const byId = (id) => GAMES.find(g => g.id === id) || LABS.find(g => g.id === id);
 /* Waiting for the owner to let you in: these two, built in, to play
    meanwhile. The rest - and the Store, and Create - open once you're in. */
 export const STARTER_GAMES = ['pop-party', 'sky-painter'];

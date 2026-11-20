@@ -1,4 +1,4 @@
-import { GAMES, STARTER_GAMES } from '../games/index.js';
+import { GAMES, LABS, STARTER_GAMES } from '../games/index.js';
 import { button, onPick, cursor } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { audio, sfx, ambience } from '../audio/sound.js';
@@ -162,7 +162,9 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   /* (waiting to be let in: the starter games only) */
   const waiting = account.waiting;
   const showHidden = typeof location !== 'undefined' && /[?&]debug\b/.test(location.search) && /[?&]hidden=1/.test(location.search);   /* (to try the games kept off Play) */
-  const pool = GAMES.filter(g => (showHidden || !HIDDEN.has(g.id)) && (!waiting || STARTER_GAMES.includes(g.id)));
+  /* (experiments, for the owner only: games kept apart from the real ones, to try and measure) */
+  const labs = showHidden || account.role === 'owner' ? LABS : [];
+  const pool = GAMES.concat(labs).filter(g => (showHidden || !HIDDEN.has(g.id)) && (!waiting || STARTER_GAMES.includes(g.id)));
   /* this week's featured, from Discover: a game already here as itself;
      one to get as a stand-in that knows its Discover entry */
   const featured = waiting ? [] : week.featured().map(e => (library.installed.has(e.id) && GAMES.find(x => x.id === e.id))
