@@ -19,6 +19,8 @@ export const BALLOON_SIZE = 2.5;                  /* a balloon's picture is 2.5 
    little smaller, the 3D picture drawn at 70% and smoothed up, no edge smoothing). */
 const make = (id, name, extra) => ({ id, unit: 'points', name, stars: 1, accent: '#ff5d9e', secs: ROUND, moves: ['reach'], create(n, opts){ return new PopPartyStage(n, { ...extra, ...opts }); } });
 export const light = make('pop-party-stage-light', 'Pop Party (stage lab, light)', { backdropEvery: 4, backdropScale: 0.75, scale: 0.7, antialias: false });
+/* The same game with no 3D at all: the stage paints the pictures straight onto the canvas, as the real game does. If this is smooth and the 3D versions are not, the 3D is the cost, not the stage's design. */
+export const canvas = make('pop-party-stage-canvas', 'Pop Party (stage lab, canvas)', { gl: false });
 export default make('pop-party-stage', 'Pop Party (stage lab)', {});
 
 /* a few balloons from the start, a steady climb to a crowded sky, then a storm for the last seconds */

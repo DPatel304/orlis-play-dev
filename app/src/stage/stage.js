@@ -34,7 +34,8 @@ function renderer(aa = true){
   if (renderers.has(aa) || glFailed || !T) return renderers.get(aa) || null;
   try {
     const cv = document.createElement('canvas');
-    const r = new T.WebGLRenderer({ canvas: cv, antialias: aa, alpha: false, powerPreference: 'high-performance' });
+    const r = new T.WebGLRenderer({ canvas: cv, antialias: aa, alpha: false, powerPreference: 'default' });
+    /* ('default', not 'high-performance': on a laptop with two graphics chips, asking for the big one can put the 3D picture on a different chip from the page, and copying between them goes through the CPU) */
     r.setClearColor(0xe9f0f0); renderers.set(aa, r); return r;
   } catch (e){ glFailed = true; return null; }
 }
