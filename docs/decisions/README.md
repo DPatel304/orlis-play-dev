@@ -61,3 +61,4 @@ Date: YYYY-MM-DD
 | 0035 | The Orlis look: cozy, playful, handmade paper, for every kind of game | Accepted in part; material and edge superseded by 0036 |
 | 0036 | The look is toon-shaded 3D, drawn flat for 2D games | Under review (0037): tested against the painted look |
 | 0037 | Pop Party stays painted for Phase 1; the toon look is tested fairly before it is final | Accepted |
+| 0038 | Two looks, one family: painted 2D for 2D games, a painted-style 3D sibling for 3D games | Proposed |
