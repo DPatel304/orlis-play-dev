@@ -27,10 +27,10 @@ something unpolished to family.
 | When | Milestone | Done when |
 |---|---|---|
 | Dec 4 | **M0 Architecture agreed** | 0027 to 0031 accepted or changed; the Node hub built and tested (P1); the 3D-plus-tracking spike started (K1); the owner's Shift+G result in |
-| Dec 18 | **M1 Phones connect; the TV 3D question answered** | A phone joins by QR or code, picks who it is, rejoins and pauses correctly, on the owner's Android test tablet and an iPhone 15-class phone (P2 to P6); K1 says yes or no to 3D on the TV with tracking (else the 2D-overview fallback); the Peekaboo design approved (K2) |
-| Jan 15 | **M2 Seats, profiles, Peekaboo end to end** | The seats model and manifest (S1); Pop Party pad hands (S2); kid profiles on the Box (S3); Peekaboo greybox playable end to end on TV plus phone (K3 to K5, rough) |
+| Dec 18 | **M1 Phones connect; the TV 3D question answered; the UI kit** | The UI kit approved (U1) and quick fixes in (U2); a phone joins by QR or code, picks who it is, rejoins and pauses correctly, on the owner's Android test tablet and an iPhone 15-class phone (P2 to P6); K1 says yes or no to 3D on the TV with tracking (else the 2D-overview fallback); the Peekaboo design approved (K2) |
+| Jan 15 | **M2 Seats, profiles, Peekaboo end to end** | The HUD on the kit and emoji out (U3, U4); the seats model and manifest (S1); Pop Party pad hands (S2); kid profiles on the Box (S3); Peekaboo greybox playable end to end on TV plus phone (K3 to K5, rough) |
 | Feb 5 | **M3 Peekaboo reads and runs** | First family playtest: the garden reads, it runs at budget, no blocking bugs (gameplay notes kept for later); the kit list for Create agreed (C1 started) |
-| Feb 26 | **M4 The look and Create** | Paper puppets and the found reveal (K6); the look pass on both games with the look check (K7); Create tuned for the testers and the bigger kit (C1, C2) |
+| Feb 26 | **M4 The look and Create** | Home, pause and results on the kit (U5); paper puppets and the found reveal (K6); the look pass on both games with the look check (K7); Create tuned for the testers and the bigger kit (C1, C2) |
 | Mar 12 | **M5 Harden** | Beta install and invites, feedback (B1); reconnect edge cases, the Wi-Fi hint, performance on the minimum phone, bug bash (B2); the phone check page and the testers' phones checked (K8) |
 | Mar 27 | **M6 Release to the two testers** | The gate above; buffer to about Apr 17 if quality needs it |
 
@@ -67,8 +67,14 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | B1 | Beta install, invites, beta terms, feedback button | Sonnet | — | a fresh Windows laptop goes from invite to playing |
 | B2 | Hardening: reconnect edge cases, the Wi-Fi hint, performance, bug bash | Sonnet, Opus triage | most of the above | no known bugs in either game |
 | PP | Pop Party tuning from playtests; P/R check of the polish cost | Sonnet with owner | — | the owner's under-3s play it unaided |
+| U1 | The Orlis UI kit: tokens, paper cards, one HUD piece style, Fredoka, painted icons, motion rules (see `docs/ui-review.md`) | Opus, owner approves | — | a kit page (mockup) approved; used by the P3 and P5 mockups |
+| U2 | UI quick fixes: hero contrast, ghost label, units and plurals, first-load flash | Sonnet | — | before and after screenshots; tests pass |
+| U3 | HUD onto the kit for every game (shared HUD code); the lighter move card | Sonnet | U1 | all games checked by screenshot at TV size |
+| U4 | Emoji out: painted icons for hints and UI; Create's hints use library icons | Sonnet | U1 | no emoji left on screen in any built-in game |
+| U5 | Home, pause and results onto the kit; the celebration results card | Opus mockup, Sonnet build | U1 | owner approves on the TV |
+| U6 | Review the Windows-only screens (Discover, Create, Settings, sign-in) | Opus | owner screenshots or the Windows build | findings added to `docs/ui-review.md` |
 
-**Order:** P1, K1 and K2 start now (in parallel); then P3/P4 (pads), then S1 to S3 and K3 to K5; the look (K6, K7) and Create (C1, C2) after
+**Order:** P1, K1, K2, U1 and U2 start now (in parallel; U1 before the P3 and P5 mockups); then P3/P4 (pads), then S1 to S3 and K3 to K5; the look (K6, K7) and Create (C1, C2) after
 Peekaboo is fun; hardening last.
 
 ## Risks

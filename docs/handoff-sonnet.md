@@ -6,7 +6,7 @@ You are building parts of Orlis from written specs. Opus designs and reviews; yo
 
 ## How to pick work
 - Take the next package in `docs/plan-phase1.md` whose **Model** column says Sonnet and whose **Needs** are done. Unless the owner names
-  one, start with **P1** (the Node dev hub), then **P3** once its mockup is approved, then **P6**.
+  one, start with **U2** (UI quick fixes, `docs/ui-review.md`) and **P1** (the Node dev hub), then **P3** once its mockup is approved (in the UI kit, U1), then **P6**.
 - One package at a time. "Done when" in the table is the bar. Run `cd app && npm test` (all must pass; 655 today) and the package's own tests.
 - For anything the owner will see (pad page, TV join card, Settings), make an HTML mockup first and show it as a private artifact;
   build only after the owner approves.
