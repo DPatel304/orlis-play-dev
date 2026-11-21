@@ -62,3 +62,11 @@ const s = createSession({
 Unit tests in `app/test/session.test.mjs` with a fake `send`, fake clock and seeded `rng`: every rule above. Plus one end-to-end test that
 runs the real session behind the Node hub (`tools/pad-hub.mjs`) with the built pad page (as `app/test/pad-page.node.mjs` does with the fake
 host), covering spec tests 1 to 3 against the real session (P6 extends this to all five).
+
+## As built (P4, 2026-11-21; confirmed by Opus)
+- `welcome.colour` is the CSS colour (from `PALETTE.fav`); seats and `colourFor` use the fav name.
+- `requiredPads`: a number N means the first N pad seats; an array names pad-seat indexes.
+- The session also emits `input {seat, who, m}` for pad `in` messages (for S1's `pads.on`); `hubConfig()` reads
+  `window.__ORLIS_PAD_HUB__ = {port, key}`, which the shell sets in S1. Set tracked seats before phones join (pad seats are numbered after them).
+- A known token whose person was deleted gets `who?`; the same token on a new connection takes over its seat.
+
