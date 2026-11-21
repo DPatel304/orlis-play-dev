@@ -31,3 +31,9 @@ Create, and asked whether true 3D could be added later.
 ## Replaces
 The first-person phone view in 0031 (rest of 0031 stands). BACKLOG's note that first-person pad views need a free camera now applies to the
 later phase only.
+
+## Owner's note (2026-11-21): Peekaboo is a proof of concept
+Peekaboo Garden's job in Phase 1 is to prove two things: tablets and phones work as pads, and 3D games work on Orlis (the look, and the
+speed on the TV with tracking and on the minimum phone). It must play start to finish without bugs; gameplay depth, polish beyond the look,
+and extras are not required, and they are the first things cut if the plan slips. Pop Party remains the one perfected game (0033).
+

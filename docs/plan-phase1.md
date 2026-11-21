@@ -9,7 +9,7 @@ something unpolished to family.
 1. **Pop Party is perfected:** played by the owner's under-3s without help; tuned from family playtests; no known bugs; a clean first
    minute; the house look (polish pass done); the standard HUD; a smoothness line measured on the owner's laptop; pad players can join
    as extra hands.
-2. **Peekaboo Garden ships as a 3D trial** (0031, 0033): one hider on a phone (a guided camera behind the bunny, 0039), one or two camera seekers on the TV.
+2. **Peekaboo Garden ships as a proof of concept** (0031, 0033, 0039): it proves two things, that **tablets and phones work as pads** and that **3D games work on Orlis**. one hider on a phone (a guided camera behind the bunny, 0039), one or two camera seekers on the TV.
    The bar: it looks like the same world as Pop Party (the look check signed off); it runs well (60 fps on the TV with tracking on, and
    60 fps on the minimum phone, 0030); it plays start to finish without bugs. Gameplay may still be a work in progress.
 3. **Pads work** (0027, 0028, 0032): any phone at the minimum (iPhone 15 or equivalent) opens Orlis and joins by tapping the three pictures on the TV, rejoins by itself to the same seat, and the game pauses
@@ -60,7 +60,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | K3 | `world.js` and the host rules (found, hiding, clock, swap) with tests | Sonnet | K2 | rules tests pass |
 | K4 | TV view (overview, lanterns, rustles, the reveal hook) | Sonnet, Opus review | K1, K3 | 60 fps with tracking on the owner's laptop |
 | K5 | Phone view (guided camera behind and beside the hider, 0039; joystick, hide button, interpolation; painted pieces flip like cards) | Sonnet, Opus review | K3, P3 | 60 fps on the Android test tablet (minimum class) |
-| K6 | Paper puppets: avatar split into parts, a small rig, the found reveal | Opus | K4 | the reveal approved by the owner |
+| K6 | Paper puppets: avatar split into parts, a small rig, the found reveal (kept simple: Peekaboo is a proof of concept) | Opus | K4 | the reveal approved by the owner |
 | K7 | Look pass for both games in the 0038 look (Peekaboo in the 3D sibling: painted sky dome, purple-grey shade, mist band, painted cutouts, thin ink edge; look check) | Opus with owner | K4, K5 | owner signs off the look check |
 | K8 | Phone check page (model class, 3D support, frame rate) | Sonnet | P3 | the testers' phones pass |
 | C1 | The bigger kit for Create: what to add (Opus), painting it (Sonnet) | Opus then Sonnet | — | the agreed list is in the kit and the asset viewer |
@@ -89,6 +89,6 @@ Peekaboo is fun; hardening last.
 - **The owner's time** (under 5 hours a week) is the real bottleneck for playtests and look sign-offs. Claude batches everything into
   the weekly check-in; nothing waits on the owner without being in that list.
 - **Create in the gate** adds weeks of work in M4. If the plan slips, cut in this order: more kit packs, Create polish beyond the
-  approval step, more hiding-place kinds; never Pop Party's perfection, Peekaboo's look and smoothness, or the pad basics. The date moves before the
+  approval step, more hiding-place kinds; never Pop Party's perfection, Peekaboo's look and smoothness, or the pad basics. Peekaboo's gameplay depth and extras are cut before anything in Pop Party. The date moves before the
   quality does.
 - **Kid profiles** must be on the Box before the testers' children play.
