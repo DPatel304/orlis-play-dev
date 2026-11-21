@@ -17,6 +17,7 @@ use tauri::{AppHandle, LogicalSize, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_updater::{Update, UpdaterExt};
 
 mod creating;
+mod pad;
 mod setup;
 
 /// Song files the game can play.
@@ -45,9 +46,12 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Pending::default())
-        .invoke_handler(tauri::generate_handler![set_display_mode, check_update, install_update, find_servers, creating::games_list, creating::game_make, creating::game_write, creating::game_read, creating::game_show, creating::claude_open, creating::game_version, setup::setup_status, setup::install_tailscale, setup::tailscale_login, setup::install_claude, setup::claude_signin, setup::open_link])
+        .manage(pad::PadHub::default())
+        .invoke_handler(tauri::generate_handler![set_display_mode, check_update, install_update, find_servers, creating::games_list, creating::game_make, creating::game_write, creating::game_read, creating::game_show, creating::claude_open, creating::game_version, setup::setup_status, setup::install_tailscale, setup::tailscale_login, setup::install_claude, setup::claude_signin, setup::open_link, pad::pad_hub_info])
         .setup(|app| {
             let app = app.handle().clone();
+            // The pad hub (phones as controllers) starts first, so the game's window can be told where it is.
+            pad::start(&app);
             tauri::async_runtime::spawn(async move {
                 let mut check = std::pin::pin!(tauri::async_runtime::spawn(find_update(app.clone())));
                 // A quick answer: update now, before the game opens.
@@ -152,7 +156,7 @@ async fn run_update(app: &AppHandle, found: Update) -> Result<(), String> {
 fn open(app: &AppHandle) -> tauri::Result<()> {
     let mode = display_mode(app);
     let script = format!(
-        "window.ORLIS_MUSIC = {};\nwindow.ORLIS_LOCAL = true;\nwindow.ORLIS_DISPLAY = {};\nwindow.ORLIS_VERSION = {};\nwindow.ORLIS_PRODUCT = {};\nwindow.ORLIS_MODE = {};\n{}\n{}",
+        "window.ORLIS_MUSIC = {};\nwindow.ORLIS_LOCAL = true;\nwindow.ORLIS_DISPLAY = {};\nwindow.ORLIS_VERSION = {};\nwindow.ORLIS_PRODUCT = {};\nwindow.ORLIS_MODE = {};\n{}\n{}\n{}",
         serde_json::to_string(&songs(app)).unwrap_or_else(|_| "[]".into()),
         serde_json::to_string(&mode).unwrap_or_else(|_| "\"window\"".into()),
         serde_json::to_string(&app.package_info().version.to_string()).unwrap_or_else(|_| "\"\"".into()),
@@ -161,7 +165,8 @@ fn open(app: &AppHandle) -> tauri::Result<()> {
         // Unset (the Beta), it can be switched in Settings, for testing. See src/ui/mode.js.
         serde_json::to_string(option_env!("ORLIS_MODE").unwrap_or("")).unwrap_or_else(|_| "\"\"".into()),
         DISPLAY_SCRIPT,
-        UPDATE_SCRIPT
+        UPDATE_SCRIPT,
+        pad::init_script(app)
     );
     let title = app.config().product_name.clone().unwrap_or_else(|| "Orlis Play".into());
     let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))

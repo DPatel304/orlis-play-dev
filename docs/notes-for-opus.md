@@ -2,6 +2,17 @@
 
 Newest first. Date, package, what, and a suggestion.
 
+## 2026-11-21, P2 (pad hub in Orlis Play, Rust)
+- **Windows firewall text (no first-run setup text exists in the app yet: `app/src/ui/setup.js` is about Tailscale and Claude Code, and I may not touch the UI).**
+  The first time the hub listens, Windows asks "Allow Orlis Play to communicate on private networks?". Suggested line, for wherever phones are first explained
+  (the QR / "Use phones as controllers" screen or Settings): "The first time, Windows asks if Orlis Play may use your home network. Choose Private
+  networks and press Allow: that is how phones reach the game. If you said no by mistake: Windows Security > Firewall > Allow an app, tick Orlis Play."
+- **Layout choices:** the hub is its own crate, `app/client/src-tauri/pad-hub/` (a workspace member), so its tests need no WebView libraries
+  (`cargo test --workspace` in `src-tauri/`). The app glue is `src/pad.rs`. The window gets `window.__ORLIS_PAD_HUB__ = {port,key}` from the window's
+  init script, so `hubConfig()` works with no change to `main.js`; `pad_hub_info` (Tauri command) returns the same for anything later.
+- **Where a game's pad program is looked for:** `Documents\Orlis Play\Games\<game>\pad\...` first, then the app's `pads\<game>\...` resource folder
+  (not bundled yet: built-in games have none). Say if the installed-game layout should be different (for example a path from `orlis.json`).
+
 ## 2026-11-21, P3 (pad page)
 - **Protocol additions (done, in `docs/specs/pad-protocol.md` and `tools/pad-fake-host.mjs`):** pad to host `ready` (the phone tapped "I'm ready") and `who?`
   ("Not Sam? Change": the host answers with `who?`, the phone sends `pick`, the host keeps the token and seat). `who?` people may include

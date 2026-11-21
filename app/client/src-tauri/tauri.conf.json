@@ -23,6 +23,7 @@
     "createUpdaterArtifacts": true,
     "publisher": "Orlis Play",
     "copyright": "Orlis Play",
+    "resources": { "../../dist-pad/": "dist-pad/" },
     "category": "Game",
     "shortDescription": "Movement games for the whole family",
     "longDescription": "Orlis Play: movement games for the whole family. Get up. Get together. No controller needed - just you and a camera.",
