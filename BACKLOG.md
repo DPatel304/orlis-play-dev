@@ -766,3 +766,8 @@ Limits: AI cannot judge motion fun or toddler fit without a playtest; variety is
 - Needs a new Create feature: copy a store game and change the parts its maker opened up. Making a new FPS from scratch stays out of Create.
 - Needs true 3D (a free camera), which is a later phase.
 
+## Phase 2: the other kit worlds onto the master palette (owner, 2026-11-21)
+Phase 1 has one world, the meadow (Pop Party and Peekaboo Garden). The other kit worlds (Evening sky, Autumn afternoon, Starry night,
+Snowy hills, Sunny beach) and the style board's ideas (Space race, Under the sea, Spooky-cute, Sports day, Puzzle room) are brought onto the
+master palette in Phase 2, each as a sky and about five colours from it, adding only the few colours a world truly needs.
+

@@ -76,6 +76,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | U5 | Home, pause and results onto the kit; the celebration results card | Opus mockup, Sonnet build | U1 | owner approves on the TV |
 | U6 | Review the Windows-only screens (Discover, Create, Settings, sign-in) | Opus | owner screenshots or the Windows build | findings added to `docs/ui-review.md` |
 | U7 | Hand mode for the home screen, in the release gate (0022): point and wave with the camera (design in `docs/ui-review.md`, "Hand mode"); by M4 | Opus design and mockup, Sonnet build | U1, owner approves the mockup | a child can pick and start Pop Party from the couch with no remote, three times out of three |
+| U8 | Your favourite colour is your player colour: pills, hands, lanterns and score pops use the child's avatar favourite; a clash or a guest gets the nearest free colour (palette draft, `docs/palette.html`) | Sonnet | palette approved | two kids with different favourites play Pop Party and every marker matches their avatar; a clash test passes |
 
 **Order:** P1, K1, K2, U1 and U2 start now (in parallel; U1 before the P3 and P5 mockups); then P3/P4 (pads), then S1 to S3 and K3 to K5; the look (K6, K7) and Create (C1, C2) after
 Peekaboo is fun; hardening last.
