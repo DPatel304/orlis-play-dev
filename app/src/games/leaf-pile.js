@@ -12,6 +12,7 @@
 
    Nothing to lose: no clock pressure, no wrong moves. Each player's count
    is the leaves they swept in. First person: the players are their hands. */
+import { color, alpha } from './assets/palette.js';
 import { Juice } from './common.js';
 import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
@@ -40,23 +41,23 @@ export const JUMP_WAIT = 6;
 export const PILE = { x: 0.5, y: 0.86 }, PULL = 0.28;
 /* where leaves lie: knee to shin height, where bending hands reach */
 const GROUND_TOP = 0.7, GROUND_BOTTOM = 0.9, START_LEAVES = 46, MAX_LEAVES = 180;
-const COLS = ['#e0893b', '#d4643a', '#e8b44a', '#c9503a', '#d99a3b'];
+const COLS = [color('autumn.amber'), color('fav.orange', 'shade'), color('fav.yellow', 'shade'), color('autumn.rust'), color('ui.gold', 'shade')];
 
 /* (the words when the pile is big enough: the move card shows a jump while they're up) */
 const JUMP_IN = '\u{1F342} Jump in!';
 
 export default {
-  id: 'leaf-pile', unit: 'leaves', name: 'Leaf Pile', stars: 1, accent: '#d9853b', secs: ROUND,
+  id: 'leaf-pile', unit: 'leaves', name: 'Leaf Pile', stars: 1, accent: color('autumn.amber'), secs: ROUND,
   moves: ['sweep', 'jump'],
   create(n){ return new LeafPile(n); }
 };
 
 export const AUTUMN = {
   ground: {
-    hills: ['#c8c07c', '#b9b06a', '#a8a05c'].map(rgbOf),
-    leaf: rgbOf('#d9853b'), leafLit: rgbOf('#ecb35a'), leafShade: rgbOf('#a9522f'), trunk: rgbOf('#6e5644'),
-    grass: [rgbOf('#8d8a46'), rgbOf('#c9c27e')],
-    farPeak: rgbOf('#b9a690'), nearPeak: rgbOf('#a38a6c')
+    hills: ['autumn.straw', 'autumn.hay', 'autumn.hay'].map(n => rgbOf(color(n))),
+    leaf: rgbOf(color('autumn.amber')), leafLit: rgbOf(color('ui.gold', 'shade')), leafShade: rgbOf(color('autumn.amber', 'shade')), trunk: rgbOf(color('earth.bark')),
+    grass: [rgbOf(color('autumn.hay')), rgbOf(color('autumn.straw'))],
+    farPeak: rgbOf(color('earth.sand', 'shade')), nearPeak: rgbOf(color('earth.sand', 'shade'))
   },
   petals: COLS
 };
@@ -248,7 +249,7 @@ class LeafPile {
   _pile(c, W, H){
     const k = this._k(), r = (0.035 + k * 0.28) * H, cx = PILE.x * W, cy = PILE.y * H;
     const bounce = this.ready ? Math.abs(Math.sin(this.t * 6)) * H * 0.008 : 0;
-    c.fillStyle = 'rgba(58,51,96,.16)'; c.beginPath(); c.ellipse(cx + r * 0.25, cy + r * 0.12, r * 1.6, r * 0.32, 0, 0, 6.2832); c.fill();
+    c.fillStyle = alpha('shade.shadow', 0.16); c.beginPath(); c.ellipse(cx + r * 0.25, cy + r * 0.12, r * 1.6, r * 0.32, 0, 0, 6.2832); c.fill();
     const n = 14 + Math.round(k * 230);
     let sd = 7; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < n; i++){
@@ -291,8 +292,8 @@ export function leaf(c, x, y, s, rot, col){
   c.save(); c.translate(x, y); c.rotate(rot);
   c.fillStyle = col;
   c.beginPath(); c.moveTo(-20 * s, 0); c.quadraticCurveTo(0, -14 * s, 22 * s, 0); c.quadraticCurveTo(0, 14 * s, -20 * s, 0); c.fill();
-  c.fillStyle = 'rgba(58,51,96,.18)';
+  c.fillStyle = alpha('shade.shadow', 0.18);
   c.beginPath(); c.moveTo(-20 * s, 0); c.quadraticCurveTo(0, 14 * s, 22 * s, 0); c.closePath(); c.fill();
-  c.strokeStyle = 'rgba(90,58,32,.45)'; c.lineWidth = 2 * s; c.beginPath(); c.moveTo(-24 * s, 0); c.lineTo(20 * s, 0); c.stroke();
+  c.strokeStyle = alpha('earth.bark', 0.6, 'shade'); c.lineWidth = 2 * s; c.beginPath(); c.moveTo(-24 * s, 0); c.lineTo(20 * s, 0); c.stroke();
   c.restore();
 }
