@@ -10,7 +10,7 @@
     "offline": "node fetch-assets.mjs",
     "test": "node --import ./test/harness/register.mjs --test 'test/**/*.test.mjs'",
     "client:web": "node client/build-web.mjs",
-    "client": "node client/build-web.mjs && tauri build"
+    "client": "node client/build-web.mjs && npm run build:pad && tauri build"
   },
   "keywords": [],
   "author": "",

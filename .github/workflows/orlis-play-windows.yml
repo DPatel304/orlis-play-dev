@@ -29,6 +29,8 @@ on:
       - 'app/src/**'
       - 'app/client/**'
       - 'app/index.html'
+      - 'app/pad/**'
+      - 'app/vite.pad.config.js'
       - 'app/package.json'
       - 'app/package-lock.json'
       - 'app/fetch-assets.mjs'
@@ -79,6 +81,10 @@ jobs:
 
       - name: Build the game files the app carries
         run: npm run client:web
+
+      # The phones' controller page: the app carries it (tauri.conf.json, resources) and serves it to phones.
+      - name: Build the pad page the app carries
+        run: npm run build:pad
 
       - name: The channel's name, version and update address
         shell: bash
