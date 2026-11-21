@@ -41,9 +41,21 @@ pub fn start(app: &AppHandle) {
 
 fn info(app: &AppHandle) -> Value {
     match &*app.state::<PadHub>().0.lock().unwrap() {
-        Some(h) => json!({ "port": h.port, "key": h.key }),
+        Some(h) => match lan_address() {
+            Some(lan) => json!({ "port": h.port, "key": h.key, "lan": lan }),
+            None => json!({ "port": h.port, "key": h.key }),
+        },
         None => Value::Null,
     }
+}
+
+/// This PC's address on the home network, for the QR code phones scan. Asking the system which interface would reach a
+/// public address sends no packets; it just picks the Wi-Fi or Ethernet address.
+fn lan_address() -> Option<String> {
+    let s = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    s.connect("192.0.2.1:9").ok()?;
+    let ip = s.local_addr().ok()?.ip();
+    if ip.is_loopback() || ip.is_unspecified() { None } else { Some(ip.to_string()) }
 }
 
 /// The script that tells the game's window where the hub is.
