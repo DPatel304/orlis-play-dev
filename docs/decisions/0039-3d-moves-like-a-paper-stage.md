@@ -37,3 +37,8 @@ Peekaboo Garden's job in Phase 1 is to prove two things: tablets and phones work
 speed on the TV with tracking and on the minimum phone). It must play start to finish without bugs; gameplay depth, polish beyond the look,
 and extras are not required, and they are the first things cut if the plan slips. Pop Party remains the one perfected game (0033).
 
+
+## Owner's addition (2026-11-21): the names
+The game types are called **2D** (the painted look, 0038), **3D-Limited** (this decision: a 3D stage with painted pieces, a guided camera
+and flipping characters) and, in a later phase, **3D** (true 3D: free camera, first person). The kit, the docs and Create use these names.
+In player-facing places, prefer describing the game over the label.
