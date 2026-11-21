@@ -10,6 +10,8 @@ export const PALETTE = {
   fav: { sky: '#3da9ff', orange: '#ff8a3d', green: '#22c55e', purple: '#a855f7', pink: '#ff5d8f', yellow: '#facc15', teal: '#14b8a6', red: '#ef4444' },
   /* the painted sky and light */
   sky: { high: '#8fc0e2', mid: '#9fc8e6', low: '#cfe0e6', horizon: '#e9eee6', mist: '#e4ebe6', sun: '#fff4cf', sunGlow: '#ffe2a0' },
+  /* the evening sky: the three colours Pop Party's sunset needs beyond the sky and earth groups (high blue, deep blue-violet, rose) */
+  dusk: { high: '#8aa8d6', deep: '#6a6fae', rose: '#e3a3a8' },
   /* one green ladder, darkest (near, shaded) to lightest (far, hazy) */
   meadow: { deep: '#5f8a4c', leaf: '#6f9a5e', fresh: '#58b068', grass: '#80ae6a', lawn: '#93bb7c', soft: '#a9c98f', far: '#c9dbb0', haze: '#e3f0cf' },
   /* warm earth and calm accents */

@@ -1,4 +1,4 @@
-import { PALETTE } from './assets/palette.js';
+import { PALETTE, color, alpha } from './assets/palette.js';
 import { Juice, clamp } from './common.js';
 import { sayBubble } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
@@ -20,7 +20,7 @@ export const OPENING = 12;
    the one a two-year-old can play without being told anything - so nothing
    in it punishes: no lives, nothing to avoid, only things to chase. */
 export default {
-  id:'pop-party', unit: 'points', name:'Pop Party', stars:1, accent:'#ff5d9e', secs:ROUND,
+  id:'pop-party', unit: 'points', name:'Pop Party', stars:1, accent:color('fav.pink'), secs:ROUND,
   /* The moves it uses, shown as pictures on the home screen. */
   moves: ['reach'],
   create(n){ return new PopParty(n); }
@@ -489,13 +489,13 @@ class PopParty {
        - so the bunch isn't floating on its own. */
     for (const g of this.out.groups){
       const h = H * 0.46, x = g.ax * W, base = H * 0.99;
-      c.save(); c.globalAlpha = 1; c.fillStyle = '#000';
+      c.save(); c.globalAlpha = 1; c.fillStyle = color('shade.ink');
       try { body(c, x, base, h, crew.lookOf(g.who), this.out.t + g.who, 'stand'); } catch (e){ /* never break the ending over a drawing */ }
       c.restore();
     }
     for (const g of this.out.groups){
       const ax = g.ax * W, ay = (g.ay - g.lift) * H;
-      c.strokeStyle = 'rgba(70,60,110,.5)'; c.lineWidth = Math.max(1, H * 0.0016);
+      c.strokeStyle = alpha('shade.shadow', 0.5); c.lineWidth = Math.max(1, H * 0.0016);
       c.beginPath();
       for (const b of g.items){
         if (b.y > 1.05) continue;
@@ -609,7 +609,7 @@ class PopParty {
        always the top layer, so it never slips under a flower. */
     this.scene.drawFront(c, W, H);
     c.lineCap = 'round'; c.lineJoin = 'round';
-    c.strokeStyle = 'rgba(70,60,110,.55)';
+    c.strokeStyle = alpha('shade.shadow', 0.55);
     c.lineWidth = Math.max(1.5, H * 0.0022);
     for (const b of this.balloons) this._shadow(c, b, W, H);
     for (const b of this.balloons) rope(c, b.str);
@@ -631,7 +631,7 @@ class PopParty {
      (one soft blob, painted once and stamped) */
   _shadow(c, b, W, H){
     if (blob === null){
-      try { const cv = document.createElement('canvas'); cv.width = cv.height = 96; const x = cv.getContext('2d'), g = x.createRadialGradient(48, 48, 0, 48, 48, 48); g.addColorStop(0, 'rgba(40,60,50,1)'); g.addColorStop(1, 'rgba(40,60,50,0)'); x.fillStyle = g; x.fillRect(0, 0, 96, 96); blob = cv; }
+      try { const cv = document.createElement('canvas'); cv.width = cv.height = 96; const x = cv.getContext('2d'), g = x.createRadialGradient(48, 48, 0, 48, 48, 48); g.addColorStop(0, alpha('shade.shadow', 1)); g.addColorStop(1, alpha('shade.shadow', 0)); x.fillStyle = g; x.fillRect(0, 0, 96, 96); blob = cv; }
       catch (e){ blob = false; }
     }
     if (!blob) return;
@@ -660,20 +660,20 @@ class PopParty {
     /* Cel-shaded, like everything else: one flat shadow tone on the right,
        the sun being up on the left. */
     c.save(); balloonPath(c, r); c.clip();
-    c.fillStyle = 'rgba(52,40,96,.2)';
+    c.fillStyle = alpha('shade.shadow', 0.2);
     c.beginPath(); c.ellipse(r * 0.62, r * 0.35, r * 0.85, r * 1.25, 0, 0, 6.2832); c.fill();
-    const rim = c.createLinearGradient(-r, 0, -r * 0.72, 0); rim.addColorStop(0, 'rgba(255,246,222,.6)'); rim.addColorStop(1, 'rgba(255,246,222,0)');   /* a warm light along the sunny edge */
+    const rim = c.createLinearGradient(-r, 0, -r * 0.72, 0); rim.addColorStop(0, alpha('sky.sun', 0.6)); rim.addColorStop(1, alpha('sky.sun', 0));   /* a warm light along the sunny edge */
     c.fillStyle = rim; c.fillRect(-r * 1.1, -r * 1.3, r * 0.5, r * 2.6);
     c.restore();
 
-    c.fillStyle = 'rgba(255,255,255,.8)';
+    c.fillStyle = alpha('earth.snow', 0.8);
     c.beginPath(); c.ellipse(-r * 0.38, -r * 0.42, r * 0.13, r * 0.26, 0.5, 0, 6.2832); c.fill();
     c.beginPath(); c.arc(-r * 0.2, -r * 0.7, r * 0.05, 0, 6.2832); c.fill();
     c.restore();
 
     if (b.r < SIZES[1].r[0] && !b.bouquet){
       const pulse = 0.5 + 0.5 * Math.sin(this.t * 6 + b.ph);
-      c.strokeStyle = `rgba(255,255,255,${0.45 + pulse * 0.4})`;
+      c.strokeStyle = alpha('earth.snow', 0.45 + pulse * 0.4);
       c.lineWidth = Math.max(2, H * 0.003);
       c.beginPath(); c.arc(x, y, r * (2.2 + pulse * 0.6), 0, 6.2832); c.stroke();
     }
@@ -684,9 +684,9 @@ class PopParty {
       const k = f.age / f.life;
       if (f.k === 'ring'){
         c.globalAlpha = 1 - k;
-        c.strokeStyle = '#fff'; c.lineWidth = Math.max(2, f.r * 0.18 * (1 - k));
+        c.strokeStyle = color('earth.snow'); c.lineWidth = Math.max(2, f.r * 0.18 * (1 - k));
         c.beginPath(); c.arc(f.x, f.y, f.r * (0.9 + k * 1.1), 0, 6.2832); c.stroke();
-        if (k < 0.25){ c.fillStyle = '#fff'; c.globalAlpha = (0.25 - k) * 2.4;
+        if (k < 0.25){ c.fillStyle = color('earth.snow'); c.globalAlpha = (0.25 - k) * 2.4;
           c.beginPath(); c.arc(f.x, f.y, f.r * 0.8, 0, 6.2832); c.fill(); }
       } else if (f.k === 'shard'){
         c.globalAlpha = Math.min(1, (1 - k) * 2);
@@ -702,11 +702,11 @@ class PopParty {
         c.restore();
       } else if (f.k === 'spark'){
         c.globalAlpha = 1 - k;
-        c.fillStyle = '#fffbe0';
+        c.fillStyle = color('sky.sun');
         star(c, f.x, f.y - k * f.s * 3, f.s * (1 - k * 0.5));
       } else if (f.k === 'string'){
         c.globalAlpha = 1 - k;
-        c.strokeStyle = 'rgba(70,60,110,.55)'; c.lineWidth = Math.max(1.5, H * 0.0022);
+        c.strokeStyle = alpha('shade.shadow', 0.55); c.lineWidth = Math.max(1.5, H * 0.0022);
         rope(c, f.pts);
       } else if (f.k === 'ripple' && f.age > 0){
         c.globalAlpha = 0.6 * (1 - k);
