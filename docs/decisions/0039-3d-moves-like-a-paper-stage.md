@@ -42,3 +42,8 @@ and extras are not required, and they are the first things cut if the plan slips
 The game types are called **2D** (the painted look, 0038), **3D-Limited** (this decision: a 3D stage with painted pieces, a guided camera
 and flipping characters) and, in a later phase, **3D** (true 3D: free camera, first person). The kit, the docs and Create use these names.
 In player-facing places, prefer describing the game over the label.
+
+## Owner's change (2026-11-21): 2.5D, not "3D-Limited"
+The middle type is called **2.5D** (the owner's choice, replacing "3D-Limited" above). The names are **2D**, **2.5D** and, later, **3D**.
+The kit docs define 2.5D as: a real 3D stage you can move around in, including toward and away from the camera, with painted characters
+and props, a guided camera, and real 3D only where the player walks or goes around.
