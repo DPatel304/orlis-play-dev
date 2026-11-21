@@ -30,6 +30,7 @@ import { PLAYER_COLORS, MAX_PLAYERS } from './tracking/pose.js';
 import { crew } from './ui/crew.js';
 import { lineUp, whoRow, namePop } from './ui/lineup.js';
 import { MAKING } from './ui/avatar-maker.js';
+import { countText } from './ui/units.js';
 
 const stage = document.getElementById('stage');
 const c = stage.getContext('2d');
@@ -294,7 +295,7 @@ function showResults(){
   /* one friendly line: what everyone got together */
   const total = (() => { try { return inst.tally().reduce((a, r) => a + (Number(r.value) || 0), 0); } catch { return 0; } })();
   const own = inst.summary ? inst.summary(n) : null;      /* (a game can say it its own way) */
-  let summary = own ? { line: own, best: isBest } : total > 0 ? { line: `${n > 1 ? 'Together you got' : 'You got'} ${total} ${game.unit || 'points'}`, best: isBest } : null;
+  let summary = own ? { line: own, best: isBest } : total > 0 ? { line: `${n > 1 ? 'Together you got' : 'You got'} ${countText(total, game.unit)}`, best: isBest } : null;
   lastReport = makeReport();
   /* the owner also sees how smoothly it ran, to compare games and machines without any tools */
   if (account.role === 'owner' && !game.passive){

@@ -247,7 +247,7 @@ class Story {
   }
   /* the plate: a soft low plate with the words, the one being said lit */
   plate(c, W, H, refrain){
-    const b = this.beat; if (!b || !b.t) return;
+    const b = this.beat; if (!b || !b.t || this.stillMode) return;      /* (not in a cover's still: the title is painted on it) */
     const size = Math.round(H * (refrain ? 0.054 : 0.044)), lh = size * 1.3, maxW = W * 0.58;
     c.save(); c.font = `600 ${size}px ${FONT}`; c.textBaseline = 'middle';
     const words = b.t.split(/\s+/), sp = c.measureText(' ').width, lines = []; let cur = [], w = 0;

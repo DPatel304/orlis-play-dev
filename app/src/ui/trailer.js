@@ -165,6 +165,7 @@ export function still(game, w = 1152, h = 720){
       const fake = { players: fakePlayers(), mouse: { active: true, x: 0.5, y: 0.5 } };
       fake.players[0].present = fake.players[1].present = true;
       const inst = sandbox(fake, () => game.create(2));
+      inst.stillMode = true;      /* (a game can leave its captions out of a still: the cover has its own title) */
       /* (long enough for something to happen: a sky half painted, a pile begun) */
       for (let k = 0; k < 360; k++){
         const t = k / 30;

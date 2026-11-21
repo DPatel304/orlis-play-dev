@@ -3,12 +3,23 @@
 Visual version with screenshots: `docs/ui-review.html` (also a private page). Reviewed in the browser build at 1600 x 900; Discover,
 Create, Settings and sign-in as they look in the Windows app are not reviewed yet.
 
-## Fix now (plan package U2, Sonnet)
+## Fix now (plan package U2, Sonnet) - done 2026-11-21
 1. **Hero blurb unreadable:** white text on the light fade under the home banner. Put it on the dark part or darken the fade; 4.5:1 contrast.
 2. **Ghost label:** a plain caption shows faintly behind a tile's painted title. Hide it visually once the painted title draws.
 3. **"You got 1 points":** Pop Party has no `unit`; plurals are wrong. Every game gets a unit; one/many forms ("1 balloon", "12 balloons").
 4. **First-load flash:** tiles fly in as placeholder gradients and a blurred hero, then swap to the covers. Hold the row until covers decode, or
    show paper cards with the twirling Cubo head.
+
+U2 notes (Sonnet, 2026-11-21):
+1. Hero blurb: the "cinema" (first view) banner put the words on the light fade. The text now sits higher (37vh), the light fade is shorter
+   and lower, the dark side scrim is stronger, and the blurb has a soft text shadow. Measured: the brightest pixel behind the blurb gives
+   at least 4.5:1 with white for every game, in both the big and the shrunk banner.
+2. Ghost label: not the caption. A story's cover still included the story's own caption plate (small words behind the painted title). A still
+   now sets `stillMode` and the plate leaves itself out (`ui/trailer.js`, `games/story-player.js`; test in `trailer.test.mjs`).
+3. "You got 1 points": `ui/units.js` (`countText`): "1 balloon", "12 balloons"; irregular words listed. Pop Party already had a unit
+   ("points", since it also scores bonuses), so it now reads "1 point". Every game's unit is tested at 1 and 2.
+4. First-load flash: a tile with no cover yet is a calm paper card (no gradient, no icon) and the cover fades in over it. The banner
+   already holds its picture until painted. Not done: the twirling Cubo head as a loader (needs the UI kit's loader; left for U5).
 
 ## One look (U1, Opus designs, owner approves)
 5. **Two visual languages:** painted, warm games vs cool grey menus with system type and glassy pills. Make one **Orlis UI kit**: warm paper

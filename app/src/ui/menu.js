@@ -219,7 +219,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   }
   /* a tile's picture: a still of the game itself, once there is one (else
      its colours and icon) */
-  const picture = (pic, g) => { const url = shotOf(g); if (url){ pic.style.backgroundImage = `url(${url})`; pic.classList.add('shot'); pic.closest('.slock')?.classList.add('covered'); } };
+  const picture = (pic, g) => { const url = shotOf(g); if (url){ const tile = pic.closest('.slock'); pic.style.backgroundImage = `url(${url})`; pic.classList.add('shot'); if (tile?.classList.contains('waiting')) pic.classList.add('fadein'); tile?.classList.remove('waiting'); tile?.classList.add('covered'); if (pic.classList.contains('fadein')) pic.addEventListener('animationend', () => pic.classList.remove('fadein'), { once: true }); } };
   /* a game's card: its art, and its name under it, big enough to read
      from the sofa (no icon - the art says it - and no small print) */
   const gameCard = (it) => {
@@ -233,6 +233,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     card.insertBefore(pic, card.firstChild);
     card.querySelector('.lbl').replaceWith(meta);
     if (pic.classList.contains('shot')) card.classList.add('covered');
+    /* (no cover yet, but one is coming: a paper card until it fades in, so the tiles never flash a placeholder and swap) */
+    else if (!it.g.discover) card.classList.add('waiting');
     return { card, pic };
   };
   const cards = items.map((it, n) => {

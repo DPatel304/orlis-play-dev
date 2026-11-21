@@ -851,12 +851,12 @@ body.titled #ui > .screen{ top:34px; }
 .sheropic{ display:block; opacity:0; transition:opacity var(--t-slow) ease; }
 .shshade{ position:absolute; inset:0; background:
   linear-gradient(0deg, #f3f4f7 0, #f3f4f7 4%, rgba(243,244,247,.9) 13%, rgba(243,244,247,0) 36%),
-  linear-gradient(90deg, rgba(10,10,24,.74) 0, rgba(10,10,24,.38) 42%, rgba(10,10,24,0) 70%),
+  linear-gradient(90deg, rgba(10,10,24,.78) 0, rgba(10,10,24,.66) 40%, rgba(10,10,24,.36) 60%, rgba(10,10,24,0) 80%),
   linear-gradient(180deg, rgba(10,10,24,.35) 0, rgba(10,10,24,0) 18%); }
 .shtext{ position:absolute; left:4vw; bottom:19vh; max-width:48vw; color:#fff; }
 .skicker{ font-size:1.9vh; font-weight:700; letter-spacing:.16em; text-transform:uppercase; opacity:.85; }
 .shtext h1, .spleft h1{ color:#fff; font-size:8.4vh; margin:1vh 0 .6vh; line-height:1; letter-spacing:-.02em; text-shadow:0 .3vh 1.5vh rgba(0,0,0,.25); }
-.shtext p{ font-size:2.8vh; margin:0 0 2vh; opacity:.95; line-height:1.3; }
+.shtext p{ font-size:2.8vh; margin:0 0 2vh; opacity:1; line-height:1.3; text-shadow:0 .2vh 1.2vh rgba(0,0,0,.5); }   /* white on the dark side of the banner, 4.5:1 or better (U2) */
 .schips{ display:flex; gap:.9vh; flex-wrap:wrap; margin-bottom:2.6vh; }
 .schip{ padding:.6vh 1.5vh; border-radius:999px; background:rgba(255,255,255,.2); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); font-size:1.9vh; font-weight:600; }
 .sbtns{ display:flex; flex-wrap:wrap; gap:1.4vh; align-items:center; }
@@ -1382,6 +1382,13 @@ body.remote .btn.slock.kfocus .sthumb{ transform:translateY(-.8vh) scale(1.05); 
 /* a tile with a still of the game itself: the picture, and no icon over it */
 .sthumb.shot{ background-size:cover; background-position:center; }
 .sthumb.shot .g{ display:none; }
+/* waiting for its cover: a paper card with the name, no gradient and no icon, then the cover fades in over it (no placeholder flash) */
+.btn.slock.waiting .sthumb{ background:#e9e6dc; box-shadow:0 1vh 2.6vh rgba(20,24,50,.10); }
+.btn.slock.waiting .sthumb .g{ display:none; }
+.btn.slock.waiting .stxt .nm{ color:#6b6680; }
+.sthumb.shot.fadein{ animation:coverin var(--t-base) ease both; }
+@keyframes coverin{ from{ opacity:0; } to{ opacity:1; } }
+@media (prefers-reduced-motion: reduce){ .sthumb.shot.fadein{ animation:none; } }
 /* a cover has the game's name on it: no second one under it */
 .btn.slock.covered .smeta{ position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
 /* Play's banner: the name and a line about it (no kicker, no button) */
@@ -1621,9 +1628,14 @@ textarea.btype.bwords{ width:62vw; height:26vh; border-radius:3vh; padding:2.4vh
 .homepage .shtext h1{ transition:font-size var(--t-slow) var(--ease); }
 .homepage.cinema .shero{ height:72vh; }
 .homepage.cinema .shelves{ top:72vh; }
-.homepage.cinema .shtext{ top:49vh; }
+.homepage.cinema .shtext{ top:37vh; }
 .homepage.cinema .shtext h1{ font-size:9.6vh; }
 .homepage.cinema .shtext p{ font-size:3vh; }
+/* (the light fade into the paper stays under the words: they are white, so they sit on the dark part of the picture - U2) */
+.homepage.cinema .shshade{ background:
+  linear-gradient(0deg, #f3f4f7 0, #f3f4f7 4%, rgba(243,244,247,.9) 9%, rgba(243,244,247,0) 15%),
+  linear-gradient(90deg, rgba(10,10,24,.78) 0, rgba(10,10,24,.66) 40%, rgba(10,10,24,.36) 60%, rgba(10,10,24,0) 80%),
+  linear-gradient(180deg, rgba(10,10,24,.35) 0, rgba(10,10,24,0) 18%); }
 
 
 /* Make a game as a build: one question at a time on the left, the game going up on the right */

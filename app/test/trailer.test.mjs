@@ -24,3 +24,17 @@ for (const id of ['pop-party', 'last-known-position']){
 test('a game without a trailer shows its poster instead', () => {
   assert.equal(trailer({ id: 'nothing-yet' }), null);
 });
+
+test("a story's cover still leaves its caption plate out (the title is painted on the cover)", () => {
+  const g = byId('cubions-long-way-home');
+  const calls = [];
+  const rec = new Proxy({}, { get: (_, k) => k === 'measureText' ? () => ({ width: 10 }) : k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop(){} }) : (...a) => { calls.push(k); }, set: () => true });
+  const inst = g.create(1);
+  Object.defineProperty(inst, 'beat', { get: () => ({ t: 'Sit back and listen' }) });   /* (the story's current line) */
+  inst.plate(rec, 1440, 810);
+  assert.ok(calls.includes('roundRect'), 'the plate is drawn in play');
+  calls.length = 0;
+  inst.stillMode = true;
+  inst.plate(rec, 1440, 810);
+  assert.equal(calls.length, 0, 'and left out of a still');
+});
