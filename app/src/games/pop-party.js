@@ -70,6 +70,11 @@ export const MOTIONS = {
 };
 
 const HUES = [0, 28, 48, 135, 175, 215, 270, 325];
+/* The master palette's touchables (docs/palette.html): most balloons are the hue at one saturation and lightness, but Mint and Lagoon
+   are softened so all eight feel like one set, and Lagoon is a deeper turquoise so it stands out against water and pale skies. */
+const TONE = { 135: [140, 55, 55], 175: [188, 66, 47] };
+const balloonCol = (hue) => TONE[hue] ? `hsl(${TONE[hue][0]} ${TONE[hue][1]}% ${TONE[hue][2]}%)` : `hsl(${hue} 78% 62%)`;
+const bitCol = (hue) => TONE[hue] ? `hsl(${TONE[hue][0]} ${TONE[hue][1] + 10}% ${TONE[hue][2] - 2}%)` : `hsl(${hue} 88% 58%)`;
 
 /* Popping the giant slows the world to this fraction for SLOW_SECS. */
 export const SLOW = 0.3, SLOW_SECS = 5;
@@ -329,7 +334,7 @@ class PopParty {
   _hit(b, who, W, H){
     b.dead = true;
     const px = b.x * W, py = b.y * H, r = b.r * H;
-    const col = b.kind === 'rainbow' ? null : `hsl(${b.hue} 88% 58%)`;
+    const col = b.kind === 'rainbow' ? null : bitCol(b.hue);
 
     this.popped[who].push(b.kind === 'rainbow' ? -1 : b.hue);
     this.combo[who] = this.comboT[who] > 0 ? this.combo[who] + 1 : 1;
@@ -642,7 +647,7 @@ class PopParty {
     if (b.kind === 'rainbow'){
       fill = c.createLinearGradient(-r, -r, r, r);
       for (let k = 0; k <= 6; k++) fill.addColorStop(k / 6, `hsl(${(k * 60 + this.t * 120) % 360} 95% 60%)`);
-    } else fill = `hsl(${b.hue} 78% 62%)`;
+    } else fill = balloonCol(b.hue);
 
     c.fillStyle = fill;
     c.beginPath();
