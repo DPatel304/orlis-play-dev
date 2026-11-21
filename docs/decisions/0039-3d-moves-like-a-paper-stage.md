@@ -1,5 +1,5 @@
 # 0039: 3D games move like a paper stage; true 3D later; the FPS is the owner's own store game
-Status: Accepted (2026-11-21); the new release date is Proposed
+Status: Accepted (2026-11-21), including the April 30, 2027 release date
 Date: 2026-11-21
 
 ## Context
@@ -20,7 +20,7 @@ Create, and asked whether true 3D could be added later.
   not weapons (recommended). Other people can copy it and change a few parts (the map from kit pieces, colours, rules, targets) but not the
   camera, controls or core feel. Creating a new FPS from scratch is not in Create. "Copy a store game and change some parts" is a new
   Create feature for a later phase.
-- **Release date (Proposed): April 30, 2027, quality first.** The May 28 date was set for the toon redraw of Pop Party, which 0037
+- **Release date: April 30, 2027, quality first** (accepted by the owner 2026-11-21). The May 28 date was set for the toon redraw of Pop Party, which 0037
   dropped, and the guided phone camera is less work than first person. The date moves back before the quality bar moves.
 
 ## Consequences

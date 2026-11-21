@@ -1,7 +1,7 @@
-# Phase 1 plan: the closed beta, target April 30, 2027 (proposed)
+# Phase 1 plan: the closed beta, target April 30, 2027
 
 Revised Nov 20, 2026 (architecture pass). Decisions are in `docs/decisions/` (the new ones: 0027 to 0031, Proposed until the owner
-accepts them). **Target April 30, 2027 (proposed in 0039: the toon redraw that moved it to May 28 was dropped, and the phone camera is simpler); quality comes first** rather than shipping
+accepts them). **Target April 30, 2027 (accepted in 0039: the toon redraw that moved it to May 28 was dropped, and the phone camera is simpler); quality comes first** rather than shipping
 something unpolished to family.
 
 ## The release gate: what must be true at release

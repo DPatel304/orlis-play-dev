@@ -62,4 +62,4 @@ Date: YYYY-MM-DD
 | 0036 | The look is toon-shaded 3D, drawn flat for 2D games | Superseded by 0038 |
 | 0037 | Pop Party stays painted for Phase 1; the toon look is tested fairly before it is final | Accepted |
 | 0038 | Two looks, one family: painted 2D for 2D games, a painted-style 3D sibling for 3D games | Accepted |
-| 0039 | 3D games move like a paper stage (guided camera, flipping painted characters); true 3D later; the FPS is the owner's own store game | Accepted (date proposed) |
+| 0039 | 3D games move like a paper stage (guided camera, flipping painted characters); true 3D later; the FPS is the owner's own store game | Accepted |
