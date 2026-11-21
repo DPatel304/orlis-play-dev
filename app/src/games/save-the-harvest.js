@@ -9,7 +9,9 @@
 
    Moves are the body's, from the camera's landmarks, by the same detectors Animal Gym uses (with no landmarks - the mouse,
    in testing - a fast hand is a try). A try is a try: anyone's counts toward the same bar. */
+import { color, alpha } from './assets/palette.js';
 import { Juice } from './common.js';
+
 import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
@@ -28,10 +30,12 @@ export const KINDS = {
   raven: { e: '\u{1FAB6}', move: 'flap',  text: '\u{1FAB6} Flap! Shoo him!' }
 };
 const WHEEL = ['apple', 'pear', 'berry', 'raven', 'apple', 'raven'];
-const WHEEL_COL = ['#ffd0d0', '#fff0a8', '#ffc0d8', '#cfcde8', '#ffd0d0', '#cfcde8'];
+/* the tree's leaves: one green, and its shade by the rule */
+const LEAF = color('meadow.fresh'), LEAF_SHADE = color('meadow.fresh', 'shade');
+const WHEEL_COL = [color('touch.cherry', 'light'), color('touch.sunflower', 'light'), color('touch.bubblegum', 'light'), color('touch.grape', 'light'), color('touch.cherry', 'light'), color('touch.grape', 'light')];
 
 export default {
-  id: 'save-the-harvest', unit: 'fruit', name: 'Save the Harvest', stars: 1, accent: '#e0603a', secs: 300, endless: true,
+  id: 'save-the-harvest', unit: 'fruit', name: 'Save the Harvest', stars: 1, accent: color('earth.brick'), secs: 300, endless: true,
   moves: ['reach', 'jump', 'squat', 'flap'], keepSitters: true,
   create(n){ return new SaveTheHarvest(n); }
 };
@@ -158,7 +162,7 @@ class SaveTheHarvest {
     const s = Math.min(W / VW, H / VH), ox = (W - VW * s) / 2, oy = (H - VH * s) / 2;
     /* sky and meadow fill the whole screen */
     const gr = c.createLinearGradient(0, 0, 0, H);
-    gr.addColorStop(0, '#8fd0ff'); gr.addColorStop(0.3, '#d8eefb'); gr.addColorStop(0.31, '#8ed98a'); gr.addColorStop(1, '#58b068');
+    gr.addColorStop(0, color('sky.high')); gr.addColorStop(0.3, color('sky.low')); gr.addColorStop(0.31, color('meadow.lawn')); gr.addColorStop(1, color('meadow.fresh'));
     c.fillStyle = gr; c.fillRect(0, 0, W, H);
     const shook = this.j.applyShake ? this.j.applyShake(c) : false;
     c.save(); c.translate(ox, oy); c.scale(s, s);
@@ -172,28 +176,28 @@ class SaveTheHarvest {
 
   _emoji(c, e, x, y, size, rot = 0, a = 1){
     c.save(); c.globalAlpha *= a; c.translate(x, y); if (rot) c.rotate(rot);
-    c.fillStyle = '#000';          /* (a colour emoji takes the fill's transparency) */
+    c.fillStyle = color('shade.ink');          /* (a colour emoji takes the fill's transparency) */
     c.font = `${size}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(e, 0, 0); c.restore();
   }
 
   _world(c){
     const t = this.t;
-    c.fillStyle = 'rgba(255,255,255,.55)';
+    c.fillStyle = alpha('earth.snow', 0.55);
     for (let i = 0; i < 3; i++){ const x = (i * 470 + t * 7) % 1500 - 100; c.beginPath(); c.roundRect(x, 60 + i * 16, 150, 34, 17); c.fill(); }
-    c.fillStyle = '#5fc16c'; c.beginPath(); c.moveTo(-40, 330);
+    c.fillStyle = color('meadow.fresh'); c.beginPath(); c.moveTo(-40, 330);
     for (let x = -40; x <= VW + 40; x += 20) c.lineTo(x, 290 + 26 * Math.sin(x / 180 + 1));
     c.lineTo(VW + 40, VH + 40); c.lineTo(-40, VH + 40); c.fill();
     /* the raven's road: stepping stones across the sky to the tree */
-    c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 4; c.setLineDash([4, 12]); c.lineCap = 'round'; c.beginPath();
+    c.strokeStyle = alpha('earth.snow', 0.5); c.lineWidth = 4; c.setLineDash([4, 12]); c.lineCap = 'round'; c.beginPath();
     RAVEN.forEach((p, i) => i ? c.lineTo(p[0], p[1] + 34) : c.moveTo(p[0], p[1] + 34)); c.stroke(); c.setLineDash([]);
-    for (let i = 0; i < RAVEN.length - 1; i++){ c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(RAVEN[i][0], RAVEN[i][1] + 34, 20, 9, 0, 0, 7); c.fill(); }
+    for (let i = 0; i < RAVEN.length - 1; i++){ c.fillStyle = alpha('earth.snow', 0.7); c.beginPath(); c.ellipse(RAVEN[i][0], RAVEN[i][1] + 34, 20, 9, 0, 0, 7); c.fill(); }
     /* the tree */
-    c.fillStyle = '#8a5a33'; c.strokeStyle = '#5b3a1f'; c.lineWidth = 6; c.beginPath();
-    c.moveTo(TREE[0] - 34, 640); c.quadraticCurveTo(TREE[0] - 18, 540, TREE[0] - 24, TREE[1]); c.lineTo(TREE[0] + 26, TREE[1]); c.quadraticCurveTo(TREE[0] + 22, 540, TREE[0] + 40, 640); c.closePath(); c.fill(); c.stroke();
-    for (const [dx, dy, r, col] of [[-120, -60, 120, '#3f9b4f'], [130, -60, 115, '#46a857'], [0, -130, 125, '#4fb560'], [-10, -10, 130, '#46a857'], [-150, 40, 90, '#3f9b4f'], [150, 40, 92, '#3f9b4f']]){
+    c.fillStyle = color('fur.brown'); c.beginPath();
+    c.moveTo(TREE[0] - 34, 640); c.quadraticCurveTo(TREE[0] - 18, 540, TREE[0] - 24, TREE[1]); c.lineTo(TREE[0] + 26, TREE[1]); c.quadraticCurveTo(TREE[0] + 22, 540, TREE[0] + 40, 640); c.closePath(); c.fill();
+    for (const [dx, dy, r, col] of [[-120, -60, 120, LEAF_SHADE], [130, -60, 115, LEAF], [0, -130, 125, LEAF], [-10, -10, 130, LEAF], [-150, 40, 90, LEAF_SHADE], [150, 40, 92, LEAF_SHADE]]){
       c.fillStyle = col; c.beginPath(); c.arc(TREE[0] + dx, TREE[1] + dy, r, 0, 7); c.fill();
     }
-    c.fillStyle = 'rgba(47,125,62,.35)'; c.beginPath(); c.ellipse(TREE[0], 650, 200, 28, 0, 0, 7); c.fill();
+    c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(TREE[0], 650, 200, 28, 0, 0, 7); c.fill();
     /* the fruit still on the tree - the kind being picked trembles */
     for (const k of ['apple', 'pear', 'berry']){
       SLOTS[k].forEach((p, i) => {
@@ -211,11 +215,11 @@ class SaveTheHarvest {
     }
     /* the basket, with what's in it */
     c.save(); c.translate(BASKET[0], BASKET[1]);
-    c.fillStyle = '#c08a4a'; c.strokeStyle = '#7a5226'; c.lineWidth = 6; c.beginPath();
-    c.moveTo(-90, -20); c.lineTo(-70, 60); c.quadraticCurveTo(0, 80, 70, 60); c.lineTo(90, -20); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = color('earth.clay'); c.beginPath();
+    c.moveTo(-90, -20); c.lineTo(-70, 60); c.quadraticCurveTo(0, 80, 70, 60); c.lineTo(90, -20); c.closePath(); c.fill();
     let n = 0;
     for (const k of ['apple', 'pear', 'berry']) for (let i = 0; i < this.picked[k]; i++){ this._emoji(c, KINDS[k].e, -62 + (n % 6) * 25, -38 - Math.floor(n / 6) * 20 - (n % 2) * 6, 38); n++; }
-    c.fillStyle = '#c08a4a'; c.beginPath(); c.roundRect(-100, -34, 200, 24, 12); c.fill(); c.stroke(); c.restore();
+    c.fillStyle = color('earth.clay'); c.beginPath(); c.roundRect(-100, -34, 200, 24, 12); c.fill(); c.restore();
     this._raven(c);
     if (this.phase === 'spin') this._wheel(c);
   }
@@ -227,12 +231,12 @@ class SaveTheHarvest {
     let flap = Math.sin(t * (this.phase === 'move' && this.kind === 'raven' ? 16 : 7)) * 0.5 + 0.5;
     if (this.phase === 'end'){ const k = ease(clamp(this.pt / 2.6)); x += (BASKET[0] - 30 - x) * k; y += (BASKET[1] - 120 - y) * k; flap = Math.sin(t * 14) * 0.5 + 0.5; }
     if (this.phase === 'snack'){ x = TREE[0] + 90; y = TREE[1] - 150 + Math.sin(t * 8) * 4; flap = Math.sin(t * 12) * 0.5 + 0.5; }
-    c.save(); c.translate(x, y); c.scale(0.9, 0.9); c.lineJoin = 'round'; c.strokeStyle = '#2b2275'; c.lineWidth = 5; c.fillStyle = '#3b3a52';
+    c.save(); c.translate(x, y); c.scale(0.9, 0.9); c.lineJoin = 'round'; c.strokeStyle = color('shade.ink'); c.lineWidth = 5; c.fillStyle = color('fur.charcoal');
     c.beginPath(); c.ellipse(0, 0, 44, 30, 0, 0, 7); c.fill(); c.stroke();
-    c.beginPath(); c.moveTo(-6, -8); c.quadraticCurveTo(6, -46 - flap * 30, 58, -26 - flap * 30); c.quadraticCurveTo(28, -10, 10, 2); c.closePath(); c.fillStyle = '#4d4b6a'; c.fill(); c.stroke();
-    c.beginPath(); c.arc(-34, -18, 20, 0, 7); c.fillStyle = '#3b3a52'; c.fill(); c.stroke();
-    c.fillStyle = '#ffb347'; c.beginPath(); c.moveTo(-52, -18); c.lineTo(-72, -10); c.lineTo(-52, -8); c.closePath(); c.fill(); c.stroke();
-    c.fillStyle = '#fff'; c.beginPath(); c.arc(-38, -24, 7, 0, 7); c.fill(); c.fillStyle = '#1e1b4b'; c.beginPath(); c.arc(-40, -24, 3.5, 0, 7); c.fill();
+    c.beginPath(); c.moveTo(-6, -8); c.quadraticCurveTo(6, -46 - flap * 30, 58, -26 - flap * 30); c.quadraticCurveTo(28, -10, 10, 2); c.closePath(); c.fillStyle = color('shade.inkSoft'); c.fill(); c.stroke();
+    c.beginPath(); c.arc(-34, -18, 20, 0, 7); c.fillStyle = color('fur.charcoal'); c.fill(); c.stroke();
+    c.fillStyle = color('earth.peach'); c.beginPath(); c.moveTo(-52, -18); c.lineTo(-72, -10); c.lineTo(-52, -8); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = color('earth.snow'); c.beginPath(); c.arc(-38, -24, 7, 0, 7); c.fill(); c.fillStyle = color('shade.ink'); c.beginPath(); c.arc(-40, -24, 3.5, 0, 7); c.fill();
     c.restore();
     if (this.phase === 'end' && this.pt > 2.6) this._emoji(c, KINDS.apple.e, BASKET[0] + 30, BASKET[1] - 110, 40);
   }
@@ -241,15 +245,15 @@ class SaveTheHarvest {
     const R = 130, cx = VW / 2 + 60, cy = 420, k = clamp(this.pt / SPIN), a = this.pt < SPIN - 0.5 ? 1 : 1 - (this.pt - (SPIN - 0.5)) / 0.5;
     const rest = -Math.PI / 2 - (this.sector + 0.5) * (Math.PI * 2 / 6), ang = rest - (1 - ease(clamp(this.pt / 2))) * Math.PI * 6;
     c.save(); c.globalAlpha = Math.max(0, a); c.translate(cx, cy);
-    c.shadowColor = 'rgba(0,0,0,.4)'; c.shadowBlur = 24; c.shadowOffsetY = 10; c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, R + 14, 0, 7); c.fill(); c.shadowBlur = 0; c.shadowOffsetY = 0;
+    c.shadowColor = alpha('shade.shadow', 0.4); c.shadowBlur = 24; c.shadowOffsetY = 10; c.fillStyle = color('earth.snow'); c.beginPath(); c.arc(0, 0, R + 14, 0, 7); c.fill(); c.shadowBlur = 0; c.shadowOffsetY = 0;
     c.rotate(ang);
     WHEEL.forEach((kind, i) => {
       const a0 = i * Math.PI * 2 / 6, a1 = (i + 1) * Math.PI * 2 / 6;
-      c.fillStyle = WHEEL_COL[i]; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, R, a0, a1); c.closePath(); c.fill(); c.strokeStyle = '#2b2275'; c.lineWidth = 4; c.stroke();
+      c.fillStyle = WHEEL_COL[i]; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, R, a0, a1); c.closePath(); c.fill(); c.strokeStyle = color('shade.ink'); c.lineWidth = 4; c.stroke();
       c.save(); c.rotate((a0 + a1) / 2); this._emoji(c, KINDS[kind].e, R * 0.62, 0, 50, Math.PI / 2); c.restore();
     });
     c.restore();
-    c.save(); c.globalAlpha = Math.max(0, a); c.fillStyle = '#2b2275'; c.beginPath(); c.moveTo(cx, cy - R - 30); c.lineTo(cx - 18, cy - R - 2); c.lineTo(cx + 18, cy - R - 2); c.closePath(); c.fill(); c.restore();
+    c.save(); c.globalAlpha = Math.max(0, a); c.fillStyle = color('shade.ink'); c.beginPath(); c.moveTo(cx, cy - R - 30); c.lineTo(cx - 18, cy - R - 2); c.lineTo(cx + 18, cy - R - 2); c.closePath(); c.fill(); c.restore();
     void k;
   }
 
