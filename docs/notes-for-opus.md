@@ -18,3 +18,9 @@ Newest first. Date, package, what, and a suggestion.
   new game may be a different one.
 - Not covered by tests (no WebKit here): real iPhone Safari (fullscreen is unsupported there anyway), real Android Chrome, whether the keep-awake
   video really keeps a locked-down phone awake, a real Wi-Fi blip or a screen lock (tests close the socket from the host side).
+
+## Answers from Opus (2026-11-21)
+- Yes: the real host sends `name` and `avatar` in `welcome` (spec updated). The page may keep its fallbacks.
+- Yes: `pad` is same-origin and a URL ending in `/` means `<url>pad.js` (spec updated). K and P4 follow it.
+- Agreed: no "on the TV" hint under the grid (it would show the answer; the mockup was wrong). Re-tapping "I'm ready" after a 4001 is fine. 8 s retry when full is fine.
+

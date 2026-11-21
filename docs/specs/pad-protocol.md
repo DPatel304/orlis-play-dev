@@ -39,7 +39,7 @@ Status: draft for implementation. Changes after it is built need a version bump 
 **Host to pad**
 | t | fields | meaning |
 |---|---|---|
-| `welcome` | `device` (token to keep), `seat`, `who`, `colour`, `game`, `pad` (URL of the pad program), `need` (`controller`/`view3d`) | joined |
+| `welcome` | `device` (token to keep), `seat`, `who`, `name`, `avatar` (the look, or null for Guest), `colour` (the player's favourite, 0040), `game`, `pad` (URL of the pad program, same origin; a URL ending in `/` means `<url>pad.js`), `need` (`controller`/`view3d`) | joined |
 | `who?` | `people` `[{id,name,avatar}]` | pick who you are (shown after a first join, or when the phone asked with `who?`). `avatar` is the avatar maker's look (or null); the list may include `{ "id": "guest", "name": "Guest", "avatar": null }`, which the pad draws as Cubo. |
 | `pics?` | `grid` (nine picture ids) | the phone has no QR secret: show the picture grid |
 | `reject` | `why` (`join`, `wait` (too many tries), `full`, `version`, `game`) | refused, with a friendly reason on the page |
