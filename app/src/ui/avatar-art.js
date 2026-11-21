@@ -1,70 +1,149 @@
-/* Orlis avatars: each child's own character, drawn on a canvas in Orlis
-   Play's look (Last Known Position's: round, chunky, lit from the left,
-   with a soft dark outline) and in their own colours.
+/* Orlis avatars (decision 0042): every child is the same little cube character - the same cube head (rounded corners, a light top edge,
+   a shaded side), one body with stubby arms and legs, a painted face, the thin paper edge and a soft shadow. A child chooses only five
+   things (see look.js): their colour (a favourite, which is also their player colour), their face, something on top (hair pieces too),
+   an outfit with a second colour, and one extra. Cubo is the blue one with the default face.
 
-   A look is a small object - what the avatar maker saves on a profile:
-     { skin, hair, hairColor, eyes, mouth, color, outfit, extra }
-   Every part has a few choices (PARTS); a missing or unknown one falls
-   back to the first, so an old or odd look still draws.
+   Colours are palette names (0040) and the shade and highlight come from the base by rule (0041): shade toward the palette's purple-grey,
+   light toward white, so nothing here picks a shade by hand and nothing is a raw colour code.
 
-     head(c, x, y, r, look, t)          the head, centred at (x, y), radius r
-     body(c, x, base, h, look, t, pose) the whole avatar standing, feet at
-                                        (x, base), h tall; pose: 'stand',
-                                        'wave', 'cheer', 'reach' (arms up)
-     portrait(c, x, y, s, look, t)      a head on a rounded square of their
-                                        colour (for tiles and name chips) */
+     head(c, x, y, r, look, t, opts)        the cube head, centred at (x, y), r = half its width; opts.back: seen from behind (no face)
+     body(c, x, base, h, look, t, pose)     the whole character standing, feet at (x, base), h tall; pose: 'stand', 'wave', 'cheer', 'reach'
+     portrait(c, x, y, s, look, t)          a head on a rounded tile, for name chips and tiles
+     figure(c, lm, W, H, look, t, opts)     the character drawn over a player's tracked body (arms where theirs are, head tilting with theirs)
+     surprise(rand)                         a random look
+   `look` may be any look that was ever stored (look.js carries old ones over) or null (Cubo). */
+import { color, alpha } from '../games/assets/palette.js';
+import { PARTS, normalizeLook, surprise as randomLook } from './look.js';
 
-export const PARTS = {
-  skin: ['#ffdfc4', '#f3c393', '#dda46d', '#b97c4b', '#8d5524', '#5e3a20'],
-  hair: ['short', 'curly', 'ponytail', 'buns', 'long', 'spiky', 'bob', 'none'],
-  hairColor: ['#2a1d18', '#5a3825', '#9a4a26', '#e2b65a', '#f08c3a', '#4f7cff', '#ff6fae', '#9b6bff'],
-  eyes: ['dots', 'happy', 'sparkle', 'wink'],
-  mouth: ['smile', 'grin', 'oh', 'tongue'],
-  color: ['#3da9ff', '#ff8a3d', '#22c55e', '#a855f7', '#ff5d8f', '#facc15', '#14b8a6', '#ef4444'],
-  outfit: ['plain', 'stripes', 'stars', 'dots', 'hoodie'],
-  extra: ['none', 'cap', 'bow', 'glasses', 'headphones', 'crown', 'flower']
-};
-const INK = '#1f1a3a';
-/* The style: how avatars are drawn. The default is Orlis Play's house
-   style: no outlines, flat colour cel-shaded - one shadow tone on the right,
-   the sun being up on the left - and a soft rim of sunlight on the left.
-     outline  the outline's colour (null: none), width  its thickness (x1)
-     shade    'cel' (the house style), 'lit' (soft gradients, lit from the
-              left), 'flat' (one colour each), 'clay' (soft, a shine on top)
-     feature  the colour of eyes, brows and mouth
-     rim      the rim light's colour (null: none; 'cel' only) */
-const STYLE = { outline: null, width: 1, shade: 'cel', feature: '#2d2a26', rim: 'rgba(255,240,200,.95)' };
-let S = { ...STYLE };
-export function setStyle(s = {}){ S = { ...STYLE, ...s }; }
-/* a shape's outline, if the style has one */
-const edge = (c) => { if (!S.outline) return; c.strokeStyle = S.outline; c.stroke(); };
-/* a fill in a colour, shaded the style's way, over a shape about r across centred (cx, cy) */
-function shaded(c, col, cx, cy, r){
-  if (S.shade === 'flat' || S.shade === 'cel') return col;
-  if (S.shade === 'clay'){
-    const g = c.createRadialGradient(cx - r * 0.35, cy - r * 0.45, r * 0.05, cx, cy, r * 1.15);
-    g.addColorStop(0, mix(col, '#ffffff', 0.45)); g.addColorStop(0.35, mix(col, '#ffffff', 0.12)); g.addColorStop(0.8, col); g.addColorStop(1, mix(col, '#000000', 0.28));
-    return g;
+export { PARTS };
+export const surprise = randomLook;
+/* (kept so older callers compile: there is one style now) */
+export function setStyle(){}
+
+/* ---------- the colours of one look ---------- */
+const cache = new WeakMap();
+function resolve(look){
+  const key = look && typeof look === 'object' ? look : null;
+  const hit = key && cache.get(key); if (hit) return hit;
+  const L = normalizeLook(look), c = color('fav.' + L.colour), c2 = color(L.outfitColour), white = L.outfitColour === 'shade.card';
+  const a = {
+    c, c2, c2n: L.outfitColour, t2n: white ? 'ui.go' : L.outfitColour, white, eyes: L.face.eyes, mouth: L.face.mouth, top: L.top, fit: L.outfit, extra: L.extra,
+    shade: color('fav.' + L.colour, 'shade'), light: color('fav.' + L.colour, 'light'),
+    /* the second colour for things that must not vanish into a white body (hats, a scarf, a cape) */
+    t2: white ? color('ui.go') : c2
+  };
+  if (key) cache.set(key, a);
+  return a;
+}
+const INK = () => color('shade.ink');
+
+const rr = (x, a, b, w, h, q) => { x.beginPath(); x.moveTo(a + q, b); x.arcTo(a + w, b, a + w, b + h, q); x.arcTo(a + w, b + h, a, b + h, q); x.arcTo(a, b + h, a, b, q); x.arcTo(a, b, a + w, b, q); x.closePath(); };
+const dot = (x, px, py, r) => { x.beginPath(); x.arc(px, py, Math.max(0.1, r), 0, Math.PI * 2); };
+const line = (x, pts, w, col) => { x.strokeStyle = col; x.lineWidth = w; x.beginPath(); pts.forEach(([px, py], k) => (k ? x.lineTo(px, py) : x.moveTo(px, py))); x.stroke(); };
+
+/* ---------- the head: origin at the middle of its top edge; S is the character's height ---------- */
+function drawHead(x, a, S, back, t){
+  const c = a.c, hw = S * 0.46, hh = S * 0.42, hx = -hw / 2, hy = 0, q = hw * 0.2, ink = INK();
+  x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
+  /* the cube: base, a light top edge, a shaded side, the thin ink edge */
+  x.fillStyle = c; rr(x, hx, hy, hw, hh, q); x.fill();
+  x.save(); rr(x, hx, hy, hw, hh, q); x.clip();
+  x.fillStyle = a.light; x.fillRect(hx, hy, hw, hh * 0.14);
+  x.fillStyle = a.shade; x.fillRect(hx + hw * 0.8, hy, hw * 0.2, hh);
+  x.restore();
+  x.strokeStyle = ink; x.lineWidth = S * 0.016; rr(x, hx, hy, hw, hh, q); x.stroke();
+  const blink = (t % 4.3) > 4.18;
+
+  if (!back){
+    /* the face: always the same painted style */
+    const fy = hy + hh * 0.52, ex = hw * 0.19, er = S * 0.026;
+    x.fillStyle = ink; x.strokeStyle = ink; x.lineWidth = S * 0.014;
+    [-1, 1].forEach((s) => {
+      const cx = s * ex - hw * 0.04;
+      if (blink && a.eyes !== 'happy' && a.eyes !== 'sleepy'){ x.beginPath(); x.moveTo(cx - er, fy); x.lineTo(cx + er, fy); x.stroke(); return; }
+      if (a.eyes === 'dot'){ x.beginPath(); x.ellipse(cx, fy, er * 0.8, er * 1.1, 0, 0, 7); x.fill(); }
+      if (a.eyes === 'wide'){ x.beginPath(); x.ellipse(cx, fy, er, er * 1.3, 0, 0, 7); x.fill(); x.fillStyle = color('earth.snow'); dot(x, cx + er * 0.3, fy - er * 0.4, er * 0.35); x.fill(); x.fillStyle = ink; }
+      if (a.eyes === 'happy' || (a.eyes === 'wink' && s > 0)){ x.beginPath(); x.arc(cx, fy + er * 0.5, er, Math.PI * 1.15, Math.PI * 1.85); x.stroke(); }
+      if (a.eyes === 'wink' && s < 0){ x.beginPath(); x.ellipse(cx, fy, er * 0.8, er * 1.1, 0, 0, 7); x.fill(); }
+      if (a.eyes === 'sleepy'){ x.beginPath(); x.moveTo(cx - er, fy); x.lineTo(cx + er, fy); x.stroke(); }
+      if (a.eyes === 'star'){ x.beginPath(); for (let k = 0; k < 10; k++){ const an = -Math.PI / 2 + k * Math.PI / 5, R = k % 2 ? er * 0.5 : er * 1.2; x.lineTo(cx + Math.cos(an) * R, fy + Math.sin(an) * R); } x.closePath(); x.fill(); }
+    });
+    const my = fy + hh * 0.22, mx = -hw * 0.04;
+    if (a.mouth === 'smile'){ x.beginPath(); x.arc(mx, my - S * 0.02, S * 0.035, Math.PI * 0.2, Math.PI * 0.8); x.stroke(); }
+    if (a.mouth === 'grin'){ x.beginPath(); x.moveTo(mx - S * 0.045, my - S * 0.01); x.quadraticCurveTo(mx, my + S * 0.05, mx + S * 0.045, my - S * 0.01); x.closePath(); x.fill(); }
+    if (a.mouth === 'o'){ x.beginPath(); x.ellipse(mx, my, S * 0.014, S * 0.02, 0, 0, 7); x.fill(); }
+    if (a.mouth === 'cat'){ x.beginPath(); x.arc(mx - S * 0.015, my - S * 0.01, S * 0.015, 0, Math.PI); x.arc(mx + S * 0.015, my - S * 0.01, S * 0.015, 0, Math.PI); x.stroke(); }
+    if (a.mouth === 'tongue'){ x.beginPath(); x.arc(mx, my - S * 0.02, S * 0.035, Math.PI * 0.2, Math.PI * 0.8); x.stroke(); x.fillStyle = color('touch.bubblegum', 'light'); x.beginPath(); x.ellipse(mx + S * 0.006, my + S * 0.015, S * 0.012, S * 0.014, 0, 0, 7); x.fill(); }
+    if (a.extra === 'cheeks' || a.extra === 'freckles'){
+      x.fillStyle = a.extra === 'cheeks' ? alpha('touch.bubblegum', 0.45) : a.shade;
+      [-1, 1].forEach((s) => {
+        if (a.extra === 'cheeks'){ x.beginPath(); x.ellipse(s * hw * 0.3 - hw * 0.04, my - S * 0.015, S * 0.028, S * 0.016, 0, 0, 7); x.fill(); }
+        else for (let k = 0; k < 3; k++){ x.beginPath(); x.arc(s * hw * 0.3 - hw * 0.04 + (k - 1) * S * 0.014, my - S * 0.02 + (k % 2) * S * 0.008, S * 0.006, 0, 7); x.fill(); }
+      });
+    }
+    if (a.extra === 'glasses'){ x.strokeStyle = ink; x.lineWidth = S * 0.012; [-1, 1].forEach((s) => { x.beginPath(); x.arc(s * ex - hw * 0.04, fy, S * 0.045, 0, 7); x.stroke(); }); x.beginPath(); x.moveTo(-ex + S * 0.045 - hw * 0.04, fy); x.lineTo(ex - S * 0.045 - hw * 0.04, fy); x.stroke(); }
   }
-  const g = c.createLinearGradient(cx - r, cy, cx + r, cy); g.addColorStop(0, mix(col, '#ffffff', 0.3)); g.addColorStop(0.5, col); g.addColorStop(1, mix(col, '#000000', 0.3));
-  return g;
-}
-/* (colours can also be any colour code: a game may soften or tint them) */
-const COLOURS = new Set(['skin', 'hairColor', 'color']);
-const pick = (look, k) => (look && (PARTS[k].includes(look[k]) || (COLOURS.has(k) && /^#[0-9a-f]{6}$/i.test(look[k] || ''))) ? look[k] : PARTS[k][0]);
 
-/* #rrggbb mixed toward another */
-function mix(a, b, k){
-  const p = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-  const x = p(a), y = p(b);
-  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * k).toString(16).padStart(2, '0')).join('');
+  /* on top: hair pieces (a tuft, a bob) and hats */
+  const t2 = a.t2, t2s = toneT(a, 'shade'), t2l = toneT(a, 'light');
+  if (a.top === 'tuft'){ x.fillStyle = a.shade; x.beginPath(); x.moveTo(-S * 0.04, hy + S * 0.01); x.quadraticCurveTo(-S * 0.02, hy - S * 0.09, S * 0.05, hy - S * 0.07); x.quadraticCurveTo(S * 0.01, hy - S * 0.03, S * 0.04, hy + S * 0.01); x.closePath(); x.fill(); }
+  if (a.top === 'bob'){ x.fillStyle = t2s; rr(x, hx - S * 0.02, hy - S * 0.03, hw + S * 0.04, hh * 0.35, q); x.fill(); rr(x, hx - S * 0.02, hy, S * 0.06, hh * 0.75, S * 0.03); x.fill(); rr(x, hx + hw - S * 0.04, hy, S * 0.06, hh * 0.75, S * 0.03); x.fill(); }
+  if (a.top === 'cap'){ x.fillStyle = t2; rr(x, hx - S * 0.01, hy - S * 0.05, hw + S * 0.02, S * 0.1, S * 0.05); x.fill(); x.fillStyle = t2s; rr(x, hx + hw * 0.45, hy + S * 0.025, hw * 0.7, S * 0.035, S * 0.02); x.fill(); }
+  if (a.top === 'beanie'){ x.fillStyle = t2; rr(x, hx - S * 0.01, hy - S * 0.07, hw + S * 0.02, S * 0.12, S * 0.06); x.fill(); x.fillStyle = t2l; dot(x, 0, hy - S * 0.08, S * 0.035); x.fill(); x.fillStyle = t2s; x.fillRect(hx - S * 0.01, hy + S * 0.02, hw + S * 0.02, S * 0.03); }
+  if (a.top === 'bow'){ x.fillStyle = t2; x.beginPath(); x.moveTo(hw * 0.25, hy - S * 0.01); x.lineTo(hw * 0.05, hy - S * 0.07); x.lineTo(hw * 0.05, hy + S * 0.05); x.closePath(); x.fill(); x.beginPath(); x.moveTo(hw * 0.25, hy - S * 0.01); x.lineTo(hw * 0.45, hy - S * 0.07); x.lineTo(hw * 0.45, hy + S * 0.05); x.closePath(); x.fill(); x.fillStyle = t2s; dot(x, hw * 0.25, hy - S * 0.01, S * 0.02); x.fill(); }
+  if (a.top === 'crown'){ x.fillStyle = color('ui.gold'); x.beginPath(); x.moveTo(-hw * 0.3, hy + S * 0.01); x.lineTo(-hw * 0.3, hy - S * 0.07); x.lineTo(-hw * 0.15, hy - S * 0.03); x.lineTo(0, hy - S * 0.09); x.lineTo(hw * 0.15, hy - S * 0.03); x.lineTo(hw * 0.3, hy - S * 0.07); x.lineTo(hw * 0.3, hy + S * 0.01); x.closePath(); x.fill(); x.strokeStyle = ink; x.lineWidth = S * 0.008; x.stroke(); }
+  if (a.top === 'phones'){ x.strokeStyle = t2; x.lineWidth = S * 0.025; x.beginPath(); x.arc(0, hy + hh * 0.3, hw * 0.58, Math.PI * 1.08, Math.PI * 1.92); x.stroke(); x.fillStyle = t2; rr(x, hx - S * 0.035, hy + hh * 0.3, S * 0.05, S * 0.1, S * 0.02); x.fill(); rr(x, hx + hw - S * 0.015, hy + hh * 0.3, S * 0.05, S * 0.1, S * 0.02); x.fill(); }
+  if (a.top === 'ears'){ x.fillStyle = c; [-1, 1].forEach((s) => { rr(x, s * hw * 0.22 - S * 0.03, hy - S * 0.16, S * 0.06, S * 0.18, S * 0.03); x.fill(); }); x.fillStyle = a.light; [-1, 1].forEach((s) => { rr(x, s * hw * 0.22 - S * 0.015, hy - S * 0.14, S * 0.03, S * 0.12, S * 0.015); x.fill(); }); }
+  if (a.top === 'flower'){ x.fillStyle = color('shade.card'); for (let k = 0; k < 5; k++){ const an = k / 5 * 6.283; x.beginPath(); x.arc(hw * 0.3 + Math.cos(an) * S * 0.028, hy - S * 0.01 + Math.sin(an) * S * 0.028, S * 0.022, 0, 7); x.fill(); } x.fillStyle = color('ui.gold'); x.beginPath(); x.arc(hw * 0.3, hy - S * 0.01, S * 0.018, 0, 7); x.fill(); }
+  x.restore();
 }
-const circle = (c, x, y, r) => { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, Math.PI * 2); };
+/* the look's second colour in a tone: as it is (the hoodie, the overalls), or toneT for what must not vanish into a white body (hats, cape) */
+const toneRaw = (a, which) => color(a.c2n, which);
+const toneT = (a, which) => color(a.t2n, which);
 
-/* The cel pass: the figure drawn flat into a scratch canvas, a hard-edged
-   shadow tone laid over its right side (the line from (top, bottom) x),
-   then put down over a copy of its shape in sunlight, nudged up-left - the
-   rim. Only the outermost call does it (a body's head is part of the body). */
+/* ---------- the body parts, in the character's own proportions ---------- */
+const SIZE = (S) => ({ hw: S * 0.46, hh: S * 0.42, bw: S * 0.34, bh: S * 0.27 });
+
+/* the torso: origin at the middle of its top edge, bw wide, bh tall (it stretches to a player's real body in figure) */
+function drawTorso(x, a, S, bw, bh){
+  const c = a.c;
+  x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
+  x.fillStyle = a.fit === 'plain' || a.fit === 'overalls' ? c : a.c2; rr(x, -bw / 2, 0, bw, bh, S * 0.05); x.fill();
+  x.save(); rr(x, -bw / 2, 0, bw, bh, S * 0.05); x.clip();
+  if (a.fit === 'stripes'){ x.fillStyle = c; for (let k = 0; k < 4; k++) x.fillRect(-bw / 2, bh * (k * 0.26 + 0.06), bw, bh * 0.12); }
+  if (a.fit === 'dots'){ x.fillStyle = c; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++){ x.beginPath(); x.arc(-bw * 0.3 + i * bw * 0.3 + (j % 2) * bw * 0.08, bh * (0.2 + j * 0.3), S * 0.018, 0, 7); x.fill(); } }
+  if (a.fit === 'stars'){ x.fillStyle = c; const r = S * 0.055; x.beginPath(); for (let k = 0; k < 10; k++){ const an = -Math.PI / 2 + k * Math.PI / 5, R = k % 2 ? r * 0.45 : r; x.lineTo(Math.cos(an) * R, bh * 0.45 + Math.sin(an) * R); } x.closePath(); x.fill(); }
+  if (a.fit === 'overalls'){ x.fillStyle = a.c2; x.fillRect(-bw / 2, bh * 0.45, bw, bh); x.fillRect(-bw * 0.32, 0, bw * 0.14, bh * 0.5); x.fillRect(bw * 0.18, 0, bw * 0.14, bh * 0.5); }
+  if (a.fit === 'hoodie'){ x.fillStyle = toneRaw(a, 'shade'); x.fillRect(-bw * 0.22, bh * 0.55, bw * 0.44, bh * 0.3); }
+  x.fillStyle = alpha('shade.shadow', 0.18); x.fillRect(bw * 0.18, 0, bw * 0.4, bh);
+  x.restore();
+  if (a.extra === 'scarf'){ x.fillStyle = a.c2 === c ? color('ui.gold') : a.t2; rr(x, -bw * 0.55, -S * 0.01, bw * 1.1, S * 0.05, S * 0.025); x.fill(); rr(x, bw * 0.1, S * 0.02, S * 0.05, S * 0.1, S * 0.02); x.fill(); }
+  x.restore();
+}
+/* the cape: behind everything, hanging from the shoulders (origin: middle of the torso's top edge) */
+function drawCape(x, a, S, bw, bh){
+  if (a.extra !== 'cape') return;
+  x.fillStyle = toneT(a, 'shade'); x.beginPath(); x.moveTo(-bw * 0.55, S * 0.02); x.lineTo(bw * 0.55, S * 0.02); x.lineTo(bw * 0.8, bh * 1.35); x.lineTo(-bw * 0.8, bh * 1.35); x.closePath(); x.fill();
+}
+/* a leg: points down from the hip; the foot is an ink pill */
+function drawLeg(x, a, S, pts){
+  x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
+  line(x, pts, S * 0.11, a.fit === 'overalls' ? toneRaw(a, 'shade') : a.shade);
+  x.restore();
+}
+function drawFoot(x, S, px, py){ x.fillStyle = INK(); rr(x, px - S * 0.06, py - S * 0.045, S * 0.12, S * 0.045, S * 0.02); x.fill(); }
+/* an arm: a sleeve along the points, a hand at the end; the left one is in shade */
+function drawArm(x, a, S, pts, left){
+  x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
+  const sleeve = a.fit === 'hoodie' ? a.c2 : a.c;
+  line(x, pts, S * 0.08, left ? (a.fit === 'hoodie' ? toneRaw(a, 'shade') : a.shade) : sleeve);
+  x.fillStyle = a.light; const e = pts[pts.length - 1]; dot(x, e[0], e[1], S * 0.038); x.fill();
+  x.restore();
+}
+
+/* ---------- the paper cut: the thin paper edge and a soft shadow around everything drawn ----------
+   The figure is drawn flat into a scratch canvas; a cream copy of its shape is laid down at eight small offsets (the edge), the first with
+   a soft shadow; then the figure on top. Only the outermost call does it (a body's head is part of the body). */
 let depth = 0;
 const scratch = [null, null];
 function sheet(i, w, h){
@@ -72,228 +151,85 @@ function sheet(i, w, h){
   const cv = scratch[i]; if (cv.width < w) cv.width = w; if (cv.height < h) cv.height = h;
   return cv;
 }
-function cel(c, box, line, rimOff, draw){
-  const m = S.shade === 'cel' && depth === 0 && c.getTransform ? c.getTransform() : null;
-  if (!m || typeof m.a !== 'number'){ depth++; try { draw(c); } finally { depth--; } return; }
-  const [bx, by, bw, bh] = box, k = Math.min(3, Math.max(0.25, Math.hypot(m.a, m.b)));
-  const w = Math.ceil(bw * k), h = Math.ceil(bh * k);
+function plain(c, draw){ depth++; try { draw(c); } finally { depth--; } }
+function paper(c, box, S, draw){
+  const m = depth === 0 && c.getTransform ? c.getTransform() : null;
+  if (!m || typeof m.a !== 'number') return plain(c, draw);
+  const sc = Math.hypot(m.a, m.b) || 1, k = Math.min(3, Math.max(0.25, sc)), e = S * 0.009, pad = e + S * 0.06;
+  const bx = box[0] - pad, by = box[1] - pad, w = Math.ceil((box[2] + pad * 2) * k), h = Math.ceil((box[3] + pad * 2) * k);
   const A = sheet(0, w, h), B = sheet(1, w, h);
-  if (!A || !B){ depth++; try { draw(c); } finally { depth--; } return; }
-  const a = A.getContext('2d'); a.setTransform(1, 0, 0, 1, 0, 0); a.clearRect(0, 0, w, h);
+  if (!A || !B || !A.getContext) return plain(c, draw);
+  const a = A.getContext('2d'); a.setTransform(1, 0, 0, 1, 0, 0); a.clearRect(0, 0, A.width, A.height);
   a.setTransform(k, 0, 0, k, -bx * k, -by * k);
-  depth++; try { draw(a); } finally { depth--; }
-  a.save(); a.setTransform(k, 0, 0, k, -bx * k, -by * k); a.globalCompositeOperation = 'source-atop'; a.fillStyle = 'rgba(52,40,96,.2)';
-  a.beginPath(); a.moveTo(line[0], by); a.lineTo(bx + bw, by); a.lineTo(bx + bw, by + bh); a.lineTo(line[1], by + bh); a.closePath(); a.fill(); a.restore();
+  plain(a, draw);
+  const b = B.getContext('2d'); b.setTransform(1, 0, 0, 1, 0, 0); b.globalCompositeOperation = 'copy'; b.drawImage(A, 0, 0, w, h, 0, 0, w, h);
+  b.globalCompositeOperation = 'source-in'; b.fillStyle = color('shade.card'); b.fillRect(0, 0, w, h); b.globalCompositeOperation = 'source-over';
   const sw = w / k, sh = h / k;
-  if (S.rim){
-    const b = B.getContext('2d'); b.setTransform(1, 0, 0, 1, 0, 0); b.globalCompositeOperation = 'copy'; b.drawImage(A, 0, 0, w, h, 0, 0, w, h);
-    b.globalCompositeOperation = 'source-in'; b.fillStyle = S.rim; b.fillRect(0, 0, w, h); b.globalCompositeOperation = 'source-over';
-    c.drawImage(B, 0, 0, w, h, bx - rimOff, by - rimOff * 0.75, sw, sh);
+  c.save();
+  for (let i = 0; i < 8; i++){
+    const an = i / 8 * Math.PI * 2;
+    if (i === 0){ c.shadowColor = alpha('shade.shadow', 0.26); c.shadowBlur = S * 0.014 * sc; c.shadowOffsetX = S * 0.04 * sc; c.shadowOffsetY = S * 0.04 * sc; }
+    else { c.shadowColor = 'transparent'; c.shadowBlur = 0; c.shadowOffsetX = 0; c.shadowOffsetY = 0; }
+    c.drawImage(B, 0, 0, w, h, bx + Math.cos(an) * e, by + Math.sin(an) * e, sw, sh);
   }
+  c.restore();
   c.drawImage(A, 0, 0, w, h, bx, by, sw, sh);
 }
 
-/* A random look ("Surprise me"). */
-export function surprise(rand = Math.random){
-  const o = {};
-  for (const k of Object.keys(PARTS)) o[k] = PARTS[k][Math.floor(rand() * PARTS[k].length)];
-  return o;
-}
-
 /* ---------- the head ---------- */
-export function head(c, x, y, r, look, t = 0, opts = {}){
-  cel(c, [x - r * 1.9, y - r * 1.8, r * 3.8, r * 3.3], [x + r * 0.5, x + r * 0.62], r * 0.07, (cc) => headFlat(cc, x, y, r, look, t, opts));
-}
-function headFlat(c, x, y, r, look, t, { back = false } = {}){
-  const skin = pick(look, 'skin'), hc = pick(look, 'hairColor'), style = pick(look, 'hair');
-  const lw = Math.max(1.5, r * 0.07) * (S.width || 1), fw = Math.max(1.5, r * 0.07);
-  c.save(); c.translate(x, y); c.lineJoin = 'round'; c.lineCap = 'round';
-  /* seen from behind: the back of the head - their hair (and its ponytail,
-     buns or length), ears, no face */
-  if (back){
-    c.strokeStyle = INK; c.lineWidth = lw;
-    c.fillStyle = shaded(c, skin, 0, 0, r); for (const d of [-1, 1]){ circle(c, d * r * 0.96, r * 0.08, r * 0.2); c.fill(); edge(c); }
-    c.fillStyle = style === 'none' ? shaded(c, skin, 0, 0, r) : shaded(c, hc, 0, 0, r);
-    c.beginPath(); c.ellipse(0, 0, r, r * 0.97, 0, 0, Math.PI * 2); c.fill(); edge(c);
-    c.fillStyle = hc;
-    if (style === 'long' || style === 'bob'){ c.beginPath(); c.moveTo(-r * 1.0, 0); c.quadraticCurveTo(-r * 1.05, style === 'long' ? r * 1.2 : r * 0.75, 0, style === 'long' ? r * 1.25 : r * 0.8); c.quadraticCurveTo(r * 1.05, style === 'long' ? r * 1.2 : r * 0.75, r * 1.0, 0); c.closePath(); c.fill(); edge(c); }
-    if (style === 'ponytail'){ const sw = Math.sin(t * 3) * r * 0.1; c.beginPath(); c.moveTo(-r * 0.22, r * 0.2); c.quadraticCurveTo(sw, r * 1.5, r * 0.22, r * 0.2); c.closePath(); c.fill(); edge(c); c.fillStyle = pick(look, 'color'); circle(c, 0, r * 0.22, r * 0.14); c.fill(); edge(c); }
-    if (style === 'buns') for (const d of [-1, 1]){ c.fillStyle = hc; circle(c, d * r * 0.72, -r * 0.82, r * 0.36); c.fill(); edge(c); }
-    if (style === 'curly') for (let k = 0; k < 11; k++){ const a = Math.PI * (0.95 + k * 0.11); c.fillStyle = hc; circle(c, Math.cos(a) * r * 0.9, Math.sin(a) * r * 0.85, r * 0.28); c.fill(); edge(c); }
-    if (style !== 'none'){ c.strokeStyle = mix(hc, '#ffffff', 0.25); c.lineWidth = lw * 1.2; c.beginPath(); c.arc(-r * 0.1, -r * 0.1, r * 0.75, Math.PI * 1.2, Math.PI * 1.5); c.stroke(); }
-    c.restore();
-    return;
-  }
-  const hairDark = mix(hc, '#000000', 0.25), hairLite = mix(hc, '#ffffff', 0.25);
-
-  /* hair behind the head */
-  c.fillStyle = hc; c.strokeStyle = INK; c.lineWidth = lw;
-  if (style === 'long'){ c.beginPath(); c.moveTo(-r * 1.02, -r * 0.2); c.quadraticCurveTo(-r * 1.15, r * 0.9, -r * 0.7, r * 1.15); c.lineTo(r * 0.7, r * 1.15); c.quadraticCurveTo(r * 1.15, r * 0.9, r * 1.02, -r * 0.2); c.closePath(); c.fill(); edge(c); }
-  if (style === 'ponytail'){ const sw = Math.sin(t * 3) * r * 0.08; c.beginPath(); c.moveTo(r * 0.75, -r * 0.55); c.quadraticCurveTo(r * 1.55 + sw, -r * 0.2, r * 1.2 + sw, r * 0.75); c.quadraticCurveTo(r * 1.05, r * 0.2, r * 0.6, -r * 0.2); c.closePath(); c.fill(); edge(c); }
-  if (style === 'bob'){ c.beginPath(); c.moveTo(-r * 1.05, -r * 0.1); c.quadraticCurveTo(-r * 1.12, r * 0.62, -r * 0.82, r * 0.7); c.lineTo(r * 0.82, r * 0.7); c.quadraticCurveTo(r * 1.12, r * 0.62, r * 1.05, -r * 0.1); c.closePath(); c.fill(); edge(c); }
-  if (style === 'buns'){ for (const d of [-1, 1]){ circle(c, d * r * 0.72, -r * 0.82, r * 0.36); c.fill(); edge(c); } }
-
-  /* ears and face: skin, lit from the left */
-  let sk;
-  if (S.shade === 'lit'){ sk = c.createRadialGradient(-r * 0.4, -r * 0.4, r * 0.1, 0, 0, r * 1.1); sk.addColorStop(0, mix(skin, '#ffffff', 0.18)); sk.addColorStop(0.7, skin); sk.addColorStop(1, mix(skin, '#3a1f10', 0.2)); }
-  else sk = shaded(c, skin, 0, 0, r);
-  c.fillStyle = sk;
-  for (const d of [-1, 1]){ circle(c, d * r * 0.96, r * 0.08, r * 0.2); c.fill(); edge(c); }
-  c.beginPath(); c.ellipse(0, 0, r, r * 0.97, 0, 0, Math.PI * 2); c.fill(); edge(c);
-  /* cheeks */
-  c.fillStyle = 'rgba(255,110,120,.28)'; for (const d of [-1, 1]){ c.beginPath(); c.ellipse(d * r * 0.52, r * 0.3, r * 0.17, r * 0.11, 0, 0, Math.PI * 2); c.fill(); }
-
-  /* the face */
-  const eyes = pick(look, 'eyes'), mouth = pick(look, 'mouth');
-  const blink = (t % 4.2) > 4.05;
-  c.fillStyle = S.feature; c.strokeStyle = S.feature; c.lineWidth = fw * 1.1;
-  for (const d of [-1, 1]){
-    const ex = d * r * 0.36, ey = -r * 0.02;
-    if (blink || eyes === 'happy' || (eyes === 'wink' && d > 0)){ c.beginPath(); c.arc(ex, ey + r * 0.06, r * 0.13, Math.PI * 1.15, Math.PI * 1.85); c.stroke(); continue; }
-    const er = eyes === 'sparkle' ? r * 0.15 : r * 0.11;
-    c.beginPath(); c.ellipse(ex, ey, er * 0.85, er, 0, 0, Math.PI * 2); c.fill();
-    c.fillStyle = '#fff'; circle(c, ex - er * 0.3, ey - er * 0.35, er * 0.32); c.fill();
-    if (eyes === 'sparkle'){ circle(c, ex + er * 0.3, ey + er * 0.3, er * 0.16); c.fill(); }
-    c.fillStyle = S.feature;
-  }
-  /* brows */
-  c.lineWidth = fw * 0.9; for (const d of [-1, 1]){ c.beginPath(); c.moveTo(d * r * 0.24, -r * 0.27); c.quadraticCurveTo(d * r * 0.36, -r * 0.34, d * r * 0.48, -r * 0.28); c.stroke(); }
-  /* the mouth */
-  c.lineWidth = fw * 1.1;
-  if (mouth === 'smile'){ c.beginPath(); c.arc(0, r * 0.22, r * 0.22, Math.PI * 0.18, Math.PI * 0.82); c.stroke(); }
-  else if (mouth === 'grin' || mouth === 'tongue'){
-    c.fillStyle = '#7a1f2b'; c.beginPath(); c.moveTo(-r * 0.27, r * 0.3); c.quadraticCurveTo(0, r * 0.68, r * 0.27, r * 0.3); c.closePath(); c.fill(); edge(c);
-    c.fillStyle = '#fff'; c.beginPath(); c.moveTo(-r * 0.22, r * 0.32); c.lineTo(r * 0.22, r * 0.32); c.lineTo(r * 0.18, r * 0.39); c.lineTo(-r * 0.18, r * 0.39); c.closePath(); c.fill();
-    if (mouth === 'tongue'){ c.fillStyle = '#ff7b93'; c.beginPath(); c.ellipse(r * 0.05, r * 0.5, r * 0.11, r * 0.08, 0, 0, Math.PI * 2); c.fill(); }
-  }
-  else { c.fillStyle = '#7a1f2b'; c.beginPath(); c.ellipse(0, r * 0.42, r * 0.1, r * 0.13, 0, 0, Math.PI * 2); c.fill(); edge(c); }
-
-  /* hair on top */
-  c.fillStyle = hc; c.strokeStyle = INK; c.lineWidth = lw;
-  const cap = () => { c.beginPath(); c.moveTo(-r * 1.0, -r * 0.05); c.bezierCurveTo(-r * 1.1, -r * 1.25, r * 1.1, -r * 1.25, r * 1.0, -r * 0.05); };
-  if (style === 'short' || style === 'ponytail' || style === 'buns' || style === 'long' || style === 'bob'){
-    cap(); c.quadraticCurveTo(r * 0.55, -r * 0.62, r * 0.1, -r * 0.5); c.quadraticCurveTo(-r * 0.45, -r * 0.42, -r * 1.0, -r * 0.05); c.closePath(); c.fill(); edge(c);
-  } else if (style === 'curly'){
-    for (let k = 0; k < 9; k++){ const a = Math.PI * (1.02 + k * 0.12); circle(c, Math.cos(a) * r * 0.9, Math.sin(a) * r * 0.82 - r * 0.08, r * 0.3); c.fill(); edge(c); }
-    c.beginPath(); c.ellipse(0, -r * 0.62, r * 0.78, r * 0.32, 0, 0, Math.PI * 2); c.fill();
-  } else if (style === 'spiky'){
-    c.beginPath(); c.moveTo(-r * 1.0, -r * 0.1);
-    for (let k = 0; k <= 8; k++){ const a = Math.PI * (1.12 + k * 0.76 / 8); const tip = k % 2 ? 1.32 : 0.95; c.lineTo(Math.cos(a) * r * tip, Math.sin(a) * r * tip - r * 0.05); }
-    c.lineTo(r * 1.0, -r * 0.1); c.quadraticCurveTo(0, -r * 0.5, -r * 1.0, -r * 0.1); c.closePath(); c.fill(); edge(c);
-  }
-  /* a shine on the hair */
-  if (style !== 'none'){ c.strokeStyle = hairLite; c.lineWidth = lw * 1.2; c.beginPath(); c.arc(-r * 0.15, -r * 0.2, r * 0.75, Math.PI * 1.25, Math.PI * 1.45); c.stroke(); }
-  void hairDark;
-
-  /* the extra */
-  const extra = pick(look, 'extra'), fav = pick(look, 'color');
-  c.strokeStyle = INK; c.lineWidth = lw;
-  if (extra === 'cap'){
-    c.fillStyle = fav; c.beginPath(); c.moveTo(-r * 0.98, -r * 0.3); c.bezierCurveTo(-r * 1.0, -r * 1.3, r * 1.0, -r * 1.3, r * 0.98, -r * 0.3); c.closePath(); c.fill(); edge(c);
-    c.fillStyle = mix(fav, '#000000', 0.2); c.beginPath(); c.ellipse(r * 0.55, -r * 0.3, r * 0.75, r * 0.16, -0.08, 0, Math.PI * 2); c.fill(); edge(c);
-    c.fillStyle = '#fff'; circle(c, 0, -r * 1.02, r * 0.1); c.fill();
-  } else if (extra === 'bow'){
-    c.fillStyle = fav; for (const d of [-1, 1]){ c.beginPath(); c.moveTo(r * 0.55, -r * 0.82); c.lineTo(r * 0.55 + d * r * 0.4, -r * 1.05); c.lineTo(r * 0.55 + d * r * 0.4, -r * 0.6); c.closePath(); c.fill(); edge(c); }
-    circle(c, r * 0.55, -r * 0.82, r * 0.12); c.fill(); edge(c);
-  } else if (extra === 'glasses'){
-    c.strokeStyle = S.feature; c.lineWidth = fw * 1.2; c.fillStyle = 'rgba(200,235,255,.35)';
-    for (const d of [-1, 1]){ circle(c, d * r * 0.36, -r * 0.02, r * 0.22); c.fill(); edge(c); }
-    c.beginPath(); c.moveTo(-r * 0.14, -r * 0.04); c.lineTo(r * 0.14, -r * 0.04); c.stroke();
-  } else if (extra === 'headphones'){
-    c.strokeStyle = INK; c.lineWidth = r * 0.16; c.beginPath(); c.arc(0, -r * 0.05, r * 1.08, Math.PI * 1.08, Math.PI * 1.92); c.stroke();
-    c.strokeStyle = fav; c.lineWidth = r * 0.1; c.stroke();
-    c.lineWidth = lw; c.strokeStyle = INK; c.fillStyle = fav;
-    for (const d of [-1, 1]){ c.beginPath(); c.ellipse(d * r * 1.02, r * 0.05, r * 0.22, r * 0.32, 0, 0, Math.PI * 2); c.fill(); edge(c); }
-  } else if (extra === 'crown'){
-    c.fillStyle = '#fbbf24'; c.beginPath(); c.moveTo(-r * 0.55, -r * 0.82); c.lineTo(-r * 0.6, -r * 1.35); c.lineTo(-r * 0.3, -r * 1.08); c.lineTo(0, -r * 1.45); c.lineTo(r * 0.3, -r * 1.08); c.lineTo(r * 0.6, -r * 1.35); c.lineTo(r * 0.55, -r * 0.82); c.closePath(); c.fill(); edge(c);
-    c.fillStyle = fav; circle(c, 0, -r * 0.98, r * 0.09); c.fill();
-  } else if (extra === 'flower'){
-    c.fillStyle = fav; for (let k = 0; k < 5; k++){ const a = k / 5 * Math.PI * 2 + t * 0.5; circle(c, r * 0.62 + Math.cos(a) * r * 0.18, -r * 0.72 + Math.sin(a) * r * 0.18, r * 0.14); c.fill(); edge(c); }
-    c.fillStyle = '#fde047'; circle(c, r * 0.62, -r * 0.72, r * 0.1); c.fill();
-  }
+export function head(c, x, y, r, look, t = 0, { back = false } = {}){
+  const a = resolve(look), S = r * 2 / 0.46, { hw, hh } = SIZE(S);
+  c.save(); c.translate(x, y - hh / 2);
+  paper(c, [-hw / 2 - S * 0.03, -S * 0.2, hw + S * 0.06, S * 0.2 + hh + S * 0.03], S, (cc) => drawHead(cc, a, S, back, t));
   c.restore();
 }
 
-/* ---------- the whole avatar, standing ---------- */
-/* opts: { costume: 'space' (a space suit in their colour, a glass helmet),
-   back: true (seen from behind) } */
-export function body(c, x, base, h, look, t = 0, pose = 'stand', opts = {}){
-  const u = h / 300;
-  /* their shadow on the ground (outside the cel pass: no rim on it) */
-  c.fillStyle = 'rgba(20,15,45,.22)'; c.beginPath(); c.ellipse(x, base, 60 * u, 12 * u, 0, 0, Math.PI * 2); c.fill();
-  cel(c, [x - 160 * u, base - 400 * u, 320 * u, 425 * u], [x + 33 * u, x + 42 * u], h * 0.012, (cc) => bodyFlat(cc, x, base, h, look, t, pose, opts));
-}
-function bodyFlat(c, x, base, h, look, t, pose, { costume = null, back = false } = {}){
-  const u = h / 300, fav = pick(look, 'color'), space = costume === 'space';
-  const skin = pick(look, 'skin'), outfit = space ? 'plain' : pick(look, 'outfit');
-  const lite = mix(fav, '#ffffff', 0.3), dark = mix(fav, '#000000', 0.3);
-  const lw = Math.max(1.5, 5 * u) * (S.width || 1);
-  c.save(); c.translate(x, base); c.lineJoin = 'round'; c.lineCap = 'round';
-  const limb = (pts, w, col) => {
-    for (const [ww, sc] of (S.outline ? [[w + lw * 2, S.outline], [w, col]] : [[w, col]])){ c.strokeStyle = sc; c.lineWidth = ww; c.beginPath(); pts.forEach(([a, b], k) => (k ? c.lineTo(a * u, b * u) : c.moveTo(a * u, b * u))); c.stroke(); }
-  };
-  const bob = Math.sin(t * 3) * 2;
-  /* legs and shoes */
-  for (const d of [-1, 1]){ limb([[d * 18, -105], [d * 20, -20]], 26 * u, space ? fav : mix('#3b4a6b', fav, 0.15)); c.fillStyle = '#fff'; c.strokeStyle = INK; c.lineWidth = lw; c.beginPath(); c.ellipse(d * 24 * u, -12 * u, 22 * u, 13 * u, 0, 0, Math.PI * 2); c.fill(); edge(c); c.fillStyle = fav; c.beginPath(); c.ellipse(d * 24 * u, -8 * u, 20 * u, 6 * u, 0, 0, Math.PI); c.fill(); }
-  /* arms */
-  const arms = {
-    stand: (d) => [[d * 44, -200], [d * 56, -150], [d * 54, -112]],
-    wave: (d) => d < 0 ? [[-44, -200], [-82, -228], [-96 + Math.sin(t * 10) * 10, -278]] : [[44, -200], [56, -150], [54, -112]],
-    cheer: (d) => [[d * 44, -200], [d * 78, -238], [d * 92, -290]],
-    reach: (d) => [[d * 44, -200], [d * 60, -250], [d * 66, -305]]
-  }[pose] || ((d) => [[d * 44, -200], [d * 56, -150], [d * 54, -112]]);
-  for (const d of [-1, 1]){ const a = arms(d); limb(a, 24 * u, outfit === 'hoodie' || space ? fav : skin); c.fillStyle = space ? '#ffffff' : skin; c.strokeStyle = INK; c.lineWidth = lw; circle(c, a[2][0] * u, a[2][1] * u, 15 * u); c.fill(); edge(c); if (outfit !== 'hoodie'){ limb(a.slice(0, 2), 26 * u, fav); } }
-  /* the body: a rounded top in their colour, lit from the left */
-  const g = shaded(c, fav, 0, -155 * u, 60 * u);
-  c.fillStyle = g; c.strokeStyle = INK; c.lineWidth = lw;
-  c.beginPath(); c.moveTo(-46 * u, -208 * u + bob); c.quadraticCurveTo(0, -220 * u + bob, 46 * u, -208 * u + bob); c.quadraticCurveTo(58 * u, -150 * u, 44 * u, -98 * u); c.quadraticCurveTo(0, -88 * u, -44 * u, -98 * u); c.quadraticCurveTo(-58 * u, -150 * u, -46 * u, -208 * u + bob); c.closePath(); c.fill(); edge(c);
-  c.save(); c.clip();
-  if (outfit === 'stripes'){ c.fillStyle = 'rgba(255,255,255,.45)'; for (let k = 0; k < 5; k++) c.fillRect(-70 * u, (-196 + k * 22) * u, 140 * u, 9 * u); }
-  if (outfit === 'dots'){ c.fillStyle = 'rgba(255,255,255,.5)'; for (let i = -2; i <= 2; i++) for (let j = 0; j < 5; j++) { circle(c, (i * 24 + (j % 2) * 12) * u, (-195 + j * 22) * u, 5 * u); c.fill(); } }
-  if (outfit === 'stars'){ c.fillStyle = 'rgba(255,255,255,.9)'; const st = (sx, sy, s) => { c.beginPath(); for (let k = 0; k < 10; k++){ const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? s * 0.45 : s; c.lineTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr); } c.closePath(); c.fill(); }; st(0, -158 * u, 18 * u); }
-  if (outfit === 'hoodie'){ c.fillStyle = 'rgba(0,0,0,.14)'; c.fillRect(-26 * u, -140 * u, 52 * u, 30 * u); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 3 * u; for (const d of [-1, 1]){ c.beginPath(); c.moveTo(d * 10 * u, -205 * u); c.lineTo(d * 12 * u, -170 * u); c.stroke(); } }
-  c.restore();
-  if (space){
-    /* the suit: a belt, and a glowing badge on the chest (a pack, from behind) */
-    c.fillStyle = mix(fav, '#000000', 0.35); c.fillRect(-46 * u, -116 * u, 92 * u, 12 * u);
-    if (back){ c.fillStyle = mix(fav, '#000000', 0.25); c.beginPath(); c.roundRect(-30 * u, -200 * u, 60 * u, 74 * u, 14 * u); c.fill(); edge(c); c.fillStyle = '#ffffff'; c.fillRect(-14 * u, -186 * u, 28 * u, 8 * u); }
-    else { c.fillStyle = '#ffffff'; circle(c, 0, -170 * u, 13 * u); c.fill(); edge(c); c.fillStyle = mix(fav, '#ffffff', 0.4); circle(c, 0, -170 * u, 7 * u); c.fill(); }
-  }
-  if (outfit === 'hoodie'){ c.fillStyle = dark; c.strokeStyle = INK; c.lineWidth = lw; c.beginPath(); c.ellipse(0, -210 * u + bob, 50 * u, 16 * u, 0, 0, Math.PI * 2); c.fill(); edge(c); }
-  /* the head - in a glass helmet, in space */
-  const hy = -258 * u + bob;
-  head(c, 0, hy, 52 * u, space ? { ...look, extra: look.extra === 'glasses' ? 'glasses' : 'none' } : look, t, { back });
-  if (space){
-    c.strokeStyle = INK; c.lineWidth = lw;
-    c.fillStyle = 'rgba(190,235,255,.28)'; circle(c, 0, hy + 4 * u, 78 * u); c.fill(); edge(c);
-    c.strokeStyle = '#ffffff'; c.lineWidth = 7 * u; c.beginPath(); c.arc(0, hy + 4 * u, 66 * u, Math.PI * 1.15, Math.PI * 1.45); c.stroke();
-    c.fillStyle = fav; c.strokeStyle = INK; c.lineWidth = lw; c.beginPath(); c.ellipse(0, hy + 76 * u, 60 * u, 13 * u, 0, 0, Math.PI * 2); c.fill(); edge(c);
-    c.lineWidth = 5 * u; c.strokeStyle = INK; c.beginPath(); c.moveTo(44 * u, hy - 58 * u); c.lineTo(58 * u, hy - 100 * u); c.stroke();
-    c.fillStyle = fav; c.lineWidth = lw; circle(c, 58 * u, hy - 104 * u, 10 * u); c.fill(); edge(c);
-  }
+/* ---------- the whole character, standing ---------- */
+const ARMS = {
+  stand: () => null,
+  wave: (d, S, bw, by, t) => d < 0 ? [-bw * 0.5 - S * 0.17, by - S * 0.1 + Math.sin(t * 10) * S * 0.02] : null,
+  cheer: (d, S, bw, by) => [d * (bw * 0.5 + S * 0.14), by - S * 0.3],
+  reach: (d, S, bw, by) => [d * (bw * 0.5 + S * 0.09), by - S * 0.42]
+};
+export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false } = {}){
+  const a = resolve(look), S = h, { hh, bw, bh } = SIZE(S), by = -S + hh + S * 0.015, legH = S - (by + S) - bh + S * 0.02;
+  /* their shadow on the ground (outside the cut: it has no paper edge) */
+  c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x, base, S * 0.27, S * 0.04, 0, 0, Math.PI * 2); c.fill();
+  c.save(); c.translate(x, base);
+  paper(c, [-S * 0.75, -S * 1.3, S * 1.5, S * 1.34], S, (cc) => {
+    cc.save(); cc.translate(0, by); drawCape(cc, a, S, bw, bh); cc.restore();
+    const ly = by + bh - S * 0.02;
+    for (const d of [-1, 1]){ drawLeg(cc, a, S, [[d * bw * 0.24, ly + S * 0.05], [d * bw * 0.24, ly + legH - S * 0.05]]); }
+    drawFoot(cc, S, -bw * 0.26, 0); drawFoot(cc, S, bw * 0.26, 0);
+    const reach = ARMS[pose] || ARMS.stand;
+    for (const d of [-1, 1]){
+      const sx = d * (bw * 0.5 + S * 0.03), sy = by + S * 0.06;
+      const up = reach(d, S, bw, by, t);
+      const pts = up ? [[sx, sy], [(sx + up[0]) / 2 + d * S * 0.02, (sy + up[1]) / 2], up] : [[sx, sy], [sx, by + bh * 0.88]];
+      drawArm(cc, a, S, pts, d < 0);
+    }
+    cc.save(); cc.translate(0, by); drawTorso(cc, a, S, bw, bh); cc.restore();
+    cc.save(); cc.translate(0, -S); drawHead(cc, a, S, back, t); cc.restore();
+  });
   c.restore();
 }
 
 /* ---------- a portrait: for tiles and name chips ---------- */
 export function portrait(c, x, y, s, look, t = 0){
-  const fav = pick(look, 'color');
+  const a = resolve(look);
   c.save();
-  const r = s * 0.22;
-  c.beginPath(); c.roundRect(x - s / 2, y - s / 2, s, s, r);
-  let g = mix(fav, '#ffffff', 0.3);
-  if (S.shade !== 'cel'){ g = c.createLinearGradient(x - s / 2, y - s / 2, x + s / 2, y + s / 2); g.addColorStop(0, mix(fav, '#ffffff', 0.35)); g.addColorStop(1, fav); }
-  c.fillStyle = g; c.fill(); c.clip();
-  /* shoulders, then the head */
-  c.fillStyle = mix(fav, '#000000', 0.18); c.beginPath(); c.ellipse(x, y + s * 0.55, s * 0.36, s * 0.22, 0, 0, Math.PI * 2); c.fill();
-  head(c, x, y + s * 0.05, s * 0.3, look, t);
+  c.beginPath(); c.roundRect ? c.roundRect(x - s / 2, y - s / 2, s, s, s * 0.22) : c.rect(x - s / 2, y - s / 2, s, s);
+  c.fillStyle = a.light; c.fill(); c.clip();
+  /* the shoulders, then the cube head */
+  c.fillStyle = a.c; c.beginPath(); c.ellipse(x, y + s * 0.62, s * 0.34, s * 0.2, 0, 0, Math.PI * 2); c.fill();
+  head(c, x, y + s * 0.02, s * 0.36, look, t);
   c.restore();
 }
 
-/* ---------- the avatar as a player: posed by the camera ----------
-   The whole avatar drawn on a player's body as the camera sees it - arms
-   where their arms are, head where their head is, leaning as they lean -
-   so a child sees themselves as their avatar, like a mirror. lm: the
-   pose landmarks (0..1, mirrored); lift: how far up to draw them (px). */
+/* ---------- the character as a player: posed by the camera ----------
+   The whole character drawn on a player's body as the camera sees it - arms where their arms are, the head where their head is, leaning as
+   they lean - so a child sees themselves as their avatar, like a mirror. lm: the pose landmarks (0..1, mirrored); lift: how far up to draw
+   them (px). */
 const NOSE = 0, L_EYE = 2, R_EYE = 5, L_EAR = 7, R_EAR = 8, L_SH = 11, R_SH = 12, L_EL = 13, R_EL = 14,
   L_WR = 15, R_WR = 16, L_HIP = 23, R_HIP = 24, L_KN = 25, R_KN = 26, L_AN = 27, R_AN = 28;
 export function figure(c, lm, W, H, look, t = 0, { lift = 0 } = {}){
@@ -303,61 +239,44 @@ export function figure(c, lm, W, H, look, t = 0, { lift = 0 } = {}){
   const ls = P(L_SH), rs = P(R_SH);
   const sw = Math.hypot(ls[0] - rs[0], ls[1] - rs[1]);
   if (sw < 6) return;
-  /* (chunkier than a real body: a bigger head, thicker arms and legs - the
-     avatars' own toddler-toy shape - with the hands still where theirs are) */
-  const u = sw / 88, r = 64 * u;
-  /* the head: between the ears (or at the nose), tilted with the eyes */
+  /* the character is a little wider than a body: its torso is as wide as the shoulders, its head a third wider again */
+  const S = sw * 2.9, { hw, hh } = SIZE(S);
   const nose = P(NOSE), ears = seen(L_EAR) && seen(R_EAR) ? [P(L_EAR), P(R_EAR)] : null;
-  const hx = ears ? (ears[0][0] + ears[1][0]) / 2 : nose[0], hy = (ears ? (ears[0][1] + ears[1][1]) / 2 : nose[1]) - r * 0.12;
+  const hx = ears ? (ears[0][0] + ears[1][0]) / 2 : nose[0], hy = (ears ? (ears[0][1] + ears[1][1]) / 2 : nose[1]) - hh * 0.12;
   const tilt = seen(L_EYE) && seen(R_EYE) ? Math.atan2(P(R_EYE)[1] - P(L_EYE)[1], P(R_EYE)[0] - P(L_EYE)[0]) : 0;
   const tip = Math.abs(tilt) > Math.PI / 2 ? tilt - Math.sign(tilt) * Math.PI : tilt;
-  /* the box everything is in, for the cel pass */
   const pts = [ls, rs, [hx, hy]];
   for (const i of [L_EL, R_EL, L_WR, R_WR, L_HIP, R_HIP, L_KN, R_KN, L_AN, R_AN]) if (seen(i)) pts.push(P(i));
-  const pad = r * 2.2;
+  const pad = S * 0.45;
   const x0 = Math.min(...pts.map(p => p[0])) - pad, x1 = Math.max(...pts.map(p => p[0])) + pad;
   const y0 = Math.min(...pts.map(p => p[1])) - pad, y1 = Math.max(...pts.map(p => p[1])) + pad;
-  const cx = (ls[0] + rs[0]) / 2;
-  cel(c, [x0, y0, x1 - x0, y1 - y0], [cx + sw * 0.18, cx + sw * 0.28], r * 0.07, (cc) => figureFlat(cc, P, seen, u, r, hx, hy, tip, look, t));
+  const a = resolve(look);
+  paper(c, [x0, y0, x1 - x0, y1 - y0], S, (cc) => figureFlat(cc, a, P, seen, S, hx, hy, tip, t, hw, hh));
 }
-function figureFlat(c, P, seen, u, r, hx, hy, tilt, look, t){
-  const fav = pick(look, 'color'), skin = pick(look, 'skin'), legs = mix('#3b4a6b', fav, 0.15);
-  c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
-  const line = (pts, w, col) => { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); pts.forEach(([x, y], k) => k ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke(); };
-  const ls = P(L_SH), rs = P(R_SH);
+function figureFlat(c, a, P, seen, S, hx, hy, tilt, t, hw, hh){
+  const { bw } = SIZE(S);
+  const ls = P(L_SH), rs = P(R_SH), down = (p, by) => [p[0], p[1] + by];
   /* hips: as seen, or a torso's length under the shoulders */
-  const down = (p, by) => [p[0], p[1] + by];
-  const lh = seen(L_HIP) ? P(L_HIP) : down(ls, 120 * u), rh = seen(R_HIP) ? P(R_HIP) : down(rs, 120 * u);
-  /* legs: hip, knee, ankle, as far as the camera sees them */
-  for (const [h, k, a] of [[lh, L_KN, L_AN], [rh, R_KN, R_AN]]){
-    const leg = [h]; if (seen(k)) { leg.push(P(k)); if (seen(a)) leg.push(P(a)); } else leg.push(down(h, 90 * u));
-    line(leg, 34 * u, legs);
-    const foot = leg[leg.length - 1];
-    if (leg.length === 3){ c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(foot[0], foot[1] + 6 * u, 22 * u, 13 * u, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = fav; c.beginPath(); c.ellipse(foot[0], foot[1] + 10 * u, 20 * u, 6 * u, 0, 0, Math.PI); c.fill(); }
+  const lh = seen(L_HIP) ? P(L_HIP) : down(ls, S * 0.4), rh = seen(R_HIP) ? P(R_HIP) : down(rs, S * 0.4);
+  const ms = [(ls[0] + rs[0]) / 2, (ls[1] + rs[1]) / 2], mh = [(lh[0] + rh[0]) / 2, (lh[1] + rh[1]) / 2];
+  const D = Math.hypot(mh[0] - ms[0], mh[1] - ms[1]), ang = Math.atan2(-(mh[0] - ms[0]), mh[1] - ms[1]);
+  const bh = Math.max(S * 0.27, D + S * 0.05);
+  /* the cape, then the legs and feet */
+  c.save(); c.translate(ms[0], ms[1]); c.rotate(ang); c.translate(0, -S * 0.03); drawCape(c, a, S, bw, bh); c.restore();
+  for (const [h, k, an] of [[lh, L_KN, L_AN], [rh, R_KN, R_AN]]){
+    const leg = [h]; if (seen(k)){ leg.push(P(k)); if (seen(an)) leg.push(P(an)); } else leg.push(down(h, S * 0.3));
+    drawLeg(c, a, S, leg);
+    if (leg.length === 3) drawFoot(c, S, leg[2][0], leg[2][1] + S * 0.04);
   }
-  /* the neck, then the body: shoulders to hips, rounded off */
-  line([[(ls[0] + rs[0]) / 2, (ls[1] + rs[1]) / 2], [hx, hy + r * 0.6]], 22 * u, skin);
-  c.fillStyle = fav; c.strokeStyle = fav; c.lineWidth = 46 * u;
-  c.beginPath(); c.moveTo(ls[0], ls[1]); c.lineTo(rs[0], rs[1]); c.lineTo(rh[0], rh[1]); c.lineTo(lh[0], lh[1]); c.closePath(); c.fill(); c.stroke();
-  const outfit = pick(look, 'outfit');
-  if (outfit !== 'plain'){
-    c.save(); c.clip();
-    const mx = (ls[0] + rs[0] + lh[0] + rh[0]) / 4, my = (ls[1] + rs[1] + lh[1] + rh[1]) / 4;
-    if (outfit === 'stripes'){ c.fillStyle = 'rgba(255,255,255,.45)'; for (let k = -2; k <= 2; k++) c.fillRect(mx - 120 * u, my + k * 22 * u - 4 * u, 240 * u, 9 * u); }
-    if (outfit === 'stars'){ c.fillStyle = 'rgba(255,255,255,.9)'; c.beginPath(); for (let k = 0; k < 10; k++){ const a = -Math.PI / 2 + k * Math.PI / 5, q = k % 2 ? 8 * u : 18 * u; c.lineTo(mx + Math.cos(a) * q, my - 8 * u + Math.sin(a) * q); } c.closePath(); c.fill(); }
-    if (outfit === 'dots'){ c.fillStyle = 'rgba(255,255,255,.5)'; for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++){ c.beginPath(); c.arc(mx + (i * 24 + (j % 2) * 12) * u, my + j * 22 * u, 5 * u, 0, Math.PI * 2); c.fill(); } }
-    if (outfit === 'hoodie'){ c.fillStyle = 'rgba(0,0,0,.14)'; c.fillRect(mx - 26 * u, my + 6 * u, 52 * u, 30 * u); }
-    c.restore();
+  /* the arms: a sleeve to the elbow, the forearm, then the hand */
+  for (const [s, e, w, left] of [[ls, L_EL, L_WR, true], [rs, R_EL, R_WR, false]]){
+    let pts;
+    if (!seen(e)) pts = [s, down(s, S * 0.26)];
+    else { pts = [s, P(e)]; if (seen(w)) pts.push(P(w)); }
+    drawArm(c, a, S, pts, left);
   }
-  /* arms: a sleeve to the elbow, then the forearm, then the hand */
-  for (const [s, e, w] of [[ls, L_EL, L_WR], [rs, R_EL, R_WR]]){
-    if (!seen(e)) { line([s, down(s, 80 * u)], 32 * u, fav); continue; }
-    const el = P(e);
-    if (seen(w)){ const wr = P(w); line([el, wr], 28 * u, skin); c.fillStyle = skin; c.beginPath(); c.arc(wr[0], wr[1], 19 * u, 0, Math.PI * 2); c.fill(); }
-    line([s, el], 32 * u, fav);
-  }
+  /* the torso, shoulders to hips */
+  c.save(); c.translate(ms[0], ms[1]); c.rotate(ang); c.translate(0, -S * 0.03); drawTorso(c, a, S, bw, bh); c.restore();
   /* the head, tilted as theirs is */
-  c.translate(hx, hy); c.rotate(tilt * 0.8);
-  head(c, 0, 0, r, look, t);
-  c.restore();
+  c.save(); c.translate(hx, hy); c.rotate(tilt * 0.8); c.translate(0, -hh / 2); drawHead(c, a, S, false, t); c.restore();
 }

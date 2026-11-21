@@ -17,15 +17,17 @@
    crew.of(i)                       player i's profile id, or null
    crew.popped()                    names to show: [{ i, id }] (taken) */
 import { MAX_PLAYERS } from '../tracking/pose-shared.js';
+import { setPlayerColours, resolveColours } from '../tracking/player-colours.js';
+import { color } from '../games/assets/palette.js';
+import { normalizeLook } from './look.js';
 
-/* The two generic crew avatars, one per player, while making your own is
-   off (avatar-maker.js MAKING): friendly, plain, told apart at a glance by
-   their colour (the player's colour) and their hair. */
+/* The generic crew characters, one per player, while making your own is off (avatar-maker.js MAKING): the same cube character,
+   told apart at a glance by colour (the player's colour) and what they wear. */
 export const GENERIC = [
-  { skin: '#c98f6a', hair: 'short', hairColor: '#4a2c1a', eyes: 'dots', mouth: 'smile', color: '#3da9ff', outfit: 'plain', extra: 'none' },
-  { skin: '#e9b892', hair: 'ponytail', hairColor: '#2b1a12', eyes: 'dots', mouth: 'grin', color: '#ff8a3d', outfit: 'plain', extra: 'none' },
-  { skin: '#8d5a3b', hair: 'curly', hairColor: '#1c120d', eyes: 'dots', mouth: 'smile', color: '#3fcf7f', outfit: 'plain', extra: 'none' },
-  { skin: '#f2c6a0', hair: 'bob', hairColor: '#8a4b23', eyes: 'dots', mouth: 'grin', color: '#c46bff', outfit: 'plain', extra: 'none' }
+  { colour: 'sky', face: { eyes: 'dot', mouth: 'smile' }, top: 'tuft', outfit: 'plain', outfitColour: 'shade.card', extra: 'none' },
+  { colour: 'orange', face: { eyes: 'happy', mouth: 'grin' }, top: 'bob', outfit: 'plain', outfitColour: 'earth.bark', extra: 'none' },
+  { colour: 'green', face: { eyes: 'dot', mouth: 'smile' }, top: 'cap', outfit: 'stripes', outfitColour: 'shade.card', extra: 'none' },
+  { colour: 'purple', face: { eyes: 'wink', mouth: 'grin' }, top: 'bow', outfit: 'plain', outfitColour: 'ui.gold', extra: 'none' }
 ];
 
 export function makeCrew(n = MAX_PLAYERS){
@@ -44,15 +46,21 @@ export function makeCrew(n = MAX_PLAYERS){
     /* player i's avatar: their own, if avatars are made (personal), else the
        generic one for their place */
     personal: false,
-    lookOf(i){ const p = this.personal && this.profileOf(i); return (p && p.look) || GENERIC[i % GENERIC.length]; },
+    lookOf(i){ const p = this.personal && this.profileOf(i); return normalizeLook((p && p.look) || GENERIC[i % GENERIC.length]); },
+    /* the favourite (by name) player i asked for with their avatar: null for a guest */
+    wantedOf(i){ const p = this.personal && this.profileOf(i); return p ? normalizeLook(p.look).colour : (this.personal ? null : GENERIC[i % GENERIC.length].colour); },
     nameOf(i){ const p = this.profileOf(i); return p ? p.name : null; },
-    colorOf(i, fallback = null){ const l = this.lookOf(i); return (l && l.color) || fallback; },
+    /* U8: who is playing decides every player's colour; only the app's own crew pushes it to PLAYER_COLORS (see sync) */
+    colourNames(){ return resolveColours(Array.from({ length: n }, (_, i) => this.wantedOf(i))); },
+    colorOf(i, fallback = null){ const nm = this.colourNames()[i]; return nm ? color('fav.' + nm) : fallback; },
+    pushes: false,
+    sync(){ if (this.pushes) setPlayerColours(Array.from({ length: n }, (_, i) => this.wantedOf(i))); },
     playerOf(id){ const i = this.seat.indexOf(id); return i < 0 ? null : i; },
     set(i, id){
       if (id != null){ const j = this.seat.indexOf(id); if (j >= 0 && j !== i) this.seat[j] = null; this.away.delete(id); }
-      this.seat[i] = id;
+      this.seat[i] = id; this.sync();
     },
-    clear(){ this.seat.fill(null); this.away.clear(); this.pops = []; },
+    clear(){ this.seat.fill(null); this.away.clear(); this.pops = []; this.sync(); },
     popped(){ const p = this.pops; this.pops = []; return p; },
 
     step(dt, present){
@@ -65,7 +73,7 @@ export function makeCrew(n = MAX_PLAYERS){
     },
     _leave(i){
       if (this.seat[i] != null) this.away.add(this.seat[i]);
-      this.seat[i] = null;
+      this.seat[i] = null; this.sync();
     },
     _arrive(i){
       if (this.seat[i] != null || this.away.size !== 1) return;
@@ -79,3 +87,4 @@ export function makeCrew(n = MAX_PLAYERS){
 
 /* The one for the app. */
 export const crew = makeCrew();
+crew.pushes = true;

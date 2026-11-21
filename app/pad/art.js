@@ -1,7 +1,10 @@
 /* Painting for the pad page: the painted asset library (pictures, Cubo) and the app's avatars, drawn on small canvases.
    A picture id the library does not have is drawn as a calm blank card, never a "?" box on a child's phone. */
 import { assets } from '../src/games/assets/index.js';
-import { body, head, PARTS } from '../src/ui/avatar-art.js';
+import { body, head } from '../src/ui/avatar-art.js';
+import { normalizeLook } from '../src/ui/look.js';
+import { color } from '../src/games/assets/palette.js';
+import { DEFAULT_PLAYER_FAVS } from '../src/tracking/pose-shared.js';
 
 const DPR = () => Math.min(2, window.devicePixelRatio || 1);
 
@@ -32,16 +35,16 @@ export function paintCubo(cv, { pose = 'freeze', px = 160, t = 0 } = {}) {
 export function paintPerson(cv, person, px = 200) {
   if (person && person.id === 'guest') return paintCubo(cv, { pose: 'wave', px });
   const { c, s } = ready(cv, px);
-  const look = person && person.avatar && typeof person.avatar === 'object' ? person.avatar : null;
+  const look = normalizeLook(person && person.avatar);       /* (looks saved before the one character are carried over; none is Cubo) */
   try { body(c, s / 2, s * 0.97, s * 0.9, look, 0, 'stand'); } catch { try { head(c, s / 2, s / 2, s * 0.32, look, 0); } catch { /* blank */ } }
 }
 
-/* the colour a person is shown on: their avatar's favourite colour, else one from the palette by position */
+/* the colour a person is shown on: their avatar's favourite colour, else one from the palette by position (a guest is calm grey) */
 export function personColour(person, i = 0) {
+  if (person && person.id === 'guest') return color('shade.light');
   const a = person && person.avatar;
-  if (a && typeof a === 'object' && /^#[0-9a-f]{6}$/i.test(a.color || '')) return a.color;
-  if (person && person.id === 'guest') return '#cfc9b8';
-  return PARTS.color[i % PARTS.color.length];
+  if (a && typeof a === 'object') return color('fav.' + normalizeLook(a).colour);
+  return color('fav.' + DEFAULT_PLAYER_FAVS[i % DEFAULT_PLAYER_FAVS.length]);
 }
 
 /* WebGL2 works? (sent in hello) */

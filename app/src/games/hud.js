@@ -2,6 +2,7 @@
    something to fill, and under that a few words. (The clock is the shell's, top centre; a score, if a game shows one, is in
    the game's corner, top left.) They go away on the results screen, so nothing from the game sits behind "Well played!". */
 import { slot, slotBlock, gridOf, block } from './grid.js';
+import { head } from '../ui/avatar-art.js';
 export const hud = { quiet: false };
 
 const INK = '#33322e', PAPER = 'rgba(250,247,238,.95)';
@@ -104,7 +105,7 @@ function lift(c, h){ c.shadowColor = 'rgba(20,20,60,.25)'; c.shadowBlur = h * 0.
 
 /* A player's score: a pill in their colour with the player's mark on the left (their avatar, or a shape: circle, triangle,
    square, diamond, so players can be told apart without colour) and a big white number with a dark edge, so it reads on any
-   colour. bump: 1 right as it goes up, easing to 0. mark: { emoji } or { shape: 0 to 3 }. Returns the pill's width. */
+   colour. bump: 1 right as it goes up, easing to 0. mark: { look } (their character's head), { emoji } or { shape: 0 to 3 }. Returns the pill's width. */
 export function scorePill(c, x, y, h, color, n, bump = 0, mark = null){
   const font = `800 ${Math.round(h * 0.66)}px ${FONT}`;
   c.save(); c.font = font; const tw = c.measureText(String(n)).width, w = Math.max(h * 2.3, h * 1.25 + tw + h * 0.35);
@@ -114,7 +115,8 @@ export function scorePill(c, x, y, h, color, n, bump = 0, mark = null){
   /* the mark, on a white disc */
   const mx = h * 0.52, my = h / 2, r = h * 0.34;
   c.fillStyle = '#fff'; c.beginPath(); c.arc(mx, my, r, 0, 6.2832); c.fill();
-  if (mark && mark.emoji){ c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `${Math.round(h * 0.42)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; c.fillStyle = '#000'; c.fillText(mark.emoji, mx, my + 1); }
+  if (mark && mark.look) head(c, mx, my - r * 0.12, r * 0.8, mark.look, 0);
+  else if (mark && mark.emoji){ c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `${Math.round(h * 0.42)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; c.fillStyle = '#000'; c.fillText(mark.emoji, mx, my + 1); }
   else {
     const s = mark && mark.shape != null ? mark.shape % 4 : 0, q = r * 0.55; c.fillStyle = '#1e1b4b'; c.beginPath();
     if (s === 0) c.arc(mx, my, q, 0, 6.2832);

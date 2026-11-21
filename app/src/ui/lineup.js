@@ -20,6 +20,8 @@ import { pose, MAX_PLAYERS, PLAYER_COLORS } from '../tracking/pose.js';
 import { WaveWatch, handsFrom } from '../tracking/wave.js';
 import { silhouette } from './avatars.js';
 import { portrait } from './avatar-art.js';
+import { normalizeLook } from './look.js';
+import { color } from '../games/assets/palette.js';
 import { faceOf } from './avatar-maker.js';
 import { crew } from './crew.js';
 
@@ -82,7 +84,7 @@ export function lineUp({ profiles, onDone }){
         if (waves[i].done){
           const p = profiles[at];
           crew.set(i, p.id);
-          cards[at].classList.add('got'); cards[at].style.setProperty('--who', (p.look && p.look.color) || PLAYER_COLORS[i]);
+          cards[at].classList.add('got'); cards[at].style.setProperty('--who', crew.colorOf(i, PLAYER_COLORS[i]));
           sfx.pop?.(1.2); sfx.select?.();
           /* everyone on camera is someone: off we go */
           if (!unseated().length && pose.players.some(q => q.present)){ setTimeout(finish, 700); cards[at].classList.remove('on'); say.textContent = 'Everyone’s here!'; return; }
@@ -97,7 +99,7 @@ export function lineUp({ profiles, onDone }){
       pose.players.forEach((p, i) => {
         if (!p.present || !p.lm) return;
         const id = crew.of(i), prof = id && profiles.find(q => q.id === id);
-        const col = (prof && prof.look && prof.look.color) || '#b9b4a6';
+        const col = prof && prof.look ? color('fav.' + normalizeLook(prof.look).colour) : color('shade.light');
         silhouette(c, p.lm, W, H, col, prof ? 0.55 : 0.35);
         const nose = p.lm[0], sz = Math.max(48, H * 0.11);
         const x = nose.x * W, y = nose.y * H - sz * 1.1;

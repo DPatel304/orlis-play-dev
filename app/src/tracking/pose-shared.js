@@ -12,6 +12,7 @@ export const L = {
 };
 
 /* Drawn skeleton: pairs of landmark indices. */
+import { color } from '../games/assets/palette.js';
 export const BONES = [
   [11,12],[11,13],[13,15],[12,14],[14,16],
   [11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]
@@ -22,4 +23,7 @@ export const BONES = [
    (PLAYING): only the first two places ever fill. Change it to open up. */
 export const MAX_PLAYERS = 4;
 export const PLAYING = 2;
-export const PLAYER_COLORS = ['#3da9ff', '#ff8a3d', '#3fcf7f', '#c46bff'];
+/* The player colours are favourites (0040), by default the first four; player-colours.js re-fills this one array in place when it is known
+   who is playing (U8), so every game that reads PLAYER_COLORS[i] gets that player's avatar colour. */
+export const DEFAULT_PLAYER_FAVS = ['sky', 'orange', 'green', 'purple'];
+export const PLAYER_COLORS = DEFAULT_PLAYER_FAVS.map(n => color('fav.' + n));

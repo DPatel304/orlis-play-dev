@@ -210,7 +210,7 @@ function family(){
   return me ? [me, ...list.filter(p => p.id !== me.id)] : list;
 }
 function lineUpThenPlay(){
-  crew.profiles = family(); crew.personal = MAKING;
+  crew.profiles = family(); crew.personal = MAKING; crew.sync();
   /* (while everyone plays as the generic avatars, there's nobody to line up) */
   if (!MAKING || crew.lined || crew.profiles.length < 2){ startRound(); return; }
   launch.release();                                    /* (the line-up is a screen of its own) */
@@ -409,7 +409,7 @@ function drawHUD(){
   const xs = [];                                          /* where the next pill in each row goes */
   ids.forEach((i, k) => {
     const row = Math.floor(k / 2), at = cell(W, H, 1, row), prof = MAKING && crew.profileOf(i);
-    const mark = prof && AVATARS[prof.avatar] ? { emoji: AVATARS[prof.avatar] } : { shape: i };
+    const mark = prof ? { look: crew.lookOf(i) } : { shape: i };
     if (xs[row] === undefined) xs[row] = at.x;
     xs[row] += scorePill(c, xs[row], at.y, at.h, PLAYER_COLORS[i], hud.score[i], bumpOf('p' + i, hud.score[i]), mark) + at.h * 0.15;
   });
