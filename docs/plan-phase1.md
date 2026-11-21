@@ -63,7 +63,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | K6 | Paper puppets: avatar split into parts, a small rig, the found reveal (kept simple: Peekaboo is a proof of concept) | Opus | K4 | the reveal approved by the owner |
 | K7 | Look pass for both games in the 0038 look (Peekaboo in the 3D sibling: painted sky dome, purple-grey shade, mist band, painted cutouts, thin ink edge; look check) | Opus with owner | K4, K5 | owner signs off the look check |
 | K8 | Phone check page (model class, 3D support, frame rate) | Sonnet | P3 | the testers' phones pass |
-| C1 | The bigger kit for Create: what to add (Opus), painting it (Sonnet) | Opus then Sonnet | — | the agreed list is in the kit and the asset viewer |
+| C1 | The bigger kit for Create: what to add (Opus), painting it (Sonnet); includes the night backdrop moved onto the palette and new Space and Under the sea backdrops from the palette's world sets (`docs/palette.html`) | Opus then Sonnet | — | the agreed list is in the kit and the asset viewer |
 | C2 | Create tuned for the two testers, with the approval step | Sonnet | C1 | the owner makes and approves one game as a tester would |
 | B1 | Beta install, invites, beta terms, feedback button | Sonnet | — | a fresh Windows laptop goes from invite to playing |
 | B2 | Hardening: reconnect edge cases, the Wi-Fi hint, performance, bug bash | Sonnet, Opus triage | most of the above | no known bugs in either game |
