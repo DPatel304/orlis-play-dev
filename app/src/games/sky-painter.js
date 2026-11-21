@@ -11,6 +11,7 @@
 
    How much is painted is kept on a coarse grid (GRID), so it's cheap to
    ask; the picture shows through a mask painted with the same strokes. */
+import { color, alpha, tone } from './assets/palette.js';
 import { Juice } from './common.js';
 import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
@@ -27,10 +28,12 @@ export const BRUSH = 0.18, DONE = 0.8, ALIVE = 5;
 export const SPREAD_FROM = 0.25, STALL = 4;
 export const GRID = [48, 27];
 export const PICTURES = ['whale', 'balloon', 'butterfly'];
-const PAPER = '#f2ebdc';
+const PAPER = color('shade.paper');
+/* the whale's one blue, its shade by the rule, and its belly */
+const WHALE = color('sky.high', 'shade'), WHALE_SHADE = tone(WHALE, 'shade'), BELLY = color('shade.line');
 
 export default {
-  id: 'sky-painter', unit: 'bits of sky painted', name: 'Sky Painter', stars: 1, accent: '#7398c4', secs: ROUND,
+  id: 'sky-painter', unit: 'bits of sky painted', name: 'Sky Painter', stars: 1, accent: WHALE, secs: ROUND,
   moves: ['arms'],
   create(n){ return new SkyPainter(n); }
 };
@@ -87,7 +90,7 @@ class SkyPainter {
           const key = i + k, from = this.last[key] || { x: h.x, y: h.y };
           this._stroke(i, from.x, from.y, h.x, h.y, aspect);
           this.last[key] = { x: h.x, y: h.y };
-          if (h.speed > 0.4 && Math.random() < dt * 20) this.flecks.push({ x: h.x, y: h.y, vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2, age: 0, col: PALETTE[this._pic()][(Math.random() * 3) | 0] });
+          if (h.speed > 0.4 && Math.random() < dt * 20) this.flecks.push({ x: h.x, y: h.y, vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2, age: 0, col: PAINT[this._pic()][(Math.random() * 3) | 0] });
         }
       }
       /* nobody painting anywhere new: the paint spreads a little */
@@ -116,7 +119,7 @@ class SkyPainter {
     for (let k = 0; k < n && edge.length; k++){
       const c = edge.splice((Math.random() * edge.length) | 0, 1)[0];
       this.cells[c] = 1; this.painted++;
-      if (m){ const sx = this.mask.width / gx, sy = this.mask.height / gy; m.fillStyle = '#000'; m.beginPath(); m.arc(((c % gx) + 0.5) * sx, (((c / gx) | 0) + 0.5) * sy, Math.max(sx, sy) * 0.9, 0, 6.2832); m.fill(); }
+      if (m){ const sx = this.mask.width / gx, sy = this.mask.height / gy; m.fillStyle = color('shade.ink'); m.beginPath(); m.arc(((c % gx) + 0.5) * sx, (((c / gx) | 0) + 0.5) * sy, Math.max(sx, sy) * 0.9, 0, 6.2832); m.fill(); }
     }
     this._was = this.painted;
   }
@@ -139,7 +142,7 @@ class SkyPainter {
     }
     if (this.mask){
       const m = this.mask.getContext('2d'), sx = this.mask.width, sy = this.mask.height;
-      m.strokeStyle = '#000'; m.lineCap = 'round'; m.lineJoin = 'round';
+      m.strokeStyle = color('shade.ink'); m.lineCap = 'round'; m.lineJoin = 'round';
       /* a brushy edge: a solid core and two softer, wider passes */
       for (const [w, a] of [[1, 1], [1.15, 0.5], [1.3, 0.25]]){
         m.globalAlpha = a; m.lineWidth = BRUSH * w * sy;
@@ -158,7 +161,7 @@ class SkyPainter {
     background(bg.getContext('2d'), W, H, this._pic());
     /* (repaint what's already been painted, at the new size) */
     const m = mask.getContext('2d'), [gx, gy] = GRID;
-    m.fillStyle = '#000';
+    m.fillStyle = color('shade.ink');
     for (let n = 0; n < this.cells.length; n++) if (this.cells[n]) m.fillRect((n % gx) / gx * mask.width, Math.floor(n / gx) / gy * mask.height, mask.width / gx + 1, mask.height / gy + 1);
   }
 
@@ -188,7 +191,7 @@ class SkyPainter {
   _say(c, W, H){
     const text = this.alive ? ['Look - a whale!', 'Look - a hot-air balloon!', 'Look - a butterfly!'][this.which] : 'What\u2019s hiding in the sky? Keep painting!';
     sayBubble(c, W, H, { text });
-    goalBar(c, W, H, this.alive ? 1 : this.covered / DONE, { color: '#7398c4' });
+    goalBar(c, W, H, this.alive ? 1 : this.covered / DONE, { color: WHALE });
   }
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
@@ -215,33 +218,33 @@ class SkyPainter {
 }
 
 /* ---------- the pictures ---------- */
-const PALETTE = {
-  whale: ['#7398c4', '#9fc8e6', '#efe6d4'],
-  balloon: ['#e8513d', '#ffd25a', '#79b3aa'],
-  butterfly: ['#a98bff', '#ff9cc0', '#ffd25a']
+const PAINT = {
+  whale: [WHALE, color('sky.mid'), BELLY],
+  balloon: [color('touch.cherry'), color('touch.sunflower'), color('touch.lagoon')],
+  butterfly: [color('touch.grape'), color('touch.bubblegum'), color('touch.sunflower')]
 };
 
 /* the sky behind every picture: a soft wash, hills, a few clouds */
 export function background(c, W, H, pic){
   const g = c.createLinearGradient(0, 0, 0, H * 0.85);
-  const top = pic === 'butterfly' ? '#b9d7c4' : pic === 'balloon' ? '#a9c9e6' : '#9fc8e6';
-  g.addColorStop(0, top); g.addColorStop(1, '#f6ead2');
+  const top = pic === 'butterfly' ? color('meadow.far') : color('sky.mid');
+  g.addColorStop(0, top); g.addColorStop(1, color('touch.sunflower', 'light'));
   c.fillStyle = g; c.fillRect(0, 0, W, H);
   const sun = c.createRadialGradient(W * 0.15, H * 0.15, 10, W * 0.15, H * 0.15, H * 0.6);
-  sun.addColorStop(0, 'rgba(255,244,214,.85)'); sun.addColorStop(1, 'rgba(255,244,214,0)'); c.fillStyle = sun; c.fillRect(0, 0, W, H);
+  sun.addColorStop(0, alpha('sky.sun', 0.85)); sun.addColorStop(1, alpha('sky.sun', 0)); c.fillStyle = sun; c.fillRect(0, 0, W, H);
   for (const [x, y, w] of [[0.2, 0.22, 0.12], [0.82, 0.16, 0.14], [0.72, 0.62, 0.09], [0.12, 0.6, 0.08]]){
-    c.globalAlpha = 0.85; c.fillStyle = '#ffffff';
+    c.globalAlpha = 0.85; c.fillStyle = color('earth.snow');
     c.beginPath(); c.ellipse(x * W, y * H, w * W, w * W * 0.18, 0, 0, 6.2832); c.fill();
     c.beginPath(); c.ellipse(x * W + w * W * 0.2, y * H - w * W * 0.08, w * W * 0.55, w * W * 0.15, 0, 0, 6.2832); c.fill();
     c.globalAlpha = 1;
   }
-  for (const [y, col, amp] of [[0.82, '#a9c48f', 0.05], [0.9, '#8fbf6a', 0.04]]){
+  for (const [y, col, amp] of [[0.82, color('meadow.soft'), 0.05], [0.9, color('meadow.grass'), 0.04]]){
     c.fillStyle = col; c.beginPath(); c.moveTo(0, H);
     for (let x = 0; x <= W; x += W / 40) c.lineTo(x, H * (y - amp * (0.5 + 0.5 * Math.sin(x / W * 7 + y * 10))));
     c.lineTo(W, H); c.closePath(); c.fill();
   }
   if (pic === 'butterfly'){
-    for (let i = 0; i < 40; i++){ const x = ((i * 0.618) % 1) * W, y = H * (0.88 + ((i * 0.37) % 1) * 0.1); c.fillStyle = ['#ffd25a', '#ff9cc0', '#ffffff'][i % 3]; c.beginPath(); c.arc(x, y, H * 0.008, 0, 6.2832); c.fill(); }
+    for (let i = 0; i < 40; i++){ const x = ((i * 0.618) % 1) * W, y = H * (0.88 + ((i * 0.37) % 1) * 0.1); c.fillStyle = [color('touch.sunflower'), color('touch.bubblegum'), color('earth.snow')][i % 3]; c.beginPath(); c.arc(x, y, H * 0.008, 0, 6.2832); c.fill(); }
   }
 }
 
@@ -250,7 +253,7 @@ export function background(c, W, H, pic){
 function subject(c, W, H, pic, t, alive, outline){
   const s = H / 900;
   c.save();
-  if (outline){ c.setLineDash([14 * s, 12 * s]); c.lineWidth = 4 * s; c.strokeStyle = 'rgba(120,110,95,.35)'; }
+  if (outline){ c.setLineDash([14 * s, 12 * s]); c.lineWidth = 4 * s; c.strokeStyle = alpha('shade.inkSoft', 0.35); }
   if (pic === 'whale'){
     const x = W * 0.52 + alive * W * 0.18, y = H * 0.45 - Math.sin(alive * 2) * H * 0.03;
     whale(c, x, y, s, outline, t);
@@ -264,7 +267,7 @@ function subject(c, W, H, pic, t, alive, outline){
   c.restore();
 }
 
-function cel(c, path, col, shade = 'rgba(58,51,96,.2)', ox = 0.6, oy = 0.5, r = 1){ /* fill a shape, then its shadow side */
+function cel(c, path, col, shade = alpha('shade.shadow', 0.2), ox = 0.6, oy = 0.5, r = 1){ /* fill a shape, then its shadow side */
   c.fillStyle = col; path(); c.fill();
   c.save(); path(); c.clip(); c.fillStyle = shade; c.beginPath(); c.ellipse(ox, oy, r, r, 0, 0, 6.2832); c.fill(); c.restore();
 }
@@ -273,15 +276,15 @@ export function whale(c, x, y, s, outline, t){
   const body = () => { c.beginPath(); c.ellipse(x, y, 260 * s, 120 * s, -0.08, 0, 6.2832); };
   const tail = () => { c.beginPath(); c.moveTo(x - 240 * s, y - 10 * s); c.lineTo(x - 380 * s, y - 110 * s); c.lineTo(x - 350 * s, y + 20 * s); c.lineTo(x - 390 * s, y + 110 * s); c.closePath(); };
   if (outline){ body(); c.stroke(); tail(); c.stroke(); return; }
-  c.fillStyle = '#5f84b0'; tail(); c.fill();
-  cel(c, body, '#7398c4', '#5f84b0', x + 80 * s, y + 70 * s, 260 * s);
-  c.save(); body(); c.clip(); c.fillStyle = '#efe6d4'; c.beginPath(); c.ellipse(x + 20 * s, y + 95 * s, 230 * s, 60 * s, 0, 0, 6.2832); c.fill(); c.restore();
-  c.fillStyle = '#5f84b0'; c.beginPath(); c.ellipse(x + 40 * s, y + 70 * s, 70 * s, 26 * s, 0.5 + Math.sin(t * 3) * 0.15, 0, 6.2832); c.fill();
-  c.fillStyle = '#33322e'; c.beginPath(); c.arc(x + 170 * s, y - 20 * s, 14 * s, 0, 6.2832); c.fill();
-  c.fillStyle = '#fff'; c.beginPath(); c.arc(x + 166 * s, y - 25 * s, 5 * s, 0, 6.2832); c.fill();
-  c.strokeStyle = '#33322e'; c.lineWidth = 6 * s; c.lineCap = 'round'; c.beginPath(); c.arc(x + 200 * s, y + 20 * s, 34 * s, 0.2, 1.3); c.stroke();
-  c.fillStyle = 'rgba(255,140,150,.45)'; c.beginPath(); c.ellipse(x + 120 * s, y + 10 * s, 22 * s, 13 * s, 0, 0, 6.2832); c.fill();
-  c.fillStyle = '#d9ecf5';
+  c.fillStyle = WHALE_SHADE; tail(); c.fill();
+  cel(c, body, WHALE, WHALE_SHADE, x + 80 * s, y + 70 * s, 260 * s);
+  c.save(); body(); c.clip(); c.fillStyle = BELLY; c.beginPath(); c.ellipse(x + 20 * s, y + 95 * s, 230 * s, 60 * s, 0, 0, 6.2832); c.fill(); c.restore();
+  c.fillStyle = WHALE_SHADE; c.beginPath(); c.ellipse(x + 40 * s, y + 70 * s, 70 * s, 26 * s, 0.5 + Math.sin(t * 3) * 0.15, 0, 6.2832); c.fill();
+  c.fillStyle = color('shade.ink'); c.beginPath(); c.arc(x + 170 * s, y - 20 * s, 14 * s, 0, 6.2832); c.fill();
+  c.fillStyle = color('earth.snow'); c.beginPath(); c.arc(x + 166 * s, y - 25 * s, 5 * s, 0, 6.2832); c.fill();
+  c.strokeStyle = color('shade.ink'); c.lineWidth = 6 * s; c.lineCap = 'round'; c.beginPath(); c.arc(x + 200 * s, y + 20 * s, 34 * s, 0.2, 1.3); c.stroke();
+  c.fillStyle = alpha('fav.pink', 0.45); c.beginPath(); c.ellipse(x + 120 * s, y + 10 * s, 22 * s, 13 * s, 0, 0, 6.2832); c.fill();
+  c.fillStyle = color('touch.lagoon', 'light');
   for (const [dx, dy, r] of [[0, -150, 16], [-30, -185, 12], [30, -185, 12], [-50, -215, 9], [50, -215, 9]]){ c.beginPath(); c.arc(x + 60 * s + dx * s, y + dy * s - Math.abs(Math.sin(t * 2)) * 10 * s, r * s, 0, 6.2832); c.fill(); }
 }
 
@@ -289,15 +292,15 @@ export function hotAir(c, x, y, s, outline){
   const env = () => { c.beginPath(); c.moveTo(x, y + 180 * s); c.bezierCurveTo(x - 260 * s, y + 20 * s, x - 200 * s, y - 230 * s, x, y - 230 * s); c.bezierCurveTo(x + 200 * s, y - 230 * s, x + 260 * s, y + 20 * s, x, y + 180 * s); c.closePath(); };
   const basket = () => { c.beginPath(); c.roundRect(x - 50 * s, y + 250 * s, 100 * s, 70 * s, 10 * s); };
   if (outline){ env(); c.stroke(); basket(); c.stroke(); return; }
-  c.fillStyle = '#e8513d'; env(); c.fill();
+  c.fillStyle = color('touch.cherry'); env(); c.fill();
   c.save(); env(); c.clip();
-  c.fillStyle = '#ffd25a'; for (const dx of [-120, 0, 120]){ c.beginPath(); c.ellipse(x + dx * s, y - 20 * s, 36 * s, 260 * s, 0, 0, 6.2832); c.fill(); }
-  c.fillStyle = 'rgba(58,51,96,.2)'; c.beginPath(); c.ellipse(x + 160 * s, y + 40 * s, 170 * s, 300 * s, 0, 0, 6.2832); c.fill();
+  c.fillStyle = color('touch.sunflower'); for (const dx of [-120, 0, 120]){ c.beginPath(); c.ellipse(x + dx * s, y - 20 * s, 36 * s, 260 * s, 0, 0, 6.2832); c.fill(); }
+  c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x + 160 * s, y + 40 * s, 170 * s, 300 * s, 0, 0, 6.2832); c.fill();
   c.restore();
-  c.strokeStyle = '#7a6550'; c.lineWidth = 4 * s;
+  c.strokeStyle = color('earth.bark'); c.lineWidth = 4 * s;
   for (const d of [-1, 1]){ c.beginPath(); c.moveTo(x + d * 70 * s, y + 140 * s); c.lineTo(x + d * 45 * s, y + 252 * s); c.stroke(); }
-  c.fillStyle = '#b5845a'; basket(); c.fill();
-  c.fillStyle = 'rgba(58,51,96,.2)'; c.fillRect(x + 15 * s, y + 252 * s, 35 * s, 66 * s);
+  c.fillStyle = color('earth.clay', 'shade'); basket(); c.fill();
+  c.fillStyle = alpha('shade.shadow', 0.2); c.fillRect(x + 15 * s, y + 252 * s, 35 * s, 66 * s);
 }
 
 function butterfly(c, x, y, s, outline, t){
@@ -305,14 +308,14 @@ function butterfly(c, x, y, s, outline, t){
   const wing = (d, big) => () => { c.beginPath(); c.ellipse(x + d * (big ? 120 : 95) * s * flap, y + (big ? -60 : 70) * s, (big ? 135 : 95) * s * flap, (big ? 110 : 80) * s, d * (big ? -0.5 : 0.4), 0, 6.2832); };
   if (outline){ for (const d of [-1, 1]){ wing(d, true)(); c.stroke(); wing(d, false)(); c.stroke(); } return; }
   for (const d of [-1, 1]){
-    cel(c, wing(d, true), '#a98bff', 'rgba(58,51,96,.2)', x + d * 170 * s, y - 10 * s, 120 * s);
-    cel(c, wing(d, false), '#ff9cc0', 'rgba(58,51,96,.2)', x + d * 130 * s, y + 110 * s, 80 * s);
-    c.fillStyle = '#ffd25a'; c.beginPath(); c.arc(x + d * 130 * s * flap, y - 70 * s, 28 * s, 0, 6.2832); c.fill();
-    c.fillStyle = '#fff'; c.beginPath(); c.arc(x + d * 100 * s * flap, y + 75 * s, 16 * s, 0, 6.2832); c.fill();
+    cel(c, wing(d, true), color('touch.grape'), alpha('shade.shadow', 0.2), x + d * 170 * s, y - 10 * s, 120 * s);
+    cel(c, wing(d, false), color('touch.bubblegum'), alpha('shade.shadow', 0.2), x + d * 130 * s, y + 110 * s, 80 * s);
+    c.fillStyle = color('touch.sunflower'); c.beginPath(); c.arc(x + d * 130 * s * flap, y - 70 * s, 28 * s, 0, 6.2832); c.fill();
+    c.fillStyle = color('earth.snow'); c.beginPath(); c.arc(x + d * 100 * s * flap, y + 75 * s, 16 * s, 0, 6.2832); c.fill();
   }
-  c.fillStyle = '#4a3b5c'; c.beginPath(); c.ellipse(x, y + 10 * s, 18 * s, 120 * s, 0, 0, 6.2832); c.fill();
+  c.fillStyle = color('fur.charcoal'); c.beginPath(); c.ellipse(x, y + 10 * s, 18 * s, 120 * s, 0, 0, 6.2832); c.fill();
   c.beginPath(); c.arc(x, y - 120 * s, 26 * s, 0, 6.2832); c.fill();
-  c.strokeStyle = '#4a3b5c'; c.lineWidth = 5 * s; c.lineCap = 'round';
+  c.strokeStyle = color('fur.charcoal'); c.lineWidth = 5 * s; c.lineCap = 'round';
   for (const d of [-1, 1]){ c.beginPath(); c.moveTo(x + d * 8 * s, y - 140 * s); c.quadraticCurveTo(x + d * 40 * s, y - 210 * s, x + d * 70 * s, y - 220 * s); c.stroke(); }
-  c.fillStyle = '#fff'; for (const d of [-1, 1]){ c.beginPath(); c.arc(x + d * 10 * s, y - 124 * s, 6 * s, 0, 6.2832); c.fill(); }
+  c.fillStyle = color('earth.snow'); for (const d of [-1, 1]){ c.beginPath(); c.arc(x + d * 10 * s, y - 124 * s, 6 * s, 0, 6.2832); c.fill(); }
 }
