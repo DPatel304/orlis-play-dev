@@ -36,9 +36,10 @@ test('an old look is carried over: its favourite colour, the nearest face, a hai
   assert.equal(normalizeLook({ ...OLD, hair: 'bob' }).top, 'bob');
   assert.equal(normalizeLook({ ...OLD, hair: 'curly' }).top, 'tuft');
   assert.equal(normalizeLook({ ...OLD, hair: 'none', extra: 'none' }).top, 'none', 'no hair, no hair piece');
-  assert.equal(normalizeLook({ ...OLD, hair: 'none', extra: 'crown' }).top, 'crown', 'a hat from the old extra stays when there was no hair');
+  assert.equal(normalizeLook({ ...OLD, hair: 'none', extra: 'crown' }).top, 'crown', 'a hat from the old extra is the topper');
   assert.equal(normalizeLook({ ...OLD, hair: 'none', extra: 'headphones' }).top, 'phones');
-  assert.equal(normalizeLook({ ...OLD, hair: 'short', extra: 'cap' }).top, 'tuft', 'hair wins over a hat');
+  assert.equal(normalizeLook({ ...OLD, hair: 'short', extra: 'cap' }).top, 'cap', 'a hat wins over hair');
+  assert.equal(normalizeLook({ ...OLD, hair: 'long', extra: 'glasses' }).top, 'bob', 'glasses are not a hat: the hair stays');
 });
 
 test('every old face, colour and outfit lands on a valid new one', () => {

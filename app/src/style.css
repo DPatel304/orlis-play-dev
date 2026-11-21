@@ -1810,3 +1810,4 @@ body.remote .btn.slock.kfocus:not(.tvtile):not(.play){ outline:none; box-shadow:
 .launchhead .mouth{ position:absolute; left:42%; top:64%; width:16%; height:10%; border-radius:50%; background:#2a2160; backface-visibility:hidden; }
 @keyframes cubotwirl{ 0%{ transform:translateY(0) rotateY(0) rotateZ(0); } 15%{ transform:translateY(-1.4vh) rotateY(0) rotateZ(-8deg); } 55%{ transform:translateY(-1vh) rotateY(360deg) rotateZ(0); } 75%{ transform:translateY(0) rotateY(360deg) rotateZ(0) scale(1.06,.94); } 100%{ transform:translateY(0) rotateY(360deg) rotateZ(0); } }
 @media (prefers-reduced-motion: reduce){ .launchhead .lh{ animation:none; } }
+.btn.avbig canvas.avicon{ width:1.3em; height:1.3em; vertical-align:-.25em; margin-right:.4em; }

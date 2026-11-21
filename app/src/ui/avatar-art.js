@@ -126,18 +126,18 @@ function drawCape(x, a, S, bw, bh){
   x.fillStyle = toneT(a, 'shade'); x.beginPath(); x.moveTo(-bw * 0.55, S * 0.02); x.lineTo(bw * 0.55, S * 0.02); x.lineTo(bw * 0.8, bh * 1.35); x.lineTo(-bw * 0.8, bh * 1.35); x.closePath(); x.fill();
 }
 /* a leg: points down from the hip; the foot is an ink pill */
-function drawLeg(x, a, S, pts){
+function drawLeg(x, a, S, pts, thick = false){
   x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
-  line(x, pts, S * 0.11, a.fit === 'overalls' ? toneRaw(a, 'shade') : a.shade);
+  line(x, pts, S * (thick ? 0.16 : 0.11), a.fit === 'overalls' ? toneRaw(a, 'shade') : a.shade);
   x.restore();
 }
-function drawFoot(x, S, px, py){ x.fillStyle = INK(); rr(x, px - S * 0.06, py - S * 0.045, S * 0.12, S * 0.045, S * 0.02); x.fill(); }
+function drawFoot(x, S, px, py, big = false){ const k = big ? 1.4 : 1; x.fillStyle = INK(); rr(x, px - S * 0.06 * k, py - S * 0.045 * k, S * 0.12 * k, S * 0.045 * k, S * 0.02); x.fill(); }
 /* an arm: a sleeve along the points, a hand at the end; the left one is in shade */
-function drawArm(x, a, S, pts, left){
+function drawArm(x, a, S, pts, left, thick = false){
   x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
   const sleeve = a.fit === 'hoodie' ? a.c2 : a.c;
-  line(x, pts, S * 0.08, left ? (a.fit === 'hoodie' ? toneRaw(a, 'shade') : a.shade) : sleeve);
-  x.fillStyle = a.light; const e = pts[pts.length - 1]; dot(x, e[0], e[1], S * 0.038); x.fill();
+  line(x, pts, S * (thick ? 0.13 : 0.08), left ? (a.fit === 'hoodie' ? toneRaw(a, 'shade') : a.shade) : sleeve);
+  x.fillStyle = a.light; const e = pts[pts.length - 1]; dot(x, e[0], e[1], S * (thick ? 0.062 : 0.038)); x.fill();
   x.restore();
 }
 
@@ -240,9 +240,15 @@ export function figure(c, lm, W, H, look, t = 0, { lift = 0 } = {}){
   const sw = Math.hypot(ls[0] - rs[0], ls[1] - rs[1]);
   if (sw < 6) return;
   /* the character is a little wider than a body: its torso is as wide as the shoulders, its head a third wider again */
-  const S = sw * 2.9, { hw, hh } = SIZE(S);
-  const nose = P(NOSE), ears = seen(L_EAR) && seen(R_EAR) ? [P(L_EAR), P(R_EAR)] : null;
-  const hx = ears ? (ears[0][0] + ears[1][0]) / 2 : nose[0], hy = (ears ? (ears[0][1] + ears[1][1]) / 2 : nose[1]) - hh * 0.12;
+  const S = sw * 3.3, { hw, hh } = SIZE(S);
+  /* the head sits on the shoulders (its bottom edge just over the torso's top, the neck hidden), leaning as the body leans and a little
+     toward where their nose is */
+  const nose = P(NOSE), hip = (i) => (seen(i) ? P(i) : null);
+  const lh0 = hip(L_HIP), rh0 = hip(R_HIP);
+  const msx = (ls[0] + rs[0]) / 2, msy = (ls[1] + rs[1]) / 2;
+  const lean = lh0 && rh0 ? Math.atan2(-((lh0[0] + rh0[0]) / 2 - msx), (lh0[1] + rh0[1]) / 2 - msy) : 0;
+  const up = [Math.sin(lean), -Math.cos(lean)], rise = hh / 2 - S * 0.045;
+  const hx = msx + up[0] * rise + Math.max(-sw * 0.3, Math.min(sw * 0.3, (nose[0] - msx) * 0.4)), hy = msy + up[1] * rise;
   const tilt = seen(L_EYE) && seen(R_EYE) ? Math.atan2(P(R_EYE)[1] - P(L_EYE)[1], P(R_EYE)[0] - P(L_EYE)[0]) : 0;
   const tip = Math.abs(tilt) > Math.PI / 2 ? tilt - Math.sign(tilt) * Math.PI : tilt;
   const pts = [ls, rs, [hx, hy]];
@@ -265,15 +271,15 @@ function figureFlat(c, a, P, seen, S, hx, hy, tilt, t, hw, hh){
   c.save(); c.translate(ms[0], ms[1]); c.rotate(ang); c.translate(0, -S * 0.03); drawCape(c, a, S, bw, bh); c.restore();
   for (const [h, k, an] of [[lh, L_KN, L_AN], [rh, R_KN, R_AN]]){
     const leg = [h]; if (seen(k)){ leg.push(P(k)); if (seen(an)) leg.push(P(an)); } else leg.push(down(h, S * 0.3));
-    drawLeg(c, a, S, leg);
-    if (leg.length === 3) drawFoot(c, S, leg[2][0], leg[2][1] + S * 0.04);
+    drawLeg(c, a, S, leg, true);
+    if (leg.length === 3) drawFoot(c, S, leg[2][0], leg[2][1] + S * 0.07, true);
   }
   /* the arms: a sleeve to the elbow, the forearm, then the hand */
   for (const [s, e, w, left] of [[ls, L_EL, L_WR, true], [rs, R_EL, R_WR, false]]){
     let pts;
     if (!seen(e)) pts = [s, down(s, S * 0.26)];
     else { pts = [s, P(e)]; if (seen(w)) pts.push(P(w)); }
-    drawArm(c, a, S, pts, left);
+    drawArm(c, a, S, pts, left, true);
   }
   /* the torso, shoulders to hips */
   c.save(); c.translate(ms[0], ms[1]); c.rotate(ang); c.translate(0, -S * 0.03); drawTorso(c, a, S, bw, bh); c.restore();

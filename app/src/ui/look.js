@@ -53,14 +53,14 @@ const OLD_EYES = { dots: 'dot', happy: 'happy', sparkle: 'star', wink: 'wink' };
 const OLD_MOUTH = { smile: 'smile', grin: 'grin', oh: 'o', tongue: 'tongue' };
 /* the old hair styles, as the hair pieces the new character can wear (a tuft or a bob) */
 const OLD_HAIR = { short: 'tuft', curly: 'tuft', spiky: 'tuft', ponytail: 'tuft', buns: 'tuft', long: 'bob', bob: 'bob' };
-/* with no hair to carry, a hat that was the old "extra" stays as the topper */
+/* a hat that was the old "extra" stays as the topper (the owner's call: a hat beats hair); hair is the topper only when there was no hat */
 const OLD_HAT = { cap: 'cap', bow: 'bow', crown: 'crown', headphones: 'phones', flower: 'flower' };
 
 export function fromOld(o){
   return {
     colour: favOf(o.color),
     face: { eyes: OLD_EYES[o.eyes] || CUBO.face.eyes, mouth: OLD_MOUTH[o.mouth] || CUBO.face.mouth },
-    top: OLD_HAIR[o.hair] || OLD_HAT[o.extra] || 'none',
+    top: OLD_HAT[o.extra] || OLD_HAIR[o.hair] || 'none',
     /* (an old hoodie was all in their colour; with a white second colour it would lose it, so it is plain) */
     outfit: o.outfit === 'hoodie' ? 'plain' : one(PARTS.outfit, o.outfit, 'plain'),
     outfitColour: 'shade.card',

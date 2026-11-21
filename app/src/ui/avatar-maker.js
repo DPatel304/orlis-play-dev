@@ -12,11 +12,12 @@ import { account, AVATARS } from './account.js';
 import { body, head, portrait } from './avatar-art.js';
 import { PARTS, normalizeLook, storable, surprise } from './look.js';
 import { color } from '../games/assets/palette.js';
+import { assets } from '../games/assets/index.js';
 
 /* Making your own avatar is off for now: everyone plays as the two
    generic crew avatars (crew.js GENERIC), and profiles keep their pictures.
    Turn this on to bring the maker back (Family, Add a kid). */
-export const MAKING = false;
+export const MAKING = true;
 
 /* a small canvas, sharp on any screen, drawn by fn(c, size) */
 function pic(size, fn, cls = 'avpic'){
@@ -126,8 +127,11 @@ export function openMaker(profile, { onDone = () => {} } = {}){
   const esc = (e) => { if (e.key === 'Escape'){ e.preventDefault(); sfx.back?.(); close(); } };
   addEventListener('keydown', esc, true);
   const say = h('span', 'avsay', '');
+  /* Surprise me: a painted star from the asset library (no emoji) */
+  const surpriseBtn = onPick(button('Surprise me', 'setbtn avbig'), () => { look = surprise(); wave = 1.2; sfx.select?.(); fill(); });
+  surpriseBtn.insertBefore(pic(30, (c, sz) => { try { assets.draw(c, 'star', sz / 2, sz / 2, sz * 0.95); } catch (e){ /* a blank icon, never a broken maker */ } }, 'avicon'), surpriseBtn.firstChild);
   foot.append(
-    onPick(button('🎲 Surprise me', 'setbtn avbig'), () => { look = surprise(); wave = 1.2; sfx.select?.(); fill(); }),
+    surpriseBtn,
     say,
     onPick(button('Cancel', 'setbtn avbig'), () => { sfx.back?.(); close(); }),
     onPick(button('Done', 'setbtn go avbig'), async () => {
