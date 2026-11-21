@@ -50,7 +50,9 @@ fn info(app: &AppHandle) -> Value {
 pub fn init_script(app: &AppHandle) -> String {
     match info(app) {
         Value::Null => String::new(),
-        v => format!("window.__ORLIS_PAD_HUB__ = {v};"),
+        // The key is the host secret. Tauri runs initialization scripts in the main frame only, and downloaded games run in
+        // sandboxed iframes whose CSP blocks WebSockets; the top-window check is a second guard.
+        v => format!("if (window === window.top) window.__ORLIS_PAD_HUB__ = {v};"),
     }
 }
 
