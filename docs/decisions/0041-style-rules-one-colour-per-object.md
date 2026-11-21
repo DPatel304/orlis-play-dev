@@ -32,3 +32,8 @@ tuned to its balloons, so it changes least; extra care, the owner approves befor
 Stack It High, Sky Painter, Animal Gym, Keep It Up, Pterry Flight, Save the Harvest, the Cubion story), one game per step with before and
 after pictures from the sweep tool. The two big ones (Last Known Position, about 680 hand-picked colours, and Tower Defense, about 140)
 come after the Phase 1 release, when they are finished (0021). Raw colour codes removed this way lower the ratchet baseline.
+
+## Owner's note (2026-11-21): no effort on the two big games
+Last Known Position and Tower Defense may be deleted, so they are not reworked, now or after the release. They keep their own colours
+and stay grandfathered in the ratchet test until the owner decides their fate.
+
