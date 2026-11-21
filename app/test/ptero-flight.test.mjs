@@ -26,7 +26,7 @@ test('the lower arm is the way you turn; both arms high climb, both low dive', (
 test('the sky goes from morning to midday to sunset', () => {
   const a = skyAt(0), b = skyAt(0.45), c = skyAt(1);
   assert.notEqual(a.top, b.top); assert.notEqual(b.top, c.top);
-  assert.match(skyAt(0.7).top, /^rgb\(/);
+  assert.match(skyAt(0.7).top, /^#[0-9a-f]{6}$/);
 });
 
 test('the world is the same every time you look at it', () => {

@@ -9,6 +9,7 @@
 
    The world is endless and the same wherever you fly: a grid of cells, each deciding from its position what grows
    there. A cell's things are drawn from far to near, scaled by how far ahead they are. */
+import { color, alpha } from './assets/palette.js';
 import { Juice } from './common.js';
 import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
@@ -39,13 +40,13 @@ export const WONDERS = [
 
 /* sky and ground through the day: dawn, midday, sunset (top of the sky, the horizon, the near and far ground) */
 const DAY = [
-  { t: 0,    top: '#7b86c9', hor: '#ffc7a0', near: '#6fae6f', far: '#a9c98c' },
-  { t: 0.45, top: '#4da3e6', hor: '#bfe6f7', near: '#4fa860', far: '#9ccf86' },
-  { t: 1,    top: '#6a4f9b', hor: '#ffb56b', near: '#5a8f5e', far: '#c9b27a' }
+  { t: 0,    top: color('dusk.deep'), hor: color('earth.peach'), near: color('meadow.grass'), far: color('meadow.soft') },
+  { t: 0.45, top: color('fav.sky'), hor: color('sky.low'), near: color('meadow.fresh'), far: color('meadow.lawn') },
+  { t: 1,    top: color('night.dusk'), hor: color('earth.peach'), near: color('meadow.leaf'), far: color('sky.sunGlow', 'shade') }
 ];
 const lerp = (a, b, k) => a + (b - a) * k;
-const rgb = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-const mix = (a, b, k) => { const x = rgb(a), y = rgb(b); return `rgb(${x.map((v, i) => Math.round(lerp(v, y[i], k))).join(',')})`; };
+const rgbOf = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, k) => { const x = rgbOf(a), y = rgbOf(b); return '#' + x.map((v, i) => Math.round(lerp(v, y[i], k)).toString(16).padStart(2, '0')).join(''); };
 export function skyAt(f){
   let i = 0; while (i < DAY.length - 2 && f > DAY[i + 1].t) i++;
   const a = DAY[i], b = DAY[i + 1], k = Math.max(0, Math.min(1, (f - a.t) / (b.t - a.t)));
@@ -71,7 +72,7 @@ function sprite(e){
 }
 
 export default {
-  id: 'ptero-flight', unit: 'wonders', name: 'Pterry Flight', stars: 1, accent: '#e0915b',
+  id: 'ptero-flight', unit: 'wonders', name: 'Pterry Flight', stars: 1, accent: color('earth.clay'),
   secs: ROUND, moves: ['steer', 'glide'],
   create(n){ return new PteroFlight(n); }
 };
@@ -160,7 +161,7 @@ class PteroFlight {
         for (let i = 0; i < this.players; i++) if (pose.players[i] && pose.players[i].present) this.score[i]++;
         this.say = { text: `You found ${w.w.text}!`, t: 0, until: 4.5 };
         sfx.hooray?.(); sfx.chime?.(1);
-        for (let q = 0; q < 14; q++) this.j.burst(W * (0.3 + Math.random() * 0.4), H * (0.25 + Math.random() * 0.3), ['#ffd35c', '#ff7eb3', '#7fd6a2', '#7ab8ff'][q % 4], 4, 1);
+        for (let q = 0; q < 14; q++) this.j.burst(W * (0.3 + Math.random() * 0.4), H * (0.25 + Math.random() * 0.3), [color('touch.sunflower'), color('touch.bubblegum'), color('touch.mint'), color('touch.skyBlue')][q % 4], 4, 1);
       }
     }
     /* a wonder goes a moment after it's found, or when it's well behind us */
@@ -200,7 +201,7 @@ class PteroFlight {
     for (let k = 0; k < 28; k++){
       const rz = 1.2 + k * 1.2, y0 = horizon + this.alt * F / (rz + 1.2), y1 = horizon + this.alt * F / rz;
       if (Math.floor((rz + this.dist) / 1.2) % 2) continue;
-      c.fillStyle = 'rgba(255,255,255,.05)'; c.fillRect(-W * 0.2, y0, W * 1.4, y1 - y0);
+      c.fillStyle = alpha('earth.snow', 0.05); c.fillRect(-W * 0.2, y0, W * 1.4, y1 - y0);
     }
     /* what's on the ground and what's waiting, far to near */
     const things = [];
@@ -219,20 +220,20 @@ class PteroFlight {
     this._ptero(c, W, H);
     this._book(c, W, H);
     sayBubble(c, W, H, { text: this.say.text, t: this.say.t, until: this.say.until || (this.say.text.startsWith('Spread') ? this.hintUntil : Infinity) });
-    goalBar(c, W, H, this.found.length / WONDERS.length, { color: '#e0915b' });
+    goalBar(c, W, H, this.found.length / WONDERS.length, { color: color('earth.clay') });
     this.avatars.drawMitts(c, W, H, this.players);
   }
 
   _sun(c, W, H, horizon, f){
     const az = lerp(-0.9, 0.9, f), x = W / 2 + (az - this.head) * W * 0.6, y = horizon - H * (0.28 - Math.abs(f - 0.45) * 0.3);
     const r = H * 0.07, g = c.createRadialGradient(x, y, r * 0.2, x, y, r * 3.2);
-    g.addColorStop(0, 'rgba(255,248,220,.95)'); g.addColorStop(1, 'rgba(255,248,220,0)');
+    g.addColorStop(0, alpha('sky.sun', 0.95)); g.addColorStop(1, alpha('sky.sun', 0));
     c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 3.2, 0, 6.2832); c.fill();
   }
 
   /* far mountains slide sideways as you turn */
   _ranges(c, W, H, horizon){
-    for (const [k, col, hgt, sp] of [[0, 'rgba(120,110,150,.55)', 0.16, 0.9], [1, 'rgba(90,100,120,.7)', 0.1, 1.5]]){
+    for (const [k, col, hgt, sp] of [[0, alpha('shade.mid', 0.65), 0.16, 0.9], [1, alpha('shade.inkSoft', 0.7), 0.1, 1.5]]){
       const seg = W * 0.07, shift = this.head * sp * W * 0.6, base = Math.floor(shift / seg), off = shift - base * seg;
       c.fillStyle = col; c.beginPath(); c.moveTo(-W * 0.3, horizon);
       for (let i = 0; i <= 26; i++) c.lineTo(i * seg - off - seg * 3, horizon - (0.35 + hash(base + i, k, 7) * 0.65) * H * hgt);
@@ -249,7 +250,7 @@ class PteroFlight {
       if (!w.got){
         /* a ring of sparkle round it, so it's easy to see from far off */
         const pulse = 1 + Math.sin(this.t * 4) * 0.08;
-        c.save(); c.globalAlpha = 0.9 * Math.max(0.25, fade); c.strokeStyle = '#fff2a8'; c.lineWidth = Math.max(2, size * 0.05);
+        c.save(); c.globalAlpha = 0.9 * Math.max(0.25, fade); c.strokeStyle = color('sky.sunGlow'); c.lineWidth = Math.max(2, size * 0.05);
         c.beginPath(); c.ellipse(x, y - size * 0.3, size * 0.75 * pulse, size * 0.75 * pulse, 0, 0, 6.2832); c.stroke();
         c.restore();
       }
@@ -259,8 +260,8 @@ class PteroFlight {
     const k = o.kind;
     if (k < 0.07){                       /* a lake, flat on the ground */
       const wd = (1.8 + o.big * 2.2) * s, flat = Math.max(0.05, Math.min(0.5, this.alt / o.rz));
-      c.save(); c.globalAlpha = 0.85 * fade; c.fillStyle = '#7ec8e8'; c.beginPath(); c.ellipse(x, y, wd, wd * flat, 0, 0, 6.2832); c.fill();
-      c.fillStyle = 'rgba(255,255,255,.3)'; c.beginPath(); c.ellipse(x - wd * 0.2, y - wd * flat * 0.2, wd * 0.5, wd * flat * 0.3, 0, 0, 6.2832); c.fill(); c.restore();
+      c.save(); c.globalAlpha = 0.85 * fade; c.fillStyle = color('sky.high'); c.beginPath(); c.ellipse(x, y, wd, wd * flat, 0, 0, 6.2832); c.fill();
+      c.fillStyle = alpha('earth.snow', 0.3); c.beginPath(); c.ellipse(x - wd * 0.2, y - wd * flat * 0.2, wd * 0.5, wd * flat * 0.3, 0, 0, 6.2832); c.fill(); c.restore();
       return;
     }
     const emoji = k < 0.5 ? '\u{1F332}' : k < 0.72 ? '\u{1F334}' : k < 0.85 ? '\u{1F333}' : k < 0.93 ? '\u{1F33F}' : k < 0.97 ? '\u{1F995}' : '\u{1F30B}';
@@ -273,7 +274,7 @@ class PteroFlight {
     const sp = sprite(e);
     c.save(); c.globalAlpha = alpha;
     if (sp){ const k = size / 128; c.drawImage(sp, x - 80 * k, y - size * 0.38 - 84 * k, 160 * k, 160 * k); }
-    else { c.font = `${Math.round(size)}px ${EMOJI_FONT}`; c.textAlign = 'center'; c.textBaseline = 'bottom'; c.fillStyle = '#000'; c.fillText(e, x, y + size * 0.12); }
+    else { c.font = `${Math.round(size)}px ${EMOJI_FONT}`; c.textAlign = 'center'; c.textBaseline = 'bottom'; c.fillStyle = color('shade.ink'); c.fillText(e, x, y + size * 0.12); }
     c.restore();
   }
 
@@ -281,21 +282,21 @@ class PteroFlight {
   _ptero(c, W, H){
     const fl = Math.sin(this.flap) * 0.18, span = W * 0.2;
     c.save(); c.translate(W / 2, H * 0.8 - this.pitch * H * 0.03); c.rotate(this.bank * 0.28);
-    c.fillStyle = 'rgba(40,40,70,.15)'; c.beginPath(); c.ellipse(0, H * 0.1, span * 0.7, H * 0.02, 0, 0, 6.2832); c.fill();
+    c.fillStyle = alpha('shade.ink', 0.15); c.beginPath(); c.ellipse(0, H * 0.1, span * 0.7, H * 0.02, 0, 0, 6.2832); c.fill();
     for (const side of [-1, 1]){
-      c.fillStyle = '#e9915b'; c.beginPath(); c.moveTo(side * span * 0.06, 0);
+      c.fillStyle = color('earth.clay'); c.beginPath(); c.moveTo(side * span * 0.06, 0);
       c.quadraticCurveTo(side * span * 0.6, -H * (0.1 + fl), side * span * 1.05, -H * (0.02 + fl * 1.6));
       c.quadraticCurveTo(side * span * 0.8, H * 0.01, side * span * 0.7, H * 0.045);
       c.quadraticCurveTo(side * span * 0.4, H * 0.01, side * span * 0.25, H * 0.05);
       c.quadraticCurveTo(side * span * 0.12, H * 0.03, side * span * 0.06, H * 0.05);
       c.closePath(); c.fill();
-      c.strokeStyle = '#2d6a78'; c.lineWidth = Math.max(3, H * 0.006); c.lineCap = 'round';
+      c.strokeStyle = color('fav.teal', 'shade'); c.lineWidth = Math.max(3, H * 0.006); c.lineCap = 'round';
       c.beginPath(); c.moveTo(side * span * 0.06, 0); c.quadraticCurveTo(side * span * 0.6, -H * (0.1 + fl), side * span * 1.05, -H * (0.02 + fl * 1.6)); c.stroke();
     }
-    c.fillStyle = '#2d6a78'; c.beginPath(); c.ellipse(0, H * 0.02, span * 0.13, H * 0.06, 0, 0, 6.2832); c.fill();
-    c.fillStyle = '#7cc6c0'; c.beginPath(); c.ellipse(0, H * 0.035, span * 0.07, H * 0.035, 0, 0, 6.2832); c.fill();
+    c.fillStyle = color('fav.teal', 'shade'); c.beginPath(); c.ellipse(0, H * 0.02, span * 0.13, H * 0.06, 0, 0, 6.2832); c.fill();
+    c.fillStyle = color('fav.teal'); c.beginPath(); c.ellipse(0, H * 0.035, span * 0.07, H * 0.035, 0, 0, 6.2832); c.fill();
     /* the head and its crest, ahead of us */
-    c.fillStyle = '#2d6a78'; c.beginPath(); c.ellipse(0, -H * 0.045, span * 0.07, H * 0.035, 0, 0, 6.2832); c.fill();
+    c.fillStyle = color('fav.teal', 'shade'); c.beginPath(); c.ellipse(0, -H * 0.045, span * 0.07, H * 0.035, 0, 0, 6.2832); c.fill();
     c.beginPath(); c.moveTo(-span * 0.03, -H * 0.06); c.lineTo(0, -H * 0.115); c.lineTo(span * 0.05, -H * 0.055); c.closePath(); c.fill();
     c.restore();
   }
@@ -306,8 +307,8 @@ class PteroFlight {
     /* along the bottom left, out of the pterodactyl's way */
     const size = H * 0.05, gap = size * 1.2, x0 = W * 0.04 + size * 0.7, y = H * 0.94, n = this.found.length;
     c.save(); c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.roundRect(x0 - gap * 0.7, y - size * 0.7, gap * (n - 1) + gap * 1.4, size * 1.4, size * 0.7); c.fill();
-    this.found.forEach((w, i) => { const sp = sprite(w.emoji); if (sp){ const k = size / 128; c.drawImage(sp, x0 + i * gap - 80 * k, y - 84 * k, 160 * k, 160 * k); } else { c.font = `${Math.round(size)}px ${EMOJI_FONT}`; c.fillStyle = '#000'; c.fillText(w.emoji, x0 + i * gap, y); } });
+    c.fillStyle = alpha('earth.snow', 0.7); c.beginPath(); c.roundRect(x0 - gap * 0.7, y - size * 0.7, gap * (n - 1) + gap * 1.4, size * 1.4, size * 0.7); c.fill();
+    this.found.forEach((w, i) => { const sp = sprite(w.emoji); if (sp){ const k = size / 128; c.drawImage(sp, x0 + i * gap - 80 * k, y - 84 * k, 160 * k, 160 * k); } else { c.font = `${Math.round(size)}px ${EMOJI_FONT}`; c.fillStyle = color('shade.ink'); c.fillText(w.emoji, x0 + i * gap, y); } });
     c.restore();
   }
 
