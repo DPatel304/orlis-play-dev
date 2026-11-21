@@ -152,6 +152,15 @@ the checks turn a game with a colour code back. The palette is one list, so it c
 Pick the **touch** colours for things to catch and pop (they are the brightest things on screen); never for scenery. The plain
 words red, orange, yellow, green, blue, purple, pink and gold still work, but the palette names are better.
 
+### The five style rules
+
+1. **Name one colour per object.** Its shade and highlight come by themselves: `Orlis.assets.color('touch.mint', 'shade')` and
+   `Orlis.assets.color('touch.mint', 'light')` (in a description, `"touch.mint.shade"` and `"touch.mint.light"`). Never pick them by hand.
+2. **One shade tone and one soft highlight** per object, flat fills; light from the upper left, shade on the lower right.
+3. **Gradients only in the sky and the big background layers**, never inside an object.
+4. **Chunky, simple shapes**: round bushes, faceted mountains, cube heads, simple props.
+5. **The thin ink edge only on characters and things to catch**, never on scenery.
+
 ## The Orlis look and feel
 
 The asset library is drawn in the Orlis house style - flat colour, one soft shadow tone, painted skies, calm worlds - so a game

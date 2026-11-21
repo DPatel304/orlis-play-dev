@@ -3,7 +3,7 @@ import { PALETTE } from '../assets/palette.js';
 import { MOVES, TRIGGERS, RESULTS, SOUNDS, FROM, COLORS, GAME_KEYS, THING_KEYS, LIMITS } from './vocabulary.js';
 
 /* a name from the master palette: 'touch.mint' */
-export const isPaletteName = (c) => { const [g, k] = String(c).split('.'); return !!(PALETTE[g] && k && PALETTE[g][k]); };
+export const isPaletteName = (c) => { const [g, k, t] = String(c).split('.'); return !!(PALETTE[g] && k && PALETTE[g][k]) && (t === undefined || t === 'shade' || t === 'light'); };
 
 /* the closest of some names to one that isn't there, if any is close */
 export function didYouMean(name, options){

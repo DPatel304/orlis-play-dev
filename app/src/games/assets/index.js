@@ -78,8 +78,8 @@ function placeholder(c, s){
 
 export const assets = {
   has: (id) => !!ASSETS[id] || !!SCENES[id],
-  /* a colour from the master palette, by name: assets.color('touch.mint') (palette.js, decision 0040) */
-  color: (name) => paletteColor(name),
+  /* a colour from the master palette, by name: assets.color('touch.mint'); its shade or highlight by rule: assets.color('touch.mint', 'shade' | 'light') (palette.js, decisions 0040, 0041) */
+  color: (name, tone) => paletteColor(name, tone),
   /* a piece, centred on (x, y), size pixels tall. */
   draw(c, id, x, y, size, o = {}){
     c = unwrap(c);

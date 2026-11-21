@@ -112,7 +112,7 @@ export function sentence(r, { likeName = null, gameName = null } = {}){
 }
 
 /* what the maker tells Claude about colours (decision 0040): names from the master palette, never a code */
-const COLOUR_RULE = `assets.color('touch.mint'), written "touch.mint" in the description; the groups are ${Object.keys(PALETTE).join(', ')}, listed in the SKILL; never a #rrggbb, rgb() or hsl() code - the checks turn it back`;
+const COLOUR_RULE = `assets.color('touch.mint'), written "touch.mint" in the description; the groups are ${Object.keys(PALETTE).join(', ')}, listed in the SKILL; never a #rrggbb, rgb() or hsl() code - the checks turn it back. Style rules: name one colour per object and let its shade and highlight come by themselves (assets.color('touch.mint', 'shade' or 'light'); "touch.mint.shade" in the description); one shade tone and one soft highlight, flat fills; gradients only in the sky and background; chunky, simple shapes; the thin ink edge only on characters and things to catch`;
 
 /* The prompt for Claude Code, from the request. The person's own words are
    quoted as a description - never as instructions about anything else. */

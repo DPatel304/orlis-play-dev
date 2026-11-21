@@ -32,13 +32,33 @@ export const WORLDS = {
   sea: ['sea', 'meadow', 'earth', 'shade']
 };
 
+/* Shade and highlight by rule (decision 0041): a creator names ONE colour and the other two come from it. Shade is the base mixed toward
+   the palette's shadow purple-grey (shade.shadow); light is the base mixed toward white. The mixing is in linear-light RGB, with two fixed
+   amounts, tuned against Pop Party's balloons (its shade is the shadow colour at 20% and its highlight white at 80%, as painted on
+   screen): the average difference is about 1.7 (shade) and 2.2 (light) in CIE delta E. */
+export const TONES = { shade: 0.32, light: 0.68 };
+const toLin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+const toSrgb = (v) => Math.round(255 * Math.max(0, Math.min(1, v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1 / 2.4) - 0.055)));
+const rgb = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function mix(hex, toward, k){
+  const a = rgb(hex), b = rgb(toward);
+  return '#' + a.map((v, i) => toSrgb(toLin(v) * (1 - k) + toLin(b[i]) * k).toString(16).padStart(2, '0')).join('');
+}
+/* a colour's tone: 'shade' or 'light' (anything else gives the base) */
+export function tone(hex, t){
+  if (t === 'shade') return mix(hex, PALETTE.shade.shadow, TONES.shade);
+  if (t === 'light') return mix(hex, '#ffffff', TONES.light);
+  return hex;
+}
+
 const FALLBACK = '#8a80b0';
 export const unknownColors = new Set();
-/* A colour by name ('touch.mint'). An unknown name gives the calm shade colour (never a bright one) and is noted, so a typo is visible
-   in the asset viewer and Create's check without breaking the game. */
-export function color(name){
-  const [g, k] = String(name || '').split('.');
+/* A colour by name ('touch.mint'), with its tone if asked: color('touch.mint', 'shade'), color('touch.mint', 'light'); the tone may also
+   be the end of the name ('touch.mint.shade'). An unknown name gives the calm shade colour (never a bright one) and is noted, so a typo is
+   visible in the asset viewer and Create's check without breaking the game. */
+export function color(name, t){
+  const [g, k, t2] = String(name || '').split('.');
   const v = PALETTE[g] && PALETTE[g][k];
   if (!v){ unknownColors.add(String(name).slice(0, 40)); return FALLBACK; }
-  return v;
+  return tone(v, t || t2);
 }

@@ -77,6 +77,9 @@ the library), say so plainly to the grown-up - it can be asked for - and offer t
   yet. The skill has the whole layout.
 - **Colours by name.** Colours come from the Orlis palette, like `"color": "touch.mint"` (the skill lists them). Never a colour
   code such as `#ff9a55`, `rgb(...)` or `hsl(...)`: the checks turn it back.
+- **Five style rules.** (1) Name one colour per object; its shade and highlight come by themselves
+  (`Orlis.assets.color('touch.mint', 'shade')`, `'light'`). (2) One shade tone and one soft highlight, flat fills. (3) Gradients only
+  in the sky and background. (4) Chunky, simple shapes. (5) The thin ink edge only on characters and things to catch.
 - **Smooth.** It runs on a family laptop: keep it light (not hundreds of things at once).
 
 - **Pictures come from the asset library, and only from it.** Name a scene and pieces from the library (the skill lists every
