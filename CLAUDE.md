@@ -9,3 +9,6 @@
 
 **When documents disagree:** tests and code (for what is built), then decision records, then ARCHITECTURE.md, then VISION.md,
 then BACKLOG.md. If a decision changes, write a new record that supersedes the old one; do not edit history.
+
+**How we work (owner, 2026-11-21):** the owner talks only to Opus. Opus designs, reviews and decides; it hands well-specified build
+packages to Sonnet 5.5 helper agents (brief from `docs/handoff-sonnet.md` plus the package), reviews their work, and reports to the owner.
