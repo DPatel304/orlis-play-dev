@@ -46,7 +46,13 @@ export function makeCrew(n = MAX_PLAYERS){
     /* player i's avatar: their own, if avatars are made (personal), else the
        generic one for their place */
     personal: false,
-    lookOf(i){ const p = this.personal && this.profileOf(i); return normalizeLook((p && p.look) || GENERIC[i % GENERIC.length]); },
+    lookOf(i){
+      if (!this.personal) return normalizeLook(GENERIC[i % GENERIC.length]);
+      const p = this.profileOf(i);
+      /* a profile with no look is Cubo; a guest is Cubo in the next free favourite (so guests are told apart) */
+      /* (and a child who clashed on a colour is drawn in the one they play in, so the pill and the character match) */
+      return { ...normalizeLook(p && p.look), colour: this.colourNames()[i] };
+    },
     /* the favourite (by name) player i asked for with their avatar: null for a guest */
     wantedOf(i){ const p = this.personal && this.profileOf(i); return p ? normalizeLook(p.look).colour : (this.personal ? null : GENERIC[i % GENERIC.length].colour); },
     nameOf(i){ const p = this.profileOf(i); return p ? p.name : null; },

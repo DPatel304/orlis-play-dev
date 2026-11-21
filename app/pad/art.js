@@ -33,7 +33,7 @@ export function paintCubo(cv, { pose = 'freeze', px = 160, t = 0 } = {}) {
 
 /* a person: their avatar if they have a look, else a plain friendly head on their colour. look: the avatar maker's object or null. */
 export function paintPerson(cv, person, px = 200) {
-  if (person && person.id === 'guest') return paintCubo(cv, { pose: 'wave', px });
+  /* (Guest has no look: Cubo, the blue one, drawn as the same character as everyone) */
   const { c, s } = ready(cv, px);
   const look = normalizeLook(person && person.avatar);       /* (looks saved before the one character are carried over; none is Cubo) */
   try { body(c, s / 2, s * 0.97, s * 0.9, look, 0, 'stand'); } catch { try { head(c, s / 2, s / 2, s * 0.32, look, 0); } catch { /* blank */ } }

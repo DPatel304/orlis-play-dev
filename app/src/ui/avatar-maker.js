@@ -1,19 +1,17 @@
-/* The avatar maker: a child (or a grown-up) makes the character that is
-   them in every game - skin, hair, face, their colour, an outfit and one
-   extra - with big picture choices, a "Surprise me", and a big preview
-   that waves back. Saved on their profile on the family's Orlis server, so
-   it's theirs on any PC.
+/* The avatar maker (decision 0042): a child makes the one cube character that is them in every game by choosing five things - their
+   colour (a favourite, which is also their player colour), their face, something on top (hair pieces too), an outfit with a second colour,
+   and one extra - with big picture choices, a "Surprise me", and a live preview that waves back. Saved on their profile on the family's
+   Orlis server, so it's theirs on any PC. Colours are palette names (0040).
 
-     openMaker(profile, { onDone })   a card over the page; onDone(look)
-                                      after it's saved
-     faceOf(profile, size)            an element for their face: their
-                                      avatar's portrait, or (no avatar yet)
-                                      their old picture */
+     openMaker(profile, { onDone })   a card over the page; onDone(look) after it's saved
+     faceOf(profile, size)            an element for their face: their character's portrait, or (while making is off) their old picture */
 import { button, onPick } from './cursor.js';
 import { screen, h } from './screens.js';
 import { sfx } from '../audio/sound.js';
 import { account, AVATARS } from './account.js';
-import { PARTS, body, head, portrait, surprise } from './avatar-art.js';
+import { body, head, portrait } from './avatar-art.js';
+import { PARTS, normalizeLook, storable, surprise } from './look.js';
+import { color } from '../games/assets/palette.js';
 
 /* Making your own avatar is off for now: everyone plays as the two
    generic crew avatars (crew.js GENERIC), and profiles keep their pictures.
@@ -31,7 +29,7 @@ function pic(size, fn, cls = 'avpic'){
 }
 
 export function faceOf(profile, size = 48){
-  if (MAKING && profile && profile.look) return pic(size, (c, s) => portrait(c, s / 2, s / 2, s, profile.look, 1.3), 'avface');
+  if (MAKING && profile) return pic(size, (c, s) => portrait(c, s / 2, s / 2, s, normalizeLook(profile.look), 1.3), 'avface');
   const span = document.createElement('span'); span.className = 'av';
   span.textContent = AVATARS[profile && profile.avatar] || AVATARS.cube;
   return span;
@@ -39,30 +37,23 @@ export function faceOf(profile, size = 48){
 /* put their face in place of an element's emoji picture (.av) */
 export function withFace(el, profile, size){
   const av = el.querySelector('.av');
-  if (MAKING && av && profile && profile.look) av.replaceWith(faceOf(profile, size));
+  if (MAKING && av && profile) av.replaceWith(faceOf(profile, size));
   return el;
 }
 
-/* A first look for someone who hasn't made one: their colour from their
-   old picture's place in the list, the rest friendly defaults. */
-const starter = (profile) => ({ skin: PARTS.skin[1], hair: 'short', hairColor: PARTS.hairColor[1], eyes: 'dots', mouth: 'smile',
-  color: PARTS.color[Math.max(0, Object.keys(AVATARS).indexOf(profile && profile.avatar)) % PARTS.color.length], outfit: 'plain', extra: 'none' });
-
-const TABS = [
-  ['skin', 'Skin'], ['hair', 'Hair'], ['face', 'Face'], ['color', 'Colour'], ['outfit', 'Outfit'], ['extra', 'Extra']
-];
+const TABS = [['colour', 'Colour'], ['face', 'Face'], ['top', 'On top'], ['outfit', 'Outfit'], ['extra', 'Extra']];
 const NAMES = {
-  hair: { short: 'Short', curly: 'Curly', ponytail: 'Ponytail', buns: 'Buns', long: 'Long', spiky: 'Spiky', bob: 'Bob', none: 'None' },
-  eyes: { dots: 'Dots', happy: 'Happy', sparkle: 'Sparkly', wink: 'Wink' },
-  mouth: { smile: 'Smile', grin: 'Big grin', oh: 'Oh!', tongue: 'Silly' },
-  outfit: { plain: 'Plain', stripes: 'Stripes', stars: 'Star', dots: 'Spots', hoodie: 'Hoodie' },
-  extra: { none: 'Nothing', cap: 'Cap', bow: 'Bow', glasses: 'Glasses', headphones: 'Headphones', crown: 'Crown', flower: 'Flower' }
+  eyes: { dot: 'Dots', happy: 'Happy', wide: 'Wide', wink: 'Wink', sleepy: 'Sleepy', star: 'Stars' },
+  mouth: { smile: 'Smile', grin: 'Big grin', o: 'Oh!', cat: 'Kitty', tongue: 'Silly' },
+  top: { none: 'Nothing', tuft: 'Tuft', bob: 'Bob', cap: 'Cap', beanie: 'Beanie', bow: 'Bow', crown: 'Crown', phones: 'Headphones', ears: 'Bunny', flower: 'Flower' },
+  outfit: { plain: 'Plain', stripes: 'Stripes', stars: 'Stars', dots: 'Spots', overalls: 'Overalls', hoodie: 'Hoodie' },
+  extra: { none: 'Nothing', glasses: 'Glasses', scarf: 'Scarf', cape: 'Cape', freckles: 'Freckles', cheeks: 'Rosy cheeks' }
 };
 
 export function openMaker(profile, { onDone = () => {} } = {}){
   sfx.select?.();
-  let look = { ...starter(profile), ...(profile.look || {}) };
-  let tab = 'hair', t = 0, raf = 0, wave = 0;
+  let look = storable(profile.look);
+  let tab = 'colour', t = 0, raf = 0, wave = 0;
   const s = screen('dim setscreen avmaker'); s.style.zIndex = 7;
   const card = h('div', 'avcard');
   const left = h('div', 'avleft'), right = h('div', 'avright');
@@ -78,11 +69,12 @@ export function openMaker(profile, { onDone = () => {} } = {}){
     const w = Math.max(1, Math.round(r.width * k)), hh = Math.max(1, Math.round(r.height * k));
     if (stage.width !== w || stage.height !== hh){ stage.width = w; stage.height = hh; }
     const c = stage.getContext('2d'); c.setTransform(k, 0, 0, k, 0, 0); c.clearRect(0, 0, r.width, r.height);
-    body(c, r.width / 2, r.height * 0.93, r.height * 0.82, look, t, wave > 0 ? 'wave' : 'stand');
+    body(c, r.width / 2, r.height * 0.93, r.height * 0.8, look, t, wave > 0 ? 'wave' : 'stand');
   }
   const loop = (now) => { t = now / 1000; wave = Math.max(0, wave - 1 / 60); paint(); raf = requestAnimationFrame(loop); };
   raf = requestAnimationFrame(loop);
   const set = (k, v) => { look = { ...look, [k]: v }; wave = 1.2; sfx.pop?.(); fill(); };
+  const setFace = (k, v) => { look = { ...look, face: { ...look.face, [k]: v } }; wave = 1.2; sfx.pop?.(); fill(); };
 
   /* a choice: a picture, picked */
   const tile = (draw, label, on, fn) => {
@@ -91,31 +83,42 @@ export function openMaker(profile, { onDone = () => {} } = {}){
     b.querySelector('.lbl').textContent = label;
     return b;
   };
-  const swatches = (k, title) => {
+  /* a colour: a round swatch of the colour itself */
+  const swatches = (list, current, pick, title) => {
     const row = h('div', 'avswatches');
-    for (const col of PARTS[k]){
-      const b = onPick(button('', 'avswatch' + (look[k] === col ? ' on' : '')), () => set(k, col));
-      b.style.setProperty('--sw', col); row.appendChild(b);
+    for (const name of list){
+      const b = onPick(button('', 'avswatch' + (current === name ? ' on' : '')), () => pick(name));
+      b.style.setProperty('--sw', color(name)); b.setAttribute('aria-label', name); row.appendChild(b);
     }
     return [h('div', 'avlabel', title), row];
   };
-  const grid = (k, draw) => {
+  const grid = (list, names, current, pick, draw) => {
     const g = h('div', 'avgrid');
-    for (const v of PARTS[k]) g.appendChild(tile((c, sz) => draw(c, sz, { ...look, [k]: v }), NAMES[k][v], look[k] === v, () => set(k, v)));
+    for (const v of list) g.appendChild(tile((c, sz) => draw(c, sz, v), names[v], current === v, () => pick(v)));
     return g;
   };
   const headPic = (c, sz, l) => head(c, sz / 2, sz * 0.5, sz * 0.3, l, 1.3);
+  const bodyPic = (c, sz, l) => body(c, sz / 2, sz * 0.97, sz * 0.9, l, 1.3);
+  const favs = PARTS.colour.map(n => 'fav.' + n);
 
   function fill(){
     tabs.innerHTML = '';
     for (const [id, name] of TABS) tabs.appendChild(onPick(button(name, 'avtab' + (tab === id ? ' on' : '')), () => { tab = id; sfx.nav?.(); fill(); }));
     opts.innerHTML = '';
-    if (tab === 'skin') opts.append(...swatches('skin', 'Skin'));
-    if (tab === 'hair'){ opts.appendChild(grid('hair', (c, sz, l) => headPic(c, sz, { ...l, extra: 'none' }))); opts.append(...swatches('hairColor', 'Hair colour')); }
-    if (tab === 'face'){ opts.append(h('div', 'avlabel', 'Eyes'), grid('eyes', headPic), h('div', 'avlabel', 'Mouth'), grid('mouth', headPic)); }
-    if (tab === 'color') opts.append(...swatches('color', 'Your colour - in every game'));
-    if (tab === 'outfit') opts.appendChild(grid('outfit', (c, sz, l) => body(c, sz / 2, sz * 1.55, sz * 1.6, l, 1.3)));
-    if (tab === 'extra') opts.appendChild(grid('extra', headPic));
+    if (tab === 'colour') opts.append(...swatches(favs, 'fav.' + look.colour, (n) => set('colour', n.slice(4)), 'Your colour - in every game'));
+    if (tab === 'face'){
+      opts.append(h('div', 'avlabel', 'Eyes'), grid(PARTS.eyes, NAMES.eyes, look.face.eyes, (v) => setFace('eyes', v), (c, sz, v) => headPic(c, sz, { ...look, face: { ...look.face, eyes: v }, top: 'none', extra: 'none' })),
+        h('div', 'avlabel', 'Mouth'), grid(PARTS.mouth, NAMES.mouth, look.face.mouth, (v) => setFace('mouth', v), (c, sz, v) => headPic(c, sz, { ...look, face: { ...look.face, mouth: v }, top: 'none', extra: 'none' })));
+    }
+    if (tab === 'top'){
+      opts.appendChild(grid(PARTS.top, NAMES.top, look.top, (v) => set('top', v), (c, sz, v) => headPic(c, sz, { ...look, top: v, extra: 'none' })));
+      opts.append(...swatches(PARTS.outfitColour, look.outfitColour, (n) => set('outfitColour', n), 'Its colour'));
+    }
+    if (tab === 'outfit'){
+      opts.appendChild(grid(PARTS.outfit, NAMES.outfit, look.outfit, (v) => set('outfit', v), (c, sz, v) => bodyPic(c, sz, { ...look, outfit: v, top: 'none', extra: 'none' })));
+      opts.append(...swatches(PARTS.outfitColour, look.outfitColour, (n) => set('outfitColour', n), 'Outfit colour'));
+    }
+    if (tab === 'extra') opts.appendChild(grid(PARTS.extra, NAMES.extra, look.extra, (v) => set('extra', v), (c, sz, v) => bodyPic(c, sz, { ...look, extra: v, top: 'none' })));
   }
   fill();
 
@@ -130,7 +133,7 @@ export function openMaker(profile, { onDone = () => {} } = {}){
     onPick(button('Done', 'setbtn go avbig'), async () => {
       say.textContent = 'Saving…';
       try {
-        const p = await account.call('PATCH', `/api/profiles/${encodeURIComponent(profile.id)}`, { look });
+        const p = await account.call('PATCH', `/api/profiles/${encodeURIComponent(profile.id)}`, { look: storable(look) });
         account.set({ profiles: (account.state.profiles || []).map(x => x.id === profile.id ? { ...x, look: p.look } : x) });
         sfx.gold?.(); close(); onDone(p.look);
       } catch (e){ say.textContent = e.message || 'That didn’t save. Try again.'; }

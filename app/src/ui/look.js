@@ -61,7 +61,8 @@ export function fromOld(o){
     colour: favOf(o.color),
     face: { eyes: OLD_EYES[o.eyes] || CUBO.face.eyes, mouth: OLD_MOUTH[o.mouth] || CUBO.face.mouth },
     top: OLD_HAIR[o.hair] || OLD_HAT[o.extra] || 'none',
-    outfit: one(PARTS.outfit, o.outfit, 'plain'),
+    /* (an old hoodie was all in their colour; with a white second colour it would lose it, so it is plain) */
+    outfit: o.outfit === 'hoodie' ? 'plain' : one(PARTS.outfit, o.outfit, 'plain'),
     outfitColour: 'shade.card',
     extra: o.extra === 'glasses' ? 'glasses' : 'none'
   };

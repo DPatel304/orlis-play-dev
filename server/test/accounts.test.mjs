@@ -275,6 +275,12 @@ test("a profile's avatar: its look saved, checked, and sent with the profiles", 
     const all = (await call('GET', '/api/me', null, me.token)).profiles;
     assert.equal(all.find(p => p.id === kid.id).look.hair, 'ponytail');
     assert.equal(all.find(p => p.id !== kid.id).look, null, 'no avatar made yet');
+    /* the one character (0042): names, never raw colours */
+    const NEW = { colour: 'pink', face: { eyes: 'star', mouth: 'grin' }, top: 'bob', outfit: 'overalls', outfitColour: 'ui.gold', extra: 'glasses' };
+    assert.deepEqual((await call('PATCH', `/api/profiles/${kid.id}`, { look: NEW }, me.token)).look, NEW);
+    assert.equal((await call('PATCH', `/api/profiles/${kid.id}`, { look: { ...NEW, colour: '#ff5d8f' } }, me.token)).error, 'bad_look', 'a favourite by name, not a code');
+    assert.equal((await call('PATCH', `/api/profiles/${kid.id}`, { look: { ...NEW, outfitColour: '#ffffff' } }, me.token)).error, 'bad_look');
+    assert.equal((await call('PATCH', `/api/profiles/${kid.id}`, { look: { ...NEW, face: { eyes: 'dots' } } }, me.token)).error, 'bad_look');
     /* the app's choices and the server's are the same */
     const app = await import('../../app/src/ui/avatar-art.js');
     const { PARTS } = await import('../src/looks.js');

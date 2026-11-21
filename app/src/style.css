@@ -1072,7 +1072,7 @@ textarea.finput{ border-radius:1.4vh; resize:none; font-family:inherit; line-hei
 .cacts{ justify-content:flex-start; }
 
 /* ---------- avatars: faces, and the avatar maker ---------- */
-canvas.avface{ display:block; border-radius:50%; }
+canvas.avface{ display:block; border-radius:22%; }
 .btn.who canvas.avface{ width:clamp(48px, 8.6vh, 118px); height:clamp(48px, 8.6vh, 118px); }
 .btn.whochip canvas.avface{ width:1.9em; height:1.9em; margin:-.25em 0; }
 .fchip canvas.avface{ width:5.6vh; height:5.6vh; }
@@ -1081,29 +1081,30 @@ canvas.avface{ display:block; border-radius:50%; }
 .favrow{ display:flex; align-items:center; gap:2vh; margin:1.6vh 0; }
 .favrow canvas.avface{ width:12vh; height:12vh; background:#f1f2f7; }
 .avmaker{ display:flex; align-items:center; justify-content:center; }
-.avcard{ display:flex; width:min(94vw, 150vh); height:min(86vh, 70vw); background:#fff; color:#16161d; border-radius:3.4vh;
-  box-shadow:0 3vh 8vh rgba(20,24,50,.25); overflow:hidden; animation:popin var(--t-fast) var(--ease) both; font-size:clamp(14px, 2.2vh, 26px); }
-.avleft{ flex:0 0 40%; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:2vh;
-  background:radial-gradient(ellipse at 50% 92%, #dfe3f3 0 22%, transparent 23%), linear-gradient(#eef1fb, #f8f9fd); }
+.avcard{ display:flex; width:min(94vw, 150vh); height:min(88vh, 70vw); background:#faf6ec; color:#2f2b45; border-radius:3.4vh;
+  box-shadow:0 3vh 8vh rgba(52,40,96,.28); overflow:hidden; animation:popin var(--t-fast) var(--ease) both; font-size:clamp(14px, 2.3vh, 26px); }
+.avleft{ flex:0 0 38%; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:2vh; background:#f3ecdc; }
 .avstage{ width:100%; flex:1; min-height:0; }
 .avname{ font-size:1.8em; font-weight:700; margin-top:.4vh; }
-.avright{ flex:1; display:flex; flex-direction:column; padding:2.4vh 2.6vh 2vh; min-width:0; }
+.avright{ flex:1; display:flex; flex-direction:column; padding:2.4vh 2.6vh 2vh; min-width:0; background:#fffdf8; }
 .avtabs{ display:flex; flex-wrap:wrap; gap:.8vh; }
-.btn.avtab{ padding:.45em 1.05em; font-size:1em; font-weight:600; border:1px solid #e3e5ec; box-shadow:none; background:#fff; }
-.btn.avtab.on{ background:#6d5efc; color:#fff; border-color:#6d5efc; }
+.btn.avtab{ padding:.5em 1.15em; min-height:6vh; font-size:1em; font-weight:600; border:2px solid #e6dcc7; box-shadow:none; background:#faf6ec; color:#2f2b45; }
+.btn.avtab.on{ background:#e85d8a; color:#fff; border-color:#e85d8a; }
 .avopts{ flex:1; overflow-y:auto; padding:1.8vh .2vh; }
-.avlabel{ font-weight:600; color:#5b5f6e; margin:1vh 0 1vh; }
-.avgrid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(15vh, 130px), 1fr)); gap:1.2vh; }
-.btn.avtile{ padding:.8vh .6vh 1vh; border-radius:2vh; border:2px solid #eceef4; box-shadow:none; background:#f7f8fc; }
+.avlabel{ font-weight:600; color:#6b6680; margin:1vh 0 1vh; }
+.avgrid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(17vh, 150px), 1fr)); gap:1.4vh; margin-bottom:1.6vh; }
+.btn.avtile{ padding:.8vh .6vh 1vh; border-radius:2vh; border:3px solid #e6dcc7; box-shadow:none; background:#faf6ec; color:#2f2b45; }
 .btn.avtile .lbl{ display:block; font-size:.85em; font-weight:600; }
 .btn.avtile canvas{ display:block; width:100%; aspect-ratio:1; }
-.btn.avtile.on{ border-color:#6d5efc; background:#efedff; }
-.avswatches{ display:flex; flex-wrap:wrap; gap:1.2vh; }
-.btn.avswatch{ width:7vh; height:7vh; min-width:0; padding:0; border-radius:50%; background:var(--sw); border:3px solid #fff; box-shadow:0 0 0 2px #e3e5ec; }
-.btn.avswatch.on{ box-shadow:0 0 0 4px #6d5efc; }
-.avfoot{ display:flex; align-items:center; gap:1.2vh; padding-top:1.4vh; border-top:1px solid #eceef4; }
-.avsay{ flex:1; color:#5b5f6e; }
-.btn.setbtn.avbig{ font-size:1em; padding:.6em 1.3em; }
+.btn.avtile.on{ border-color:#e85d8a; background:#fff; }
+.avswatches{ display:flex; flex-wrap:wrap; gap:1.4vh; }
+.btn.avswatch{ width:9vh; height:9vh; min-width:0; padding:0; border-radius:50%; background:var(--sw); border:3px solid #fffdf8; box-shadow:0 0 0 2px #2f2b45; }
+.btn.avswatch.on{ box-shadow:0 0 0 5px #e85d8a; }
+.avfoot{ display:flex; align-items:center; gap:1.2vh; padding-top:1.4vh; border-top:2px solid #e6dcc7; }
+.avsay{ flex:1; color:#6b6680; }
+.btn.setbtn.go.avbig{ background:#e85d8a; border-color:#e85d8a; color:#fff; }
+.avlabel{ text-align:left; }
+.btn.setbtn.avbig{ font-size:1em; padding:.6em 1.3em; min-height:7vh; }
 .fpop > .btn.setbtn.fsmall{ margin-top:1.4vh; }
 
 /* ---------- the line-up: who's who, once a session ---------- */
