@@ -13,7 +13,7 @@ tablets) are optional controllers and private screens, a browser page joined by 
 ## Where we are (Nov 20, 2026)
 - **Phase 1 = closed beta for family, target March 27, 2027 (at risk), two perfected games** (0026): **Pop Party** (2D painted, camera;
   already polished: grass shadows, balloon edge light, horizon haze) and **Peekaboo Garden** (3D): one Android tablet hider with a
-  private first-person view, one or two camera-tracked seekers on the TV overview. Plus the platform: pads/seats, Create for two
+  private view (a guided camera behind the bunny, 0039), one or two camera-tracked seekers on the TV overview. Plus the platform: pads/seats, Create for two
   testers, closed-beta install, kid profiles moved to the Box.
 - Milestones are in `docs/plan-phase1.md` (M0 Dec 4 ... M6 Mar 27). Next up: **M2 pad protocol and browser pad page**.
 - Decision status to know: 0020 (stage and flat games) and 0023 (Box draws 2D only) are Proposed and come back into play for

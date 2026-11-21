@@ -5,7 +5,7 @@ plays start to finish). Visual mockup: `docs/games/peekaboo-design.html` (also p
 
 ## The round (about 1.5 minutes)
 1. **Join.** The hider's phone scans the TV's QR (or taps the three pictures, 0032) and picks who they are. Seekers wave at the camera.
-2. **Hide, 10 s.** The TV dims: "Seekers, cover your eyes! Count to ten together", the numbers filling in. The hider runs in first person
+2. **Hide, 10 s.** The TV dims: "Seekers, cover your eyes! Count to ten together", the numbers filling in. The hider runs (seen from a guided camera behind the bunny, 0039)
    and walks into a hiding place (no button: being inside is hiding).
 3. **Seek, 60 s.** Each seeker's hand is a lantern on the garden (a ray from the TV camera onto the floor). Holding a lantern over the
    hider fills a "found" meter; how fast depends on the hiding place. Moving near a bush makes it rustle on the TV.
@@ -27,7 +27,7 @@ sides only (so nothing blocks the TV view), dusk light, fireflies, crickets, sof
 ## The screens
 - **TV:** a fixed, high three-quarter view of the whole garden (the K1 test's camera). Lanterns as warm pools of light, rustles, the
   seekers' avatars at the bottom edge. Never the hider unless lit or found.
-- **Phone:** first person. A stick on the left to move, drag on the right to look. Leaves (three) show how hidden you are; the
+- **Phone:** a guided camera behind and beside the bunny (0039), like a paper stage; it turns by itself. A stick to move, no look controls; the bunny flips like a card when it turns. Leaves (three) show how hidden you are; the
   lantern light glows on the screen edges as it comes close; a sun sliding down an arc is the clock (no numbers).
 
 ## What the renders taught

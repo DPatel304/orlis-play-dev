@@ -759,3 +759,10 @@ the kit's vocabulary and what the store lacks, the owner picks one (or it picks)
 a bot plays it (mouse or recorded poses) for crashes, softlocks, a first-minute clarity check and the speed budget; (3) the owner plays
 it about 20 minutes and approves; it goes out labelled "Made by Cubo's workshop" (working name). Keep the human approval (0008, 0013).
 Limits: AI cannot judge motion fun or toddler fit without a playtest; variety is bounded by the kit (that is the safety); API cost per game.
+
+## Later: the owner's FPS and "copy a store game" (owner, 2026-11-21; decision 0039)
+- The owner makes an FPS with Claude's help and puts it on the store. Family-safe: a splat, foam or water blaster.
+- Others can copy it and change a few parts (map from kit pieces, colours, rules, targets), not the camera, controls or core feel.
+- Needs a new Create feature: copy a store game and change the parts its maker opened up. Making a new FPS from scratch stays out of Create.
+- Needs true 3D (a free camera), which is a later phase.
+

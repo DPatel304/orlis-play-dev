@@ -1,5 +1,5 @@
 # 0031: How Peekaboo Garden is built
-Status: Accepted
+Status: Accepted; the phone view is a guided camera, not first person (0039)
 Date: 2026-11-20
 
 ## Context
