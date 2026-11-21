@@ -3,7 +3,7 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 const dir = new URL('../docs/decisions/', import.meta.url);
 const MOCKUPS = [
-  ['Master palette (draft)', 'https://claude.ai/artifact/T1KgcF8VvUKNnXsTs1xDEs'],
+  ['Master palette', 'https://claude.ai/artifact/T1KgcF8VvUKNnXsTs1xDEs'],
   ['2D and its 2.5D sibling (with the ink edge)', 'https://claude.ai/artifact/SCB6dVNTojBHxCfd4gLVGw'],
   ['UI kit (colours, HUD pieces, home, pause, results, phones)', 'https://claude.ai/artifact/PM65z23jr5BDBPrp5kAc1L'],
   ['HUD grid: anchors and docks', 'https://claude.ai/artifact/Xf2sV5sProE7sbeP4rigBQ'],

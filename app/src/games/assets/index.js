@@ -14,6 +14,7 @@
 
    The library is why a game made in Create always looks like an Orlis game, and why it can't show anything that hasn't been
    looked at: new pieces are added here (by request, approved by the Orlis owner), and games only ever name them. */
+import { color as paletteColor } from './palette.js';
 import { drawFigure, POSE_NAMES, FACE_NAMES } from '../figure.js';
 import { EMOJI } from './emoji.js';
 import { PROPS } from './props.js';
@@ -77,6 +78,8 @@ function placeholder(c, s){
 
 export const assets = {
   has: (id) => !!ASSETS[id] || !!SCENES[id],
+  /* a colour from the master palette, by name: assets.color('touch.mint') (palette.js, decision 0040) */
+  color: (name) => paletteColor(name),
   /* a piece, centred on (x, y), size pixels tall. */
   draw(c, id, x, y, size, o = {}){
     c = unwrap(c);

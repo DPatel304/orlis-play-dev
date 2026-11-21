@@ -22,5 +22,5 @@ The look in one line: **cozy, playful, handmade paper**, for every kind of game 
 9. **Paper motion.** Turn with a flip; appear by popping up from the ground; fall with a flutter; change screens with a page turn.
 10. **Soft light, gentle haze.** Light from the top left; far layers fade toward the sky colour, more or less per world.
 
-Open: the master palette itself (to extract from the current games and the board), the exact shadow offset and blur, and how rule 4
+Decided: the master palette (0040, `docs/palette.html`). Open: the exact shadow offset and blur, and how rule 4
 works in 3D (an outline shader or a drawn edge on standees).

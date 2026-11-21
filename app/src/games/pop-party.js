@@ -1,3 +1,4 @@
+import { PALETTE } from './assets/palette.js';
 import { Juice, clamp } from './common.js';
 import { sayBubble } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
@@ -70,10 +71,11 @@ export const MOTIONS = {
 };
 
 const HUES = [0, 28, 48, 135, 175, 215, 270, 325];
-/* The master palette's touchables (docs/palette.html): most balloons are the hue at one saturation and lightness, but Mint and Lagoon
-   are softened so all eight feel like one set, and Lagoon is a deeper turquoise so it stands out against water and pale skies. */
+/* The balloons are the master palette's touchables (palette.js, decision 0040), one per hue. Mint and Lagoon are softened there, so the
+   bits that fly out of those two follow the same softer tones. */
+const BALLOON = { 0: 'cherry', 28: 'tangerine', 48: 'sunflower', 135: 'mint', 175: 'lagoon', 215: 'skyBlue', 270: 'grape', 325: 'bubblegum' };
 const TONE = { 135: [140, 55, 55], 175: [188, 66, 47] };
-const balloonCol = (hue) => TONE[hue] ? `hsl(${TONE[hue][0]} ${TONE[hue][1]}% ${TONE[hue][2]}%)` : `hsl(${hue} 78% 62%)`;
+const balloonCol = (hue) => BALLOON[hue] ? PALETTE.touch[BALLOON[hue]] : `hsl(${hue} 78% 62%)`;
 const bitCol = (hue) => TONE[hue] ? `hsl(${TONE[hue][0]} ${TONE[hue][1] + 10}% ${TONE[hue][2] - 2}%)` : `hsl(${hue} 88% 58%)`;
 
 /* Popping the giant slows the world to this fraction for SLOW_SECS. */
