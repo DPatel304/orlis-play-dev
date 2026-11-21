@@ -5,6 +5,10 @@
 
 # Orlis Paper: the style rulebook (draft for the owner)
 
+> **The five style rules (decision 0041), for all new art:** (1) one base colour per object from the palette, its shade and highlight by
+> rule; (2) one shade tone, one soft highlight, flat fills, light from the upper left; (3) gradients, grain and haze only in background
+> layers; (4) simple, chunky shapes for anything that might become 3D; (5) the thin ink edge on characters and touchables only.
+
 The look in one line: **cozy, playful, handmade paper**, for every kind of game (decision 0035). Visual board with six worlds:
 `docs/style-board.html` (also a private page).
 

@@ -64,3 +64,4 @@ Date: YYYY-MM-DD
 | 0038 | Two looks, one family: painted 2D for 2D games, a painted-style 3D sibling for 3D games | Accepted |
 | 0039 | 2.5D: 3D games move like a paper stage (guided camera, flipping painted characters); true 3D later; the FPS is the owner's own store game | Accepted |
 | 0040 | The master palette: one named list of colours for 2D and 2.5D; games use names, never raw codes | Accepted |
+| 0041 | Style rules: one base colour per object, shade and highlight by rule; gradients only in backgrounds; chunky shapes for 3D | Accepted |
