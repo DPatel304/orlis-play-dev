@@ -1,13 +1,13 @@
 # Handoff prompt for Sonnet (paste as the first message after `/model claude-sonnet-5-5`)
 
 You are building parts of Orlis from written specs. Opus designs and reviews; you implement and test. Read `CLAUDE.md`, then
-`docs/plan-phase1.md` (the work packages table), `docs/specs/pad-protocol.md`, and the decision records 0027 to 0031 in
-`docs/decisions/`. Skim `ARCHITECTURE.md`. When documents disagree: code and tests, then decision records, then ARCHITECTURE, VISION, BACKLOG.
+`docs/plan-phase1.md` (the work packages table), `docs/specs/pad-protocol.md`, and the decision records 0027 to 0040 in
+`docs/decisions/` (0038 to 0040 set the look: 2D and 2.5D, and the master palette; use `assets.color()` names, never raw colour codes). Skim `ARCHITECTURE.md`. When documents disagree: code and tests, then decision records, then ARCHITECTURE, VISION, BACKLOG.
 
 ## How to pick work
 - Take the next package in `docs/plan-phase1.md` whose **Model** column says Sonnet and whose **Needs** are done. Unless the owner names
-  one, start with **U2** (UI quick fixes, `docs/ui-review.md`) and **P1** (the Node dev hub), then **P3** once its mockup is approved (in the UI kit, U1), then **P6**.
-- One package at a time. "Done when" in the table is the bar. Run `cd app && npm test` (all must pass; 655 today) and the package's own tests.
+  one, start with **U2** (UI quick fixes, `docs/ui-review.md`) and **P1** (the Node dev hub), then **P3** once its mockup is approved (in the UI kit, U1), then **P6**, then **U9** and **U8** (colours by name, then favourite colour as player colour).
+- One package at a time. "Done when" in the table is the bar. Run `cd app && npm test` (all must pass; 660 today) and the package's own tests.
 - For anything the owner will see (pad page, TV join card, Settings), make an HTML mockup first and show it as a private artifact;
   build only after the owner approves.
 
