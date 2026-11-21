@@ -46,7 +46,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 
 | ID | Work | Model | Needs | Done when |
 |---|---|---|---|---|
-| P1 | Node dev hub `tools/pad-hub.mjs` | Sonnet | spec | spec tests 1, 4, 5 pass with a fake host |
+| P1 | **Done 2026-11-21.** Node dev hub `tools/pad-hub.mjs` (and `tools/pad-fake-host.mjs`; tests in `app/test/pad-hub.node.mjs`) | Sonnet | spec | spec tests 1, 4, 5 pass with a fake host |
 | P2 | Rust hub in Orlis Play (serve `dist-pad/`, relay, secret, port fallback) | Sonnet, Opus review | P1 | same tests pass against the Windows build; Windows firewall text in setup |
 | P3 | Pad page shell (join by QR or picture code, who-picker, rejoin, keep-awake, loads the pad program) | Sonnet | mockup approved by owner, 0032 accepted | spec tests 1 to 3 pass; works on iPhone Safari and Android Chrome |
 | P4 | Host session module (session, seats, codes, trusted devices, pause rule) | Opus API, Sonnet build | spec | unit tests for joins, trust, pause, resume |
