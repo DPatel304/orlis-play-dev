@@ -8,6 +8,7 @@
    A story (stories/*.js) is a list of beats; this reads them aloud with the app's voice (a recording, or the computer's), moves the
    world, plays the sounds, and ends when the last beat does. A beat finishes when the voice finishes (or, with no voice - the sound's
    off - after the time the words would take to read). */
+import { color, alpha } from './assets/palette.js';
 import { voice } from '../audio/voice.js';
 import { sfx } from '../audio/sound.js';
 import { drawFigure } from './figure.js';
@@ -18,11 +19,16 @@ import { MEADOW, AHEAD, PLACES } from '../stories/cubions-long-way-home.js';
 const FONT = '"Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif';
 const GROUND = 500, UNIT = 720;                 /* the world is drawn 720 high, scaled to the screen */
 const CUBO_AT = 0.48;                            /* where Cubo stands across the screen */
-const rgb = (a, al = 1) => `rgba(${a[0] | 0},${a[1] | 0},${a[2] | 0},${al})`;
+const byte = (v) => Math.max(0, Math.min(255, v | 0)).toString(16).padStart(2, '0');
+const css = (a) => '#' + byte(a[0]) + byte(a[1]) + byte(a[2]);
 const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+/* a palette colour (with its tone) as the [r, g, b] the sky and ground mixing works in */
+const pal = (name, t) => { const h = color(name, t); return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const SKY = { planet: [[36, 28, 92], [120, 70, 150]], day: [[96, 170, 255], [255, 226, 170]], dusk: [[74, 52, 128], [255, 150, 110]] };
-const GRND = { planet: [86, 76, 160], day: [96, 206, 110], dusk: [64, 140, 92] };
+const SKY = { planet: [pal('night.sky'), pal('night.dusk')], day: [pal('sky.high'), pal('sky.sunGlow')], dusk: [pal('night.dusk'), pal('earth.peach')] };
+const GRND = { planet: pal('night.farHills'), day: pal('meadow.fresh'), dusk: pal('meadow.fresh', 'shade') };
+/* the meadow hills, far then near: by day, and at dusk */
+const HILL_DAY = [pal('meadow.grass'), pal('meadow.leaf')], HILL_DUSK = [pal('meadow.leaf', 'shade'), pal('meadow.deep', 'shade')];
 /* the Animal Gym animals, and where each stands (in front of Cubo at his stop) */
 const ANIMALS = [
   { id: 'giraffe', e: '🦒', at: PLACES.giraffe + AHEAD, size: 230, y: 14, off: -600 },
@@ -34,7 +40,7 @@ const readTime = (text) => text.trim().split(/\s+/).length * 0.4 + 0.7;
 
 export function makeStory(story){
   return {
-    id: story.id, name: story.name, unit: 'stories', stars: 1, accent: '#7b6cf6', secs: 180, endless: true, passive: true,
+    id: story.id, name: story.name, unit: 'stories', stars: 1, accent: color('fav.purple'), secs: 180, endless: true, passive: true,
     moves: ['reach', 'jump', 'flap', 'squat'], store: { blurb: story.blurb },
     create(n){ return new Story(story, n); }
   };
@@ -115,7 +121,7 @@ class Story {
   /* the moves in the story are shown on the shell's card, the same as in every game */
   card(){ return this.beat && this.beat.card && this.age > 0.2 && this.age < this.est + (this.beat.hold || 0) + 1.5 ? this.beat.card : null; }
   hud(){ return { score: Array(Math.max(2, this.players)).fill(0), showLives: false, hideScore: true, hideClock: true, panel: [] }; }
-  tally(){ return Array.from({ length: this.players }, (_, i) => ({ label: `Player ${i + 1}`, value: 0, color: PLAYER_COLORS[i] || '#fff' })); }
+  tally(){ return Array.from({ length: this.players }, (_, i) => ({ label: `Player ${i + 1}`, value: 0, color: PLAYER_COLORS[i] || color('earth.snow') })); }
   winner(){ return this.players >= 2 ? 0 : null; }
   value(){ return 0; }
   summary(){ return null; }
@@ -133,10 +139,10 @@ class Story {
     /* sky */
     const base = meadow ? 'day' : 'planet';
     const top = mix(SKY[base][0], SKY.dusk[0], dusk), bot = mix(SKY[base][1], SKY.dusk[1], dusk);
-    const gr = c.createLinearGradient(0, 0, 0, UNIT * 0.72); gr.addColorStop(0, rgb(top)); gr.addColorStop(1, rgb(bot));
+    const gr = c.createLinearGradient(0, 0, 0, UNIT * 0.72); gr.addColorStop(0, css(top)); gr.addColorStop(1, css(bot));
     c.fillStyle = gr; c.fillRect(-40, -40, vw + 80, UNIT + 80);
     const starA = meadow ? dusk * 0.7 : 1;
-    if (starA > 0.02){ c.fillStyle = '#fff'; for (let i = 0; i < 40; i++){ const x = (((i * 173) % 1400) - cam * 0.05 + 1400 * 3) % 1400 - 60, y = (i * 61) % 280 + 10;
+    if (starA > 0.02){ c.fillStyle = color('earth.snow'); for (let i = 0; i < 40; i++){ const x = (((i * 173) % 1400) - cam * 0.05 + 1400 * 3) % 1400 - 60, y = (i * 61) % 280 + 10;
       c.globalAlpha = starA * (0.4 + 0.4 * Math.sin(i + this.t * 1.4)); c.fillRect(x, y, 3, 3); } c.globalAlpha = 1; }
     /* hills: square on the Cube Planet, round on Earth */
     const hills = (par, off, col, amp, y0, blocky) => {
@@ -147,19 +153,19 @@ class Story {
       }
       c.lineTo(vw + 20, UNIT); c.fill();
     };
-    if (!meadow){ hills(0.15, 0, 'rgba(70,60,130,1)', 60, 520, true); hills(0.35, 900, '#4a3f94', 46, 590, true);
+    if (!meadow){ hills(0.15, 0, color('night.hills'), 60, 520, true); hills(0.35, 900, color('night.farHills'), 46, 590, true);
       /* the clouds sit in neat little stacks */
-      c.fillStyle = 'rgba(210,205,245,.35)';
+      c.fillStyle = alpha('shade.light', 0.4);
       for (let i = 0; i < 5; i++){ const x = ((i * 380 - cam * 0.2) % (vw + 300) + vw + 300) % (vw + 300) - 100, y = 90 + (i % 2) * 70;
         for (let r = 0; r < 3; r++) for (let q = 0; q < 3 - r; q++){ c.fillRect(x + q * 34 + r * 17, y - r * 30, 30, 26); } }
     } else {
-      hills(0.15, 400, rgb(mix([110, 190, 130], [70, 120, 100], dusk)), 50, 540);
-      hills(0.35, 900, rgb(mix([77, 178, 106], [50, 110, 86], dusk)), 46, 590);
+      hills(0.15, 400, css(mix(HILL_DAY[0], HILL_DUSK[0], dusk)), 50, 540);
+      hills(0.35, 900, css(mix(HILL_DAY[1], HILL_DUSK[1], dusk)), 46, 590);
     }
     /* ground */
     const gc = mix(GRND[base], GRND.dusk, dusk);
-    c.fillStyle = rgb(gc); c.fillRect(-20, GROUND, vw + 40, UNIT - GROUND + 20);
-    c.fillStyle = rgb(mix(gc, [0, 0, 0], 0.15)); c.fillRect(-20, GROUND, vw + 40, 8);
+    c.fillStyle = css(gc); c.fillRect(-20, GROUND, vw + 40, UNIT - GROUND + 20);
+    c.fillStyle = css(mix(gc, pal('shade.shadow'), 0.15)); c.fillRect(-20, GROUND, vw + 40, 8);
     if (!meadow) this.planet(c, cam, vw);
     else this.meadow(c, cam, vw, dusk);
     /* the animals */
@@ -169,29 +175,28 @@ class Story {
     /* the home window, at the end */
     if (meadow) this.house(c, cam, vw, dusk);
     /* streaks, when the world is rolling fast */
-    if (this.speed > 150){ c.strokeStyle = 'rgba(255,255,255,.33)'; c.lineWidth = 3; for (let i = 0; i < 6; i++){ const x = (((i * 211 - cam * 1.2) % vw) + vw) % vw, y = 300 + i * 50; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 60, y); c.stroke(); } }
+    if (this.speed > 150){ c.strokeStyle = alpha('earth.snow', 0.33); c.lineWidth = 3; for (let i = 0; i < 6; i++){ const x = (((i * 211 - cam * 1.2) % vw) + vw) % vw, y = 300 + i * 50; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 60, y); c.stroke(); } }
     c.restore();
     this.moon(c, W, H);
     this.plate(c, W, H, k);
-    if (this.flash > 0){ c.fillStyle = `rgba(255,255,255,${this.flash})`; c.fillRect(0, 0, W, H); }
+    if (this.flash > 0){ c.fillStyle = alpha('earth.snow', this.flash); c.fillRect(0, 0, W, H); }
   }
   gatheredEnough(){ return this.i >= this.beats.length - 7 || this.pos > PLACES.frog + 100; }
   planet(c, cam, vw){
     for (let i = 0; i < 20; i++){
       const wx = i * 120 - cam; if (wx < -120 || wx > vw + 60) continue;
-      c.fillStyle = '#a9a4d8'; c.beginPath(); c.roundRect(wx, GROUND + 18, 86, 86, 8); c.fill();
-      c.strokeStyle = '#4b4590'; c.lineWidth = 4; c.stroke();
-      c.fillStyle = '#cfcbf0'; c.beginPath(); c.roundRect(wx + 9, GROUND + 27, 68, 10, 4); c.fill();
+      c.fillStyle = color('space.rock'); c.beginPath(); c.roundRect(wx, GROUND + 18, 86, 86, 8); c.fill();
+      c.fillStyle = color('shade.light'); c.beginPath(); c.roundRect(wx + 9, GROUND + 27, 68, 10, 4); c.fill();
     }
     /* the Cube Elders: a row of tall, stern cubes that click */
     for (let i = 0; i < 3; i++){
       const wx = 620 + i * 120 - cam; if (wx < -80 || wx > vw + 80) continue;
       c.save(); c.translate(wx, GROUND + 4);
-      c.fillStyle = '#8c88b8'; c.beginPath(); c.roundRect(-34, -250, 68, 250, 6); c.fill(); c.strokeStyle = '#3b3670'; c.lineWidth = 5; c.stroke();
-      c.fillStyle = '#3b3670'; c.fillRect(-20, -205, 16, 5); c.fillRect(6, -205, 16, 5); c.fillRect(-12, -170, 24, 5);
-      c.fillStyle = '#1e1b4b'; c.fillRect(-18, -196, 10, 9); c.fillRect(8, -196, 10, 9);
+      c.fillStyle = color('shade.mid'); c.beginPath(); c.roundRect(-34, -250, 68, 250, 6); c.fill(); c.strokeStyle = color('shade.ink'); c.lineWidth = 5; c.stroke();
+      c.fillStyle = color('shade.ink'); c.fillRect(-20, -205, 16, 5); c.fillRect(6, -205, 16, 5); c.fillRect(-12, -170, 24, 5);
+      c.fillStyle = color('night.shade'); c.fillRect(-18, -196, 10, 9); c.fillRect(8, -196, 10, 9);
       const b = this.beat, clicking = b && b.fx && b.fx.some(f => f[1] === 'tick') && this.age < 1.4 && Math.floor(this.age * 4 + i) % 2 === 0;
-      if (clicking){ c.fillStyle = '#fff'; c.font = `700 24px ${FONT}`; c.textAlign = 'center'; c.fillText('click', 0, -268); }
+      if (clicking){ c.fillStyle = color('earth.snow'); c.font = `700 24px ${FONT}`; c.textAlign = 'center'; c.fillText('click', 0, -268); }
       c.restore();
     }
   }
@@ -221,20 +226,20 @@ class Story {
     let pose = b && (b.card || b.pose) || (moving ? (this.speed > 240 ? 'run' : 'march') : 'freeze');
     if (b && b.card && !(this.age > 0.2)) pose = 'freeze';
     const x = CUBO_AT * vw + (b && b.wobble ? Math.sin(this.t * 14) * 3 * this.wob : 0), sz = 100;
-    c.fillStyle = 'rgba(0,0,0,.2)'; c.beginPath(); c.ellipse(x, GROUND + 22, 50, 9, 0, 0, 7); c.fill();
+    c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x, GROUND + 22, 50, 9, 0, 0, 7); c.fill();
     drawFigure(c, pose, x, GROUND + 16 - sz * 0.7, sz, this.t, b && b.face || null, false);
   }
   house(c, cam, vw, dusk){
     const hx = PLACES.home + 400 - cam; if (hx < -400 || hx > vw + 400) return;
     c.save(); c.translate(hx, GROUND); c.scale(0.8, 0.8);
-    c.fillStyle = '#f3e2c6'; c.fillRect(-240, -330, 480, 330); c.strokeStyle = '#5a4630'; c.lineWidth = 6; c.strokeRect(-240, -330, 480, 330);
-    c.fillStyle = '#b5523b'; c.beginPath(); c.moveTo(-280, -330); c.lineTo(0, -470); c.lineTo(280, -330); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = color('shade.line'); c.fillRect(-240, -330, 480, 330);
+    c.fillStyle = color('earth.brick'); c.beginPath(); c.moveTo(-280, -330); c.lineTo(0, -470); c.lineTo(280, -330); c.closePath(); c.fill();
     /* the warm window, with a TV and children who wobble */
-    const glow = c.createRadialGradient(0, -170, 20, 0, -170, 330); glow.addColorStop(0, `rgba(255,214,120,${0.55 * dusk})`); glow.addColorStop(1, 'rgba(255,214,120,0)');
+    const glow = c.createRadialGradient(0, -170, 20, 0, -170, 330); glow.addColorStop(0, alpha('sky.sunGlow', 0.55 * dusk)); glow.addColorStop(1, alpha('sky.sunGlow', 0));
     c.fillStyle = glow; c.fillRect(-340, -420, 680, 560);
-    c.fillStyle = '#ffd98a'; c.fillRect(-150, -270, 300, 200); c.strokeStyle = '#5a4630'; c.strokeRect(-150, -270, 300, 200);
-    c.fillStyle = '#2b3a6e'; c.fillRect(-80, -240, 160, 100); c.fillStyle = `rgba(120,200,255,${0.6 + 0.3 * Math.sin(this.t * 3)})`; c.fillRect(-72, -232, 144, 84);
-    c.fillStyle = '#5a4630';
+    c.fillStyle = color('sky.sunGlow'); c.fillRect(-150, -270, 300, 200);
+    c.fillStyle = color('night.sky'); c.fillRect(-80, -240, 160, 100); c.fillStyle = alpha('sky.high', 0.6 + 0.3 * Math.sin(this.t * 3)); c.fillRect(-72, -232, 144, 84);
+    c.fillStyle = color('earth.bark', 'shade');
     [-100, -40, 40, 100].forEach((kx, i) => { const w = Math.sin(this.t * 4 + i * 1.3) * 9; c.beginPath(); c.arc(kx + w, -100 + Math.abs(w), 14, 0, 7); c.fill(); c.fillRect(kx + w - 9, -86 + Math.abs(w), 18, 24); });
     c.restore();
   }
@@ -242,8 +247,8 @@ class Story {
   moon(c, W, H){
     const r = H * 0.05, x = W * 0.93, y = H * 0.12, left = 1 - clamp((this.done + (this.beat ? Math.min(this.age, this.est) : 0)) / this.total, 0, 1);
     c.save(); c.beginPath(); c.arc(x, y, r, 0, 7); c.clip();
-    c.fillStyle = 'rgba(255,255,255,.28)'; c.fillRect(x - r, y - r, r * 2, r * 2);
-    c.fillStyle = '#fffbe0'; c.fillRect(x - r, y - r, r * 2 * left, r * 2); c.restore();
+    c.fillStyle = alpha('earth.snow', 0.28); c.fillRect(x - r, y - r, r * 2, r * 2);
+    c.fillStyle = color('sky.sun'); c.fillRect(x - r, y - r, r * 2 * left, r * 2); c.restore();
   }
   /* the plate: a soft low plate with the words, the one being said lit */
   plate(c, W, H, refrain){
@@ -254,15 +259,15 @@ class Story {
     for (const word of words){ const ww = c.measureText(word).width; if (cur.length && w + sp + ww > maxW){ lines.push(cur); cur = []; w = 0; } w += (cur.length ? sp : 0) + ww; cur.push({ word, w: ww }); }
     if (cur.length) lines.push(cur);
     const ph = lines.length * lh + size * 0.9, pw = Math.min(W * 0.6, Math.max(...lines.map(l => l.reduce((a, x) => a + x.w + sp, -sp))) + size * 2.2), py = H * 0.96 - ph, px = W * 0.5 + W * 0.02 - pw / 2;
-    c.fillStyle = 'rgba(14,10,40,.62)'; c.beginPath(); c.roundRect(px, py, pw, ph, size * 0.8); c.fill();
+    c.fillStyle = alpha('night.shade', 0.62); c.beginPath(); c.roundRect(px, py, pw, ph, size * 0.8); c.fill();
     const count = words.length, shown = this.heard || !voice.speaking ? clamp(this.age / Math.max(0.5, this.est - 0.5), 0, 1) : clamp(this.age / this.est, 0, 1);
     const cur2 = Math.min(count - 1, Math.floor(shown * count)); let n = 0; c.textAlign = 'left';
     lines.forEach((ln, li) => {
       let x = W * 0.5 + W * 0.02 - (ln.reduce((a, o) => a + o.w + sp, -sp)) / 2; const y = py + size * 0.45 + lh * (li + 0.5);
       for (const o of ln){
         const now = n === cur2 && this.age < this.est + 0.6, past = n < cur2;
-        if (now){ c.fillStyle = '#ffd24a'; c.shadowColor = '#ffd24a'; c.shadowBlur = size * 0.4; } else { c.shadowBlur = 0; c.fillStyle = past ? '#fff' : 'rgba(255,255,255,.55)'; }
-        if (b.refrain && past) c.fillStyle = '#ffd24a';
+        if (now){ c.fillStyle = color('ui.gold'); c.shadowColor = color('ui.gold'); c.shadowBlur = size * 0.4; } else { c.shadowBlur = 0; c.fillStyle = past ? color('earth.snow') : alpha('earth.snow', 0.55); }
+        if (b.refrain && past) c.fillStyle = color('ui.gold');
         c.fillText(o.word, x, y); x += o.w + sp; n++;
       }
     });
