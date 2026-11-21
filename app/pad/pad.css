@@ -1,0 +1,78 @@
+/* The pad page: the approved mockup (docs/pads-mockup.html), built from the UI kit's tokens: paper, one soft shadow, Fredoka, big targets. */
+@font-face{ font-family:"Fredoka"; font-weight:300 700; font-display:block; src:url(../src/fonts/fredoka.woff2) format("woff2"); }
+:root{
+  --paper:#faf6ec; --card:#fffdf8; --ink:#2f2b45; --ink-soft:#6b6680; --edge:#fffdf6; --shade:rgba(52,40,96,.18);
+  --go:#e85d8a; --gold:#f5c542;
+  --ease:cubic-bezier(.2,.8,.25,1);
+  --display:"Fredoka",ui-rounded,system-ui,sans-serif;
+  color-scheme:light;
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; height:100%; background:var(--paper); color:var(--ink); font-family:var(--display); overscroll-behavior:none; touch-action:manipulation; -webkit-user-select:none; user-select:none; }
+button{ font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; }
+canvas{ display:block; }
+#app{ min-height:100dvh; display:flex; justify-content:center; }
+
+.screen{ width:100%; max-width:480px; min-height:100dvh; container-type:inline-size; display:flex; flex-direction:column; align-items:center; padding:max(5dvh,env(safe-area-inset-top)) 7cqw max(4dvh,env(safe-area-inset-bottom)); }
+.screen h4{ margin:0 0 5cqw; text-align:center; font:600 9cqw/1.15 var(--display); }
+.screen h5{ margin:0; text-align:center; font:600 10cqw/1.12 var(--display); }
+.sm{ margin:0; text-align:center; font:500 5.4cqw var(--display); color:var(--ink-soft); }
+
+/* picking the three */
+.picked{ display:flex; justify-content:center; gap:4cqw; margin-bottom:6cqw; min-height:22cqw; }
+.picked .slot{ width:22cqw; height:22cqw; border-radius:14px; background:var(--card); border:3px dashed #d9cfb8; overflow:hidden; }
+.picked .slot.full{ border:3px solid var(--edge); box-shadow:0 3px 0 var(--shade), 0 0 0 1px rgba(47,43,69,.12); }
+.picked .slot canvas{ width:100%; height:100%; }
+.picked.shake{ animation:shake .5s ease 0s infinite alternate; }
+@keyframes shake{ 0%{ transform:translateX(0) } 25%{ transform:translateX(-6px) } 75%{ transform:translateX(6px) } 100%{ transform:translateX(0) } }
+.grid9{ width:100%; display:grid; grid-template-columns:repeat(3,1fr); gap:4cqw; transition:opacity .2s; }
+.grid9 .cell{ aspect-ratio:1; border-radius:18px; background:var(--card); border:3px solid var(--edge); box-shadow:0 4px 0 var(--shade), 0 0 0 1px rgba(47,43,69,.1); overflow:hidden; transition:transform .12s var(--ease), box-shadow .12s; }
+.grid9 .cell:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--shade); }
+.grid9 .cell canvas{ width:100%; height:100%; }
+.grid9 .cell.used{ opacity:.35; box-shadow:none; pointer-events:none; }
+.grid9.dimmed{ opacity:.45; pointer-events:none; }
+
+/* who are you */
+.people{ width:100%; display:grid; grid-template-columns:1fr 1fr; gap:5cqw; }
+.person{ background:var(--card); border-radius:22px; border:3px solid var(--edge); box-shadow:0 4px 0 var(--shade), 0 0 0 1px rgba(47,43,69,.1); text-align:center; padding:2cqw 2cqw 3cqw; font:600 7cqw var(--display); transition:transform .12s var(--ease), box-shadow .12s; }
+.person:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--shade); }
+.person canvas{ width:100%; aspect-ratio:1; border-radius:50%; background:radial-gradient(circle at 50% 58%, color-mix(in srgb, var(--c) 45%, #fff) 0 62%, transparent 64%); }
+.person.chosen{ opacity:.6; pointer-events:none; }
+
+/* messages and loading */
+.msg{ flex:1; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2.5dvh; }
+.msg canvas{ width:44cqw; height:44cqw; }
+.msg canvas.twirl{ animation:twirl 1.6s var(--ease) infinite; }
+.msg .sm{ color:var(--ink-soft); }
+@keyframes twirl{ 0%{ transform:rotateY(0) translateY(0); } 35%{ transform:rotateY(360deg) translateY(-2dvh); } 50%,100%{ transform:rotateY(360deg) translateY(0); } }
+.dots{ display:flex; gap:7px; } .dots i{ width:10px; height:10px; border-radius:50%; background:#c9c2dc; animation:dot 1.2s ease infinite; } .dots i:nth-child(2){ animation-delay:.2s } .dots i:nth-child(3){ animation-delay:.4s }
+@keyframes dot{ 0%,60%,100%{ transform:none; opacity:.5 } 30%{ transform:translateY(-5px); opacity:1 } }
+.ringbar{ width:60%; height:12px; border-radius:999px; background:#e9e1cf; overflow:hidden; }
+.ringbar i{ display:block; height:100%; width:0; background:var(--gold); border-radius:999px; transition:width linear; }
+
+/* you're in */
+.screen.ready{ background:color-mix(in srgb, var(--c) 22%, var(--paper)); }
+.ready .me{ margin-top:4dvh; width:min(62cqw,36dvh); aspect-ratio:1; border-radius:50%; background:color-mix(in srgb, var(--c) 55%, #fff); border:4px solid var(--edge); box-shadow:0 5px 0 var(--shade), 0 0 0 1px rgba(47,43,69,.12); overflow:hidden; }
+.ready .me canvas{ width:100%; height:100%; }
+.ready h5{ margin-top:4dvh; }
+.ready .sm{ margin-top:1dvh; }
+.ready .grow{ flex:1; min-height:3dvh; }
+.go{ width:100%; padding:4.4cqw 0; text-align:center; border-radius:999px; background:var(--go); color:#fff; font:600 9cqw var(--display); box-shadow:0 5px 0 rgba(52,40,96,.25); border:3px solid var(--ink); transition:transform .12s var(--ease), box-shadow .12s; }
+.go:active{ transform:translateY(4px); box-shadow:0 1px 0 rgba(52,40,96,.25); }
+.change{ margin-top:4dvh; padding:2cqw 4cqw; font:500 4.8cqw var(--display); color:var(--ink-soft); }
+.change u{ text-underline-offset:3px; }
+
+/* in the game */
+.screen.play{ padding:0; max-width:none; }
+.play .look{ flex:1; width:100%; max-width:480px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3dvh; }
+.play .look .me{ width:min(50cqw,30dvh); aspect-ratio:1; border-radius:50%; background:color-mix(in srgb, var(--c) 55%, #fff); border:4px solid var(--edge); box-shadow:0 5px 0 var(--shade); overflow:hidden; }
+.play .look canvas{ width:100%; height:100%; }
+.padroot{ position:fixed; inset:0; }
+[hidden]{ display:none !important; }
+
+/* dropped: grey controls and a small pill */
+.grey{ position:fixed; inset:0; background:rgba(47,43,69,.45); z-index:50; }
+.pill{ position:fixed; z-index:51; top:max(2.5dvh,env(safe-area-inset-top)); left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; padding:6px 20px 6px 8px; white-space:nowrap; background:var(--card); border:2px solid var(--ink); border-radius:999px; box-shadow:0 3px 0 var(--shade); font:600 18px var(--display); }
+.pill canvas{ width:34px; height:34px; animation:twirl 1.6s var(--ease) infinite; }
+
+@media (prefers-reduced-motion: reduce){ *{ animation:none !important; } .ringbar i{ transition:none; } }

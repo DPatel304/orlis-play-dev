@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:pad": "vite build -c vite.pad.config.js",
     "preview": "vite preview",
     "offline": "node fetch-assets.mjs",
     "test": "node --import ./test/harness/register.mjs --test 'test/**/*.test.mjs'",

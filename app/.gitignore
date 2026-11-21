@@ -8,3 +8,4 @@ client/src-tauri/target/
 client/src-tauri/gen/
 client/release.json
 dist-games/
+dist-pad/

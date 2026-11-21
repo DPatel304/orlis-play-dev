@@ -30,7 +30,9 @@ Status: draft for implementation. Changes after it is built need a version bump 
 | t | fields | when |
 |---|---|---|
 | `hello` | `v` (1), `device` (token or null), `join` (three picture ids `["balloon","cat","star"]`, or null), `screen` `{w,h,dpr}`, `gl` (true if WebGL2 works) | first message after connecting |
-| `pick` | `who` (profile id) | choosing who you are |
+| `pick` | `who` (profile id) | choosing who you are (also after "Not Sam? Change": the same device token and seat, a new `who`; the host answers with a `welcome`) |
+| `ready` | none | the phone tapped "I'm ready" (the TV card shows a tick; nothing is required back). Only the TV starts a game. |
+| `who?` | none | "Not Sam? Change": asks for the people list again. The host answers with `who?` (below) and the phone picks again. |
 | `in` | `seq`, game fields | game input; send on change, plus at least every 100 ms while held |
 | `ping` | `n` | every 2 s |
 
@@ -38,13 +40,21 @@ Status: draft for implementation. Changes after it is built need a version bump 
 | t | fields | meaning |
 |---|---|---|
 | `welcome` | `device` (token to keep), `seat`, `who`, `colour`, `game`, `pad` (URL of the pad program), `need` (`controller`/`view3d`) | joined |
-| `who?` | `people` `[{id,name,avatar}]` | pick who you are (shown after a first join) |
+| `who?` | `people` `[{id,name,avatar}]` | pick who you are (shown after a first join, or when the phone asked with `who?`). `avatar` is the avatar maker's look (or null); the list may include `{ "id": "guest", "name": "Guest", "avatar": null }`, which the pad draws as Cubo. |
 | `pics?` | `grid` (nine picture ids) | the phone has no QR secret: show the picture grid |
 | `reject` | `why` (`join`, `wait` (too many tries), `full`, `version`, `game`) | refused, with a friendly reason on the page |
 | `state` | `tick`, game fields | shared state, 15 to 20 times a second |
 | `ev` | `e` (name), game fields | one-off events (found, popped, round over) |
 | `pause` / `resume` | `why` | the game paused or carried on |
 | `pong` | `n`, `tick` | answer to ping (round trip and clock) |
+
+## The pad page's side (P3, `app/pad/`)
+- `welcome.pad` is a URL on the same origin; if it ends with `/` the page loads `<url>pad.js`. The module's default export (or `start`) is called as
+  `start({ send, onState, onEvent, rtt, connected, seat, colour, who, game, need, root })`: `send(obj)` sends `in` with a `seq`; `onState(fn)` gets each
+  `state` (and the latest at once); `onEvent(fn)` gets `ev`, plus `pause`/`resume` as `{ e: 'pause'|'resume', why }`; `root` is the element to draw into.
+  If it throws or there is no `pad`, the page shows "Look at the TV!".
+- After a drop the page shows a grey layer and a "Joining again" pill and rejoins with the same token; close 4001 resets to "Start Orlis on the TV"
+  (the phone must tap "I'm ready" again when the host is back); 4003 / `reject full` shows "This game is full" and retries every 8 s.
 
 ## Rules
 - **Version:** the pad page comes from the Box, so it always matches; if `v` differs, `reject` with `version` and the page reloads.

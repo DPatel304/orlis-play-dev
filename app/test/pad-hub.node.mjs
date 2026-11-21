@@ -61,7 +61,7 @@ test('1. a phone joins with the picture code, picks who it is and gets a seat; w
     /* right pictures, in order: asked who it is */
     a.send(hello({ join: ['balloon', 'cat', 'star'] }));
     const who = await a.waitFor(m => m.t === 'who?');
-    assert.deepEqual(who.people.map(p => p.id), ['mia', 'sam', 'ola']);
+    assert.deepEqual(who.people.map(p => p.id), ['mia', 'sam', 'ola', 'guest']);
     a.send({ t: 'pick', who: 'sam' });
     const w = await a.waitFor(m => m.t === 'welcome');
     assert.equal(w.seat, 0); assert.equal(w.who, 'sam'); assert.ok(w.device && w.device.length >= 16, 'a token to keep'); assert.equal(w.game, 'pop-party'); assert.equal(w.need, 'controller');

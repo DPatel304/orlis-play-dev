@@ -3,11 +3,12 @@
    It is test scaffolding, not the real host (that is the session module, P4). */
 import crypto from 'node:crypto';
 
-const WORDS = ['balloon', 'cat', 'star', 'sun', 'fish', 'tree', 'moon', 'cube', 'kite', 'shoe', 'bear', 'leaf'];
+/* (all of these are in the asset library, so the pad page can draw every one) */
+const WORDS = ['balloon', 'cat', 'star', 'sun', 'fish', 'tree', 'moon', 'house', 'kite', 'tent', 'bear', 'rocket'];
 
 export class FakeHost {
   /* url: the hub's ws url; key: its host secret; tokens: a Map kept across restarts (the Box remembers trusted phones) */
-  constructor({ url, key, join = ['balloon', 'cat', 'star'], people = [{ id: 'mia', name: 'Mia', avatar: null }, { id: 'sam', name: 'Sam', avatar: null }, { id: 'ola', name: 'Ola', avatar: null }], seats = 4,
+  constructor({ url, key, join = ['balloon', 'cat', 'star'], people = [{ id: 'mia', name: 'Mia', avatar: null }, { id: 'sam', name: 'Sam', avatar: null }, { id: 'ola', name: 'Ola', avatar: null }, { id: 'guest', name: 'Guest', avatar: null }], seats = 4,
     tokens = new Map(), now = Date.now, maxWrong = 5, waitMs = 60000, game = 'pop-party', padUrl = '/pads/pop-party/', need = 'controller' } = {}) {
     Object.assign(this, { url, key, join, people, seats, tokens, now, maxWrong, waitMs, game, padUrl, need });
     this.pads = new Map();       /* hub id -> { ua, device } */
@@ -47,6 +48,8 @@ export class FakeHost {
     const m = msg.m;
     if (m.t === 'hello') return this.hello(msg.from, p, m);
     if (m.t === 'pick') return this.pick(msg.from, p, m);
+    if (m.t === 'ready') { p.ready = true; this.onReady && this.onReady(p.device && this.tokens.get(p.device), msg.from); return; }
+    if (m.t === 'who?') { if (!p.device && !p.verified) return; p.ready = false; return this.send(msg.from, { t: 'who?', people: this.people }); }   /* "Not Sam? Change": the same phone picks again */
     if (m.t === 'ping') return this.send(msg.from, { t: 'pong', n: m.n, tick: 0 });
   }
 
@@ -72,8 +75,9 @@ export class FakeHost {
   }
 
   pick(to, p, m) {
-    if (!p.verified) return;
+    if (!p.verified && !p.device) return;
     const who = this.people.find(x => x.id === m.who); if (!who) return;
+    if (p.device && this.tokens.has(p.device)) { this.tokens.get(p.device).who = who.id; return this.welcome(to, p, p.device); }   /* changing who: same token, same seat */
     const seat = this.freeSeat(); if (seat < 0) return this.send(to, { t: 'reject', why: 'full' });
     const token = crypto.randomBytes(12).toString('hex');
     this.tokens.set(token, { seat, who: who.id });
