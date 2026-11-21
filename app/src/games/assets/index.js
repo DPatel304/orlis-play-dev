@@ -33,7 +33,7 @@ const KIND = { animal: 'animal', food: 'food', nature: 'nature' };
 for (const [id, ch, name, tags] of EMOJI){
   const t = tags.split(' '), kind = KIND[t[0]] || 'thing';
   add({ id, name, kind: t[0] === 'effect' ? 'effect' : kind, tags: t, aspect: 1,
-    draw(c, s){ c.fillStyle = '#000'; c.font = `${Math.round(s * 0.86)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ch, 0, s * 0.04); } });
+    draw(c, s){ c.fillStyle = paletteColor('shade.ink'); c.font = `${Math.round(s * 0.86)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ch, 0, s * 0.04); } });
 }
 
 /* the pieces drawn in code */
@@ -71,9 +71,9 @@ export const unwrap = (c) => REAL.get(c) || c;
 
 /* a name that isn't in the library: a "?" box, so the game still runs */
 function placeholder(c, s){
-  c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.roundRect(-s / 2, -s / 2, s, s, s * 0.14); c.fill();
-  c.setLineDash([s * 0.1, s * 0.07]); c.lineWidth = s * 0.04; c.strokeStyle = '#2b2275'; c.stroke(); c.setLineDash([]);
-  c.fillStyle = '#2b2275'; c.font = `800 ${Math.round(s * 0.6)}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', 0, s * 0.04);
+  { const g = c.globalAlpha; c.globalAlpha = g * 0.7; c.fillStyle = paletteColor('earth.snow'); c.beginPath(); c.roundRect(-s / 2, -s / 2, s, s, s * 0.14); c.fill(); c.globalAlpha = g; }
+  c.setLineDash([s * 0.1, s * 0.07]); c.lineWidth = s * 0.04; c.strokeStyle = paletteColor('shade.ink'); c.stroke(); c.setLineDash([]);
+  c.fillStyle = paletteColor('shade.ink'); c.font = `800 ${Math.round(s * 0.6)}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', 0, s * 0.04);
 }
 
 export const assets = {
@@ -90,14 +90,14 @@ export const assets = {
     if (o.rotate) c.rotate(o.rotate);
     if (o.flip) c.scale(-1, 1);
     if (o.alpha != null) c.globalAlpha *= Math.max(0, Math.min(1, o.alpha));
-    if (o.shadow){ c.fillStyle = 'rgba(58,51,96,.16)'; c.beginPath(); c.ellipse(0, s * 0.5, s * (a ? a.aspect : 1) * 0.45, s * 0.07, 0, 0, 7); c.fill(); }
+    if (o.shadow){ const g = c.globalAlpha; c.globalAlpha = g * 0.16; c.fillStyle = paletteColor('shade.shadow'); c.beginPath(); c.ellipse(0, s * 0.5, s * (a ? a.aspect : 1) * 0.45, s * 0.07, 0, 0, 7); c.fill(); c.globalAlpha = g; }
     (a ? a.draw : placeholder)(c, s, o);
     c.restore();
   },
   /* a whole background */
   scene(c, W, H, id, o = {}){
     c = unwrap(c);
-    if (!drawScene(c, W, H, id, o)){ missing.add(String(id).slice(0, 40)); c.fillStyle = '#cfe9f3'; c.fillRect(0, 0, W, H); }
+    if (!drawScene(c, W, H, id, o)){ missing.add(String(id).slice(0, 40)); c.fillStyle = paletteColor('sky.low'); c.fillRect(0, 0, W, H); }
   },
   /* a few words: o.color, o.align ('center' by default), o.outline (a colour behind them, for reading over anything). Short, and always
      through the words check (the runtime guards fillText). */
@@ -107,7 +107,7 @@ export const assets = {
     c.save(); c.font = `800 ${Math.round(px)}px "Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif`;
     c.textAlign = o.align === 'left' || o.align === 'right' ? o.align : 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
     if (o.outline){ c.lineWidth = px * 0.2; c.strokeStyle = o.outline; c.strokeText(t, x, y); }
-    c.fillStyle = o.color || '#fff'; c.fillText(t, x, y); c.restore();
+    c.fillStyle = o.color || paletteColor('earth.snow'); c.fillText(t, x, y); c.restore();
   },
   list(kind){
     const rows = Object.values(ASSETS).map(a => ({ id: a.id, name: a.name, kind: a.kind, tags: a.tags, aspect: a.aspect, poses: a.poses, faces: a.faces }));

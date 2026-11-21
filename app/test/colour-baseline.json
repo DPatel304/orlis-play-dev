@@ -1,13 +1,9 @@
 {
  "src/games/animal-gym.js": 13,
- "src/games/assets/index.js": 7,
- "src/games/assets/props.js": 68,
- "src/games/assets/scenes.js": 46,
  "src/games/castle-art.js": 188,
  "src/games/castle-defense.js": 76,
  "src/games/common.js": 2,
  "src/games/copycat-art.js": 67,
- "src/games/figure.js": 17,
  "src/games/hud.js": 29,
  "src/games/keep-it-up.js": 17,
  "src/games/labs/peekaboo-lab.js": 12,

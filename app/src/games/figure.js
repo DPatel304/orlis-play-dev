@@ -5,12 +5,14 @@
    Cubo moves like stop-motion: each move is three or four still drawings that repeat, and his face is part of each
    drawing, so he looks excited when his hands go up and strains a little in the squat. */
 import { slot } from './grid.js';
+import { color as pal, alpha as palAlpha } from './assets/palette.js';
 const L = (a, b, k) => a + (b - a) * k;
 
 /* the look, in one place. (Where the card goes, and how big it is, is the grid's: the card's block in grid.js. head: how big his
    head is, as a share of what it was first drawn at.) */
-export const CARD = { fill: '#ffffff', edge: '#2b2275', edgeW: 0.07, body: '#7aa2f7', line: '#2b2275', ink: '#1e1b4b',
-  arrow: '#ff7a59', head: ['#60a5fa', '#c084fc'], top: ['#e9fbff', '#f3e8ff'], left: '#5eead4', headSize: 0.75 };
+export const CARD = { fill: pal('earth.snow'), edge: pal('shade.ink'), edgeW: 0.07, body: pal('touch.skyBlue'), line: pal('shade.ink'), ink: pal('shade.ink'),
+  arrow: pal('touch.tangerine'), head: pal('touch.skyBlue'), top: pal('touch.skyBlue', 'light'), left: pal('touch.skyBlue', 'shade'), headSize: 0.75,
+  pink: pal('earth.brick'), ice: pal('sea.sunlit'), white: pal('earth.snow') };
 /* how it moves: drawings a second, and how long the card takes to slide in and out (quick enough to start the move in time) */
 export const MOTION = { fps: 5, slideIn: 0.45, slideOut: 0.3 };
 
@@ -97,12 +99,10 @@ function arrow(c, s, [x1, y1, x2, y2, bend = 0]){
   c.restore();
 }
 
-const gradient = (c, x0, y0, x1, y1, cols) => { const g = c.createLinearGradient(x0, y0, x1, y1); cols.forEach((col, i) => g.addColorStop(i / (cols.length - 1), col)); return g; };
-
 /* Cubo's faces: simple ones that read from across the room, built like the cube's own (tall oval eyes with a spark, a soft
    smile). Each draws on a head whose middle is (0, 0) and whose side is w. */
 const eyes = (c, w, ry, dx = 0.2) => { c.fillStyle = CARD.ink; for (const sx of [-1, 1]){ c.beginPath(); c.ellipse(sx * dx * w, -0.12 * w, w * 0.085, ry, 0, 0, 6.2832); c.fill(); }
-  c.fillStyle = '#fff'; for (const sx of [-1, 1]){ c.beginPath(); c.ellipse(sx * dx * w - w * 0.024, -0.12 * w - w * 0.04, w * 0.026, w * 0.034, 0, 0, 6.2832); c.fill(); } };
+  c.fillStyle = CARD.white; for (const sx of [-1, 1]){ c.beginPath(); c.ellipse(sx * dx * w - w * 0.024, -0.12 * w - w * 0.04, w * 0.026, w * 0.034, 0, 0, 6.2832); c.fill(); } };
 const stroke = (c, w, lw = 0.05) => { c.strokeStyle = CARD.ink; c.lineWidth = w * lw; c.lineCap = 'round'; c.lineJoin = 'round'; };
 const smile = (c, w, r = 0.18, y = 0.08) => { stroke(c, w, 0.055); c.beginPath(); c.moveTo(-r * w, y * w); c.quadraticCurveTo(0, (y + 0.18) * w, r * w, y * w); c.stroke(); };
 const happyEye = (c, w, sx) => { stroke(c, w, 0.055); c.beginPath(); c.arc(sx * 0.2 * w, -0.08 * w, w * 0.08, Math.PI + 0.35, -0.35); c.stroke(); };
@@ -110,13 +110,13 @@ export const FACES = {
   smile:  (c, w) => { eyes(c, w, w * 0.125); smile(c, w); },
   grin:   (c, w) => { eyes(c, w, w * 0.125);
     c.fillStyle = CARD.ink; c.beginPath(); c.moveTo(-0.24 * w, 0.1 * w); c.quadraticCurveTo(0, 0.42 * w, 0.24 * w, 0.1 * w); c.closePath(); c.fill();
-    c.fillStyle = '#ff7a8a'; c.beginPath(); c.ellipse(0, 0.27 * w, 0.1 * w, 0.045 * w, 0, 0, 6.2832); c.fill(); },
+    c.fillStyle = CARD.pink; c.beginPath(); c.ellipse(0, 0.27 * w, 0.1 * w, 0.045 * w, 0, 0, 6.2832); c.fill(); },
   wow:    (c, w) => { eyes(c, w, w * 0.15, 0.21); c.fillStyle = CARD.ink; c.beginPath(); c.ellipse(0, 0.22 * w, 0.07 * w, 0.09 * w, 0, 0, 6.2832); c.fill(); },
   wink:   (c, w) => { c.fillStyle = CARD.ink; c.beginPath(); c.ellipse(-0.2 * w, -0.12 * w, w * 0.085, w * 0.125, 0, 0, 6.2832); c.fill();
-    c.fillStyle = '#fff'; c.beginPath(); c.ellipse(-0.224 * w, -0.16 * w, w * 0.026, w * 0.034, 0, 0, 6.2832); c.fill();
+    c.fillStyle = CARD.white; c.beginPath(); c.ellipse(-0.224 * w, -0.16 * w, w * 0.026, w * 0.034, 0, 0, 6.2832); c.fill();
     stroke(c, w, 0.055); c.beginPath(); c.moveTo(0.12 * w, -0.12 * w); c.lineTo(0.28 * w, -0.12 * w); c.stroke(); smile(c, w); },
   tongue: (c, w) => { eyes(c, w, w * 0.125); smile(c, w);
-    c.fillStyle = '#ff7a8a'; c.beginPath(); c.roundRect(-0.07 * w, 0.14 * w, 0.14 * w, 0.14 * w, [0, 0, 0.07 * w, 0.07 * w]); c.fill(); stroke(c, w, 0.03); c.stroke(); },
+    c.fillStyle = CARD.pink; c.beginPath(); c.roundRect(-0.07 * w, 0.14 * w, 0.14 * w, 0.14 * w, [0, 0, 0.07 * w, 0.07 * w]); c.fill(); stroke(c, w, 0.03); c.stroke(); },
   joy:    (c, w) => { happyEye(c, w, -1); happyEye(c, w, 1);
     c.fillStyle = CARD.ink; c.beginPath(); c.moveTo(-0.22 * w, 0.1 * w); c.quadraticCurveTo(0, 0.4 * w, 0.22 * w, 0.1 * w); c.closePath(); c.fill(); },
   smirk:  (c, w) => { eyes(c, w, w * 0.12); stroke(c, w); c.beginPath(); c.moveTo(-0.12 * w, 0.2 * w); c.quadraticCurveTo(0.08 * w, 0.26 * w, 0.24 * w, 0.1 * w); c.stroke(); },
@@ -128,11 +128,11 @@ function head(c, cx, cy, r, face){
   const w = r * 2, ow = w * 0.06, rad = w * 0.2;
   c.save(); c.translate(cx, cy);
   c.fillStyle = CARD.line; c.beginPath(); c.roundRect(-w / 2 - ow, -w / 2 - ow, w + ow * 2, w + ow * 2, rad + ow); c.fill();
-  /* the cube's own colours: its blue-to-purple front, the pale top edge, a sliver of the teal side */
+  /* the cube, flat (decision 0041): one blue, a light top edge (the highlight) and a sliver of its shaded side (the shade) */
   c.save(); c.beginPath(); c.roundRect(-w / 2, -w / 2, w, w, rad); c.clip();
-  c.fillStyle = gradient(c, -w / 2, -w / 2, w / 2, w / 2, CARD.head); c.fillRect(-w / 2, -w / 2, w, w);
-  c.fillStyle = CARD.left; c.globalAlpha *= 0.9; c.fillRect(-w / 2, -w / 2, w * 0.1, w); c.globalAlpha /= 0.9;
-  c.fillStyle = gradient(c, -w / 2, -w / 2, w / 2, -w * 0.3, CARD.top); c.fillRect(-w / 2, -w / 2, w, w * 0.17);
+  c.fillStyle = CARD.head; c.fillRect(-w / 2, -w / 2, w, w);
+  c.fillStyle = CARD.left; c.fillRect(-w / 2, -w / 2, w * 0.1, w);
+  c.fillStyle = CARD.top; c.fillRect(-w / 2, -w / 2, w, w * 0.17);
   c.restore();
   (FACES[face] || FACES.smile)(c, w);
   c.restore();
@@ -162,7 +162,7 @@ export function drawFigure(c, pose, cx, cy, s, t, face = null, marks = false){
     for (const a of (MARKS[pose] || {})[fr.i] || []) arrow(c, s, a);
     if (pose === 'freeze') [[-1.3, -1.5], [1.3, -0.9], [-1.25, 0.1], [1.2, 0.35]].forEach(([x, y], j) => { if ((j + fr.i) % 2) return;   /* ice twinkles, a different pair each drawing */
       const r = s * 0.2; c.beginPath(); c.moveTo(x * s, y * s - r * 1.5); c.lineTo(x * s + r, y * s); c.lineTo(x * s, y * s + r * 1.5); c.lineTo(x * s - r, y * s); c.closePath();
-      c.fillStyle = '#9be0ff'; c.fill(); c.strokeStyle = CARD.line; c.lineWidth = s * 0.07; c.lineJoin = 'round'; c.stroke(); });
+      c.fillStyle = CARD.ice; c.fill(); c.strokeStyle = CARD.line; c.lineWidth = s * 0.07; c.lineJoin = 'round'; c.stroke(); });
   }
   c.restore();
 }
@@ -173,7 +173,7 @@ export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
   c.save(); c.globalAlpha *= alpha; c.translate(cx, cy + bob);
   /* the card: white, a thick indigo border, and a big soft shadow well under it, so it lifts off whatever is behind */
   const e = K * CARD.edgeW, rr = K * 0.17;
-  c.shadowColor = 'rgba(10,10,50,.42)'; c.shadowBlur = K * 0.14; c.shadowOffsetY = K * 0.085;
+  c.shadowColor = palAlpha('shade.shadow', 0.42); c.shadowBlur = K * 0.14; c.shadowOffsetY = K * 0.085;
   c.fillStyle = CARD.fill; c.beginPath(); c.roundRect(-K / 2, -K / 2, K, K, rr); c.fill();
   c.shadowColor = 'transparent';
   c.strokeStyle = CARD.edge; c.lineWidth = e; c.beginPath(); c.roundRect(-K / 2 + e / 2, -K / 2 + e / 2, K - e, K - e, rr - e / 2); c.stroke();

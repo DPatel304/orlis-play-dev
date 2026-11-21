@@ -14,6 +14,8 @@ export const PALETTE = {
   meadow: { deep: '#5f8a4c', leaf: '#6f9a5e', grass: '#80ae6a', lawn: '#93bb7c', soft: '#a9c98f', far: '#c9dbb0', haze: '#e3f0cf' },
   /* warm earth and calm accents */
   earth: { bark: '#7a6550', path: '#f6d9a8', sand: '#e9c7a8', clay: '#d9895b', brick: '#e07a5f', peach: '#ffc48a', plumRoof: '#8a6f8f', snow: '#ffffff' },
+  /* animal coats that the earth colours lack (the raven; browns and greys join here when a painted animal needs them) */
+  fur: { charcoal: '#3b3a52' },
   /* shade (purple-grey, never black), the thin ink edge, and the interface paper */
   shade: { light: '#c4bce0', mid: '#8a80b0', shadow: '#342860', ink: '#2f2b45', inkSoft: '#6b6680', paper: '#faf6ec', card: '#fffdf8', line: '#e6dcc7' },
   /* interface accents */
@@ -61,4 +63,10 @@ export function color(name, t){
   const v = PALETTE[g] && PALETTE[g][k];
   if (!v){ unknownColors.add(String(name).slice(0, 40)); return FALLBACK; }
   return tone(v, t || t2);
+}
+
+/* A palette colour with transparency, for the few places that need it as a string (gradient stops, canvas shadows): alpha('shade.shadow', 0.4)
+   gives '#342860' plus an alpha byte. Elsewhere draw flat and set c.globalAlpha. */
+export function alpha(name, a, t){
+  return color(name, t) + Math.round(255 * Math.max(0, Math.min(1, a))).toString(16).padStart(2, '0');
 }

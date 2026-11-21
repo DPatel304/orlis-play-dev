@@ -2,38 +2,39 @@
    hills and a ground - and nothing else, so a game's own pieces sit on top. Each one is drawn from nothing every frame
    (Orlis.assets.scene(c, W, H, 'meadow', { t })): t is seconds, so the clouds drift. They keep the top of the screen
    calm for the shared screen's words and the bottom edge plain for the move card. */
-import { PALETTE } from './palette.js';
+import { PALETTE, color as pal } from './palette.js';
 const N = PALETTE.night;
 const mix = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
 const hexOf = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-const rgb = (a, al = 1) => `rgba(${a[0] | 0},${a[1] | 0},${a[2] | 0},${al})`;
+/* a colour (an [r, g, b] list) as '#rrggbb' plus an alpha byte, for the sky gradient and the glows (the only gradients, in the background layer) */
+const hexA = (a, al = 1) => '#' + [...a, al * 255].map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
 
 /* top/low: the sky; hills: far to near; ground: the grass (or sand, or snow); sun: 'sun' | 'moon' | null; stars: how many; cloud: their colour */
 export const SCENES = {
-  meadow:  { name: 'Sunny meadow', tags: 'day outdoors', top: '#8fd0ff', low: '#e6f4ee', hills: ['#8ed98a', '#6fc77a', '#58b068'], ground: '#58b068', sun: 'sun', stars: 0, cloud: '#ffffff' },
-  sunset:  { name: 'Evening sky', tags: 'evening outdoors', top: '#8aa8d6', low: '#f6ead2', hills: ['#c0cf9b', '#a9c98f', '#8fbf6a'], ground: '#8fbf6a', sun: 'sun', stars: 0, cloud: '#fff1e2', warm: true },
-  autumn:  { name: 'Autumn afternoon', tags: 'autumn outdoors', top: '#9fb4d6', low: '#f6e2c4', hills: ['#c8c07c', '#b9b06a', '#a8a05c'], ground: '#a8a05c', sun: 'sun', stars: 0, cloud: '#fff5ea' },
-  night:   { name: 'Starry night', tags: 'night outdoors', top: N.sky, low: N.dusk, hills: [N.farHills, N.hills, N.grass], ground: N.grass, sun: 'moon', moon: N.moon, star: N.star, edge: N.shade, stars: 40, cloud: rgb(hexOf(PALETTE.shade.light), 0.3) },
-  snow:    { name: 'Snowy hills', tags: 'winter outdoors', top: '#9ec4f0', low: '#eef6ff', hills: ['#dbe8f7', '#e9f3ff', '#ffffff'], ground: '#ffffff', sun: 'sun', stars: 0, cloud: '#ffffff' },
-  beach:   { name: 'Sunny beach', tags: 'summer sea', top: '#7cc8ff', low: '#e9f8ff', hills: ['#5fb7e8', '#4aa7dc', '#f3d9a0'], ground: '#f3d9a0', sun: 'sun', stars: 0, cloud: '#ffffff', sea: true }
+  meadow:  { name: 'Sunny meadow', tags: 'day outdoors', top: pal('sky.high'), low: pal('sky.horizon'), hills: [pal('meadow.soft'), pal('meadow.grass'), pal('meadow.leaf')], ground: pal('meadow.leaf'), sun: 'sun', stars: 0, cloud: pal('earth.snow') },
+  sunset:  { name: 'Evening sky', tags: 'evening outdoors', top: pal('sky.mid'), low: pal('sky.horizon'), hills: [pal('meadow.far'), pal('meadow.soft'), pal('meadow.lawn')], ground: pal('meadow.lawn'), sun: 'sun', stars: 0, cloud: pal('sky.sun'), warm: true },
+  autumn:  { name: 'Autumn afternoon', tags: 'autumn outdoors', top: pal('sky.mid'), low: pal('earth.path'), hills: [pal('earth.path'), pal('meadow.far'), pal('meadow.soft')], ground: pal('meadow.soft'), sun: 'sun', stars: 0, cloud: pal('sky.sun') },
+  night:   { name: 'Starry night', tags: 'night outdoors', top: N.sky, low: N.dusk, hills: [N.farHills, N.hills, N.grass], ground: N.grass, sun: 'moon', moon: N.moon, star: N.star, edge: N.shade, stars: 40, cloud: hexA(hexOf(PALETTE.shade.light), 0.3) },
+  snow:    { name: 'Snowy hills', tags: 'winter outdoors', top: pal('sky.high'), low: pal('sky.mist'), hills: [pal('sky.mist'), pal('sky.horizon'), pal('earth.snow')], ground: pal('earth.snow'), sun: 'sun', stars: 0, cloud: pal('earth.snow') },
+  beach:   { name: 'Sunny beach', tags: 'summer sea', top: pal('sky.high'), low: pal('sky.horizon'), hills: [pal('sea.sunlit'), pal('sea.far'), pal('sea.sand')], ground: pal('sea.sand'), sun: 'sun', stars: 0, cloud: pal('earth.snow'), sea: true }
 };
 
 /* p: how far through the day, 0..1 (nudges the light warmer toward 1); t: seconds */
 export function drawScene(c, W, H, id, { t = 0, p = 0 } = {}){
   const S = SCENES[id]; if (!S) return false;
   const top = mix(hexOf(S.top), [255, 190, 150], S.warm ? p * 0.35 : p * 0.12), low = mix(hexOf(S.low), [255, 226, 170], S.warm ? p * 0.4 : p * 0.1);
-  const sky = c.createLinearGradient(0, 0, 0, H * 0.75); sky.addColorStop(0, rgb(top)); sky.addColorStop(1, rgb(low));
+  const sky = c.createLinearGradient(0, 0, 0, H * 0.75); sky.addColorStop(0, hexA(top)); sky.addColorStop(1, hexA(low));
   c.fillStyle = sky; c.fillRect(0, 0, W, H);
   /* stars, steady little squares */
-  c.fillStyle = S.star || '#fff';
+  c.fillStyle = S.star || pal('earth.snow');
   for (let i = 0; i < S.stars; i++){ c.globalAlpha = 0.45 + 0.4 * Math.sin(t * 1.4 + i); c.fillRect(((i * 173) % 1000) / 1000 * W, ((i * 61) % 380) / 1000 * H + H * 0.03, Math.max(2, H * 0.004), Math.max(2, H * 0.004)); }
   c.globalAlpha = 1;
   /* the sun or the moon, high on the right, out of the shared screen's way */
   if (S.sun){
     const x = W * 0.84, y = H * 0.24, r = H * 0.07;
-    const glow = c.createRadialGradient(x, y, r * 0.5, x, y, r * 3.2); glow.addColorStop(0, S.sun === 'moon' ? rgb(hexOf(S.moon), 0.4) : 'rgba(255,236,170,.55)'); glow.addColorStop(1, 'rgba(255,236,170,0)');
+    const glow = c.createRadialGradient(x, y, r * 0.5, x, y, r * 3.2); const gc = hexOf(S.sun === 'moon' ? S.moon : PALETTE.sky.sunGlow); glow.addColorStop(0, hexA(gc, S.sun === 'moon' ? 0.4 : 0.55)); glow.addColorStop(1, hexA(gc, 0));
     c.fillStyle = glow; c.fillRect(x - r * 3.2, y - r * 3.2, r * 6.4, r * 6.4);
-    c.fillStyle = S.sun === 'moon' ? S.moon : '#ffe08a'; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+    c.fillStyle = S.sun === 'moon' ? S.moon : pal('sky.sunGlow'); c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
   }
   /* clouds drift left to right, slowly */
   c.fillStyle = S.cloud;
@@ -53,6 +54,6 @@ export function drawScene(c, W, H, id, { t = 0, p = 0 } = {}){
   });
   /* the ground band at the bottom */
   c.fillStyle = S.ground; c.fillRect(0, H * 0.9, W, H * 0.1);
-  c.fillStyle = S.edge ? rgb(hexOf(S.edge), 0.35) : 'rgba(0,0,0,.07)'; c.fillRect(0, H * 0.9, W, H * 0.006);
+  c.fillStyle = hexA(hexOf(S.edge || PALETTE.shade.shadow), S.edge ? 0.35 : 0.12); c.fillRect(0, H * 0.9, W, H * 0.006);
   return true;
 }

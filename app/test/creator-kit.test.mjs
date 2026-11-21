@@ -31,7 +31,7 @@ test('colours come from the palette by name: a raw code fails in the app, the se
   const good = await pack({ game: g.files['game.js'], manifest: man });
   assert.doesNotThrow(() => checkGame(Buffer.from(good.bytes)), 'a palette-name game passes the server');
   const { code } = build({ game: g.files['game.js'], manifest: man });
-  const tampered = await writeOrlis({ 'manifest.json': JSON.stringify(good.manifest, null, 2), 'game.js': code.replace('"touch.sunflower"', '"#ff9a55"') });
+  const tampered = await writeOrlis({ 'manifest.json': JSON.stringify(good.manifest, null, 2), 'game.js': code.slice(0, code.lastIndexOf('"touch.sunflower"')) + '"#ff9a55"' + code.slice(code.lastIndexOf('"touch.sunflower"') + '"touch.sunflower"'.length) });   /* (the game's own colour is the last one: the runtime in front now names touch.sunflower too) */
   assert.throws(() => checkGame(Buffer.from(tampered)), /Use a colour from the palette: assets\.color\('touch\.mint'\)/, 'a raw colour fails the server');
   const ps = newGame({ name: 'x y' }).files;
   for (const h of ['check.ps1', 'guard.ps1']) assert.ok(ps['.claude/hooks/' + h].includes(COLOUR.pattern.replace(/'/g, "''")), `${h} has the colour rule`);
