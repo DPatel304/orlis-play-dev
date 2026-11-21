@@ -14,6 +14,7 @@
    points (head, shoulders, wrists, hips) are going - the two fastest, so
    waving just your arms counts - in screen widths a second, smoothed a
    little; the camera's jitter is well under STILL. */
+import { color, alpha } from './assets/palette.js';
 import { Juice, clamp } from './common.js';
 import { sayBubble } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
@@ -34,7 +35,7 @@ const FIRST_DANCE = 9;
 const POINTS = [0, 11, 12, 15, 16, 23, 24];
 
 export default {
-  id: 'sleepy-bear', unit: 'stars', name: 'Sleepy Bear', stars: 1, accent: '#a0704a', secs: ROUND,
+  id: 'sleepy-bear', unit: 'stars', name: 'Sleepy Bear', stars: 1, accent: color('fur.brown'), secs: ROUND,
   moves: ['dance'],
   create(n){ return new SleepyBear(n); }
 };
@@ -179,21 +180,21 @@ class SleepyBear {
   /* the bear's hill, with the cave and the bear in it, on the right */
   _cave(c, W, H){
     const cx = W * 0.78, base = H * 0.72, s = H / 900;
-    c.fillStyle = '#86ad6f';
+    c.fillStyle = color('meadow.grass');
     c.beginPath(); c.ellipse(cx, base, W * 0.26, H * 0.33, 0, Math.PI, 0); c.fill();
     c.save(); c.beginPath(); c.ellipse(cx, base, W * 0.26, H * 0.33, 0, Math.PI, 0); c.clip();
-    c.fillStyle = '#759e60'; c.beginPath(); c.ellipse(cx + W * 0.2, base - H * 0.05, W * 0.18, H * 0.4, 0, 0, Math.PI * 2); c.fill(); c.restore();
-    c.fillStyle = '#3b3a36'; c.beginPath(); c.ellipse(cx - W * 0.01, base, 190 * s, 170 * s, 0, Math.PI, 0); c.fill();
+    c.fillStyle = color('meadow.grass', 'shade'); c.beginPath(); c.ellipse(cx + W * 0.2, base - H * 0.05, W * 0.18, H * 0.4, 0, 0, Math.PI * 2); c.fill(); c.restore();
+    c.fillStyle = color('fur.charcoal'); c.beginPath(); c.ellipse(cx - W * 0.01, base, 190 * s, 170 * s, 0, Math.PI, 0); c.fill();
     const b = this.bear;
     /* rolling over: a tip to the side and back */
     const tip = Math.sin(b.roll * Math.PI) * 0.35;
     c.save(); c.translate(cx - W * 0.01, base - 80 * s); c.rotate(tip);
     bearHead(c, 0, 0, 0.85 * s, b, this.t);
     c.restore();
-    c.fillStyle = '#8a5a3b'; for (const d of [-1, 1]){ c.beginPath(); c.ellipse(cx - W * 0.01 + d * 120 * s, base - 2 * s, 46 * s, 22 * s, 0, 0, Math.PI * 2); c.fill(); }
+    c.fillStyle = color('fur.brown'); for (const d of [-1, 1]){ c.beginPath(); c.ellipse(cx - W * 0.01 + d * 120 * s, base - 2 * s, 46 * s, 22 * s, 0, 0, Math.PI * 2); c.fill(); }
     /* asleep: Zzz */
     if (this.phase === 'dance' && !this.over){
-      c.fillStyle = 'rgba(60,60,90,.5)'; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+      c.fillStyle = alpha('shade.ink', 0.5); c.textAlign = 'left'; c.textBaseline = 'alphabetic';
       for (let k = 0; k < 3; k++){
         const a = ((this.t * 0.35 + k / 3) % 1);
         c.globalAlpha = Math.sin(a * Math.PI) * 0.8;
@@ -206,7 +207,7 @@ class SleepyBear {
 
   _notes(c, W, H){
     const frozen = this.phase === 'freeze';
-    c.fillStyle = frozen ? 'rgba(120,170,220,.75)' : 'rgba(90,80,140,.55)';
+    c.fillStyle = frozen ? alpha('sky.high', 0.9) : alpha('shade.mid', 0.8);
     for (const n of this.notes){
       const x = (n.x + (frozen ? 0 : Math.sin(n.age * 2.5 + n.ph) * 0.012)) * W, y = n.y * H, r = H * 0.02;
       c.beginPath(); c.ellipse(x, y, r, r * 0.72, -0.4, 0, Math.PI * 2); c.fill();
@@ -243,20 +244,20 @@ class SleepyBear {
 /* the bear: asleep (eye 0), one eye peeking (eye 1), grumbling (frown),
    wide awake and waving goodbye at the end (wake) */
 export function bearHead(c, x, y, s, b, t){
-  const fur = '#8a5a3b', dark = '#6e452c', muzzle = '#d9b48c', ink = '#33322e';
-  for (const d of [-1, 1]){ c.fillStyle = fur; c.beginPath(); c.arc(x + d * 95 * s, y - 85 * s, 42 * s, 0, Math.PI * 2); c.fill(); c.fillStyle = '#c99a72'; c.beginPath(); c.arc(x + d * 95 * s, y - 85 * s, 22 * s, 0, Math.PI * 2); c.fill(); }
+  const fur = color('fur.brown'), dark = color('fur.brown', 'shade'), muzzle = color('earth.sand'), ink = color('shade.ink');
+  for (const d of [-1, 1]){ c.fillStyle = fur; c.beginPath(); c.arc(x + d * 95 * s, y - 85 * s, 42 * s, 0, Math.PI * 2); c.fill(); c.fillStyle = color('earth.peach', 'shade'); c.beginPath(); c.arc(x + d * 95 * s, y - 85 * s, 22 * s, 0, Math.PI * 2); c.fill(); }
   const head = () => { c.beginPath(); c.ellipse(x, y, 140 * s, 120 * s, 0, 0, Math.PI * 2); };
   c.fillStyle = fur; head(); c.fill();
   c.save(); head(); c.clip(); c.fillStyle = dark; c.beginPath(); c.ellipse(x + 90 * s, y + 60 * s, 130 * s, 120 * s, 0, 0, Math.PI * 2); c.fill(); c.restore();
   c.fillStyle = muzzle; c.beginPath(); c.ellipse(x, y + 45 * s, 62 * s, 46 * s, 0, 0, Math.PI * 2); c.fill();
-  c.fillStyle = '#3b2a20'; c.beginPath(); c.ellipse(x, y + 22 * s, 24 * s, 16 * s, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = color('fur.charcoal'); c.beginPath(); c.ellipse(x, y + 22 * s, 24 * s, 16 * s, 0, 0, Math.PI * 2); c.fill();
   c.strokeStyle = ink; c.lineCap = 'round'; c.lineWidth = 6 * s;
   const open = Math.max(b.eye, b.wake);
   for (const d of [-1, 1]){
     const ex = x + d * 52 * s, ey = y - 18 * s;
     /* the left eye peeks; both open when awake */
     const o = d < 0 ? open : b.wake;
-    if (o > 0.3){ c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, ey, 15 * s * o, 0, Math.PI * 2); c.fill(); c.fillStyle = ink; c.beginPath(); c.arc(ex + 3 * s, ey + 2 * s, 9 * s * o, 0, Math.PI * 2); c.fill(); }
+    if (o > 0.3){ c.fillStyle = color('earth.snow'); c.beginPath(); c.arc(ex, ey, 15 * s * o, 0, Math.PI * 2); c.fill(); c.fillStyle = ink; c.beginPath(); c.arc(ex + 3 * s, ey + 2 * s, 9 * s * o, 0, Math.PI * 2); c.fill(); }
     else { c.beginPath(); c.arc(ex, ey - 4 * s, 14 * s, 0.2, Math.PI - 0.2); c.stroke(); }
   }
   /* a grumpy brow */
@@ -272,7 +273,7 @@ export function bearHead(c, x, y, s, b, t){
 /* frost round a frozen hand: little ice spikes, growing with how frozen */
 function frost(c, x, y, r, k, t){
   c.save();
-  c.strokeStyle = `rgba(200,235,255,${0.5 + 0.4 * k})`; c.lineWidth = Math.max(2, r * 0.12); c.lineCap = 'round';
+  c.strokeStyle = alpha('touch.skyBlue', 0.5 + 0.4 * k, 'light'); c.lineWidth = Math.max(2, r * 0.12); c.lineCap = 'round';
   for (let i = 0; i < 6; i++){
     const a = i * Math.PI / 3 + t * 0.2, r0 = r * 1.6, r1 = r * (1.6 + 1.1 * k);
     c.beginPath(); c.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); c.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1); c.stroke();

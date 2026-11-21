@@ -16,8 +16,8 @@ export const PALETTE = {
   meadow: { deep: '#5f8a4c', leaf: '#6f9a5e', fresh: '#58b068', grass: '#80ae6a', lawn: '#93bb7c', soft: '#a9c98f', far: '#c9dbb0', haze: '#e3f0cf' },
   /* warm earth and calm accents */
   earth: { bark: '#7a6550', path: '#f6d9a8', sand: '#e9c7a8', clay: '#d9895b', brick: '#e07a5f', peach: '#ffc48a', plumRoof: '#8a6f8f', snow: '#ffffff' },
-  /* animal coats that the earth colours lack (the raven; browns and greys join here when a painted animal needs them) */
-  fur: { charcoal: '#3b3a52' },
+  /* animal coats that the earth colours lack (the raven, the bear; more browns and greys join here when a painted animal needs them) */
+  fur: { charcoal: '#3b3a52', brown: '#8a5a3b' },
   /* shade (purple-grey, never black), the thin ink edge, and the interface paper */
   shade: { light: '#c4bce0', mid: '#8a80b0', shadow: '#342860', ink: '#2f2b45', inkSoft: '#6b6680', paper: '#faf6ec', card: '#fffdf8', line: '#e6dcc7' },
   /* interface accents */
