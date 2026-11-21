@@ -3,7 +3,7 @@
    star, block, beach ball, chest, basket, raven), never on scenery.
    Each is a function (c, s, o): c is already moved to the middle of the asset, s is its height in pixels, o its options
    (o.color for the ones that take a colour; o.t for the ones that move). Widths follow from `aspect` in the table. */
-import { color as pal } from './palette.js';
+import { color as pal, alpha as palAlpha } from './palette.js';
 const INK = pal('shade.ink'), SHADOW = pal('shade.shadow'), SNOW = pal('earth.snow');
 const rr = (c, x, y, w, h, r) => { c.beginPath(); c.roundRect(x, y, w, h, r); };
 const outline = (c, s, w = 0.045) => { c.lineWidth = s * w; c.strokeStyle = INK; c.lineJoin = 'round'; c.stroke(); };
@@ -35,7 +35,6 @@ export const PROPS = {
     c.save(); c.rotate(rot);
     WEDGES.forEach((col, i) => { c.fillStyle = col; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, r, i * Math.PI * 2 / 6, (i + 1) * Math.PI * 2 / 6); c.closePath(); c.fill(); });
     c.restore();
-    c.save(); c.beginPath(); c.arc(0, 0, r, 0, 7); c.clip(); c.beginPath(); c.arc(r * 0.8, r * 0.7, r * 0.95, 0, 7); shadeWash(c); c.restore();
     c.beginPath(); c.ellipse(-r * 0.35, -r * 0.4, r * 0.28, r * 0.16, -0.6, 0, 7); lightWash(c, 0.45);
     c.beginPath(); c.arc(0, 0, r, 0, 7); outline(c, s, 0.04);
   }],
@@ -64,16 +63,16 @@ export const PROPS = {
   }],
   tree: ['Tree', 'nature tree', 0.95, (c, s) => {
     c.fillStyle = pal('earth.bark'); c.beginPath(); c.moveTo(-s * 0.07, s * 0.5); c.quadraticCurveTo(-s * 0.04, s * 0.15, -s * 0.05, -s * 0.05); c.lineTo(s * 0.05, -s * 0.05); c.quadraticCurveTo(s * 0.04, s * 0.15, s * 0.08, s * 0.5); c.closePath(); c.fill();
-    for (const [dx, dy, r, tn] of [[-0.2, -0.15, 0.26, null], [0.2, -0.15, 0.25, 'shade'], [0, -0.3, 0.27, null], [0, -0.1, 0.28, null]]){ c.fillStyle = pal('meadow.grass', tn); c.beginPath(); c.arc(dx * s, dy * s, r * s, 0, 7); c.fill(); }
+    for (const [dx, dy, r, tn] of [[-0.2, -0.15, 0.26, null], [0.2, -0.15, 0.25, 'shade'], [0, -0.3, 0.27, null], [0, -0.1, 0.28, null]]){ c.fillStyle = pal('meadow.fresh', tn); c.beginPath(); c.arc(dx * s, dy * s, r * s, 0, 7); c.fill(); }
     c.beginPath(); c.ellipse(-s * 0.1, -s * 0.34, s * 0.09, s * 0.06, -0.6, 0, 7); lightWash(c, 0.4);
   }],
   pine: ['Pine tree', 'nature tree snow', 0.7, (c, s) => {
     c.fillStyle = pal('earth.bark'); c.fillRect(-s * 0.04, s * 0.32, s * 0.08, s * 0.18);
-    [[0.34, 0.58, 'shade'], [0.12, 0.48, null], [-0.1, 0.36, null]].forEach(([y, w, tn]) => { c.fillStyle = pal('meadow.leaf', tn); c.beginPath(); c.moveTo(0, y * s - s * 0.3); c.lineTo(w * s / 1.4, y * s + s * 0.16); c.lineTo(-w * s / 1.4, y * s + s * 0.16); c.closePath(); c.fill(); });
+    [[0.34, 0.58, 'shade'], [0.12, 0.48, null], [-0.1, 0.36, null]].forEach(([y, w, tn]) => { c.fillStyle = pal('meadow.fresh', tn); c.beginPath(); c.moveTo(0, y * s - s * 0.3); c.lineTo(w * s / 1.4, y * s + s * 0.16); c.lineTo(-w * s / 1.4, y * s + s * 0.16); c.closePath(); c.fill(); });
     c.beginPath(); c.moveTo(0, -s * 0.44); c.lineTo(s * 0.12, -s * 0.28); c.lineTo(-s * 0.12, -s * 0.28); c.closePath(); wash(c, SNOW, 0.7);
   }],
   bush: ['Bush', 'nature garden', 1.4, (c, s) => {
-    for (const [dx, dy, r, tn] of [[-0.3, 0.1, 0.28, null], [0.3, 0.1, 0.28, 'shade'], [0, -0.02, 0.34, null]]){ c.fillStyle = pal('meadow.leaf', tn); c.beginPath(); c.arc(dx * s, dy * s, r * s, 0, 7); c.fill(); }
+    for (const [dx, dy, r, tn] of [[-0.3, 0.1, 0.28, null], [0.3, 0.1, 0.28, 'shade'], [0, -0.02, 0.34, null]]){ c.fillStyle = pal('meadow.fresh', tn); c.beginPath(); c.arc(dx * s, dy * s, r * s, 0, 7); c.fill(); }
     c.beginPath(); c.ellipse(-s * 0.1, -s * 0.16, s * 0.1, s * 0.06, -0.6, 0, 7); lightWash(c, 0.4);
   }],
   cloud: ['Cloud', 'sky', 2, (c, s, o) => {
@@ -106,18 +105,18 @@ export const PROPS = {
     c.beginPath(); c.ellipse(0, 0, s * 1.2, s * 0.5, 0, 0, 7); wash(c, pal('sky.high'), 0.85);
     c.beginPath(); c.ellipse(-s * 0.3, -s * 0.12, s * 0.35, s * 0.1, 0, 0, 7); lightWash(c, 0.5);
   }],
-  /* a player's hand: the glowing mitt every Orlis game shows (o.color: the player's colour). The glow is two flat rings of colour, not a gradient. */
+  /* a player's hand: the glowing mitt every Orlis game shows (o.color: the player's colour). The soft glow is an effect, so it stays a gradient. */
   hand: ['Hand', 'player hand', 1, (c, s, o) => {
     const r = s * 0.25, col = o.color || pal('fav.sky');
-    c.beginPath(); c.arc(0, 0, r * 2.4, 0, 7); wash(c, col, 0.14);
-    c.beginPath(); c.arc(0, 0, r * 1.7, 0, 7); wash(c, col, 0.2);
+    const g = c.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 2.4); g.addColorStop(0, o.color ? col + 'aa' : palAlpha('fav.sky', 0.67)); g.addColorStop(1, o.color ? col + '00' : palAlpha('fav.sky', 0));
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 2.4, 0, 7); c.fill();
     c.fillStyle = SNOW; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.lineWidth = r * 0.28; c.strokeStyle = col; c.stroke();
     c.fillStyle = col; c.beginPath(); for (let i = 0; i < 8; i++){ const a = i * Math.PI / 4, d = i % 2 ? r * 0.22 : r * 0.55; c.lineTo(Math.cos(a) * d, Math.sin(a) * d); } c.closePath(); c.fill();
   }],
-  /* a soft glowing dot (o.color), for trails and little lights: stepped flat discs, a bright core in a dimmer halo */
+  /* a soft glowing dot (o.color), for trails and little lights (an effect, so it keeps its soft glow) */
   dot: ['Glow dot', 'effect light', 1, (c, s, o) => {
-    const col = o.color || pal('touch.sunflower');
-    for (const [k, a] of [[0.5, 0.2], [0.38, 0.22], [0.26, 0.25], [0.14, 0.3]]){ c.beginPath(); c.arc(0, 0, s * k, 0, 7); wash(c, col, a); }
+    const g = c.createRadialGradient(0, 0, 0, 0, 0, s / 2); g.addColorStop(0, o.color || pal('touch.sunflower')); g.addColorStop(1, o.color ? o.color + '00' : palAlpha('touch.sunflower', 0));
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, s / 2, 0, 7); c.fill();
   }],
   ring: ['Ring', 'effect', 1, (c, s, o) => { c.strokeStyle = o.color || SNOW; c.lineWidth = s * 0.08; c.beginPath(); c.arc(0, 0, s * 0.44, 0, 7); c.stroke(); }],
   /* the raven from Save the Harvest */

@@ -11,7 +11,7 @@ export const PALETTE = {
   /* the painted sky and light */
   sky: { high: '#8fc0e2', mid: '#9fc8e6', low: '#cfe0e6', horizon: '#e9eee6', mist: '#e4ebe6', sun: '#fff4cf', sunGlow: '#ffe2a0' },
   /* one green ladder, darkest (near, shaded) to lightest (far, hazy) */
-  meadow: { deep: '#5f8a4c', leaf: '#6f9a5e', grass: '#80ae6a', lawn: '#93bb7c', soft: '#a9c98f', far: '#c9dbb0', haze: '#e3f0cf' },
+  meadow: { deep: '#5f8a4c', leaf: '#6f9a5e', fresh: '#58b068', grass: '#80ae6a', lawn: '#93bb7c', soft: '#a9c98f', far: '#c9dbb0', haze: '#e3f0cf' },
   /* warm earth and calm accents */
   earth: { bark: '#7a6550', path: '#f6d9a8', sand: '#e9c7a8', clay: '#d9895b', brick: '#e07a5f', peach: '#ffc48a', plumRoof: '#8a6f8f', snow: '#ffffff' },
   /* animal coats that the earth colours lack (the raven; browns and greys join here when a painted animal needs them) */
