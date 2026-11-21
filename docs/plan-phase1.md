@@ -47,7 +47,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | ID | Work | Model | Needs | Done when |
 |---|---|---|---|---|
 | P1 | **Done 2026-11-21.** Node dev hub `tools/pad-hub.mjs` (and `tools/pad-fake-host.mjs`; tests in `app/test/pad-hub.node.mjs`) | Sonnet | spec | spec tests 1, 4, 5 pass with a fake host |
-| P2 | Rust hub in Orlis Play (serve `dist-pad/`, relay, secret, port fallback) | Sonnet, Opus review | P1 | same tests pass against the Windows build; Windows firewall text in setup |
+| P2 | **Done 2026-11-21 (Linux build and tests; Windows check by the owner in beta).** Rust hub in Orlis Play, crate `app/client/src-tauri/pad-hub/` (serve `dist-pad/`, relay, secret, port fallback) | Sonnet, Opus review | P1 | same tests pass against the Windows build; Windows firewall text in setup |
 | P3 | **Mockup approved 2026-11-21** (`docs/pads-mockup.html`: only the TV starts a game, phones say "I'm ready"; "Not Sam?" stays; Guest allowed). Pad page shell (join by QR or picture code, who-picker, rejoin, keep-awake, loads the pad program) | Sonnet | mockup approved by owner, 0032 accepted | spec tests 1 to 3 pass; works on iPhone Safari and Android Chrome |
 | P4 | Host session module (session, seats, picture join, trusted devices, pause rule); **spec written 2026-11-21: `docs/specs/session.md`** | Opus API, Sonnet build | spec (done) | unit tests for joins, trust, pause, resume |
 | P5 | **Mockup approved 2026-11-21** (`docs/pads-mockup.html`). TV join card (QR, code, who has joined) and Settings list of trusted phones | Sonnet | P4, mockup | owner approves on the TV |
