@@ -1,4 +1,4 @@
-# Orlis Play beta: the short note (draft for the owner)
+# Orlis Play beta: the short note (approved by the owner 2026-11-21)
 
 Shown once, before installing. Plain words, one screen.
 

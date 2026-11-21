@@ -56,7 +56,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | S2 | Pop Party pad hands (drag a finger to move a mitt) | Sonnet | S1 | playable with 1 tracked + 2 phones |
 | S3 | Kid profiles to the Box; one-time move; server keeps grown-ups only | Sonnet, Opus review | — | migration tested both sides; nothing about a child left on the server |
 | K1 | Spike: TV 3D garden with tracking in its worker; hand-to-ground lantern | Opus | owner Shift+G result | measured on the owner's laptop; go or fallback decided |
-| K2 | Peekaboo design on paper and a greybox mockup | Opus | — | owner approves layout, hiding places, rules, round flow |
+| K2 | Peekaboo design on paper and a greybox mockup (rules decided 2026-11-21: silent hiding, one hider keeps the phone, lantern on the busiest hand; the guided phone view still to mock up) | Opus | — | owner approves layout, hiding places, rules, round flow |
 | K3 | `world.js` and the host rules (found, hiding, clock, swap) with tests | Sonnet | K2 | rules tests pass |
 | K4 | TV view (overview, lanterns, rustles, the reveal hook) | Sonnet, Opus review | K1, K3 | 60 fps with tracking on the owner's laptop |
 | K5 | Phone view (guided camera behind and beside the hider, 0039; joystick, hide button, interpolation; painted pieces flip like cards) | Sonnet, Opus review | K3, P3 | 60 fps on the Android test tablet (minimum class) |
@@ -69,7 +69,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | B2 | Hardening: reconnect edge cases, the Wi-Fi hint, performance, bug bash | Sonnet, Opus triage | most of the above | no known bugs in either game |
 | PP | Pop Party tuning from playtests; P/R check of the polish cost | Sonnet with owner | — | the owner's under-3s play it unaided |
 | PP2 | (Dropped by 0037: Pop Party stays painted for Phase 1) | — | — | — |
-| U1 | The Orlis UI kit: tokens, paper cards, one HUD piece style, Fredoka, painted icons, motion rules (see `docs/ui-review.md`) | Opus, owner approves | — | a kit page (mockup) approved; used by the P3 and P5 mockups |
+| U1 | **Done (approved 2026-11-21).** The Orlis UI kit: tokens, paper cards, one HUD piece style, Fredoka, painted icons, motion rules (see `docs/ui-review.md`) | Opus, owner approves | — | a kit page (mockup) approved; used by the P3 and P5 mockups |
 | U2 | UI quick fixes: hero contrast, ghost label, units and plurals, first-load flash | Sonnet | — | before and after screenshots; tests pass |
 | U3 | HUD onto the kit and the docks (0034) for every game (shared HUD code); `UI-STANDARD.md` and the creator kit updated | Sonnet | U1, 0034 | all games checked by screenshot at TV size |
 | U4 | Emoji out: painted icons for hints and UI; Create's hints use library icons | Sonnet | U1 | no emoji left on screen in any built-in game |

@@ -40,7 +40,7 @@ Date: YYYY-MM-DD
 | 0014 | No online play | Accepted |
 | 0015 | The first 3D game is Peekaboo Garden | Accepted |
 | 0016 | An Android app first, for Phase 1 | Accepted |
-| 0017 | Phase 1 is a closed beta; in Phase 2 the platform is sold only as a kit | Accepted (beta note to approve) |
+| 0017 | Phase 1 is a closed beta; in Phase 2 the platform is sold only as a kit | Accepted (beta note approved) |
 | 0018 | Apple support is deferred to Phase 2 | Accepted |
 | 0019 | Phase 1 pads are a browser page; a native app follows if time allows | Accepted |
 | 0020 | The stage is built; existing flat games are not migrated yet | Superseded by 0029 |

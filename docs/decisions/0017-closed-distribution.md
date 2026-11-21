@@ -1,5 +1,5 @@
 # 0017: Phase 1 is a closed beta; in Phase 2 the platform is sold only as a kit
-Status: Accepted (beta note to approve)
+Status: Accepted (the beta note in `docs/beta-terms.md` approved by the owner 2026-11-21)
 Date: 2026-11-20
 ## Context
 The owner said Phase 1 is a closed beta, and that from Phase 2 Orlis cannot be installed on any Windows laptop: the only ways to

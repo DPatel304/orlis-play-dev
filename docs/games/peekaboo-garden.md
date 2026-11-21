@@ -5,12 +5,12 @@ plays start to finish). Visual mockup: `docs/games/peekaboo-design.html` (also p
 
 ## The round (about 1.5 minutes)
 1. **Join.** The hider's phone scans the TV's QR (or taps the three pictures, 0032) and picks who they are. Seekers wave at the camera.
-2. **Hide, 10 s.** The TV dims: "Seekers, cover your eyes! Count to ten together", the numbers filling in. The hider runs (seen from a guided camera behind the bunny, 0039)
+2. **Hide, 10 s.** The TV dims and goes quiet: "Seekers, close your eyes!" A soft sun ring fills over the ten seconds; no counting aloud (owner, 2026-11-21). The hider runs (seen from a guided camera behind the bunny, 0039)
    and walks into a hiding place (no button: being inside is hiding).
-3. **Seek, 60 s.** Each seeker's hand is a lantern on the garden (a ray from the TV camera onto the floor). Holding a lantern over the
+3. **Seek, 60 s.** Each seeker's hand is a lantern on the garden (a ray from the TV camera onto the floor). The lantern follows whichever hand is moving most (owner, 2026-11-21). Holding a lantern over the
    hider fills a "found" meter; how fast depends on the hiding place. Moving near a bush makes it rustle on the TV.
 4. **Found, or time's up.** The hider pops out on the TV as their own avatar (a paper puppet), waves and giggles; or "You stayed hidden!".
-   Both are wins. "Pass the phone" to the next hider.
+   Both are wins. The same hider keeps the phone for the next round; the seekers swap in and out (owner, 2026-11-21).
 
 ## Hiding places (three kinds, three of each)
 | Place | Lantern time to be found | Notes |
@@ -38,7 +38,7 @@ stay paper cutouts.
 ## Not in the Phase 1 trial (0033)
 Scores, more than one hider, more gardens, the seekers' own phones. Welcome later.
 
-## Open for the owner
-1. Does "count to ten together" fit, or should hiding time be silent?
-2. "Pass the phone" between rounds, or keep one hider and swap seekers?
-3. Seekers' lantern: the hand that moves most (as in the K1 test), or always the right hand?
+## Decided by the owner (2026-11-21)
+1. Hiding time is **silent** (no counting aloud).
+2. **One hider keeps the phone**; seekers swap between rounds.
+3. The lantern follows **whichever hand moves most**.
