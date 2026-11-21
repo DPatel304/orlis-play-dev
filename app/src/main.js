@@ -31,6 +31,10 @@ import { crew } from './ui/crew.js';
 import { lineUp, whoRow, namePop } from './ui/lineup.js';
 import { MAKING } from './ui/avatar-maker.js';
 import { countText } from './ui/units.js';
+import { usesPads, createPads, padHub, peopleFrom } from './session/pads.js';
+import { joinCard } from './ui/join-card.js';
+import { padWaitPill } from './ui/pause-pill.js';
+import { normalizeLook } from './ui/look.js';
 
 const stage = document.getElementById('stage');
 const c = stage.getContext('2d');
@@ -53,11 +57,14 @@ addEventListener('resize', resize); resize();
 let scene = null, mode = 'boot';
 let game = null, inst = null, players = 1, roundLeft = 0, played = 0;
 let paused = null, lost = null, handsUp = 0, empty = 0, joined = new Set();
+/* Phones (S1): the session for a game that uses them, this round's handle on it for the game, and the "Waiting for <name>'s phone" pill */
+let padsRt = null, roundPads = null, padWait = null;
+const DEV = !!(import.meta.env && import.meta.env.DEV);
 
 /* The camera's on only where it's used: a game, its scores (a wave picks
    "again"), and the camera check. Everywhere else - the intro, signing in,
    the home screen - it's off: no light, and no work for the laptop. */
-const CAMERA = new Set(['starting', 'lineup', 'play', 'outro', 'results', 'calibrate']);
+const CAMERA = new Set(['starting', 'lineup', 'join', 'play', 'outro', 'results', 'calibrate']);
 /* The pages that are the mouse's and the keyboard's: Home, the Store,
    Create, and signing in. */
 const HOMEY = new Set(['menu', 'store', 'create', 'pro', 'who']);
@@ -65,7 +72,7 @@ const HOMEY = new Set(['menu', 'store', 'create', 'pro', 'who']);
 /* The pages that crossfade into each other (the tabs have their own slide) */
 const FADEY = new Set(['menu', 'store', 'create', 'pro', 'who', 'results']);
 const TABBY = new Set(['menu', 'store', 'create', 'pro']);
-const INTO_GAME = new Set(['starting', 'lineup', 'play']);
+const INTO_GAME = new Set(['starting', 'lineup', 'join', 'play']);
 /* (?fx=0 turns the page fades off - the rehearsals read the page, and two pages at once would confuse them) */
 const NOFX = /[?&]fx=0\b/.test(location.search);
 function go(next, build){
@@ -79,6 +86,9 @@ function go(next, build){
   const ghosts = ui && !NOFX && FADEY.has(was) && FADEY.has(next) && !(TABBY.has(was) && TABBY.has(next)) ? [...ui.children] : [];
   if (!INTO_GAME.has(next)) launch.release(true);
   mode = next;
+  /* (phones stay for the rounds of one game - starting, the join card, playing, the scores - and go with anything else) */
+  dropWait();
+  if (!PADS_KEEP.has(next)) stopPads();
   /* (a passive game - a story - never turns the camera on: nobody has to do anything) */
   if (CAMERA.has(next)) pose.wake(); else pose.sleep();
   if (game && game.passive && (INTO_GAME.has(next) || next === 'results')) pose.sleep();
@@ -175,6 +185,7 @@ function toGame(g){
   /* (the Creator app can't play games) */
   if (appMode.creator()) return;
   game = g;
+  if (usesPads(g)) preparePads(g); else stopPads();
   playedLately(g.id);
   ambience.stop();
   players = pose.cap;
@@ -212,9 +223,50 @@ function family(){
 function lineUpThenPlay(){
   crew.profiles = family(); crew.personal = MAKING; crew.sync();
   /* (while everyone plays as the generic avatars, there's nobody to line up) */
-  if (!MAKING || crew.lined || crew.profiles.length < 2){ startRound(); return; }
+  if (!MAKING || crew.lined || crew.profiles.length < 2){ afterLineUp(); return; }
   launch.release();                                    /* (the line-up is a screen of its own) */
-  go('lineup', () => lineUp({ profiles: crew.profiles, onDone: () => { if (mode === 'lineup') startRound(); } }));
+  go('lineup', () => lineUp({ profiles: crew.profiles, onDone: () => { if (mode === 'lineup') afterLineUp(); } }));
+}
+/* A game that uses phones shows the join card first (QR, the three pictures, who has joined, Start); any other starts at once. */
+function afterLineUp(){ if (usesPads(game) && padsRt) toJoin(); else startRound(); }
+function toJoin(){
+  launch.release();
+  padsRt.setTracked(trackedSeats());
+  go('join', () => joinCard({ rt: padsRt, onStart: () => { if (mode === 'join' && padsRt && padsRt.go()) startRound(); } }));
+}
+/* The camera players as tracked seats (before any phone joins, so the phones' seat numbers come after them). */
+function trackedSeats(){
+  const [lo, hi] = (game.seats && game.seats.tracked) || [0, 0];
+  const here = pose.players.map((p, i) => (p.present ? i : -1)).filter(i => i >= 0).slice(0, hi);
+  for (let i = 0; here.length < lo && i < MAX_PLAYERS; i++) if (!here.includes(i)) here.push(i);
+  return here.sort((a, b) => a - b).map(i => {
+    const p = crew.profileOf(i), look = p && p.look ? normalizeLook(p.look) : null;
+    return { who: p ? p.id : 'cam' + i, name: p ? p.name : `Player ${i + 1}`, avatar: look, favourite: crew.wantedOf(i) || undefined };
+  });
+}
+/* ---------- phones (S1) ---------- */
+const PADS_KEEP = new Set(['starting', 'lineup', 'join', 'play', 'outro', 'results']);
+function preparePads(g){
+  if (padsRt && padsRt.game === g) return;             /* (play again: the same phones, the same session) */
+  stopPads();
+  /* the app's hub; in the browser dev build (or for the owner) the Node hub, with ?padhub=<port>:<key> */
+  const config = padHub({ search: location.search, allowDev: DEV || account.role === 'owner' });
+  padsRt = createPads({ game: g, people: () => peopleFrom(family()), config });
+  padsRt.pause.on(onPadPause);
+  padsRt.connect();
+  window.__pads = padsRt;                              /* (a handle for tests) */
+}
+function stopPads(){
+  if (roundPads){ roundPads.dispose(); roundPads = null; }
+  if (padsRt){ padsRt.stop(); padsRt = null; window.__pads = null; }
+  dropWait();
+}
+function dropWait(){ if (padWait){ padWait.remove(); padWait = null; } }
+/* a needed phone dropped (or came back, or has been gone 120 s): the pill, and the round waits */
+function onPadPause(){
+  if (mode !== 'play' || !padsRt) return;
+  if (padsRt.pause.waiting){ if (padWait) padWait.refresh(); else padWait = padWaitPill({ rt: padsRt, onEnd: () => { dropWait(); endRound(); } }); }
+  else dropWait();
 }
 /* Each frame of a game: the tracking keeps each child on their player, and
    someone coming back gets their name for a moment. */
@@ -257,7 +309,8 @@ function startRound(){
   hud.quiet = false;
   veilIntro = !!launch.el && launch.el.classList.contains('hascard') && !game.passive;
   introLeft = 0; introN = 0;      /* (no countdown: the cover goes and the game's on) */ moveCard.pose = null; hud.introText = null; hud.spoken = false; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
-  inst = game.create(players);
+  if (roundPads){ roundPads.dispose(); roundPads = null; }
+  inst = game.create(players, usesPads(game) && padsRt ? { pads: (roundPads = padsRt.forRound()) } : undefined);
   /* A game where squatting is a move keeps players who crouch or sit. */
   pose.keepSitters = !!game.keepSitters;
   pose.look(players);
@@ -273,6 +326,8 @@ function startRound(){
 /* A game can end on a moment of its own before the scores - Pop Party's
    bouquets - and the shell runs it until it says it's done. */
 function endRound(){
+  if (roundPads){ roundPads.dispose(); roundPads = null; }
+  if (padsRt) padsRt.end();
   if (inst.outro){ music.intensity(0.25); go('outro', null); return; }
   showResults();
 }
@@ -344,7 +399,7 @@ function openPause(){
    the scores or the camera check, home. */
 remote.install(() => {
   if (mode === 'play' && !lost){ if (paused){ paused.remove(); paused = null; cursor.reset(); } else openPause(); }
-  else if (mode === 'results' || mode === 'calibrate') toMenu();
+  else if (mode === 'results' || mode === 'calibrate' || mode === 'join') toMenu();
 });
 
 /* The game waits only when the room is empty - everybody gone for a couple
@@ -479,7 +534,7 @@ function tick(now){
   c.fillStyle = mode === 'play' || mode === 'outro' || mode === 'results' || mode === 'starting' ? '#0d0b1a' : '#f3f4f7';
   c.fillRect(0, 0, W, H);
 
-  if (mode === 'play' && inst && !paused && !lost){
+  if (mode === 'play' && inst && !paused && !lost && !padWait){
     crewTick(dt);
     if (introLeft > 0){
       introLeft -= dt;
@@ -528,7 +583,7 @@ function tick(now){
   remote.sync();
   drawHUD();
   oc.clearRect(0, 0, W, H);
-  if ((mode !== 'play' && mode !== 'outro') || paused || lost) cursor.draw(oc, W, H);
+  if ((mode !== 'play' && mode !== 'outro') || paused || lost || padWait) cursor.draw(oc, W, H);
   drawPerf(dt);
 
   requestAnimationFrame(tick);
@@ -649,7 +704,7 @@ const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : new
   requestAnimationFrame(tick);
   pose.setVideo(video, { forceMouse: debug });
   window.__pose = pose; window.__cursor = cursor; window.__music = music;   /* handles for tests; harmless in play */
-  window.__round = () => inst; window.__finish = () => { roundLeft = 0; }; window.__library = library;
+  window.__scene = () => scene; window.__round = () => inst; window.__finish = () => { roundLeft = 0; }; window.__library = library;
   holdScreen();
   show.camReady = true;
   await new Promise(res => {

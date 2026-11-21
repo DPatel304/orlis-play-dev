@@ -201,6 +201,6 @@ export function startHub({ port = 47880, host = '0.0.0.0', key = process.env.ORL
 /* run from the command line */
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const port = Number(process.argv[2]) || 47880;
-  const hub = await startHub({ port, fallback: true });
-  console.log(`Orlis pad hub on port ${hub.port}\nhost secret: ${hub.key}\nhost:  ${hub.wsUrl}/ws?role=host&key=${hub.key}\npads:  http://<this computer>:${hub.port}/`);
+  const hub = await startHub({ port, fallback: true, gamesDir: path.join(here, '..', 'app', 'pads') });   /* (each game's pad program: app/pads/<game>/pad.js) */
+  console.log(`Orlis pad hub on port ${hub.port}\nhost secret: ${hub.key}\nhost:  ${hub.wsUrl}/ws?role=host&key=${hub.key}\npads:  http://<this computer>:${hub.port}/\nthe game shell in the browser (owner/dev): http://localhost:5173/?padhub=${hub.port}:${hub.key}&padhost=<this computer>`);
 }

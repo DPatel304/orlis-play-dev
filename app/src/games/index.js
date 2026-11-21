@@ -15,6 +15,7 @@ import pteroFlight from './ptero-flight.js';
 import saveTheHarvest from './save-the-harvest.js';
 import { makeStory } from './story-player.js';
 import peekabooLab from './labs/peekaboo-lab.js';
+import padLab from './labs/pad-lab.js';
 import cubionsLongWayHome from '../stories/cubions-long-way-home.js';
 
 /* In the Windows app, some games aren't built in: they come from the Store,
@@ -25,7 +26,7 @@ const inApp = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__T
 export const GAMES = [popParty, sleepyBear, leafPile, stackItHigh, skyPainter, animalGym, keepItUp, pteroFlight, saveTheHarvest, makeStory(cubionsLongWayHome), lastKnownPosition, castleDefense]
   .filter(g => !(inApp && FROM_STORE.has(g.id)));
 /* Owner-only measurements: in the owner's menu (or ?debug&hidden=1), never in the catalogue the tests walk. */
-export const LABS = [peekabooLab];
+export const LABS = [peekabooLab, padLab];
 export const byId = (id) => GAMES.find(g => g.id === id) || LABS.find(g => g.id === id);
 /* Waiting for the owner to let you in: these two, built in, to play
    meanwhile. The rest - and the Store, and Create - open once you're in. */

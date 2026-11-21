@@ -1811,3 +1811,52 @@ body.remote .btn.slock.kfocus:not(.tvtile):not(.play){ outline:none; box-shadow:
 @keyframes cubotwirl{ 0%{ transform:translateY(0) rotateY(0) rotateZ(0); } 15%{ transform:translateY(-1.4vh) rotateY(0) rotateZ(-8deg); } 55%{ transform:translateY(-1vh) rotateY(360deg) rotateZ(0); } 75%{ transform:translateY(0) rotateY(360deg) rotateZ(0) scale(1.06,.94); } 100%{ transform:translateY(0) rotateY(360deg) rotateZ(0); } }
 @media (prefers-reduced-motion: reduce){ .launchhead .lh{ animation:none; } }
 .btn.avbig canvas.avicon{ width:1.3em; height:1.3em; vertical-align:-.25em; margin-right:.4em; }
+
+/* ---------- phones: the TV join card, the waiting pill, Trusted phones (plan package P5; mockup docs/pads-mockup.html) ----------
+   The UI kit's paper look: warm paper cards, a thin ink edge, one soft shadow, Fredoka. Sizes are shares of the screen's height (a 10-foot interface). */
+.padface{ position:relative; display:inline-block; flex:none; border-radius:50%; overflow:hidden; background:color-mix(in srgb, var(--c) 55%, #fff); border:.4vh solid #2f2b45; }
+.padface.calm{ background:#e9e6dc; }
+.padface canvas{ display:block; width:100%; height:100%; }
+.screen.joinscreen{ background:transparent; justify-content:center; }
+.joincard{ width:min(136vh, 92vw); padding:4vh 5vh 4.4vh; background:#fffdf8; color:#2f2b45; border-radius:4vh; border:.5vh solid #2f2b45; box-shadow:0 1.4vh 0 rgba(52,40,96,.18);
+  font-family:var(--ui); text-align:center; margin-top:-5vh; transition:margin-top var(--t-base) var(--ease); animation:popin var(--t-base) var(--ease) both; }
+.joincard.small{ margin-top:-9vh; }
+.jk{ font-size:6vh; font-weight:600; margin-bottom:2.4vh; }
+.jrow{ display:flex; align-items:center; justify-content:center; gap:3vh; }
+.jqr{ display:flex; flex-direction:column; align-items:center; gap:.6vh; font-size:3.2vh; font-weight:500; color:#6b6680; }
+.jqr canvas{ width:24vh; height:24vh; border-radius:1.6vh; background:#fff; border:.4vh solid #e6dcc7; }
+.jthen{ font-size:3.6vh; font-weight:500; color:#6b6680; }
+.jpics{ display:flex; gap:2vh; }
+.jpics canvas{ width:24vh; height:24vh; border-radius:3vh; background:#fffdf8; border:.5vh solid #fffdf6; box-shadow:0 1vh 0 rgba(52,40,96,.18), 0 0 0 .3vh rgba(47,43,69,.14); }
+.jfaces{ display:flex; justify-content:center; gap:2vh; margin-top:3vh; }
+.jslot{ position:relative; }
+.jslot.empty{ border-radius:50%; background:#f3ecdc; border:.5vh dashed #c9bfa6; }
+.jslot.away .padface{ opacity:.45; }
+.jtick{ position:absolute; right:-.6vh; bottom:-.6vh; width:4.4vh; height:4.4vh; border-radius:50%; background:#3fcf7f; border:.4vh solid #2f2b45; display:grid; place-items:center; animation:popin var(--t-fast) var(--ease-pop) both; }
+.jtick svg{ width:70%; height:70%; color:#fff; }
+.jwifi{ display:flex; align-items:center; gap:1.6vh; margin-top:3vh; padding:1.4vh 2.4vh; border-radius:2vh; background:#f3ecdc; font-size:3.4vh; font-weight:500; color:#4a4560; text-align:left; }
+.jwifi canvas{ width:6vh; height:6vh; flex:none; }
+.jwifi.hide{ display:none; }
+.btn.big.go.joinstart{ position:absolute; right:5vh; bottom:5vh; min-width:0; padding:2vh 6vh; background:#e85d8a; color:#fff; font-size:5vh; font-weight:600; border:.45vh solid #2f2b45; box-shadow:0 1vh 0 rgba(52,40,96,.18); }
+.btn.big.go.joinstart.wait{ opacity:.55; }
+.btn.big.go.joinstart.nope{ animation:nope var(--t-base) ease; }
+.btn.big.go.joinstart .fill{ background:#fff; }
+.screen.padwait{ background:rgba(47,43,69,.22); justify-content:flex-start; padding-top:34vh; }
+.waitpill{ display:flex; align-items:center; gap:2vh; padding:1.4vh 4vh 1.4vh 1.4vh; white-space:nowrap; background:#fffdf8; color:#2f2b45; border:.45vh solid #2f2b45; box-shadow:0 1vh 0 rgba(52,40,96,.18); border-radius:999px;
+  font-family:var(--ui); font-size:5.4vh; font-weight:600; animation:popin var(--t-base) var(--ease-pop) both; }
+.waitpill .wf{ display:inline-flex; }
+.btn.setbtn.waitend{ margin-top:2vh; font-size:3.4vh; padding:1.2vh 3.4vh; }
+/* Trusted phones: grown-up small print (Inter-style system text), as in the mockup */
+.setcard.trustcard{ width:min(94vw, 62em); background:#faf6ec; color:#2f2b45; font-family:var(--sys); }
+.trustcard .sk{ font-size:.75em; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#8a8499; }
+.trustcard h2{ font-family:var(--ui); font-weight:600; font-size:2em; margin:.1em 0 0; }
+.trustsay{ margin:.2em 0 1.2em; color:#6b6680; font-size:.9em; }
+.trustlist{ display:flex; flex-direction:column; gap:.7em; }
+.trow{ display:flex; align-items:center; gap:1em; padding:.6em 1em; background:#fffdf8; border:1px solid #e6dcc7; border-radius:1em; }
+.trow .dev{ width:9em; font-weight:600; }
+.trow .nm{ width:7em; }
+.trow .when{ flex:1; color:#8a8499; }
+.btn.setbtn.trustrm{ border-radius:999px; border:2px solid #d9cfb8; color:#6b6680; background:transparent; }
+.trustfoot{ margin:.8em 0 .4em; }
+.btn.setbtn.trustall{ border:none; background:transparent; color:#b03462; padding-left:0; }
+.trustnone{ padding:1em .2em; color:#8a8499; }

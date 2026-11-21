@@ -18,6 +18,8 @@ import { launch } from './launch.js';
 import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
 import { banner as wideBanner, discoverCoverUrl, seeAllCoverUrl } from './covers.js';
 import { buildingRow, testingRow } from './building.js';
+import { openTrustedPhones } from './trusted-phones.js';
+import { createTrust } from '../session/trust.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -576,7 +578,7 @@ function settings(onRecalibrate){
   card.appendChild(head);
   /* one setting a row: its name on the left, its control on the right */
   /* (the Creator app can't play: no volume to set) */
-  const NOPLAY = appMode.creator() ? new Set(['Volume']) : new Set();
+  const NOPLAY = appMode.creator() ? new Set(['Volume', 'Trusted phones']) : new Set();
   const row = (name, ...ctl) => {
     if (NOPLAY.has(name)){ const none = h('div', 'setctl'); return none; }
     if (pending){ card.appendChild(h('div', 'setgroup', pending)); pending = null; }
@@ -650,6 +652,11 @@ function settings(onRecalibrate){
     });
     row('Updates', up, h('span', 'keyhint', `Orlis Play ${appInfo.label ? appInfo.label() : appInfo.version}`));
   }
+
+  /* phones that joined a game before (grown-ups: the list, and Remove) */
+  group('Phones');
+  const phones = createTrust().list().length;
+  row('Trusted phones', h('span', 'keyhint', phones ? `${phones} phone${phones === 1 ? '' : 's'}` : 'none yet'), small('See the list', () => { sfx.select?.(); openTrustedPhones(); }));
 
   /* testing only */
   group('Testing');
