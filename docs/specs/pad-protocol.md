@@ -19,6 +19,11 @@ Status: draft for implementation. Changes after it is built need a version bump 
 - Deliver host messages `{"to":"c3"|"*", "m":<message>}` to that pad, or every pad. `{"to":"c3","close":true}` closes that pad.
 - Limits: 16 pads; 16 KB a message; 60 messages a second per pad (drop extras); close a pad that sends non-JSON.
 - With no host connected: refuse pads with WebSocket close code 4001 ("no game running"); the pad page shows "Start Orlis on the TV".
+- Close codes (as built in `tools/pad-hub.mjs`, P1): **4001** no game running (no host, or the host left: every pad is closed with it);
+  **4002** a host replaced by a newer host connection (pads stay and the new host is sent an `open` for each); **4003** full (16 pads);
+  **1003** the pad sent something that is not a JSON object (not JSON, or an array, string or number); **1000** the host closed it.
+  The pad page treats 4001 as "Start Orlis on the TV" and keeps retrying; 4003 as "This game is full"; anything else as a normal drop
+  (rejoin with backoff).
 
 ## Messages (inside `m`), all JSON objects with a `t` field
 **Pad to host**
