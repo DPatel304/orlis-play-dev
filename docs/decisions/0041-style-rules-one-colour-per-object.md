@@ -24,3 +24,11 @@ Not done: fewer palette colours (worlds would look alike), and no redraw of fini
 - `palette.js` gains the shade and highlight rule (`assets.color('touch.mint', 'shade')` and `'light'`), tuned against Pop Party's
   balloons; the creator kit and Create's docs teach the five rules; the maker's instructions follow them.
 - The rules are written for creators in the kit (`kit/creator/`) and for the team in `docs/style-rulebook.md`.
+
+## Owner's change (2026-11-21): rework the existing games too
+The owner prefers the existing games reworked onto the palette and the five rules, rather than waiting until each is next touched. Plan
+item U11, after U10 (the rule in code) lands: first the shared painted asset library (every game draws from it), then Pop Party (the rule is
+tuned to its balloons, so it changes least; extra care, the owner approves before and after), then the small games (Sleepy Bear, Leaf Pile,
+Stack It High, Sky Painter, Animal Gym, Keep It Up, Pterry Flight, Save the Harvest, the Cubion story), one game per step with before and
+after pictures from the sweep tool. The two big ones (Last Known Position, about 680 hand-picked colours, and Tower Defense, about 140)
+come after the Phase 1 release, when they are finished (0021). Raw colour codes removed this way lower the ratchet baseline.
