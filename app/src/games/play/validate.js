@@ -1,5 +1,9 @@
 /* Checks a game description against the vocabulary, and says what's wrong in plain words (and what was meant, when it can tell). */
+import { PALETTE } from '../assets/palette.js';
 import { MOVES, TRIGGERS, RESULTS, SOUNDS, FROM, COLORS, GAME_KEYS, THING_KEYS, LIMITS } from './vocabulary.js';
+
+/* a name from the master palette: 'touch.mint' */
+export const isPaletteName = (c) => { const [g, k] = String(c).split('.'); return !!(PALETTE[g] && k && PALETTE[g][k]); };
 
 /* the closest of some names to one that isn't there, if any is close */
 export function didYouMean(name, options){
@@ -39,7 +43,7 @@ export function validate(spec, env){
       const pieces = Array.isArray(t.piece) ? t.piece : [t.piece];
       if (t.piece === undefined || !pieces.length) bad(where + ': it needs a "piece" from the library.');
       for (const p of pieces) if (typeof p !== 'string' || !env.has(p)) unknown('piece in the library', p, env.pieceNames || [], where);
-      if (t.color !== undefined) for (const c of (Array.isArray(t.color) ? t.color : [t.color])) if (!(c in COLORS) && !/^#[0-9a-f]{6}$/i.test(String(c))) bad(`${where}: colour "${c}" is a colour name (${Object.keys(COLORS).join(', ')}) or #rrggbb.`);
+      if (t.color !== undefined) for (const c of (Array.isArray(t.color) ? t.color : [t.color])) if (!(c in COLORS) && !isPaletteName(c) && !/^#[0-9a-f]{6}$/i.test(String(c))) bad(`${where}: colour "${c}" is a palette name like touch.mint (or one of ${Object.keys(COLORS).join(', ')}).`);
       if (t.size !== undefined) num(t.size, 'size', where);
       if (t.speed !== undefined) num(t.speed, 'speed', where);
       if (t.sway !== undefined) num(t.sway, 'sway', where);

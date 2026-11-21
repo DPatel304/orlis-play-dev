@@ -75,6 +75,8 @@ the library), say so plainly to the grown-up - it can be asked for - and offer t
   left, a goal bar and the hint words under the clock) and the engine fills them in: say them with `"hint"`, `"card"` and
   `"goal"`. Hint words are **a picture and a few words** - `\u{1F388} Pop the balloons!` - because many players can't read
   yet. The skill has the whole layout.
+- **Colours by name.** Colours come from the Orlis palette, like `"color": "touch.mint"` (the skill lists them). Never a colour
+  code such as `#ff9a55`, `rgb(...)` or `hsl(...)`: the checks turn it back.
 - **Smooth.** It runs on a family laptop: keep it light (not hundreds of things at once).
 
 - **Pictures come from the asset library, and only from it.** Name a scene and pieces from the library (the skill lists every

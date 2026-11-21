@@ -39,6 +39,9 @@ else {
       $problems.Add('game.js uses ' + $w + ', which reaches for ' + $f[1] + '. Games can''t - take it out.')
     }
   }
+  # colours come from the master palette by name, never a raw code
+  $cm = [regex]::Match($js, '(?i){{COLOUR_PATTERN}}')
+  if ($cm.Success) { $problems.Add('game.js has a colour code (' + $cm.Value.TrimEnd('(') + '). {{COLOUR_MESSAGE}}') }
   # the game is a description: Orlis.play( ...JSON... ) with nothing but comments before it
   $pm = [regex]::Match($js, '(?s)^\s*(?:(?:/\*.*?\*/|//[^\n]*)\s*)*Orlis\.play\((.*)\)\s*;?\s*$')
   if (-not $pm.Success) { $problems.Add('game.js must be Orlis.play({ ... }) - a description of the game made of the ready-made words in the skill - with nothing but comments before it.') }

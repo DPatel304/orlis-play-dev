@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { generate, OUT } from '../kit/build-creator.mjs';
-import { newGame, check, pack, idOf, FORBIDDEN, DRAWING } from '../src/ui/creator-kit.js';
-import { FORBIDDEN as SERVER_FORBIDDEN, DRAWING as SERVER_DRAWING, checkGame } from '../../server/src/submissions.js';
+import { writeOrlis } from '../src/ui/orlis-file.js';
+import { newGame, check, build, pack, idOf, FORBIDDEN, DRAWING, COLOUR } from '../src/ui/creator-kit.js';
+import { FORBIDDEN as SERVER_FORBIDDEN, DRAWING as SERVER_DRAWING, COLOUR as SERVER_COLOUR, checkGame } from '../../server/src/submissions.js';
 
 test('the kit in the app is built from kit/creator as it is now', async () => {
   assert.equal(readFileSync(OUT, 'utf8').replace(/\r\n/g, '\n'), await generate(), 'run: node kit/build-creator.mjs');
@@ -15,6 +16,25 @@ test("the app's checks and the server's are the same list", () => {
     const ps = newGame({ name: 'x y' }).files['.claude/hooks/' + h];
     for (const [w] of FORBIDDEN) assert.ok(ps.includes(`@('${w.replace(/'/g, "''")}'`), `${h} checks ${w} too`);
   }
+});
+
+test('colours come from the palette by name: a raw code fails in the app, the server and the hooks; a palette name passes', async () => {
+  assert.deepEqual(COLOUR, SERVER_COLOUR, 'the app and the server have the same colour rule');
+  const g = newGame({ name: 'Star Catch' }), man = g.files['orlis.json'];
+  const raw = (code) => g.files['game.js'].replace('"touch.sunflower"', JSON.stringify(code));
+  assert.deepEqual(check({ game: g.files['game.js'], manifest: man }), [], 'the starter uses palette names');
+  for (const code of ['#ff9a55', '#F90', '#ff9a5580', 'rgb(1,2,3)', 'rgba(1, 2, 3, .5)', 'hsl(10 50% 50%)'])
+    assert.match(check({ game: raw(code), manifest: man }).join(), /Use a colour from the palette: assets\.color\('touch\.mint'\)/, code);
+  assert.deepEqual(check({ game: g.files['game.js'].replace('"touch.sunflower"', '"touch.mint"'), manifest: man }), []);
+  assert.deepEqual(check({ game: raw('red'), manifest: man }), [], 'the plain colour words are names, not codes');
+  /* the server, on a packed game (the runtime in front has colour codes of its own: only the game's part is looked at) */
+  const good = await pack({ game: g.files['game.js'], manifest: man });
+  assert.doesNotThrow(() => checkGame(Buffer.from(good.bytes)), 'a palette-name game passes the server');
+  const { code } = build({ game: g.files['game.js'], manifest: man });
+  const tampered = await writeOrlis({ 'manifest.json': JSON.stringify(good.manifest, null, 2), 'game.js': code.replace('"touch.sunflower"', '"#ff9a55"') });
+  assert.throws(() => checkGame(Buffer.from(tampered)), /Use a colour from the palette: assets\.color\('touch\.mint'\)/, 'a raw colour fails the server');
+  const ps = newGame({ name: 'x y' }).files;
+  for (const h of ['check.ps1', 'guard.ps1']) assert.ok(ps['.claude/hooks/' + h].includes(COLOUR.pattern.replace(/'/g, "''")), `${h} has the colour rule`);
 });
 
 test('a new game: the starter, its orlis.json, the rules and the guardrails', () => {

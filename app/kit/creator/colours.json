@@ -1,0 +1,5 @@
+{
+  "pattern": "#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})(?![0-9a-z])|\\b(?:rgb|hsl)a?\\s*\\(",
+  "flags": "i",
+  "message": "Use a colour from the palette: assets.color('touch.mint') - written \"touch.mint\" in the game's description. Raw colour codes can't be used."
+}

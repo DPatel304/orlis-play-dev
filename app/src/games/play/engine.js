@@ -7,7 +7,8 @@ import { MOVES, COLORS } from './vocabulary.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const HAND_REACH = 0.045, SWIPE = 0.45, FLOOR = 0.9, CEIL = 0.2;
-const hexOf = (c) => COLORS[c] || c;
+/* a colour word (red), a palette name (touch.mint, from the master palette via assets.color) or a #rrggbb */
+const hexOf = (c, env) => COLORS[c] || (typeof c === 'string' && c.includes('.') && env && env.assets && env.assets.color ? env.assets.color(c) : c);
 
 export function makePlay(spec, env){
   return { secs: spec.endless ? 600 : (spec.secs ?? 90), endless: !!spec.endless, create(n){ return new PlayRound(spec, n, env); } };
@@ -136,13 +137,13 @@ class PlayRound {
   _fire(th, rule, who, hand){
     for (const res of rule.then){
       const key = typeof res === 'string' ? res : Object.keys(res)[0], v = typeof res === 'object' ? res[key] : undefined;
-      const colour = who >= 0 ? this.env.colors[who] : hexOf(th.color) || '#ffe680';
+      const colour = who >= 0 ? this.env.colors[who] : hexOf(th.color, this.env) || '#ffe680';
       switch (key){
         case 'score': {
           const n = v ?? 1; this.total += n; if (who >= 0) this.score[who] += n;
           this.texts.push({ x: th.x, y: th.y - th.sz * 0.6, text: '+' + n, color: colour, age: 0 }); break;
         }
-        case 'sparkle': this.fx.push({ kind: 'sparkle', x: th.x, y: th.y, size: th.sz * 2.2, color: hexOf(th.color) || '#ffe680', age: 0 }); break;
+        case 'sparkle': this.fx.push({ kind: 'sparkle', x: th.x, y: th.y, size: th.sz * 2.2, color: hexOf(th.color, this.env) || '#ffe680', age: 0 }); break;
         case 'pop': this.fx.push({ kind: 'popring', x: th.x, y: th.y, size: th.sz * 2.4, color: colour, age: 0 }); break;
         case 'vanish': th.dead = true; break;
         case 'grow': th.sz = clamp(th.sz * (v ?? 1.3), 0.02, 0.4); break;
@@ -168,7 +169,7 @@ class PlayRound {
     const A = this.env.assets, secs = this.spec.endless ? 600 : (this.spec.secs ?? 90);
     A.scene(c, W, H, this.spec.scene || 'meadow', { t: this.t, p: clamp(this.t / secs, 0, 1) });
     for (const th of [...this.things].sort((a, b) => a.y - b.y))
-      A.draw(c, th.piece, th.x * W, th.y * H, th.sz * H, { color: th.color ? hexOf(th.color) : undefined, rotate: th.rot, flip: th.flip, t: th.age, shadow: th.d.move === 'bounce' });
+      A.draw(c, th.piece, th.x * W, th.y * H, th.sz * H, { color: th.color ? hexOf(th.color, this.env) : undefined, rotate: th.rot, flip: th.flip, t: th.age, shadow: th.d.move === 'bounce' });
     for (const f of this.fx) if (f.age >= 0) A.draw(c, f.kind, f.x * W, f.y * H, f.big ? H * 0.28 : f.size * H, { color: f.color, t: f.age / 0.6 });
     for (const x of this.texts) A.text(c, x.text, x.x * W, x.y * H, H * 0.05, { color: '#fff', outline: x.color, alpha: 1 });
     const hf = this.spec.hintFor ?? 8;

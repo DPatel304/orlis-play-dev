@@ -11,14 +11,14 @@
    pack({ game, manifest })  the game as a .orlis file: orlis.json as the
                              manifest, and the Orlis runtime in front of the
                              game's own code */
-import { RUNTIME, FORBIDDEN, DRAWING, WORDS, TEMPLATE } from './creator-kit.gen.js';
+import { RUNTIME, FORBIDDEN, DRAWING, COLOUR, WORDS, TEMPLATE } from './creator-kit.gen.js';
 import { parseGame, validate } from '../games/play/validate.js';
 import { playEnv } from '../games/play/env.js';
 import { badWords } from '../../kit/creator/words.js';
 import { writeOrlis } from './orlis-file.js';
 import { KIT } from '../kit.js';
 
-export { FORBIDDEN, DRAWING, WORDS };
+export { FORBIDDEN, DRAWING, COLOUR, WORDS };
 const ID = /^[a-z0-9][a-z0-9-]{1,40}$/, VER = /^\d+\.\d+(\.\d+)?$/;
 const UNSAFE_PICTURE = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*image/i;
 /* a cover: an SVG picture in shapes - no words, links or images (the same rule as the server's) */
@@ -95,6 +95,9 @@ export function check({ game, manifest }){
     const seen = new Set();
     for (const [w, why] of FORBIDDEN) if (game.includes(w) && !seen.has(why)){ seen.add(why); problems.push(`game.js uses ${w.replace(/\($/, '')}, which reaches for ${why}. Games can't - take it out.`); }
     for (const [w, why] of DRAWING) if (game.includes(w) && !seen.has(why)){ seen.add(why); problems.push(`game.js uses ${w.replace(/\($/, '')}, which is ${why}. Games can't draw or run code of their own: describe the game with Orlis.play, using the ready-made pieces and behaviours the skill lists (and ask for one that isn't there).`); }
+    /* colours come from the master palette by name, never a raw code (decision 0040) */
+    const raw = game.match(new RegExp(COLOUR.pattern, COLOUR.flags));
+    if (raw) problems.push(`game.js has a colour code (${raw[0].replace(/\($/, '')}). ${COLOUR.message}`);
     /* the game is a description, in the ready-made words (games/play/): parsed, and every word checked */
     const parsed = parseGame(game);
     if (parsed.error) problems.push(parsed.error);

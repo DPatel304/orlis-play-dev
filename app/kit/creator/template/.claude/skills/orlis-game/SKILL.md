@@ -114,8 +114,8 @@ description, so every game looks like an Orlis game and only pieces that have be
 
 - `"scene": "meadow"` - the whole background.
 - `"piece": "giraffe"` - what a thing looks like; a list (`["bunny", "frog"]`) picks one at random for each. `{ "become": "bunny" }` changes it.
-- `"color": "red"` - for the pieces that take a colour (balloon, star, heart, block, cloud, ring, dot...); a colour name
-  (red, orange, yellow, green, blue, purple, pink, gold), `#rrggbb`, or a list to pick from.
+- `"color": "touch.mint"` - for the pieces that take a colour (balloon, star, heart, block, cloud, ring, dot...); a name from the
+  Orlis palette (see **Colours** below), or a list of names to pick from.
 - `"size"` is the height as a share of the screen; the width follows from the piece (`aspect` below).
 
 A name that isn't in the library is turned away with "did you mean...?". If a game truly needs a piece that isn't here (a boat, a
@@ -140,6 +140,17 @@ scores         top left             (automatic)                             a co
 Hint words are **a picture and at most four words**; many players can't read yet. The first words arrive big in the middle,
 shrink into place and are said aloud once. Colours mean one thing: a player's colour is always theirs, and orange arrows (the
 move card's) always mean "move this way".
+
+## Colours
+
+Colours come from the Orlis master palette, **by name**, never as a code. In the description write the name, like
+`"color": "touch.mint"` (it is what `Orlis.assets.color('touch.mint')` gives). **Never write `#ff9a55`, `rgb(...)` or `hsl(...)`**:
+the checks turn a game with a colour code back. The palette is one list, so it can be tuned later and every game follows.
+
+{{PALETTE}}
+
+Pick the **touch** colours for things to catch and pop (they are the brightest things on screen); never for scenery. The plain
+words red, orange, yellow, green, blue, purple, pink and gold still work, but the palette names are better.
 
 ## The Orlis look and feel
 

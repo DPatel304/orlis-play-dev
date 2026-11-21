@@ -96,4 +96,8 @@ foreach ($f in $forbidden) {
     Deny ('That change uses ' + $w + ', which reaches for ' + $f[1] + '. Orlis Play games can''t - leave it out and find another way.')
   }
 }
+if ($rel -eq 'game.js') {
+  $cm = [regex]::Match($text, '(?i){{COLOUR_PATTERN}}')
+  if ($cm.Success) { Deny ('That change has a colour code (' + $cm.Value.TrimEnd('(') + '). {{COLOUR_MESSAGE}}') }
+}
 exit 0

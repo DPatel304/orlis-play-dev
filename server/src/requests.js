@@ -18,6 +18,7 @@
    them, and whatever makes games takes the next one, then hands back the
    game file (or says why it couldn't). Today that's the laptop's own maker;
    with the server in the cloud, it'd be the laptop reaching the cloud. */
+import { PALETTE } from '../../app/src/games/assets/palette.js';
 import { Fail } from './http.js';
 import { now } from './db.js';
 import { newId } from './secure.js';
@@ -110,6 +111,9 @@ export function sentence(r, { likeName = null, gameName = null } = {}){
     (LOOKS[r.look] || r.lookText) ? `The look: ${LOOKS[r.look] || r.lookText}.` : ''].filter(Boolean).join(' ');
 }
 
+/* what the maker tells Claude about colours (decision 0040): names from the master palette, never a code */
+const COLOUR_RULE = `assets.color('touch.mint'), written "touch.mint" in the description; the groups are ${Object.keys(PALETTE).join(', ')}, listed in the SKILL; never a #rrggbb, rgb() or hsl() code - the checks turn it back`;
+
 /* The prompt for Claude Code, from the request. The person's own words are
    quoted as a description - never as instructions about anything else. */
 export function promptFor(r, { likeName = null, gameName = null, sum } = {}){
@@ -119,7 +123,7 @@ export function promptFor(r, { likeName = null, gameName = null, sum } = {}){
 
 What they asked: ${sum}${quote(r.words)}
 
-Make just that change and keep everything else about the game the same. Leave its id alone. When it's done, the game must pass Orlis Play's checks.`;
+Make just that change and keep everything else about the game the same. Leave its id alone. Colours come from the Orlis palette by name (${COLOUR_RULE}). When it's done, the game must pass Orlis Play's checks.`;
   }
   const view = r.view === 'character'
     ? 'Third person: each player is shown as their character (their avatar) in the world, moving as they move - like Last Known Position.'
@@ -128,7 +132,7 @@ Make just that change and keep everything else about the game the same. Leave it
 
 The game: ${sum}${r.view ? `\n\nHow it's seen: ${view}` : ''}${r.action ? `\n\nThe main thing you do: ${ACTIONS[r.action].label}.${ACTIONS[r.action].like ? ` (Orlis Play's ${ACTIONS[r.action].like} does something similar, if it helps to think of it.)` : ''}` : ''}${r.name ? `\n\nIts name: ${r.name}.` : ''}${(LOOKS[r.look] || r.lookText) ? `\n\nThe look and feel: ${LOOKS[r.look] || r.lookText} - the colours and mood of its world and its icon.` : ''}${quote(r.words)}
 
-Keep it simple and fun for young children, in Orlis Play's house style, with nothing to lose and nothing scary. Fill in orlis.json (a name, a blurb, about, the moves, an icon, and a cover: a picture of the game, as the SKILL describes). When it's done, the game must pass Orlis Play's checks.`;
+Keep it simple and fun for young children, in Orlis Play's house style, with nothing to lose and nothing scary. Fill in orlis.json (a name, a blurb, about, the moves, an icon, and a cover: a picture of the game, as the SKILL describes). Colours in game.js come from the Orlis palette by name (${COLOUR_RULE}). When it's done, the game must pass Orlis Play's checks.`;
 }
 
 export function requests(db, files, shop, sent, log = { add(){} }, notify = () => {}){

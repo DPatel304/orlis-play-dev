@@ -19,10 +19,10 @@ Orlis.play({
       "name": "star",
       "piece": "star",
       "color": [
-        "yellow",
-        "yellow",
-        "yellow",
-        "gold"
+        "touch.sunflower",
+        "touch.sunflower",
+        "touch.sunflower",
+        "ui.gold"
       ],
       "size": 0.085,
       "spins": true,

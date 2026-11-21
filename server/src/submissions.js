@@ -53,6 +53,12 @@ export const DRAWING = [
   ['=>', 'game code of its own'], ['function', 'game code of its own'],
   ['class ', 'game code of its own']
 ];
+/* a game made in Create names its colours from the master palette, never a raw code (decision 0040; kit/creator/colours.json - the same rule) */
+export const COLOUR = {
+  pattern: '#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})(?![0-9a-z])|\\b(?:rgb|hsl)a?\\s*\\(',
+  flags: 'i',
+  message: "Use a colour from the palette: assets.color('touch.mint') - written \"touch.mint\" in the game's description. Raw colour codes can't be used."
+};
 const OWN = '\nOrlis.manifest=';
 const UNSAFE_PICTURE = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*image/i;
 
@@ -81,6 +87,9 @@ export function checkGame(bytes){
     for (const [what, why] of FORBIDDEN) if (js.includes(what) && !seen.has(why)){ seen.add(why); problems.push(`it reaches for ${why} (${what.replace(/\($/, '')})`); }
     const own = js.indexOf(OWN) >= 0 ? js.slice(js.indexOf(OWN)) : '';
     if (own && !own.includes('Orlis.play(')) problems.push('it has no Orlis.play( ... ) - a game made in Create is a description of the game');
+    const body = own.slice(own.indexOf('\n', 1) + 1);    /* (the game itself: after the manifest line, whose icon has colours of its own) */
+    const raw = body.match(new RegExp(COLOUR.pattern, COLOUR.flags));
+    if (raw) problems.push(`it has a colour code (${raw[0].replace(/\($/, '')}). ${COLOUR.message}`);
     for (const [what, why] of DRAWING) if (own.includes(what) && !seen.has(why)){ seen.add(why); problems.push(`it has ${why} (${what.replace(/\($/, '').trim()}) - games are described with Orlis.play and draw with the Orlis asset library`); }
   }
   /* words no game for children has - in its code or its Store text */
