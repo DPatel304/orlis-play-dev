@@ -123,14 +123,17 @@ const toneRaw = (a, which) => color(a.c2n, which);
 const toneT = (a, which) => color(a.t2n, which);
 
 /* ---------- the body parts, in the character's own proportions ---------- */
-const SIZE = (S) => ({ hw: S * 0.46, hh: S * 0.42, bw: S * 0.34, bh: S * 0.27 });
+/* the Chibi body (the owner's choice): the cube head is about 1.25 times the body's width, a boxy torso, short chunky legs with small rounded
+   feet, arms a little away from the body with round mitten hands. All numbers are fractions of the head's size S; tot is the whole height. */
+const BODY = { tot: 0.88, bw: 0.37, bh: 0.28, r: 0.075, legW: 0.14, armW: 0.1, out: 0.075, armLen: 0.8, hand: 0.058 };
+const SIZE = (S) => ({ hw: S * 0.46, hh: S * 0.42, bw: S * BODY.bw, bh: S * BODY.bh });
 
 /* the torso: origin at the middle of its top edge, bw wide, bh tall (it stretches to a player's real body in figure) */
 function drawTorso(x, a, S, bw, bh){
   const c = a.c;
   x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
-  x.fillStyle = a.fit === 'plain' || a.fit === 'overalls' ? c : a.c2; rr(x, -bw / 2, 0, bw, bh, S * 0.05); x.fill();
-  x.save(); rr(x, -bw / 2, 0, bw, bh, S * 0.05); x.clip();
+  x.fillStyle = a.fit === 'plain' || a.fit === 'overalls' ? c : a.c2; rr(x, -bw / 2, 0, bw, bh, S * BODY.r); x.fill();
+  x.save(); rr(x, -bw / 2, 0, bw, bh, S * BODY.r); x.clip();
   if (a.fit === 'stripes'){ x.fillStyle = c; for (let k = 0; k < 4; k++) x.fillRect(-bw / 2, bh * (k * 0.26 + 0.06), bw, bh * 0.12); }
   if (a.fit === 'dots'){ x.fillStyle = c; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++){ x.beginPath(); x.arc(-bw * 0.3 + i * bw * 0.3 + (j % 2) * bw * 0.08, bh * (0.2 + j * 0.3), S * 0.018, 0, 7); x.fill(); } }
   if (a.fit === 'stars'){ x.fillStyle = c; const r = S * 0.055; x.beginPath(); for (let k = 0; k < 10; k++){ const an = -Math.PI / 2 + k * Math.PI / 5, R = k % 2 ? r * 0.45 : r; x.lineTo(Math.cos(an) * R, bh * 0.45 + Math.sin(an) * R); } x.closePath(); x.fill(); }
@@ -138,7 +141,7 @@ function drawTorso(x, a, S, bw, bh){
   if (a.fit === 'hoodie'){ x.fillStyle = toneRaw(a, 'shade'); x.fillRect(-bw * 0.22, bh * 0.55, bw * 0.44, bh * 0.3); }
   x.fillStyle = alpha('shade.shadow', 0.18); x.fillRect(bw * 0.18, 0, bw * 0.4, bh);
   x.restore();
-  x.strokeStyle = INK(); x.lineWidth = S * 0.016; rr(x, -bw / 2, 0, bw, bh, S * 0.05); x.stroke();
+  x.strokeStyle = INK(); x.lineWidth = S * 0.016; rr(x, -bw / 2, 0, bw, bh, S * BODY.r); x.stroke();
   if (a.extra === 'scarf'){ x.fillStyle = a.c2 === c ? color('ui.gold') : a.t2; rr(x, -bw * 0.55, -S * 0.01, bw * 1.1, S * 0.05, S * 0.025); x.fill(); rr(x, bw * 0.1, S * 0.02, S * 0.05, S * 0.1, S * 0.02); x.fill(); }
   x.restore();
 }
@@ -151,18 +154,19 @@ function drawCape(x, a, S, bw, bh){
 /* a leg: points down from the hip; the foot is an ink pill */
 function drawLeg(x, a, S, pts, thick = false){
   x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
-  line(x, pts, S * (thick ? 0.16 : 0.11) + S * 0.032, INK());
-  line(x, pts, S * (thick ? 0.16 : 0.11), a.fit === 'overalls' ? toneRaw(a, 'shade') : a.shade);
+  line(x, pts, S * (thick ? 0.16 : BODY.legW) + S * 0.032, INK());
+  line(x, pts, S * (thick ? 0.16 : BODY.legW), a.fit === 'overalls' ? toneRaw(a, 'shade') : a.shade);
   x.restore();
 }
-function drawFoot(x, S, px, py, big = false){ const k = big ? 1.4 : 1; x.fillStyle = INK(); rr(x, px - S * 0.06 * k, py - S * 0.045 * k, S * 0.12 * k, S * 0.045 * k, S * 0.02); x.fill(); }
+/* a small rounded foot, ink-dark, a little wider than the leg, peeking out under it: px is its middle, py the ground under it */
+function drawFoot(x, S, px, py, big = false){ const k = big ? 1.3 : 1, w = S * 0.17 * k, h = S * 0.06 * k; x.fillStyle = INK(); rr(x, px - w / 2, py - h, w, h, h * 0.5); x.fill(); }
 /* an arm: a sleeve along the points, a hand at the end; the left one is in shade */
 function drawArm(x, a, S, pts, left, thick = false){
   x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
   const sleeve = a.fit === 'hoodie' ? a.c2 : a.c;
-  line(x, pts, S * (thick ? 0.13 : 0.08) + S * 0.032, INK());
-  line(x, pts, S * (thick ? 0.13 : 0.08), left ? (a.fit === 'hoodie' ? toneRaw(a, 'shade') : a.shade) : sleeve);
-  x.fillStyle = a.light; const e = pts[pts.length - 1]; dot(x, e[0], e[1], S * (thick ? 0.062 : 0.038)); x.fill(); x.strokeStyle = INK(); x.lineWidth = S * 0.016; x.stroke();
+  line(x, pts, S * (thick ? 0.13 : BODY.armW) + S * 0.032, INK());
+  line(x, pts, S * (thick ? 0.13 : BODY.armW), left ? (a.fit === 'hoodie' ? toneRaw(a, 'shade') : a.shade) : sleeve);
+  x.fillStyle = a.light; const e = pts[pts.length - 1]; dot(x, e[0], e[1], S * (thick ? 0.062 : BODY.hand)); x.fill(); x.strokeStyle = INK(); x.lineWidth = S * 0.016; x.stroke();
   x.restore();
 }
 
@@ -210,29 +214,40 @@ const ARMS = {
    arms: [points after the shoulder, left, right] } */
 const mirror = (m) => ({ ...m, legs: [m.legs[1], m.legs[0]].map(([k, f]) => [k && [-k[0], k[1]], [-f[0], f[1]]]), arms: [m.arms[1], m.arms[0]].map(pts => pts.map(([px, py]) => [-px, py])) });
 const MOVES = {
-  /* a clear stride, seen from the side: one leg forward and planted, one back on its toe, the arms swinging against the legs, a small bob */
+  /* a clear stride, seen from the side: one foot forward and planted, one back, the arms swinging against the legs, a small bob */
   march: (i) => {
-    const A = { yo: 0, legs: [[null, [-0.19, -0.035]], [null, [0.21, 0]]], arms: [[[-0.3, -0.36]], [[0.22, -0.2]]] };
-    const B = { yo: -0.014, legs: [[null, [-0.08, 0]], [[0.13, -0.15], [0.1, -0.07]]], arms: [[[-0.23, -0.25]], [[0.23, -0.25]]] };
+    const A = { yo: 0, legs: [[null, [-0.17, -0.02]], [null, [0.19, 0]]], arms: [[[-0.31, -0.22]], [[0.27, -0.17]]] };
+    const B = { yo: -0.012, legs: [[null, [-0.06, 0]], [null, [0.09, -0.05]]], arms: [[[-0.27, -0.19]], [[0.27, -0.19]]] };
     return [A, B, mirror(A), mirror(B)][i % 4];
   },
   /* a longer stride, leaving the ground between steps, leaning into it */
   run: (i) => {
-    const A = { yo: -0.07, rot: 0.3, legs: [[[-0.1, -0.13], [-0.29, -0.13]], [[0.15, -0.2], [0.29, -0.1]]], arms: [[[-0.3, -0.45], [-0.38, -0.33]], [[0.3, -0.4], [0.36, -0.55]]] };
-    const B = { yo: 0, rot: 0.3, legs: [[[-0.1, -0.15], [-0.2, -0.06]], [null, [0.24, 0]]], arms: [[[-0.28, -0.42], [-0.3, -0.3]], [[0.3, -0.42], [0.32, -0.5]]] };
+    const A = { yo: -0.05, rot: 0.3, legs: [[[-0.16, -0.1], [-0.26, -0.09]], [[0.16, -0.11], [0.27, -0.03]]], arms: [[[-0.31, -0.33], [-0.36, -0.25]], [[0.31, -0.3], [0.33, -0.42]]] };
+    const B = { yo: 0, rot: 0.3, legs: [[[-0.14, -0.07], [-0.2, -0.02]], [null, [0.2, 0]]], arms: [[[-0.29, -0.3], [-0.3, -0.22]], [[0.3, -0.3], [0.31, -0.38]]] };
     return [A, B, mirror(A), mirror(B)][i % 4];
   },
-  /* off the ground: a squat to spring from, then up with the knees tucked and the arms high (the shadow stays on the grass) */
+  /* off the ground, in four stills: the landing squash (the whole body squashes, feet apart), the take-off (legs stretched down, toes pointed,
+     arms up), the top (knees tucked out to the sides, arms high), the way down (legs reaching for the ground). The shadow stays on the grass. */
   jump: (i) => {
-    if (i % 4 === 0) return { yo: 0.04, squash: 0.07, legs: [[[-0.13, -0.12], [-0.12, 0]], [[0.13, -0.12], [0.12, 0]]], arms: [[[-0.27, -0.28]], [[0.27, -0.28]]] };
-    const up = i % 4 === 2 ? 0.34 : 0.22;
-    return { yo: -up, legs: [[[-0.12, -0.13 - up], [-0.09, -0.07 - up]], [[0.12, -0.13 - up], [0.09, -0.07 - up]]], arms: [[[-0.3, -0.62 - up * 0.5], [-0.3, -0.8 - up * 0.5]], [[0.3, -0.62 - up * 0.5], [0.3, -0.8 - up * 0.5]]] };
+    const arms = (up, k) => [[[-0.31 - k * 0.04, -0.52 - up], [-0.3 - k * 0.07, -0.68 - up]], [[0.31 + k * 0.04, -0.52 - up], [0.3 + k * 0.07, -0.68 - up]]];
+    if (i % 4 === 0) return { yo: 0.02, squash: 0.09, legs: [[null, [-0.15, 0]], [null, [0.15, 0]]], arms: [[[-0.34, -0.17]], [[0.34, -0.17]]] };
+    if (i % 4 === 1) return { yo: -0.2, legs: [[null, [-0.07, -0.2 + 0.03]], [null, [0.07, -0.2 + 0.03]]], arms: arms(0.2, 0) };
+    if (i % 4 === 2) return { yo: -0.32, legs: [[[-0.2, -0.32 - 0.1], [-0.1, -0.32 - 0.035]], [[0.2, -0.32 - 0.1], [0.1, -0.32 - 0.035]]], arms: arms(0.32, 1) };
+    return { yo: -0.17, legs: [[null, [-0.1, -0.17 + 0.02]], [null, [0.1, -0.17 + 0.02]]], arms: arms(0.17, 0.5) };
   },
   /* frozen: arms out, shivering */
-  freeze: (i) => ({ yo: 0, dx: (i % 2 ? 1 : -1) * 0.009, arms: [[[-0.37, -0.45]], [[0.37, -0.45]]] })
+  freeze: (i) => ({ yo: 0, dx: (i % 2 ? 1 : -1) * 0.009, arms: [[[-0.4, -0.29]], [[0.4, -0.29]]] })
 };
-export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false, face: alive = null } = {}){
-  const a = resolve(look), S = h, { hh, bw, bh } = SIZE(S), by = -S + hh + S * 0.015, legH = S - (by + S) - bh + S * 0.02;
+/* the move cards' drawings were made for taller legs and arms: this carries one over to the short Chibi body (legs scaled about the ground,
+   arms about the shoulder) */
+function chibiFit(mv){
+  const sx = BODY.bw / 2 + 0.03, sy = -BODY.tot + 0.42 + 0.015 + 0.06;
+  return { ...mv, yo: mv.yo * 0.43,
+    legs: mv.legs && mv.legs.map(([k, f]) => [k && [k[0] * 0.8, k[1] * 0.43], [f[0] * 0.8, f[1] * 0.43]]),
+    arms: mv.arms.map((ar, i) => ar.map(([px, py]) => { const d = i ? 1 : -1; return [d * sx + (px - d * sx) * 0.8, sy + (py - sy) * 0.8]; })) };
+}
+export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false, face: alive = null, still = false } = {}){
+  const a = resolve(look), S = h, { hh, bw, bh } = SIZE(S), by = -S * BODY.tot + hh + S * 0.015, legH = S - (by + S) - bh + S * 0.02;
   /* the other moves (squat, lean, flap, dance ...) come from the move cards' drawings (figure.js POSES), carried over to this body */
   let mv = null;
   if (!(pose in ARMS)){
@@ -244,12 +259,15 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
       mv = { yo: (q.yOff || 0) * V / S, rot: (q.lean || 0) * 0.35,
         legs: q.legs ? q.legs.map(([k, f]) => [[fx(k[0]), fy(k[1])], [fx(f[0]), fy(f[1])]]) : null,
         arms: q.arms.map(ar => ar.map(([px, py]) => [fx(px), (sy1 + (py + 0.6) * V) / S])) };
+      mv = chibiFit(mv);
     }
   }
-  const yo = mv ? mv.yo * S : 0, rot = mv && mv.rot || 0, dx = mv && mv.dx ? mv.dx * S : 0;
+  /* standing still he breathes: a gentle bob (about 2% of his height, every 2.5 s) and a slight sway of the arms (not for the small portraits) */
+  const idle = pose === 'stand' && !mv && !still && !back, breath = idle ? Math.sin(t * Math.PI * 2 / 2.5) : 0;
+  const yo = mv ? mv.yo * S : breath * S * 0.01, rot = mv && mv.rot || 0, dx = mv && mv.dx ? mv.dx * S : 0;
   const sy0 = by + S * 0.06;
   /* their shadow on the ground (outside the cut: it has no paper edge) */
-  c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x, base, S * 0.27, S * 0.04, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x, base, S * 0.3, S * 0.04, 0, 0, Math.PI * 2); c.fill();
   c.save(); c.translate(x + dx, base);
   const sq = mv && mv.squash || 0; if (sq) c.scale(1 + sq * 0.7, 1 - sq);
   live = alive;
@@ -259,14 +277,14 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
     cc.save(); lean(); cc.save(); cc.translate(0, by + yo); drawCape(cc, a, S, bw, bh); cc.restore(); cc.restore();
     if (mv && mv.legs){
       mv.legs.forEach(([kn, ft], i) => {
-        const d = i ? 1 : -1, hip = [d * bw * 0.24, ly + yo + S * 0.05], fp = [ft[0] * S, ft[1] * S];
-        const end = [fp[0], Math.max(fp[1] - S * 0.05, hip[1] + S * 0.02)];
+        const d = i ? 1 : -1, hip = [d * bw * 0.28, ly + yo + S * 0.05], fp = [ft[0] * S, ft[1] * S];
+        const end = [fp[0], Math.max(fp[1] - S * 0.07, hip[1] + S * 0.02)];
         drawLeg(cc, a, S, kn ? [hip, [kn[0] * S, kn[1] * S], end] : [hip, end]);
         drawFoot(cc, S, fp[0], fp[1]);
       });
     } else {
-      for (const d of [-1, 1]){ drawLeg(cc, a, S, [[d * bw * 0.24, ly + yo + S * 0.05], [d * bw * 0.24, ly + legH - S * 0.05]]); }
-      drawFoot(cc, S, -bw * 0.26, 0); drawFoot(cc, S, bw * 0.26, 0);
+      for (const d of [-1, 1]){ drawLeg(cc, a, S, [[d * bw * 0.28, ly + yo + S * 0.05], [d * bw * 0.28, ly + legH - S * 0.07]]); }
+      drawFoot(cc, S, -bw * 0.28, 0); drawFoot(cc, S, bw * 0.28, 0);
     }
     cc.save(); lean();
     const reach = ARMS[pose] || ARMS.stand;
@@ -274,11 +292,11 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
       const sx = d * (bw * 0.5 + S * 0.03), sy = sy0 + yo;
       let pts;
       if (mv && mv.arms){ pts = [[sx, sy], ...mv.arms[d < 0 ? 0 : 1].map(([px, py]) => [px * S, py * S])]; }
-      else { const up = reach(d, S, bw, by, t); pts = up ? [[sx, sy], [(sx + up[0]) / 2 + d * S * 0.02, (sy + up[1]) / 2], up] : [[sx, sy], [sx, by + bh * 0.88]]; }
+      else { const up = reach(d, S, bw, by, t); pts = up ? [[sx, sy], [(sx + up[0]) / 2 + d * S * 0.02, (sy + up[1]) / 2], up] : [[sx, sy], [sx + d * S * BODY.out + (idle ? Math.sin(t * Math.PI * 2 / 2.5 + 1.3 + d) * S * 0.008 : 0), sy + (by + bh * 0.88 - sy) * BODY.armLen]]; }
       drawArm(cc, a, S, pts, d < 0);
     }
     cc.save(); cc.translate(0, by + yo); drawTorso(cc, a, S, bw, bh); cc.restore();
-    cc.save(); cc.translate(0, -S + yo); drawHead(cc, a, S, back, t); cc.restore();
+    cc.save(); cc.translate(0, -S * BODY.tot + yo); drawHead(cc, a, S, back, t); cc.restore();
     cc.restore();
   });
   live = null;
@@ -357,7 +375,7 @@ function figureFlat(c, a, P, seen, S, hx, hy, tilt, t, hw, hh){
   const lh = seen(L_HIP) ? P(L_HIP) : down(ls, S * 0.4), rh = seen(R_HIP) ? P(R_HIP) : down(rs, S * 0.4);
   const ms = [(ls[0] + rs[0]) / 2, (ls[1] + rs[1]) / 2], mh = [(lh[0] + rh[0]) / 2, (lh[1] + rh[1]) / 2];
   const D = Math.hypot(mh[0] - ms[0], mh[1] - ms[1]), ang = Math.atan2(-(mh[0] - ms[0]), mh[1] - ms[1]);
-  const bh = Math.max(S * 0.27, D + S * 0.05);
+  const bh = Math.max(S * BODY.bh, D + S * 0.05);
   /* the cape, then the legs and feet */
   c.save(); c.translate(ms[0], ms[1]); c.rotate(ang); c.translate(0, -S * 0.03); drawCape(c, a, S, bw, bh); c.restore();
   for (const [h, k, an] of [[lh, L_KN, L_AN], [rh, R_KN, R_AN]]){
