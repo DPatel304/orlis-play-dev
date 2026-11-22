@@ -99,7 +99,7 @@ export function openMaker(profile, { onDone = () => {} } = {}){
     return g;
   };
   const headPic = (c, sz, l) => head(c, sz / 2, sz * 0.5, sz * 0.3, l, 1.3);
-  const bodyPic = (c, sz, l) => body(c, sz / 2, sz * 0.97, sz * 0.9, l, 1.3);
+  const bodyPic = (c, sz, l) => body(c, sz / 2, sz * 0.97, sz * 0.9, l, 1.3, 'stand', { still: true });
   const favs = PARTS.colour.map(n => 'fav.' + n);
 
   function fill(){

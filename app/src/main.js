@@ -1,4 +1,5 @@
 import './old-names.js';   /* (first: the old Astra Park settings, moved to their Orlis names) */
+import './ui/paper-cut.js';   /* (the character's paper-cut edge; see avatar-art.js) */
 import { week } from './ui/week.js';
 import { launch } from './ui/launch.js';
 import { toast } from './ui/toast.js';

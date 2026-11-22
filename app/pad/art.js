@@ -36,7 +36,7 @@ export function paintPerson(cv, person, px = 200) {
   /* (Guest has no look: Cubo, the blue one, drawn as the same character as everyone) */
   const { c, s } = ready(cv, px);
   const look = normalizeLook(person && person.avatar);       /* (looks saved before the one character are carried over; none is Cubo) */
-  try { body(c, s / 2, s * 0.97, s * 0.9, look, 0, 'stand'); } catch { try { head(c, s / 2, s / 2, s * 0.32, look, 0); } catch { /* blank */ } }
+  try { body(c, s / 2, s * 0.97, s * 0.9, look, 0, 'stand', { still: true }); } catch { try { head(c, s / 2, s / 2, s * 0.32, look, 0); } catch { /* blank */ } }
 }
 
 /* the colour a person is shown on: their avatar's favourite colour, else one from the palette by position (a guest is calm grey) */

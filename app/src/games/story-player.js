@@ -11,7 +11,8 @@
 import { color, alpha } from './assets/palette.js';
 import { voice } from '../audio/voice.js';
 import { sfx } from '../audio/sound.js';
-import { drawFigure } from './figure.js';
+import { body, cuboFigure } from '../ui/avatar-art.js';
+import { CUBO } from '../ui/look.js';
 import { hud as hudState, spoken } from './hud.js';
 import { PLAYER_COLORS } from '../tracking/pose.js';
 import { MEADOW, AHEAD, PLACES } from '../stories/cubions-long-way-home.js';
@@ -36,6 +37,10 @@ const ANIMALS = [
   { id: 'bird', e: '🐦', at: PLACES.bird + AHEAD, size: 100, y: -250, off: -120 },
   { id: 'frog', e: '🐸', at: PLACES.frog + AHEAD, size: 110, y: 14, off: -270 }
 ];
+/* the children in the window: the same character, each a different favourite */
+const KIDS = [{ colour: 'orange', top: 'tuft', outfit: 'stripes' }, { colour: 'pink', top: 'bow', face: { eyes: 'happy', mouth: 'grin' } },
+  { colour: 'green', top: 'cap', outfit: 'dots' }, { colour: 'yellow', top: 'beanie', face: { eyes: 'wide', mouth: 'smile' } }]
+  .map(k => ({ ...CUBO, face: { eyes: 'happy', mouth: 'smile' }, ...k }));
 const readTime = (text) => text.trim().split(/\s+/).length * 0.4 + 0.7;
 
 export function makeStory(story){
@@ -170,10 +175,10 @@ class Story {
     else this.meadow(c, cam, vw, dusk);
     /* the animals */
     if (meadow) this.animals(c, cam, vw);
+    /* the home window, at the end (Cubo stands in front of it) */
+    if (meadow) this.house(c, cam, vw, dusk);
     /* Cubo */
     this.cubo(c, vw);
-    /* the home window, at the end */
-    if (meadow) this.house(c, cam, vw, dusk);
     /* streaks, when the world is rolling fast */
     if (this.speed > 150){ c.strokeStyle = alpha('earth.snow', 0.33); c.lineWidth = 3; for (let i = 0; i < 6; i++){ const x = (((i * 211 - cam * 1.2) % vw) + vw) % vw, y = 300 + i * 50; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 60, y); c.stroke(); } }
     c.restore();
@@ -225,9 +230,9 @@ class Story {
     const b = this.beat, moving = this.speed > 12;
     let pose = b && (b.card || b.pose) || (moving ? (this.speed > 240 ? 'run' : 'march') : 'freeze');
     if (b && b.card && !(this.age > 0.2)) pose = 'freeze';
-    const x = CUBO_AT * vw + (b && b.wobble ? Math.sin(this.t * 14) * 3 * this.wob : 0), sz = 100;
-    c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x, GROUND + 22, 50, 9, 0, 0, 7); c.fill();
-    drawFigure(c, pose, x, GROUND + 16 - sz * 0.7, sz, this.t, b && b.face || null, false);
+    const x = CUBO_AT * vw + (b && b.wobble ? Math.sin(this.t * 14) * 3 * this.wob : 0), h = 210;
+    const about = !!(b && b.t && voice.speaking && !/^[“"]/.test(b.t) && /\b(Cubo|he|He|his|him)\b/.test(b.t));
+    cuboFigure(c, x, GROUND + 22, h, pose, this.t, b && b.face || null, { look: moving ? [1, 0] : null, talk: about });
   }
   house(c, cam, vw, dusk){
     const hx = PLACES.home + 400 - cam; if (hx < -400 || hx > vw + 400) return;
@@ -239,8 +244,9 @@ class Story {
     c.fillStyle = glow; c.fillRect(-340, -420, 680, 560);
     c.fillStyle = color('sky.sunGlow'); c.fillRect(-150, -270, 300, 200);
     c.fillStyle = color('night.sky'); c.fillRect(-80, -240, 160, 100); c.fillStyle = alpha('sky.high', 0.6 + 0.3 * Math.sin(this.t * 3)); c.fillRect(-72, -232, 144, 84);
-    c.fillStyle = color('earth.bark', 'shade');
-    [-100, -40, 40, 100].forEach((kx, i) => { const w = Math.sin(this.t * 4 + i * 1.3) * 9; c.beginPath(); c.arc(kx + w, -100 + Math.abs(w), 14, 0, 7); c.fill(); c.fillRect(kx + w - 9, -86 + Math.abs(w), 18, 24); });
+    [-105, -35, 35, 105].forEach((kx, i) => { const w = Math.sin(this.t * 4 + i * 1.3) * 7; body(c, kx + w, -22 + Math.abs(w) * 0.5, 150, KIDS[i], this.t + i, 'stand'); });
+    /* the sill hides them from the waist down: the wall's own colour, drawn over their legs */
+    c.fillStyle = color('shade.line'); c.fillRect(-160, -70, 320, 70); c.fillStyle = color('earth.path'); c.fillRect(-160, -76, 320, 8);
     c.restore();
   }
   /* the moon in the corner: how much story is left */
