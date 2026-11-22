@@ -61,3 +61,16 @@ Readings I chose where `docs/specs/session.md` was open (change any you disagree
 - **No hub (plain browser)**: the card still shows (no QR); a game that needs a phone can't start. A calmer message there is not built.
 - Session got `canStart`. Settings has a "Phones" group with "See the list" opening the Trusted phones overlay (its look follows the mockup; it is an overlay, not a Settings page).
 - Not covered: wave-to-Start on a real camera (Start is an ordinary `.btn`, so the cursor's wave works; tested with a mouse click), real phones.
+
+## 2026-11-22, K3 (Peekaboo world and rules), Sonnet
+Readings of the spec where it was open (change any you disagree with):
+- **Stick y > 0 is away from the TV (+z).** K5's pad must send it that way (or flip it in the host).
+- **Rustle distance** is measured to the bush's edge: within `r + 1.5` of its centre. Rustle events repeat at most every 0.4 s while moving, and the first move after standing still rustles at once. Works in hide and seek.
+- **Pot `out`** puts the hider at the pot's front edge (the side toward the TV, `z - r - 0.05`).
+- **foundBy credit:** when several lanterns light the hider in one step, the closest one gets the credit (the meter only rises once).
+- **near** = `(nearest - 1.5) / 4.5`, clamped 0..1 (0 when lit, 1 at 6+ steps, 1 when no lantern or outside seek).
+- **Round restarts:** at each new hide the hider goes back to `world.start` (15, 3). The host passes the tracked seats as `inputs.seekers` on the step that ends reveal (or calls `setSeekers`).
+- Events are `{type:'rustle'|'enter'|'leave'|'found'|'hidden'|'phase', ...}` with `placeId`, `by`, `name`. Hider and seekers are held in `round.state`.
+- `rng` is accepted but unused: the layout is fixed data.
+- Layout numbers (shed at x 12..18, z 22..27; four trees; nine places) are mine; K4 should check the TV view of them.
+- `npm test` here: 5 failures not from this package (missing `esbuild`, and headless Chromium tests); all peekaboo tests pass.
