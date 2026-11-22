@@ -42,3 +42,8 @@ Scores, more than one hider, more gardens, the seekers' own phones. Welcome late
 1. Hiding time is **silent** (no counting aloud).
 2. **One hider keeps the phone**; seekers swap between rounds.
 3. The lantern follows **whichever hand moves most**.
+
+## Owner decisions, 2026-11-22 (K2 mockup questions)
+- The hider is the kid's **own character** (no costume), on the tablet and on the TV.
+- The hider **may sneak** to another hiding place during a round (the move is part of the tension; the rules package K3 decides how the seekers can catch a move).
+- **No buzz** on the hider's device.
