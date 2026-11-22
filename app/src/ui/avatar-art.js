@@ -14,6 +14,7 @@
    `look` may be any look that was ever stored (look.js carries old ones over) or null (Cubo). */
 import { color, alpha } from '../games/assets/palette.js';
 import { PARTS, normalizeLook, surprise as randomLook } from './look.js';
+import { POSES, frameAt } from '../games/figure.js';
 
 export { PARTS };
 export const surprise = randomLook;
@@ -193,23 +194,46 @@ const ARMS = {
 };
 export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false } = {}){
   const a = resolve(look), S = h, { hh, bw, bh } = SIZE(S), by = -S + hh + S * 0.015, legH = S - (by + S) - bh + S * 0.02;
+  /* the moves of the story (march, run, jump, squat, lean, flap, dance, freeze ...): the same stop-motion drawings as the move cards
+     (figure.js POSES), carried over to this body - hands and feet where the drawing puts them, the body lifting, dipping or leaning */
+  const mv = !(pose in ARMS) && POSES[pose] ? POSES[pose](frameAt(pose, t).p) : null;
+  const U = S * 0.5, V = S * 0.435;                   /* the drawings' units: across, and down (their shoulders are at -0.6, their feet at 0.7) */
+  const yo = mv ? (mv.yOff || 0) * V : 0, lean = mv ? mv.lean || 0 : 0;
+  const fx = (px) => px * U, fy = (py) => py * V - V * 0.7;              /* a point of a drawing, in pixels from the feet's line */
+  const sy0 = by + S * 0.06;
   /* their shadow on the ground (outside the cut: it has no paper edge) */
   c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x, base, S * 0.27, S * 0.04, 0, 0, Math.PI * 2); c.fill();
   c.save(); c.translate(x, base);
   paper(c, [-S * 0.75, -S * 1.3, S * 1.5, S * 1.34], S, (cc) => {
-    cc.save(); cc.translate(0, by); drawCape(cc, a, S, bw, bh); cc.restore();
     const ly = by + bh - S * 0.02;
-    for (const d of [-1, 1]){ drawLeg(cc, a, S, [[d * bw * 0.24, ly + S * 0.05], [d * bw * 0.24, ly + legH - S * 0.05]]); }
-    drawFoot(cc, S, -bw * 0.26, 0); drawFoot(cc, S, bw * 0.26, 0);
+    cc.save();
+    if (mv && lean){ cc.translate(0, ly); cc.rotate(lean * 0.35); cc.translate(0, -ly); }
+    cc.save(); cc.translate(0, by + yo); drawCape(cc, a, S, bw, bh); cc.restore();
+    cc.restore();
+    if (mv && mv.legs){
+      const legs = mv.legs;
+      legs.forEach((lg, i) => {
+        const d = i ? 1 : -1, kn = lg[0], ft = lg[1], hip = [d * bw * 0.24, ly + yo + S * 0.05], fp = [fx(ft[0]), fy(ft[1])];
+        drawLeg(cc, a, S, [hip, [fx(kn[0]), fy(kn[1])], [fp[0], Math.min(fp[1] - S * 0.05, hip[1] + S * 0.02)]]);
+        drawFoot(cc, S, fp[0], fp[1]);
+      });
+    } else {
+      for (const d of [-1, 1]){ drawLeg(cc, a, S, [[d * bw * 0.24, ly + yo + S * 0.05], [d * bw * 0.24, ly + legH - S * 0.05]]); }
+      drawFoot(cc, S, -bw * 0.26, 0); drawFoot(cc, S, bw * 0.26, 0);
+    }
+    cc.save();
+    if (mv && lean){ cc.translate(0, ly); cc.rotate(lean * 0.35); cc.translate(0, -ly); }
     const reach = ARMS[pose] || ARMS.stand;
     for (const d of [-1, 1]){
-      const sx = d * (bw * 0.5 + S * 0.03), sy = by + S * 0.06;
-      const up = reach(d, S, bw, by, t);
-      const pts = up ? [[sx, sy], [(sx + up[0]) / 2 + d * S * 0.02, (sy + up[1]) / 2], up] : [[sx, sy], [sx, by + bh * 0.88]];
+      const sx = d * (bw * 0.5 + S * 0.03), sy = sy0 + yo;
+      let pts;
+      if (mv){ const ar = mv.arms[d < 0 ? 0 : 1]; pts = [[sx, sy], ...ar.map(([px, py]) => [fx(px), sy0 + (py + 0.6) * V])]; }
+      else { const up = reach(d, S, bw, by, t); pts = up ? [[sx, sy], [(sx + up[0]) / 2 + d * S * 0.02, (sy + up[1]) / 2], up] : [[sx, sy], [sx, by + bh * 0.88]]; }
       drawArm(cc, a, S, pts, d < 0);
     }
-    cc.save(); cc.translate(0, by); drawTorso(cc, a, S, bw, bh); cc.restore();
-    cc.save(); cc.translate(0, -S); drawHead(cc, a, S, back, t); cc.restore();
+    cc.save(); cc.translate(0, by + yo); drawTorso(cc, a, S, bw, bh); cc.restore();
+    cc.save(); cc.translate(0, -S + yo); drawHead(cc, a, S, back, t); cc.restore();
+    cc.restore();
   });
   c.restore();
 }

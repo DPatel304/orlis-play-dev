@@ -11,7 +11,9 @@
 import { color, alpha } from './assets/palette.js';
 import { voice } from '../audio/voice.js';
 import { sfx } from '../audio/sound.js';
-import { drawFigure } from './figure.js';
+import { frameAt } from './figure.js';
+import { body } from '../ui/avatar-art.js';
+import { CUBO } from '../ui/look.js';
 import { hud as hudState, spoken } from './hud.js';
 import { PLAYER_COLORS } from '../tracking/pose.js';
 import { MEADOW, AHEAD, PLACES } from '../stories/cubions-long-way-home.js';
@@ -36,6 +38,13 @@ const ANIMALS = [
   { id: 'bird', e: '🐦', at: PLACES.bird + AHEAD, size: 100, y: -250, off: -120 },
   { id: 'frog', e: '🐸', at: PLACES.frog + AHEAD, size: 110, y: 14, off: -270 }
 ];
+/* Cubo is the one cube character (decision 0042), all blue; the story's faces are his painted face, one look for each */
+const CUBO_FACE = { smile: ['dot', 'smile'], grin: ['dot', 'grin'], wow: ['wide', 'o'], wink: ['wink', 'smile'], tongue: ['dot', 'tongue'], joy: ['happy', 'grin'], smirk: ['dot', 'cat'] };
+const CUBO_LOOKS = Object.fromEntries(Object.entries(CUBO_FACE).map(([k, [eyes, mouth]]) => [k, { ...CUBO, face: { eyes, mouth } }]));
+/* the children in the window: the same character, each a different favourite */
+const KIDS = [{ colour: 'orange', top: 'tuft', outfit: 'stripes' }, { colour: 'pink', top: 'bow', face: { eyes: 'happy', mouth: 'grin' } },
+  { colour: 'green', top: 'cap', outfit: 'dots' }, { colour: 'yellow', top: 'beanie', face: { eyes: 'wide', mouth: 'smile' } }]
+  .map(k => ({ ...CUBO, face: { eyes: 'happy', mouth: 'smile' }, ...k }));
 const readTime = (text) => text.trim().split(/\s+/).length * 0.4 + 0.7;
 
 export function makeStory(story){
@@ -225,9 +234,9 @@ class Story {
     const b = this.beat, moving = this.speed > 12;
     let pose = b && (b.card || b.pose) || (moving ? (this.speed > 240 ? 'run' : 'march') : 'freeze');
     if (b && b.card && !(this.age > 0.2)) pose = 'freeze';
-    const x = CUBO_AT * vw + (b && b.wobble ? Math.sin(this.t * 14) * 3 * this.wob : 0), sz = 100;
-    c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x, GROUND + 22, 50, 9, 0, 0, 7); c.fill();
-    drawFigure(c, pose, x, GROUND + 16 - sz * 0.7, sz, this.t, b && b.face || null, false);
+    const x = CUBO_AT * vw + (b && b.wobble ? Math.sin(this.t * 14) * 3 * this.wob : 0), h = 210;
+    const face = b && b.face || frameAt(pose, this.t).face;
+    body(c, x, GROUND + 22, h, CUBO_LOOKS[face] || CUBO_LOOKS.smile, this.t, pose);
   }
   house(c, cam, vw, dusk){
     const hx = PLACES.home + 400 - cam; if (hx < -400 || hx > vw + 400) return;
@@ -239,8 +248,7 @@ class Story {
     c.fillStyle = glow; c.fillRect(-340, -420, 680, 560);
     c.fillStyle = color('sky.sunGlow'); c.fillRect(-150, -270, 300, 200);
     c.fillStyle = color('night.sky'); c.fillRect(-80, -240, 160, 100); c.fillStyle = alpha('sky.high', 0.6 + 0.3 * Math.sin(this.t * 3)); c.fillRect(-72, -232, 144, 84);
-    c.fillStyle = color('earth.bark', 'shade');
-    [-100, -40, 40, 100].forEach((kx, i) => { const w = Math.sin(this.t * 4 + i * 1.3) * 9; c.beginPath(); c.arc(kx + w, -100 + Math.abs(w), 14, 0, 7); c.fill(); c.fillRect(kx + w - 9, -86 + Math.abs(w), 18, 24); });
+    [-100, -40, 40, 100].forEach((kx, i) => { const w = Math.sin(this.t * 4 + i * 1.3) * 9; body(c, kx + w, -70 + Math.abs(w), 78, KIDS[i], this.t + i, 'stand'); });
     c.restore();
   }
   /* the moon in the corner: how much story is left */
