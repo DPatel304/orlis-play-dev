@@ -242,14 +242,15 @@ const MOVES = {
     if (i % 4 === 2) return { yo: -0.32, legs: [[[-0.115, -0.32 - 0.1], [-0.085, -0.32 + 0.02]], [[0.115, -0.32 - 0.1], [0.085, -0.32 + 0.02]]], arms: arms(0.32, 1) };
     return { yo: -0.17, legs: [[null, [-0.1, -0.17 + 0.02]], [null, [0.1, -0.17 + 0.02]]], arms: arms(0.17, 0.5) };
   },
-  /* a squat, from the front, in four stills (down, down, hold, hold): the body and head sink and squash, the feet stay flat on the floor a little
-     wider than the hips, the knees bow out to the sides and the shins come back down to the feet; the arms reach out in front for balance, seen
-     from the front as short arms with the mittens at chest height, slightly apart (drawn over the torso) */
+  /* a squat, from the front, in four stills (down, down, hold, hold): the legs make an "M" (the thigh goes straight out from the hip to a knee at
+     hip height, the shin straight down to the same small foot as when he stands, flat on the floor under the knee, daylight between the legs and
+     under the body); the torso is squashed (a little shorter and wider) and sinks with the head on top, which keeps its shape; the arms reach
+     out to the sides at shoulder height, a little down, mittens clear of the torso */
   squat: (i) => {
-    const p = [0.5, 1, 1, 1][i % 4], yo = 0.04 * p, hy = -0.135 + yo, s = (side, a, b) => [side * a, b];
-    const leg = (side) => [[side * (0.104 + 0.15 * p), hy], [side * (0.104 + 0.07 * p), 0, 0.035]];
-    return { yo, squash: 0.1 * p, armsFront: true, legs: [leg(-1), leg(1)],
-      arms: [[s(-1, 0.19, -0.29 + yo), s(-1, 0.115, -0.275 + yo)], [s(1, 0.19, -0.29 + yo), s(1, 0.115, -0.275 + yo)]] };
+    const p = [0.5, 1, 1, 1][i % 4], yo = 0.045 * p, sy = -0.385 + yo + 0.034 * p, hy = -0.135 + yo;
+    const leg = (side) => [[side * (0.104 + 0.16 * p), hy], [side * (0.104 + 0.16 * p), 0, 0.035]];
+    return { yo, torsoK: 1 - 0.12 * p, torsoW: 1 + 0.06 * p, legs: [leg(-1), leg(1)],
+      arms: [-1, 1].map((d) => [[d * (0.215 + 0.075 * p), sy + 0.015 * p], [d * (0.215 + 0.14 * p), sy + 0.055 * p]]) };
   },
   /* frozen: arms out, shivering */
   freeze: (i) => ({ yo: 0, dx: (i % 2 ? 1 : -1) * 0.009, arms: [[[-0.4, -0.29]], [[0.4, -0.29]]] })
@@ -282,6 +283,7 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
   const idle = pose === 'stand' && !mv && !still && !back, breath = idle ? Math.sin(t * Math.PI * 2 / 2.5) : 0;
   const yo = mv ? mv.yo * S : breath * S * 0.01, rot = mv && mv.rot || 0, dx = mv && mv.dx ? mv.dx * S : 0;
   const sy0 = by + S * 0.06;
+  const tk = mv && mv.torsoK || 1, tw = mv && mv.torsoW || 1, bhE = bh * tk;
   /* their shadow on the ground (outside the cut: it has no paper edge) */
   c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x, base, S * 0.3, S * 0.04, 0, 0, Math.PI * 2); c.fill();
   c.save(); c.translate(x + dx, base);
@@ -312,9 +314,9 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
       drawArm(cc, a, S, pts, d < 0);
     } };
     if (!(mv && mv.armsFront)) armsDraw();
-    cc.save(); cc.translate(0, by + yo); drawTorso(cc, a, S, bw, bh); cc.restore();
+    cc.save(); cc.translate(0, by + yo + (bh - bhE)); drawTorso(cc, a, S, bw * tw, bhE); cc.restore();
     if (mv && mv.armsFront) armsDraw();
-    cc.save(); cc.translate(0, -S * BODY.tot + yo + hh / 2); if (mv && mv.headUp) cc.rotate(-rot * mv.headUp); cc.translate(0, -hh / 2); drawHead(cc, a, S, back, t); cc.restore();
+    cc.save(); cc.translate(0, -S * BODY.tot + yo + (bh - bhE) + hh / 2); if (mv && mv.headUp) cc.rotate(-rot * mv.headUp); cc.translate(0, -hh / 2); drawHead(cc, a, S, back, t); cc.restore();
     cc.restore();
   });
   live = null;
