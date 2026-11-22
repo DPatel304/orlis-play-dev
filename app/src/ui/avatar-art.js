@@ -242,15 +242,14 @@ const MOVES = {
     if (i % 4 === 2) return { yo: -0.32, legs: [[[-0.115, -0.32 - 0.1], [-0.085, -0.32 + 0.02]], [[0.115, -0.32 - 0.1], [0.085, -0.32 + 0.02]]], arms: arms(0.32, 1) };
     return { yo: -0.17, legs: [[null, [-0.1, -0.17 + 0.02]], [null, [0.1, -0.17 + 0.02]]], arms: arms(0.17, 0.5) };
   },
-  /* a squat, from the front, in four stills (down, down, hold, hold): the legs make an "M" (the thigh goes straight out from the hip to a knee at
-     hip height, the shin straight down to the same small foot as when he stands, flat on the floor under the knee, daylight between the legs and
-     under the body); the torso is squashed (a little shorter and wider) and sinks with the head on top, which keeps its shape; the arms reach
-     out to the sides at shoulder height, a little down, mittens clear of the torso */
+  /* a squat, from the front, in four stills (down, down, hold, hold): he sinks about a fifth of his height - the legs simply get shorter (the
+     same straight legs and small feet as when he stands, the feet a touch wider apart, flat on the floor), the torso squashes a little shorter
+     and wider with the head on top, and the arms come forward, slightly apart, the mittens over the torso */
   squat: (i) => {
-    const p = [0.5, 1, 1, 1][i % 4], yo = 0.045 * p, sy = -0.385 + yo + 0.034 * p, hy = -0.135 + yo;
-    const leg = (side) => [[side * (0.104 + 0.16 * p), hy], [side * (0.104 + 0.16 * p), 0, 0.035]];
-    return { yo, torsoK: 1 - 0.12 * p, torsoW: 1 + 0.06 * p, legs: [leg(-1), leg(1)],
-      arms: [-1, 1].map((d) => [[d * (0.215 + 0.075 * p), sy + 0.015 * p], [d * (0.215 + 0.14 * p), sy + 0.055 * p]]) };
+    const p = [0.4, 0.8, 1, 1][i % 4], yo = 0.035 * p, ex = 0.28 * 0.393 * p, top = -0.445 + yo + ex;
+    const leg = (side) => [null, [side * (0.104 + 0.012 * p), 0]];
+    return { yo, torsoK: 1 - 0.393 * p, torsoW: 1 + 0.1 * p, armsFront: true, legs: [leg(-1), leg(1)],
+      arms: [-1, 1].map((d) => [[d * (0.215 + 0.01 * p), top + 0.04 + 0.055 * p], [d * (0.215 - 0.065 * p), top + 0.05 + 0.06 * p]]) };
   },
   /* frozen: arms out, shivering */
   freeze: (i) => ({ yo: 0, dx: (i % 2 ? 1 : -1) * 0.009, arms: [[[-0.4, -0.29]], [[0.4, -0.29]]] })
@@ -307,7 +306,7 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
     cc.save(); lean();
     const reach = ARMS[pose] || ARMS.stand;
     const armsDraw = () => { for (const d of [-1, 1]){
-      const sx = d * (bw * 0.5 + S * 0.03), sy = sy0 + yo;
+      const sx = d * (bw * 0.5 + S * 0.03), sy = sy0 + yo + (bh - bhE);
       let pts;
       if (mv && mv.arms){ pts = [[sx, sy], ...mv.arms[d < 0 ? 0 : 1].map(([px, py]) => [px * S, py * S])]; }
       else { const up = reach(d, S, bw, by, t); pts = up ? [[sx, sy], [(sx + up[0]) / 2 + d * S * 0.02, (sy + up[1]) / 2], up] : [[sx, sy], [sx + d * S * BODY.out + (idle ? Math.sin(t * Math.PI * 2 / 2.5 + 1.3 + d) * S * 0.008 : 0), sy + (by + bh * 0.88 - sy) * BODY.armLen]]; }
