@@ -13,8 +13,8 @@
      surprise(rand)                         a random look
    `look` may be any look that was ever stored (look.js carries old ones over) or null (Cubo). */
 import { color, alpha } from '../games/assets/palette.js';
-import { PARTS, normalizeLook, surprise as randomLook } from './look.js';
-import { POSES, frameAt } from '../games/figure.js';
+import { PARTS, CUBO, normalizeLook, surprise as randomLook } from './look.js';
+import { POSES, FRAMES, frameAt } from '../games/figure.js';
 
 export { PARTS };
 export const surprise = randomLook;
@@ -22,13 +22,15 @@ export const surprise = randomLook;
 export function setStyle(){}
 
 /* ---------- the colours of one look ---------- */
+/* two more mouths for Cubo's story faces (an open grin, a gasp); they are not in the creator's choices (look.js PARTS) */
+const STORY_MOUTH = new Set(['open', 'gasp']);
 const cache = new WeakMap();
 function resolve(look){
   const key = look && typeof look === 'object' ? look : null;
   const hit = key && cache.get(key); if (hit) return hit;
   const L = normalizeLook(look), c = color('fav.' + L.colour), c2 = color(L.outfitColour), white = L.outfitColour === 'shade.card';
   const a = {
-    c, c2, c2n: L.outfitColour, t2n: white ? 'ui.go' : L.outfitColour, white, eyes: L.face.eyes, mouth: L.face.mouth, top: L.top, fit: L.outfit, extra: L.extra,
+    c, c2, c2n: L.outfitColour, t2n: white ? 'ui.go' : L.outfitColour, white, eyes: L.face.eyes, mouth: STORY_MOUTH.has(look && look.face && look.face.mouth) ? look.face.mouth : L.face.mouth, top: L.top, fit: L.outfit, extra: L.extra,
     shade: color('fav.' + L.colour, 'shade'), light: color('fav.' + L.colour, 'light'),
     /* the second colour for things that must not vanish into a white body (hats, a scarf, a cape) */
     t2: white ? color('ui.go') : c2
@@ -72,6 +74,8 @@ function drawHead(x, a, S, back, t){
     const my = fy + hh * 0.22, mx = -hw * 0.04;
     if (a.mouth === 'smile'){ x.beginPath(); x.arc(mx, my - S * 0.02, S * 0.035, Math.PI * 0.2, Math.PI * 0.8); x.stroke(); }
     if (a.mouth === 'grin'){ x.beginPath(); x.moveTo(mx - S * 0.045, my - S * 0.01); x.quadraticCurveTo(mx, my + S * 0.05, mx + S * 0.045, my - S * 0.01); x.closePath(); x.fill(); }
+    if (a.mouth === 'open'){ x.beginPath(); x.moveTo(mx - S * 0.062, my - S * 0.03); x.quadraticCurveTo(mx, my - S * 0.015, mx + S * 0.062, my - S * 0.03); x.quadraticCurveTo(mx + S * 0.05, my + S * 0.07, mx, my + S * 0.07); x.quadraticCurveTo(mx - S * 0.05, my + S * 0.07, mx - S * 0.062, my - S * 0.03); x.closePath(); x.fill(); x.save(); x.clip(); x.fillStyle = color('touch.bubblegum', 'light'); x.beginPath(); x.ellipse(mx, my + S * 0.075, S * 0.032, S * 0.03, 0, 0, 7); x.fill(); x.restore(); x.fillStyle = ink; }
+    if (a.mouth === 'gasp'){ x.beginPath(); x.ellipse(mx, my + S * 0.015, S * 0.032, S * 0.05, 0, 0, 7); x.fill(); }
     if (a.mouth === 'o'){ x.beginPath(); x.ellipse(mx, my, S * 0.014, S * 0.02, 0, 0, 7); x.fill(); }
     if (a.mouth === 'cat'){ x.beginPath(); x.arc(mx - S * 0.015, my - S * 0.01, S * 0.015, 0, Math.PI); x.arc(mx + S * 0.015, my - S * 0.01, S * 0.015, 0, Math.PI); x.stroke(); }
     if (a.mouth === 'tongue'){ x.beginPath(); x.arc(mx, my - S * 0.02, S * 0.035, Math.PI * 0.2, Math.PI * 0.8); x.stroke(); x.fillStyle = color('touch.bubblegum', 'light'); x.beginPath(); x.ellipse(mx + S * 0.006, my + S * 0.015, S * 0.012, S * 0.014, 0, 0, 7); x.fill(); }
@@ -192,42 +196,73 @@ const ARMS = {
   cheer: (d, S, bw, by) => [d * (bw * 0.5 + S * 0.14), by - S * 0.3],
   reach: (d, S, bw, by) => [d * (bw * 0.5 + S * 0.09), by - S * 0.42]
 };
+/* the story's moves, drawn for this body (units of the character's height S, y up from the feet's line as negative numbers). A move is four
+   stills that repeat, like the move cards': { yo: body lift, rot: lean (radians), dx: sideways shiver, legs: [[knee|null, foot], left, right],
+   arms: [points after the shoulder, left, right] } */
+const mirror = (m) => ({ ...m, legs: [m.legs[1], m.legs[0]].map(([k, f]) => [k && [-k[0], k[1]], [-f[0], f[1]]]), arms: [m.arms[1], m.arms[0]].map(pts => pts.map(([px, py]) => [-px, py])) });
+const MOVES = {
+  /* a clear stride, seen from the side: one leg forward and planted, one back on its toe, the arms swinging against the legs, a small bob */
+  march: (i) => {
+    const A = { yo: 0, legs: [[null, [-0.19, -0.035]], [null, [0.21, 0]]], arms: [[[-0.3, -0.36]], [[0.22, -0.2]]] };
+    const B = { yo: -0.014, legs: [[null, [-0.08, 0]], [[0.13, -0.15], [0.1, -0.07]]], arms: [[[-0.23, -0.25]], [[0.23, -0.25]]] };
+    return [A, B, mirror(A), mirror(B)][i % 4];
+  },
+  /* a longer stride, leaving the ground between steps, leaning into it */
+  run: (i) => {
+    const A = { yo: -0.07, rot: 0.3, legs: [[[-0.1, -0.13], [-0.29, -0.13]], [[0.15, -0.2], [0.29, -0.1]]], arms: [[[-0.3, -0.45], [-0.38, -0.33]], [[0.3, -0.4], [0.36, -0.55]]] };
+    const B = { yo: 0, rot: 0.3, legs: [[[-0.1, -0.15], [-0.2, -0.06]], [null, [0.24, 0]]], arms: [[[-0.28, -0.42], [-0.3, -0.3]], [[0.3, -0.42], [0.32, -0.5]]] };
+    return [A, B, mirror(A), mirror(B)][i % 4];
+  },
+  /* off the ground: a squat to spring from, then up with the knees tucked and the arms high (the shadow stays on the grass) */
+  jump: (i) => {
+    if (i % 4 === 0) return { yo: 0.04, legs: [[[-0.13, -0.12], [-0.12, 0]], [[0.13, -0.12], [0.12, 0]]], arms: [[[-0.27, -0.28]], [[0.27, -0.28]]] };
+    const up = i % 4 === 2 ? 0.34 : 0.22;
+    return { yo: -up, legs: [[[-0.12, -0.13 - up], [-0.09, -0.07 - up]], [[0.12, -0.13 - up], [0.09, -0.07 - up]]], arms: [[[-0.3, -0.62 - up * 0.5], [-0.3, -0.8 - up * 0.5]], [[0.3, -0.62 - up * 0.5], [0.3, -0.8 - up * 0.5]]] };
+  },
+  /* frozen: arms out, shivering */
+  freeze: (i) => ({ yo: 0, dx: (i % 2 ? 1 : -1) * 0.009, arms: [[[-0.37, -0.45]], [[0.37, -0.45]]] })
+};
 export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false } = {}){
   const a = resolve(look), S = h, { hh, bw, bh } = SIZE(S), by = -S + hh + S * 0.015, legH = S - (by + S) - bh + S * 0.02;
-  /* the moves of the story (march, run, jump, squat, lean, flap, dance, freeze ...): the same stop-motion drawings as the move cards
-     (figure.js POSES), carried over to this body - hands and feet where the drawing puts them, the body lifting, dipping or leaning */
-  const mv = !(pose in ARMS) && POSES[pose] ? POSES[pose](frameAt(pose, t).p) : null;
-  const U = S * 0.5, V = S * 0.435;                   /* the drawings' units: across, and down (their shoulders are at -0.6, their feet at 0.7) */
-  const yo = mv ? (mv.yOff || 0) * V : 0, lean = mv ? mv.lean || 0 : 0;
-  const fx = (px) => px * U, fy = (py) => py * V - V * 0.7;              /* a point of a drawing, in pixels from the feet's line */
+  /* the other moves (squat, lean, flap, dance ...) come from the move cards' drawings (figure.js POSES), carried over to this body */
+  let mv = null;
+  if (!(pose in ARMS)){
+    const i = frameAt(pose, t).i;
+    if (MOVES[pose]){ mv = MOVES[pose](i); }
+    else if (POSES[pose]){
+      const q = POSES[pose](frameAt(pose, t).p), U = S * 0.5, V = S * 0.435, sy1 = by + S * 0.06;
+      const fx = (px) => px * U / S, fy = (py) => (py * V - V * 0.7) / S;
+      mv = { yo: (q.yOff || 0) * V / S, rot: (q.lean || 0) * 0.35,
+        legs: q.legs ? q.legs.map(([k, f]) => [[fx(k[0]), fy(k[1])], [fx(f[0]), fy(f[1])]]) : null,
+        arms: q.arms.map(ar => ar.map(([px, py]) => [fx(px), (sy1 + (py + 0.6) * V) / S])) };
+    }
+  }
+  const yo = mv ? mv.yo * S : 0, rot = mv && mv.rot || 0, dx = mv && mv.dx ? mv.dx * S : 0;
   const sy0 = by + S * 0.06;
   /* their shadow on the ground (outside the cut: it has no paper edge) */
   c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x, base, S * 0.27, S * 0.04, 0, 0, Math.PI * 2); c.fill();
-  c.save(); c.translate(x, base);
+  c.save(); c.translate(x + dx, base);
   paper(c, [-S * 0.75, -S * 1.3, S * 1.5, S * 1.34], S, (cc) => {
     const ly = by + bh - S * 0.02;
-    cc.save();
-    if (mv && lean){ cc.translate(0, ly); cc.rotate(lean * 0.35); cc.translate(0, -ly); }
-    cc.save(); cc.translate(0, by + yo); drawCape(cc, a, S, bw, bh); cc.restore();
-    cc.restore();
+    const lean = () => { if (rot){ cc.translate(0, ly); cc.rotate(rot); cc.translate(0, -ly); } };
+    cc.save(); lean(); cc.save(); cc.translate(0, by + yo); drawCape(cc, a, S, bw, bh); cc.restore(); cc.restore();
     if (mv && mv.legs){
-      const legs = mv.legs;
-      legs.forEach((lg, i) => {
-        const d = i ? 1 : -1, kn = lg[0], ft = lg[1], hip = [d * bw * 0.24, ly + yo + S * 0.05], fp = [fx(ft[0]), fy(ft[1])];
-        drawLeg(cc, a, S, [hip, [fx(kn[0]), fy(kn[1])], [fp[0], Math.min(fp[1] - S * 0.05, hip[1] + S * 0.02)]]);
+      mv.legs.forEach(([kn, ft], i) => {
+        const d = i ? 1 : -1, hip = [d * bw * 0.24, ly + yo + S * 0.05], fp = [ft[0] * S, ft[1] * S];
+        const end = [fp[0], Math.max(fp[1] - S * 0.05, hip[1] + S * 0.02)];
+        drawLeg(cc, a, S, kn ? [hip, [kn[0] * S, kn[1] * S], end] : [hip, end]);
         drawFoot(cc, S, fp[0], fp[1]);
       });
     } else {
       for (const d of [-1, 1]){ drawLeg(cc, a, S, [[d * bw * 0.24, ly + yo + S * 0.05], [d * bw * 0.24, ly + legH - S * 0.05]]); }
       drawFoot(cc, S, -bw * 0.26, 0); drawFoot(cc, S, bw * 0.26, 0);
     }
-    cc.save();
-    if (mv && lean){ cc.translate(0, ly); cc.rotate(lean * 0.35); cc.translate(0, -ly); }
+    cc.save(); lean();
     const reach = ARMS[pose] || ARMS.stand;
     for (const d of [-1, 1]){
       const sx = d * (bw * 0.5 + S * 0.03), sy = sy0 + yo;
       let pts;
-      if (mv){ const ar = mv.arms[d < 0 ? 0 : 1]; pts = [[sx, sy], ...ar.map(([px, py]) => [fx(px), sy0 + (py + 0.6) * V])]; }
+      if (mv && mv.arms){ pts = [[sx, sy], ...mv.arms[d < 0 ? 0 : 1].map(([px, py]) => [px * S, py * S])]; }
       else { const up = reach(d, S, bw, by, t); pts = up ? [[sx, sy], [(sx + up[0]) / 2 + d * S * 0.02, (sy + up[1]) / 2], up] : [[sx, sy], [sx, by + bh * 0.88]]; }
       drawArm(cc, a, S, pts, d < 0);
     }
@@ -236,6 +271,16 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false 
     cc.restore();
   });
   c.restore();
+}
+
+/* ---------- Cubo: the blue one, doing one of the story's moves with the story's faces ----------
+   pose: any move card's name (or stand, wave, cheer, reach); face: smile, grin, wow, wink, tongue, joy or smirk (default: the face that goes
+   with that drawing of the move). Used by the story, the cover, pause and results screens and the creator library. */
+const CUBO_FACE = { smile: ['dot', 'smile'], grin: ['dot', 'open'], wow: ['wide', 'gasp'], wink: ['wink', 'open'], tongue: ['dot', 'tongue'], joy: ['happy', 'open'], smirk: ['dot', 'cat'] };
+const CUBO_LOOKS = Object.fromEntries(Object.entries(CUBO_FACE).map(([k, [eyes, mouth]]) => [k, { ...CUBO, face: { eyes, mouth } }]));
+export function cuboFigure(c, x, base, h, pose = 'stand', t = 0, face = null){
+  const f = face || (FRAMES[pose] ? frameAt(pose, t).face : 'smile');
+  body(c, x, base, h, CUBO_LOOKS[f] || CUBO_LOOKS.smile, t, pose);
 }
 
 /* ---------- a portrait: for tiles and name chips ---------- */
