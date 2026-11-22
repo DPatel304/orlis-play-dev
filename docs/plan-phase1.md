@@ -57,7 +57,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | S3 | Kid profiles to the Box; one-time move; server keeps grown-ups only | Sonnet, Opus review | — | migration tested both sides; nothing about a child left on the server |
 | K1 | Spike: TV 3D garden with tracking in its worker; hand-to-ground lantern | Opus | owner Shift+G result | measured on the owner's laptop; go or fallback decided |
 | K2 | **Hider: own character; sneaking between hiding places allowed; no buzz (owner, 2026-11-22).** Peekaboo design on paper and a greybox mockup (rules decided 2026-11-21: silent hiding, one hider keeps the phone, lantern on the busiest hand; the guided phone view still to mock up) | Opus | — | owner approves layout, hiding places, rules, round flow |
-| K3 | `world.js` and the host rules (found, hiding, clock, swap) with tests | Sonnet | K2 | rules tests pass |
+| K3 | **Done 2026-11-22.** `world.js` and the host rules (found, hiding, clock, swap) with tests | Sonnet | K2 | rules tests pass |
 | K4 | TV view (overview, lanterns, rustles, the reveal hook) | Sonnet, Opus review | K1, K3 | 60 fps with tracking on the owner's laptop |
 | K5 | Phone view (guided camera behind and beside the hider, 0039; joystick, hide button, interpolation; painted pieces flip like cards) | Sonnet, Opus review | K3, P3 | 60 fps on the Android test tablet (minimum class) |
 | K6 | Paper puppets: avatar split into parts, a small rig, the found reveal (kept simple: Peekaboo is a proof of concept) | Opus | K4 | the reveal approved by the owner |
