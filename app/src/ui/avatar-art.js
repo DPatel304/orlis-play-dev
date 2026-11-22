@@ -24,7 +24,7 @@ export function setStyle(){}
 /* ---------- the colours of one look ---------- */
 /* two more mouths for Cubo's story faces (an open grin, a gasp); they are not in the creator's choices (look.js PARTS) */
 const STORY_MOUTH = new Set(['open', 'gasp']);
-const BROWS = new Set(['up', 'tilt']);
+const BROWS = new Set(['up', 'raise']);
 /* what is moving in the face right now (set by body for the one figure it draws): { blink, look: [x, y], talk: 0..1 | null } */
 let live = null;
 const cache = new WeakMap();
@@ -63,32 +63,31 @@ function drawHead(x, a, S, back, t){
 
   if (!back){
     /* the face: always the same painted style - big friendly eyes with a shine, a soft blush, a wide mouth */
-    const fy = hy + hh * 0.52, ex = hw * 0.19, er = S * 0.039;
+    const fy = hy + hh * 0.5, ex = hw * 0.2, er = S * 0.05;
     x.fillStyle = ink; x.strokeStyle = ink; x.lineWidth = S * 0.014;
-    const shine = (cx, ey, r) => { x.fillStyle = color('earth.snow'); dot(x, cx + r * 0.32, ey - r * 0.42, r * 0.3); x.fill(); x.fillStyle = ink; };
+    /* tall oval eyes (old Cubo's size) with a clear white shine, upper left, about a fifth of the eye's width across */
+    const oval = (cx, ey, rx, ry) => { x.beginPath(); x.ellipse(cx, ey, rx, ry, 0, 0, 7); x.fill(); x.fillStyle = color('earth.snow'); dot(x, cx - rx * 0.3, ey - ry * 0.34, rx * 0.4); x.fill(); x.fillStyle = ink; };
     [-1, 1].forEach((s) => {
-      const cx = s * ex - hw * 0.04 + glance[0] * er * 0.4, ey = fy + glance[1] * er * 0.3;
-      if (blink && a.eyes !== 'happy' && a.eyes !== 'sleepy' && !(a.eyes === 'wink' && s > 0)){ x.beginPath(); x.moveTo(cx - er, ey); x.lineTo(cx + er, ey); x.stroke(); return; }
-      if (a.eyes === 'dot'){ x.beginPath(); x.ellipse(cx, ey, er * 0.82, er * 1.1, 0, 0, 7); x.fill(); shine(cx, ey, er); }
-      if (a.eyes === 'wide'){ x.beginPath(); x.ellipse(cx, ey, er * 0.95, er * 1.25, 0, 0, 7); x.fill(); shine(cx, ey, er * 1.1); }
-      if (a.eyes === 'happy' || (a.eyes === 'wink' && s > 0)){ x.beginPath(); x.arc(cx, ey + er * 0.5, er, Math.PI * 1.15, Math.PI * 1.85); x.stroke(); }
-      if (a.eyes === 'wink' && s < 0){ x.beginPath(); x.ellipse(cx, ey, er * 0.82, er * 1.1, 0, 0, 7); x.fill(); shine(cx, ey, er); }
-      if (a.eyes === 'sleepy'){ x.beginPath(); x.moveTo(cx - er, ey); x.lineTo(cx + er, ey); x.stroke(); }
-      if (a.eyes === 'star'){ x.beginPath(); for (let k = 0; k < 10; k++){ const an = -Math.PI / 2 + k * Math.PI / 5, R = k % 2 ? er * 0.55 : er * 1.3; x.lineTo(cx + Math.cos(an) * R, ey + Math.sin(an) * R); } x.closePath(); x.fill(); }
-      /* eyebrows only for an expression: up for a gasp, tilted for a grin or a wink */
-      if (a.brow){
+      const cx = s * ex - hw * 0.04 + glance[0] * er * 0.4, ey = fy + glance[1] * er * 0.3, rx = er * 0.64, ry = er * 0.98;
+      if (blink && a.eyes !== 'happy' && a.eyes !== 'sleepy' && !(a.eyes === 'wink' && s > 0)){ x.beginPath(); x.moveTo(cx - rx, ey); x.lineTo(cx + rx, ey); x.stroke(); return; }
+      if (a.eyes === 'dot') oval(cx, ey, rx, ry);
+      if (a.eyes === 'wide') oval(cx, ey, rx * 1.12, ry * 1.12);
+      if (a.eyes === 'happy' || (a.eyes === 'wink' && s > 0)){ x.beginPath(); x.arc(cx, ey + er * 0.45, er * 0.85, Math.PI * 1.15, Math.PI * 1.85); x.stroke(); }
+      if (a.eyes === 'wink' && s < 0) oval(cx, ey, rx, ry);
+      if (a.eyes === 'sleepy'){ x.beginPath(); x.moveTo(cx - rx, ey); x.lineTo(cx + rx, ey); x.stroke(); }
+      if (a.eyes === 'star'){ x.beginPath(); for (let k = 0; k < 10; k++){ const an = -Math.PI / 2 + k * Math.PI / 5, R = k % 2 ? er * 0.65 : er * 1.5; x.lineTo(cx + Math.cos(an) * R, ey + Math.sin(an) * R); } x.closePath(); x.fill(); }
+      /* eyebrows only for an expression: both arched high for a gasp, one raised over the open eye for a wink */
+      if (a.brow === 'up' || (a.brow === 'raise' && s < 0)){
         x.lineWidth = S * 0.014;
-        const by0 = ey - er * (a.brow === 'up' ? 2.7 : 2.4);
-        x.beginPath();
-        if (a.brow === 'up'){ x.moveTo(cx - er, by0 + er * 0.25); x.quadraticCurveTo(cx, by0 - er * 0.5, cx + er, by0 + er * 0.25); }
-        else { x.moveTo(cx - s * er * 1.1, by0 - er * 0.45); x.lineTo(cx + s * er * 1.1, by0 + er * 0.35); }
+        const by0 = ey - ry * (a.brow === 'up' ? 2.05 : 1.85);
+        x.beginPath(); x.moveTo(cx - rx * 1.2, by0 + er * 0.3); x.quadraticCurveTo(cx, by0 - er * 0.55, cx + rx * 1.2, by0 + er * 0.3);
         x.stroke();
       }
     });
     const my = fy + hh * 0.22, mx = -hw * 0.04;
-    /* a soft blush on every face */
-    x.fillStyle = alpha('touch.bubblegum', 0.28);
-    [-1, 1].forEach((s) => { x.beginPath(); x.ellipse(s * hw * 0.34 - hw * 0.04, my - S * 0.012, S * 0.03, S * 0.018, 0, 0, 7); x.fill(); });
+    /* a soft, warm blush under the eyes on every face */
+    x.fillStyle = alpha('fav.pink', 0.85, 'light');
+    [-1, 1].forEach((s) => { x.beginPath(); x.ellipse(s * hw * 0.36 - hw * 0.04, fy + S * 0.085, S * 0.032, S * 0.02, 0, 0, 7); x.fill(); });
     x.fillStyle = ink;
     /* while he talks the mouth opens and closes (a gasp or an "o" stays as it is) */
     const mouth = talk != null && a.mouth !== 'gasp' && a.mouth !== 'o' ? 'open' : a.mouth, k = talk != null && mouth === 'open' ? 0.3 + 0.7 * talk : 1;
@@ -142,6 +141,7 @@ function drawTorso(x, a, S, bw, bh){
   if (a.fit === 'hoodie'){ x.fillStyle = toneRaw(a, 'shade'); x.fillRect(-bw * 0.22, bh * 0.55, bw * 0.44, bh * 0.3); }
   x.fillStyle = alpha('shade.shadow', 0.18); x.fillRect(bw * 0.18, 0, bw * 0.4, bh);
   x.restore();
+  x.strokeStyle = INK(); x.lineWidth = S * 0.016; rr(x, -bw / 2, 0, bw, bh, S * 0.05); x.stroke();
   if (a.extra === 'scarf'){ x.fillStyle = a.c2 === c ? color('ui.gold') : a.t2; rr(x, -bw * 0.55, -S * 0.01, bw * 1.1, S * 0.05, S * 0.025); x.fill(); rr(x, bw * 0.1, S * 0.02, S * 0.05, S * 0.1, S * 0.02); x.fill(); }
   x.restore();
 }
@@ -149,10 +149,12 @@ function drawTorso(x, a, S, bw, bh){
 function drawCape(x, a, S, bw, bh){
   if (a.extra !== 'cape') return;
   x.fillStyle = toneT(a, 'shade'); x.beginPath(); x.moveTo(-bw * 0.55, S * 0.02); x.lineTo(bw * 0.55, S * 0.02); x.lineTo(bw * 0.8, bh * 1.35); x.lineTo(-bw * 0.8, bh * 1.35); x.closePath(); x.fill();
+  x.strokeStyle = INK(); x.lineWidth = S * 0.016; x.lineJoin = 'round'; x.stroke();
 }
 /* a leg: points down from the hip; the foot is an ink pill */
 function drawLeg(x, a, S, pts, thick = false){
   x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
+  line(x, pts, S * (thick ? 0.16 : 0.11) + S * 0.032, INK());
   line(x, pts, S * (thick ? 0.16 : 0.11), a.fit === 'overalls' ? toneRaw(a, 'shade') : a.shade);
   x.restore();
 }
@@ -161,8 +163,9 @@ function drawFoot(x, S, px, py, big = false){ const k = big ? 1.4 : 1; x.fillSty
 function drawArm(x, a, S, pts, left, thick = false){
   x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
   const sleeve = a.fit === 'hoodie' ? a.c2 : a.c;
+  line(x, pts, S * (thick ? 0.13 : 0.08) + S * 0.032, INK());
   line(x, pts, S * (thick ? 0.13 : 0.08), left ? (a.fit === 'hoodie' ? toneRaw(a, 'shade') : a.shade) : sleeve);
-  x.fillStyle = a.light; const e = pts[pts.length - 1]; dot(x, e[0], e[1], S * (thick ? 0.062 : 0.038)); x.fill();
+  x.fillStyle = a.light; const e = pts[pts.length - 1]; dot(x, e[0], e[1], S * (thick ? 0.062 : 0.038)); x.fill(); x.strokeStyle = INK(); x.lineWidth = S * 0.016; x.stroke();
   x.restore();
 }
 
@@ -288,7 +291,7 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
 /* ---------- Cubo: the blue one, doing one of the story's moves with the story's faces ----------
    pose: any move card's name (or stand, wave, cheer, reach); face: smile, grin, wow, wink, tongue, joy or smirk (default: the face that goes
    with that drawing of the move). Used by the story, the cover, pause and results screens and the creator library. */
-const CUBO_FACE = { smile: ['dot', 'smile'], grin: ['dot', 'open', 'tilt'], wow: ['wide', 'gasp', 'up'], wink: ['wink', 'open', 'tilt'], tongue: ['dot', 'tongue'], joy: ['happy', 'open', 'tilt'], smirk: ['dot', 'cat'] };
+const CUBO_FACE = { smile: ['dot', 'smile'], grin: ['dot', 'open'], wow: ['wide', 'gasp', 'up'], wink: ['wink', 'open', 'raise'], tongue: ['dot', 'tongue'], joy: ['happy', 'open'], smirk: ['dot', 'cat'] };
 const CUBO_LOOKS = Object.fromEntries(Object.entries(CUBO_FACE).map(([k, [eyes, mouth, brow]]) => [k, { ...CUBO, face: { eyes, mouth, brow } }]));
 /* a blink every 3 to 5 seconds, at random (the same random for the same moment), and gentle: a tenth of a second */
 const rand = (k) => { const v = Math.sin(k * 12.9898 + 4.1414) * 43758.5453; return v - Math.floor(v); };
