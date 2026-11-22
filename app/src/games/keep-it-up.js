@@ -4,6 +4,7 @@
 
    Nothing to lose: if the ball reaches the ground it just bounces back up and the count starts again. The best run
    is the round's best. Gentle by design - a hit always sends the ball up, a little toward where the hand was going. */
+import { color, alpha } from './assets/palette.js';
 import { Juice } from './common.js';
 import { sayBubble, goalBar, hudZones } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
@@ -18,10 +19,11 @@ export const MILESTONES = [10, 25, 50, 75, 100, 125, 150];
 /* a new ball every BALL_EVERY in a row (10, 20, 30...), up to MAX_BALLS in the air at once */
 export const BALL_EVERY = 10, MAX_BALLS = 10;
 export const BREEZE_EVERY = [9, 15];
-const BALL_COLS = ['#ff5d6c', '#ffb84d', '#ffe36e', '#4cc9a0', '#4da3ff', '#a98bff'];
+/* the beach ball's wedges are touchable colours */
+const BALL_COLS = ['cherry', 'tangerine', 'sunflower', 'mint', 'skyBlue', 'grape'].map(n => color('touch.' + n));
 
 export default {
-  id: 'keep-it-up', unit: 'bounces', name: 'Keep It Up!', stars: 1, accent: '#4da3ff',
+  id: 'keep-it-up', unit: 'bounces', name: 'Keep It Up!', stars: 1, accent: color('touch.skyBlue'),
   secs: ROUND, moves: ['bat', 'reach'],
   create(n){ return new KeepItUp(n); }
 };
@@ -120,7 +122,7 @@ class KeepItUp {
     if (MILESTONES.includes(this.streak) || (this.streak > 150 && this.streak % 25 === 0)){
       if (!added) this.say = { text: `${this.streak} in a row! Wow!`, t: 0 };
       this.j.kick(8); sfx.hooray?.();
-      for (let k = 0; k < 16; k++) this.j.burst(W * (0.2 + Math.random() * 0.6), H * (0.2 + Math.random() * 0.4), ['#ffd35c', '#ff7eb3', '#7fd6a2', '#7ab8ff'][k % 4], 4, 1);
+      for (let k = 0; k < 16; k++) this.j.burst(W * (0.2 + Math.random() * 0.6), H * (0.2 + Math.random() * 0.4), [color('touch.sunflower'), color('touch.bubblegum'), color('touch.mint'), color('touch.skyBlue')][k % 4], 4, 1);
     } else if (this.streak >= 3) this.say = { text: `${this.streak} in a row!`, t: Math.min(this.say.t, 0.2) };
   }
 
@@ -130,7 +132,7 @@ class KeepItUp {
     const live = this.balls.filter(x => !x.gone).length;
     if (live > 1){
       b.gone = true;
-      this.j.burst(b.x * W, b.y * H, '#ffd35c', 10, 0.8);
+      this.j.burst(b.x * W, b.y * H, color('touch.sunflower'), 10, 0.8);
       this.say = { text: `Oops! ${live - 1} ${live - 1 === 1 ? 'ball' : 'balls'} left`, t: 0 };
       sfx.plop?.();
       return;
@@ -147,12 +149,12 @@ class KeepItUp {
     for (const b of this.balls){
       /* its shadow on the grass: smaller the higher it is */
       const hgt = Math.max(0, Math.min(1, (FLOOR - b.y) / 0.8)), sw = BALL_R * H * (1.1 - hgt * 0.5);
-      c.fillStyle = `rgba(58,51,96,${0.2 - hgt * 0.1})`; c.beginPath(); c.ellipse(b.x * W, FLOOR * H + BALL_R * H * 0.9, sw, sw * 0.28, 0, 0, 6.2832); c.fill();
+      c.fillStyle = alpha('shade.shadow', 0.2 - hgt * 0.1); c.beginPath(); c.ellipse(b.x * W, FLOOR * H + BALL_R * H * 0.9, sw, sw * 0.28, 0, 0, 6.2832); c.fill();
     }
     for (const b of this.balls) this._ballAt(c, b.x * W, b.y * H, BALL_R * H, b.rot);
     this.j.draw(c, H);
     if (this.breezeLeft > 0){
-      c.save(); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = Math.max(2, H * 0.004); c.lineCap = 'round';
+      c.save(); c.strokeStyle = alpha('earth.snow', 0.7); c.lineWidth = Math.max(2, H * 0.004); c.lineCap = 'round';
       const dir = Math.sign(this.breeze);
       for (let k = 0; k < 5; k++){
         const y = H * (0.2 + k * 0.1), x = ((this.t * 0.5 * dir + k * 0.23) % 1 + 1) % 1 * W;
@@ -163,7 +165,7 @@ class KeepItUp {
     if (shook) c.restore();
     this.avatars.drawMitts(c, W, H, this.players);
     sayBubble(c, W, H, { text: this.say.text, t: this.say.t });
-    goalBar(c, W, H, this.streak / this._next(), { color: '#4da3ff' });
+    goalBar(c, W, H, this.streak / this._next(), { color: color('touch.skyBlue') });
   }
 
   /* a beach ball: coloured wedges, a shine */
@@ -173,9 +175,9 @@ class KeepItUp {
     for (let i = 0; i < n; i++){
       c.fillStyle = BALL_COLS[i]; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, r, i * 6.2832 / n, (i + 1) * 6.2832 / n); c.closePath(); c.fill();
     }
-    c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, r * 0.18, 0, 6.2832); c.fill();
+    c.fillStyle = color('earth.snow'); c.beginPath(); c.arc(0, 0, r * 0.18, 0, 6.2832); c.fill();
     c.restore();
-    c.save(); c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(x - r * 0.35, y - r * 0.4, r * 0.28, r * 0.17, -0.6, 0, 6.2832); c.fill(); c.restore();
+    c.save(); c.fillStyle = alpha('earth.snow', 0.35); c.beginPath(); c.ellipse(x - r * 0.35, y - r * 0.4, r * 0.28, r * 0.17, -0.6, 0, 6.2832); c.fill(); c.restore();
   }
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */

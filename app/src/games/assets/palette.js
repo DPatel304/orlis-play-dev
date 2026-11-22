@@ -10,12 +10,16 @@ export const PALETTE = {
   fav: { sky: '#3da9ff', orange: '#ff8a3d', green: '#22c55e', purple: '#a855f7', pink: '#ff5d8f', yellow: '#facc15', teal: '#14b8a6', red: '#ef4444' },
   /* the painted sky and light */
   sky: { high: '#8fc0e2', mid: '#9fc8e6', low: '#cfe0e6', horizon: '#e9eee6', mist: '#e4ebe6', sun: '#fff4cf', sunGlow: '#ffe2a0' },
+  /* the evening sky: the three colours Pop Party's sunset needs beyond the sky and earth groups (high blue, deep blue-violet, rose) */
+  dusk: { high: '#8aa8d6', deep: '#6a6fae', rose: '#e3a3a8' },
+  /* the autumn meadow Leaf Pile needs: dry-grass hills (straw, hay) and two leaf colours (amber, rust); every other autumn colour is one of these with a tone, or from earth */
+  autumn: { straw: '#c8c07c', hay: '#a8a05c', amber: '#e0893b', rust: '#c9503a' },
   /* one green ladder, darkest (near, shaded) to lightest (far, hazy) */
   meadow: { deep: '#5f8a4c', leaf: '#6f9a5e', fresh: '#58b068', grass: '#80ae6a', lawn: '#93bb7c', soft: '#a9c98f', far: '#c9dbb0', haze: '#e3f0cf' },
   /* warm earth and calm accents */
   earth: { bark: '#7a6550', path: '#f6d9a8', sand: '#e9c7a8', clay: '#d9895b', brick: '#e07a5f', peach: '#ffc48a', plumRoof: '#8a6f8f', snow: '#ffffff' },
-  /* animal coats that the earth colours lack (the raven; browns and greys join here when a painted animal needs them) */
-  fur: { charcoal: '#3b3a52' },
+  /* animal coats that the earth colours lack (the raven, the bear; more browns and greys join here when a painted animal needs them) */
+  fur: { charcoal: '#3b3a52', brown: '#8a5a3b' },
   /* shade (purple-grey, never black), the thin ink edge, and the interface paper */
   shade: { light: '#c4bce0', mid: '#8a80b0', shadow: '#342860', ink: '#2f2b45', inkSoft: '#6b6680', paper: '#faf6ec', card: '#fffdf8', line: '#e6dcc7' },
   /* interface accents */

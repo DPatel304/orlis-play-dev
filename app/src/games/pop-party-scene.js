@@ -15,19 +15,24 @@
    the per-frame cost is kept to a few dozen shapes plus a couple of batched
    strokes, since the pose model is sharing the same laptop. */
 
+import { color, alpha } from './assets/palette.js';
+
 const hex = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+/* a palette colour (with its tone) as the [r, g, b] this scene works in */
+const pal = (name, t) => hex(color(name, t));
 const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
-const rgb = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const byte = (v) => (Math.max(0, Math.min(255, v | 0))).toString(16).padStart(2, '0');
+const css = (c, a = 1) => '#' + byte(c[0]) + byte(c[1]) + byte(c[2]) + (a < 1 ? byte(Math.round(a * 255)) : '');
 const BLACK = [0, 0, 0];
 
 /* Time of day across the round, by progress 0..1. light/amt tint the
    ground; dark dims it. */
 const DAY = [
-  { p:0,    top:'#9fc8e6', mid:'#cfe0e6', low:'#f6ead2', light:'#ffe6c4', amt:0.08, dark:0.00, sun:'#fff3cf', cloud:'#ffffff' },
-  { p:0.35, top:'#8fc0e2', mid:'#c4dde8', low:'#f1ead8', light:'#ffffff', amt:0.00, dark:0.00, sun:'#fff6d8', cloud:'#ffffff' },
-  { p:0.72, top:'#8aa8d6', mid:'#e9c7a8', low:'#f6d9a8', light:'#ffc888', amt:0.18, dark:0.03, sun:'#ffe2a0', cloud:'#fff1e2' },
-  { p:1,    top:'#6a6fae', mid:'#e3a3a8', low:'#f5c08e', light:'#ff9f7a', amt:0.25, dark:0.14, sun:'#ffc48a', cloud:'#ffd9c8' }
-].map(k => ({ ...k, ...Object.fromEntries(['top','mid','low','light','sun','cloud'].map(f => [f, hex(k[f])])) }));
+  { p:0,    top:'sky.mid',  mid:'sky.low', low:['touch.sunflower', 'light'], light:['earth.peach', 'light'], amt:0.08, dark:0.00, sun:'sky.sun',     cloud:'earth.snow' },
+  { p:0.35, top:'sky.high', mid:'sky.low', low:['touch.sunflower', 'light'], light:'earth.snow',             amt:0.00, dark:0.00, sun:'sky.sun',     cloud:'earth.snow' },
+  { p:0.72, top:'dusk.high', mid:'earth.sand', low:'earth.path',             light:'earth.peach',            amt:0.18, dark:0.03, sun:'sky.sunGlow', cloud:['earth.peach', 'light'] },
+  { p:1,    top:'dusk.deep', mid:'dusk.rose', low:'earth.peach',              light:'earth.peach',            amt:0.25, dark:0.14, sun:'earth.peach', cloud:['fav.orange', 'light'] }
+].map(k => ({ ...k, ...Object.fromEntries(['top','mid','low','light','sun','cloud'].map(f => [f, [].concat(k[f]).length > 1 ? pal(...k[f]) : pal(k[f])])) }));
 
 export function lighting(p){
   let i = 0;
@@ -40,12 +45,12 @@ export function lighting(p){
 }
 
 const GROUND = {
-  hills: ['#a9c98f', '#93bb7c', '#80ae6a'].map(hex),
-  trunk: hex('#7a6550'), leaf: hex('#6f9a5e'), leafLit: hex('#9fbf78'), leafShade: hex('#4f7350'),
-  grass: [hex('#5f8a4c'), hex('#a3c98a')],
-  farPeak: hex('#a9b8c4'), nearPeak: hex('#8fa3a8'),
+  hills: ['meadow.soft', 'meadow.lawn', 'meadow.grass'].map(n => pal(n)),
+  trunk: pal('earth.bark'), leaf: pal('meadow.leaf'), leafLit: pal('meadow.lawn'), leafShade: pal('meadow.leaf', 'shade'),
+  grass: [pal('meadow.deep'), pal('meadow.soft')],
+  farPeak: pal('sky.low', 'shade'), nearPeak: pal('sky.high', 'shade'),
   /* the one shadow tone everything takes on its right */
-  shade: hex('#3a3360')
+  shade: pal('shade.shadow')
 };
 
 /* Deterministic scatter, so the landscape holds still between frames. */
@@ -61,7 +66,7 @@ const TREES = [[0.07,0.775,0.7,0],[0.17,0.85,0.95,1],[0.30,0.785,0.6,0],[0.70,0.
 const TUFTS = Array.from({ length: 110 }, (_, i) => ({ x: -0.06 + hash(i, 13) * 1.12, y: 0.9 + Math.pow(hash(i, 17), 0.6) * 0.1,
                                                        h: 0.02 + hash(i, 19) * 0.026, ph: hash(i, 23) * 6.28 }));
 /* petals and seeds drifting on the wind */
-const PETALS = Array.from({ length: 26 }, (_, i) => ({ seed: hash(i, 29), y: 0.08 + hash(i, 31) * 0.75, sp: 0.02 + hash(i, 37) * 0.03, ph: hash(i, 41) * 6.28, col: ['#fff6d8', '#ffd2e0', '#e3f0cf'][i % 3] }));
+const PETALS = Array.from({ length: 26 }, (_, i) => ({ seed: hash(i, 29), y: 0.08 + hash(i, 31) * 0.75, sp: 0.02 + hash(i, 37) * 0.03, ph: hash(i, 41) * 6.28, col: [color('sky.sun'), color('touch.bubblegum', 'light'), color('meadow.haze')][i % 3] }));
 /* Each band of hills fades toward the horizon's colour by its haze: the
    way distance looks, and what lets the bright balloons sit in front. */
 const HILLS = [{ y:0.74, h:0.07, n:3, depth:0.03, haze:0.40 },
@@ -139,7 +144,7 @@ export class Scene {
     const ground = (base) => mix(mix(base, L.light, L.amt), BLACK, L.dark);
 
     const sky = c.createLinearGradient(0, 0, 0, H * 0.8);
-    sky.addColorStop(0, rgb(L.top)); sky.addColorStop(0.55, rgb(L.mid)); sky.addColorStop(1, rgb(L.low));
+    sky.addColorStop(0, css(L.top)); sky.addColorStop(0.55, css(L.mid)); sky.addColorStop(1, css(L.low));
     c.fillStyle = sky; c.fillRect(0, 0, W, H);
 
     this._sun(c, W, H, L);
@@ -151,7 +156,7 @@ export class Scene {
     this._clouds(c, W, H, L, 0.8, 9);
     this._hills(c, W, H, ground, L);
     /* far things fade toward the sky, the nearer the horizon the more (the gradient is made once per screen height) */
-    if (this._hzH !== H){ this._hzH = H; const hz = c.createLinearGradient(0, H * 0.38, 0, H * 0.78); hz.addColorStop(0, 'rgba(235,242,246,0)'); hz.addColorStop(0.55, 'rgba(235,242,246,.30)'); hz.addColorStop(1, 'rgba(235,242,246,0)'); this._hz = hz; }
+    if (this._hzH !== H){ this._hzH = H; const hz = c.createLinearGradient(0, H * 0.38, 0, H * 0.78); hz.addColorStop(0, alpha('sky.horizon', 0)); hz.addColorStop(0.55, alpha('sky.horizon', 0.3)); hz.addColorStop(1, alpha('sky.horizon', 0)); this._hz = hz; }
     c.fillStyle = this._hz; c.fillRect(0, H * 0.38, W, H * 0.4);
   }
 
@@ -185,7 +190,7 @@ export class Scene {
         cv.width = Math.round(W / 2); cv.height = Math.round(H / 2);
         const g = cv.getContext('2d');
         let sd = 3; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-        for (let i = 0; i < cv.width * cv.height / 18; i++){ g.fillStyle = r() < 0.5 ? 'rgba(255,255,255,.08)' : 'rgba(60,40,20,.05)'; g.fillRect(r() * cv.width, r() * cv.height, 1, 1); }
+        for (let i = 0; i < cv.width * cv.height / 18; i++){ g.fillStyle = r() < 0.5 ? alpha('earth.snow', 0.08) : alpha('shade.shadow', 0.05); g.fillRect(r() * cv.width, r() * cv.height, 1, 1); }
         this._grainCv = cv;
       }
       c.drawImage(this._grainCv, 0, 0, W, H);
@@ -203,13 +208,13 @@ export class Scene {
        covers only where it can be seen, and lite mode goes without. */
     if (!this.lite){
       const glow = c.createRadialGradient(sx, sy, sr * 0.5, sx, sy, sr * 4);
-      glow.addColorStop(0, rgb(mix(L.sun, [255, 255, 255], 0.4), 0.75));
-      glow.addColorStop(1, rgb(L.sun, 0));
+      glow.addColorStop(0, css(mix(L.sun, [255, 255, 255], 0.4), 0.75));
+      glow.addColorStop(1, css(L.sun, 0));
       c.fillStyle = glow; c.fillRect(sx - sr * 4, sy - sr * 4, sr * 8, sr * 8);
     }
 
     c.save(); c.translate(sx, sy); c.rotate(this.t * (0.08 + this.joy * 0.5));
-    c.fillStyle = rgb(mix(L.sun, [255, 255, 255], 0.3), 0.1 + this.joy * 0.12);
+    c.fillStyle = css(mix(L.sun, [255, 255, 255], 0.3), 0.1 + this.joy * 0.12);
     const len = sr * (4.2 + this.joy * 1.8);
     c.beginPath();
     for (let i = 0; i < 12; i++){
@@ -223,10 +228,10 @@ export class Scene {
     c.fill();
     c.restore();
 
-    c.fillStyle = rgb(L.sun);
+    c.fillStyle = css(L.sun);
     c.beginPath(); c.arc(sx, sy, sr, 0, 6.2832); c.fill();
     /* A face, which grins wider as the room does better. */
-    const ink = 'rgba(120,70,20,.75)';
+    const ink = alpha('earth.bark', 0.75, 'shade');
     c.fillStyle = ink;
     const blink = (this.t % 4.3) < 0.12 ? 0.15 : 1;
     for (const ex of [-0.32, 0.32]){
@@ -236,14 +241,14 @@ export class Scene {
     const grin = 0.35 + this.joy * 0.25;
     c.beginPath(); c.arc(sx, sy + sr * 0.05, sr * grin, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
     if (this.joy > 0.05){
-      c.fillStyle = `rgba(255,120,120,${0.45 * this.joy})`;
+      c.fillStyle = alpha('touch.cherry', 0.45 * this.joy);
       for (const ex of [-0.55, 0.55]){ c.beginPath(); c.arc(sx + ex * sr, sy + sr * 0.2, sr * 0.14, 0, 6.2832); c.fill(); }
     }
     c.globalAlpha = 1;
   }
 
   _clouds(c, W, H, L, from, to){
-    const col = rgb(L.cloud);
+    const col = css(L.cloud);
     for (const cl of [...CLOUDS].sort((a, b) => a.s - b.s)){
       if (cl.s < from || cl.s >= to) continue;
       const w = H * 0.22 * cl.s;
@@ -255,7 +260,7 @@ export class Scene {
 
   _rainbow(c, W, H){
     const cx = W * 0.5 + this._shift(0.012, W), cy = H * 0.86, r0 = H * 0.62, band = H * 0.018;
-    const cols = ['#ff4d4d', '#ff9a3c', '#ffe14d', '#5fd36b', '#4dabff', '#5b6cff', '#b05bff'];
+    const cols = ['cherry', 'tangerine', 'sunflower', 'mint', 'lagoon', 'skyBlue', 'grape'].map(n => color('touch.' + n));
     c.lineWidth = band;
     c.globalAlpha = this.rainbow;
     cols.forEach((col, i) => {
@@ -270,7 +275,7 @@ export class Scene {
                                                     [PEAKS_NEAR, this.G.nearPeak, 0.5, 0.02, false]]){
       const dx = this._shift(depth, W);
       const col = ground(mix(base, L.low, haze));
-      c.fillStyle = rgb(col);
+      c.fillStyle = css(col);
       c.beginPath(); c.moveTo(-W * 0.2, H * 0.8);
       for (let i = 0; i < peaks.length; i++){
         const p = peaks[i], q = peaks[i + 1];
@@ -279,7 +284,7 @@ export class Scene {
       }
       c.lineTo(W * 1.2, H * 0.8); c.closePath(); c.fill();
       /* the shadow side of each peak, one flat tone */
-      c.fillStyle = rgb(mix(col, this.G.shade, 0.12));
+      c.fillStyle = css(mix(col, this.G.shade, 0.12));
       c.beginPath();
       for (let i = 0; i < peaks.length - 1; i++){
         const p = peaks[i], q = peaks[i + 1], vx = ((p.x + q.x) / 2) * W + dx, vy = Math.max(p.y, q.y) * H + H * 0.06;
@@ -287,7 +292,7 @@ export class Scene {
       }
       c.fill();
       if (snow){
-        c.fillStyle = rgb(mix([255, 255, 255], col, 0.5));
+        c.fillStyle = css(mix([255, 255, 255], col, 0.5));
         for (const p of peaks){
           if (p.y > 0.52) continue;
           const x = p.x * W + dx, y = p.y * H, w = H * 0.025;
@@ -300,16 +305,16 @@ export class Scene {
   /* A band of haze in the horizon's colour, thickest near its bottom edge. */
   _mist(c, W, H, L, from, to, strength){
     const g = c.createLinearGradient(0, H * from, 0, H * to);
-    g.addColorStop(0, rgb(L.low, 0));
-    g.addColorStop(0.75, rgb(L.low, strength));
-    g.addColorStop(1, rgb(L.low, 0));
+    g.addColorStop(0, css(L.low, 0));
+    g.addColorStop(0.75, css(L.low, strength));
+    g.addColorStop(1, css(L.low, 0));
     c.fillStyle = g; c.fillRect(0, H * from, W, H * (to - from));
   }
 
   _birds(c, W, H){
     const f = this.flock, w = H * 0.013;
     const pos = [[0, 0], [-1, -1], [-1, 1], [-2, -2], [-2, 2]];
-    c.strokeStyle = 'rgba(40,40,70,.45)'; c.lineWidth = Math.max(1.5, H * 0.0024); c.lineCap = 'round';
+    c.strokeStyle = alpha('shade.ink', 0.45); c.lineWidth = Math.max(1.5, H * 0.0024); c.lineCap = 'round';
     c.beginPath();
     pos.forEach(([bx, by], i) => {
       const x = f.x * W + f.dir * bx * W * 0.03 + this._shift(0.01, W), y = f.y * H + by * H * 0.025;
@@ -323,7 +328,7 @@ export class Scene {
   _hills(c, W, H, ground, L){
     HILLS.forEach((band, b) => {
       const dx = this._shift(band.depth, W), m = W * 0.08;
-      const far = (col) => rgb(mix(ground(col), L.low, band.haze));
+      const far = (col) => css(mix(ground(col), L.low, band.haze));
       c.fillStyle = far(this.G.hills[b]);
       c.beginPath(); c.moveTo(-m + dx, H); c.lineTo(-m + dx, H * band.y);
       const span = (W + m * 2) / band.n;
@@ -339,7 +344,7 @@ export class Scene {
         const x = W * fx + dx, y = H * fy, sc = (H / 900) * fs;
         const sway = (Math.sin(this.t * 1.3 + fx * 20) * 0.25 + this.wind * 0.5) * 6 * sc;
         /* its shadow on the grass, falling right */
-        c.fillStyle = 'rgba(58,51,96,.14)'; c.beginPath(); c.ellipse(x + 30 * sc, y + 42 * sc, 40 * sc, 9 * sc, 0, 0, 6.2832); c.fill();
+        c.fillStyle = alpha('shade.shadow', 0.14); c.beginPath(); c.ellipse(x + 30 * sc, y + 42 * sc, 40 * sc, 9 * sc, 0, 0, 6.2832); c.fill();
         c.fillStyle = far(this.G.trunk); c.fillRect(x - 5 * sc, y, 10 * sc, 42 * sc);
         /* clumps: lit on the left, one shadow tone on the right */
         const clumps = [[0, -12, 30], [-20, -2, 21], [20, 0, 22], [2, -34, 20]];
@@ -361,7 +366,7 @@ export class Scene {
     const dx = this._shift(FRONT, W);
     c.lineCap = 'round'; c.lineWidth = Math.max(2, H * 0.004);
     this.G.grass.forEach((col, k) => {
-      c.strokeStyle = rgb(ground(col));
+      c.strokeStyle = css(ground(col));
       c.beginPath();
       TUFTS.forEach((tf, i) => {
         if (i % 2 !== k) return;
@@ -381,7 +386,7 @@ export class Scene {
      separate shapes a frame. */
   _flowers(c, W, H){
     const dx = this._shift(FRONT, W), heads = [];
-    c.strokeStyle = '#3c8f4c'; c.lineWidth = Math.max(1.5, H * 0.0025);
+    c.strokeStyle = color('meadow.fresh', 'shade'); c.lineWidth = Math.max(1.5, H * 0.0025);
     c.beginPath();
     for (const f of this.lite ? this.flowers.slice(-25) : this.flowers){
       const grow = Math.min(1, f.age / 0.5), x = f.x * W + dx, y = f.y * H;
@@ -400,7 +405,7 @@ export class Scene {
       }
       c.fill();
     }
-    c.fillStyle = '#ffe066';
+    c.fillStyle = color('touch.sunflower');
     c.beginPath();
     for (const [hx, hy, r] of heads){ c.moveTo(hx + r * 0.55, hy); c.arc(hx, hy, r * 0.55, 0, 6.2832); }
     c.fill();
@@ -412,7 +417,7 @@ export class Scene {
    translucent washes rather than a hard shape, a cooler tone underneath. */
 function cloud(c, x, y, w, col, alpha){
   c.globalAlpha = alpha * 0.45;
-  c.fillStyle = 'rgb(206,216,228)';
+  c.fillStyle = color('sky.low');
   c.beginPath(); c.ellipse(x + w * 0.04, y + w * 0.05, w * 0.62, w * 0.09, 0, 0, 6.2832); c.fill();
   c.fillStyle = col;
   for (const [dx, dy, rx, ry, a] of [[0, 0, 0.7, 0.12, 0.5], [-0.12, -0.03, 0.45, 0.1, 0.7], [0.15, -0.05, 0.38, 0.09, 0.8], [0.02, -0.07, 0.28, 0.07, 0.9]]){

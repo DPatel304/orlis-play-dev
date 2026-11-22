@@ -9,6 +9,7 @@
    grows, but never falls: nothing in this game goes wrong. Each player's
    count is the blocks they put on. First person: the players are their
    hands. */
+import { color, alpha } from './assets/palette.js';
 import { Juice } from './common.js';
 import { sayBubble } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
@@ -25,11 +26,12 @@ export const TOWER_FULL = 8, BLOCK = 0.085, TOWER = { x: 0.5, base: 0.93 };
 export const GRAB = 0.075, SNAP = 0.13;
 /* how fast blocks float down, and how many float at once */
 const FALL = [0.06, 0.1], AIRBORNE = 2, ON_GRASS = 4;
-const COLS = ['#ff7aa8', '#ffd25a', '#79b3aa', '#a98bff', '#f2a65a', '#9fd38a', '#7fb0e0', '#e88b8b'];
+/* the blocks are touchables: one of the eight touchable colours each */
+const COLS = ['bubblegum', 'sunflower', 'lagoon', 'grape', 'tangerine', 'mint', 'skyBlue', 'cherry'].map(n => color('touch.' + n));
 const MARKS = ['star', 'heart', 'dot'];
 
 export default {
-  id: 'stack-it-high', unit: 'blocks', name: 'Stack It High', stars: 1, accent: '#79b3aa', secs: ROUND,
+  id: 'stack-it-high', unit: 'blocks', name: 'Stack It High', stars: 1, accent: color('touch.lagoon'), secs: ROUND,
   moves: ['reach'],
   create(n){ return new StackItHigh(n); }
 };
@@ -119,7 +121,7 @@ class StackItHigh {
     if (this.rocket){
       const r = this.rocket;
       r.t += dt; if (r.t > 1) r.v += dt * 0.9; r.y += r.v * dt;
-      if (r.t > 1 && Math.random() < dt * 30) this.fx.push({ x: TOWER.x + (Math.random() - 0.5) * 0.04, y: TOWER.base - r.y, vx: (Math.random() - 0.5) * 0.1, vy: 0.2, life: 0.9, age: 0, col: ['#ffd25a', '#f2a65a', '#ffffff'][(Math.random() * 3) | 0] });
+      if (r.t > 1 && Math.random() < dt * 30) this.fx.push({ x: TOWER.x + (Math.random() - 0.5) * 0.04, y: TOWER.base - r.y, vx: (Math.random() - 0.5) * 0.1, vy: 0.2, life: 0.9, age: 0, col: [color('touch.sunflower'), color('touch.tangerine'), color('earth.snow')][(Math.random() * 3) | 0] });
       if (r.y > 1.4){ this.rocket = null; this.say = { text: 'Build another one!', t: 0 }; }
     }
     for (const f of this.fx){ f.age += dt; f.x += f.vx * dt; f.y += f.vy * dt; }
@@ -154,7 +156,7 @@ class StackItHigh {
     const s = BLOCK * H;
     /* the tower, swaying a little more the taller it is */
     const sway = Math.sin(this.t * 1.6) * 0.0008 * this.tower.length;
-    c.fillStyle = 'rgba(58,51,96,.18)'; c.beginPath(); c.ellipse(TOWER.x * W + s * 0.3, TOWER.base * H, s * 1.1, s * 0.18, 0, 0, 6.2832); c.fill();
+    c.fillStyle = alpha('shade.shadow', 0.18); c.beginPath(); c.ellipse(TOWER.x * W + s * 0.3, TOWER.base * H, s * 1.1, s * 0.18, 0, 0, 6.2832); c.fill();
     this.tower.forEach((k, n) => {
       const x = (TOWER.x + k.dx + sway * n) * W, y = (TOWER.base - (n + 0.5) * BLOCK) * H;
       block(c, x, y, s * (1 + k.pop * 0.12), k.rot + sway * n * 2, k.col, k.mark);
@@ -162,7 +164,7 @@ class StackItHigh {
     /* where it goes next: a soft glowing outline on top */
     if (!this.rocket && this.blocks.some(b => b.held)){
       const y = (this._top() - BLOCK * 0.5) * H;
-      c.save(); c.globalAlpha = 0.45 + 0.25 * Math.sin(this.t * 5); c.strokeStyle = '#fff'; c.lineWidth = Math.max(3, H * 0.004); c.setLineDash([H * 0.012, H * 0.01]);
+      c.save(); c.globalAlpha = 0.45 + 0.25 * Math.sin(this.t * 5); c.strokeStyle = color('earth.snow'); c.lineWidth = Math.max(3, H * 0.004); c.setLineDash([H * 0.012, H * 0.01]);
       c.beginPath(); c.roundRect(TOWER.x * W - s / 2, y - s / 2, s, s, s * 0.2); c.stroke(); c.restore();
     }
     if (this.rocket) this._rocket(c, W, H, s);
@@ -183,12 +185,12 @@ class StackItHigh {
     const shake = r.t < 1 ? Math.sin(r.t * 60) * H * 0.003 : 0;
     if (r.t > 0.6){
       const fl = s * (0.8 + Math.random() * 0.4);
-      c.fillStyle = '#ffd25a'; c.beginPath(); c.moveTo(x - s * 0.35, base); c.lineTo(x, base + fl * 1.6); c.lineTo(x + s * 0.35, base); c.fill();
-      c.fillStyle = '#f2a65a'; c.beginPath(); c.moveTo(x - s * 0.2, base); c.lineTo(x, base + fl); c.lineTo(x + s * 0.2, base); c.fill();
+      c.fillStyle = color('touch.sunflower'); c.beginPath(); c.moveTo(x - s * 0.35, base); c.lineTo(x, base + fl * 1.6); c.lineTo(x + s * 0.35, base); c.fill();
+      c.fillStyle = color('touch.tangerine'); c.beginPath(); c.moveTo(x - s * 0.2, base); c.lineTo(x, base + fl); c.lineTo(x + s * 0.2, base); c.fill();
     }
-    for (const d of [-1, 1]){ c.fillStyle = '#e8513d'; c.beginPath(); c.moveTo(x + d * s * 0.5, base - s * 1.4); c.lineTo(x + d * s * 0.95, base); c.lineTo(x + d * s * 0.5, base); c.fill(); }
+    for (const d of [-1, 1]){ c.fillStyle = color('touch.cherry'); c.beginPath(); c.moveTo(x + d * s * 0.5, base - s * 1.4); c.lineTo(x + d * s * 0.95, base); c.lineTo(x + d * s * 0.5, base); c.fill(); }
     r.blocks.forEach((k, i) => block(c, x + shake, base - (i + 0.5) * s, s, 0, k.col, k.mark));
-    c.fillStyle = '#e8513d'; c.beginPath(); c.moveTo(x - s * 0.5 + shake, base - n * s); c.quadraticCurveTo(x + shake, base - n * s - s * 1.5, x + s * 0.5 + shake, base - n * s); c.fill();
+    c.fillStyle = color('touch.cherry'); c.beginPath(); c.moveTo(x - s * 0.5 + shake, base - n * s); c.quadraticCurveTo(x + shake, base - n * s - s * 1.5, x + s * 0.5 + shake, base - n * s); c.fill();
   }
 
   /* (left of the tower, which grows up the middle) */
@@ -224,9 +226,9 @@ export function block(c, x, y, s, rot, col, mark){
   const half = s / 2, r = s * 0.2;
   c.fillStyle = col; c.beginPath(); c.roundRect(-half, -half, s, s, r); c.fill();
   c.save(); c.beginPath(); c.roundRect(-half, -half, s, s, r); c.clip();
-  c.fillStyle = 'rgba(58,51,96,.18)'; c.fillRect(half * 0.36, -half, half, s); c.fillRect(-half, half * 0.4, s, half);
+  c.fillStyle = alpha('shade.shadow', 0.18); c.fillRect(half * 0.36, -half, half, s); c.fillRect(-half, half * 0.4, s, half);
   c.restore();
-  c.fillStyle = 'rgba(255,255,255,.85)';
+  c.fillStyle = alpha('earth.snow', 0.85);
   if (mark === 'star'){ c.beginPath(); for (let k = 0; k < 10; k++){ const a = -Math.PI / 2 + k * Math.PI / 5, q = k % 2 ? s * 0.1 : s * 0.24; c.lineTo(Math.cos(a) * q, Math.sin(a) * q); } c.closePath(); c.fill(); }
   else if (mark === 'heart'){ c.beginPath(); c.moveTo(0, s * 0.16); c.bezierCurveTo(-s * 0.31, -s * 0.05, -s * 0.15, -s * 0.29, 0, -s * 0.13); c.bezierCurveTo(s * 0.15, -s * 0.29, s * 0.31, -s * 0.05, 0, s * 0.16); c.fill(); }
   else { c.beginPath(); c.arc(0, 0, s * 0.18, 0, 6.2832); c.fill(); }

@@ -6,6 +6,8 @@
    Units are fractions of the animal's size, facing right, with the origin at
    the middle of its body; `dir` mirrors them for walking left. */
 
+import { color, alpha } from './assets/palette.js';
+
 export const ANIMALS = {
   dog: {
     size: 0.17, speed: 0.1, y0: [0.58, 0.66], hues: [0, 28, 135, 215, 270, 325],
@@ -114,19 +116,19 @@ export function drawAnimal(c, an, W, H){
       }
     }
     /* A streak of shine along the top of each twist. */
-    c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = p.w * 0.2;
+    c.strokeStyle = alpha('earth.snow', 0.5); c.lineWidth = p.w * 0.2;
     c.beginPath();
     c.moveTo(x1 + (x2 - x1) * 0.2, y1 + (y2 - y1) * 0.2 - p.w * 0.2);
     c.lineTo(x1 + (x2 - x1) * 0.65, y1 + (y2 - y1) * 0.65 - p.w * 0.2);
     c.stroke();
     if (p.nose){
-      c.fillStyle = '#1d1430';
+      c.fillStyle = color('night.shade');
       c.beginPath(); c.arc(p.nose[0], p.nose[1], p.s * 0.055, 0, 6.2832); c.fill();
     }
     if (p.eye){
-      c.fillStyle = '#1d1430';
+      c.fillStyle = color('night.shade');
       c.beginPath(); c.arc(p.eye[0], p.eye[1], p.s * 0.045, 0, 6.2832); c.fill();
-      c.fillStyle = '#fff';
+      c.fillStyle = color('earth.snow');
       c.beginPath(); c.arc(p.eye[0] + p.s * 0.015, p.eye[1] - p.s * 0.015, p.s * 0.015, 0, 6.2832); c.fill();
     }
   }
