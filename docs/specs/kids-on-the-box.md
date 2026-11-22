@@ -1,6 +1,6 @@
 # Kids' profiles move to the Box (plan package S3; decisions 0011, 0028)
 
-Status: spec for implementation (Opus, 2026-11-22). Done when: the move is tested on both sides, and nothing about a child is left on
+Status: Shelved (decision 0044, 2026-11-22). The built work is `docs/shelved/s3-kids-on-the-box.patch`.
 the server once a family's Box has taken its kids.
 
 ## What moves and what stays

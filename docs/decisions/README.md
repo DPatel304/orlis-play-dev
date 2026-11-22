@@ -34,7 +34,7 @@ Date: YYYY-MM-DD
 | 0008 | Publishing and guardrails | Accepted |
 | 0009 | Watches as controllers | Shelved |
 | 0010 | How Orlis makes money | Open (deferred to after Phase 1) |
-| 0011 | Children's profiles stay in the house | Accepted |
+| 0011 | Children's profiles stay in the house | Replaced by 0044 (camera pictures still never leave the device) |
 | 0012 | Two ways games are made: Create and premium | Accepted |
 | 0013 | A safety floor for every game; age fit is separate | Accepted |
 | 0014 | No online play | Accepted |
@@ -51,7 +51,7 @@ Date: YYYY-MM-DD
 | 0025 | Phase 1 is 2D only; 3D is private experiments for now | Superseded by 0026 |
 | 0026 | Phase 1 has two games: Pop Party, and one 3D game for the TV and an Android tablet | Accepted; Peekaboo Garden (one hider phone, camera seekers); target late May 2027 |
 | 0027 | The pad link: a small local hub in Orlis Play; the game host is its client (spec: `docs/specs/pad-protocol.md`) | Accepted |
-| 0028 | Sessions and seats in code; kid profiles move to the Box | Accepted (join code replaced, see 0032; Pop Party phones dropped, see 0043) |
+| 0028 | Sessions and seats in code; kid profiles move to the Box | Accepted (join code replaced, see 0032; Pop Party phones dropped, see 0043; profiles stay on the server, see 0044) |
 | 0029 | Drawing: flat games on the 2D painter, 3D games on three.js on the TV and pads (supersedes 0020 and 0023) | Accepted (the 2D painter part stands again: 0036 superseded by 0038) |
 | 0030 | Phase 1 pads are the testers' own phones, with a minimum (replaces 0026's "Android tablet") | Accepted: minimum iPhone 15 or equivalent |
 | 0031 | How Peekaboo Garden is built | Accepted |
@@ -67,3 +67,4 @@ Date: YYYY-MM-DD
 | 0041 | Style rules: one base colour per object, shade and highlight by rule; gradients only in backgrounds; chunky shapes for 3D | Accepted |
 | 0042 | One character, many kids: every avatar is the same cube character; colour, face, topper, outfit, one extra | Accepted |
 | 0043 | Pop Party stays camera-only (replaces the Pop Party line of 0028) | Accepted |
+| 0044 | Everyone's profiles stay on the owner's server (nickname and avatar only; replaces 0011 and the profiles line of 0028) | Accepted |

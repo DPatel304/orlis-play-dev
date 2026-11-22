@@ -1,0 +1,1313 @@
+diff --git a/app/client/src-tauri/src/backups.rs b/app/client/src-tauri/src/backups.rs
+new file mode 100644
+index 0000000..2b372cc
+--- /dev/null
++++ b/app/client/src-tauri/src/backups.rs
+@@ -0,0 +1,139 @@
++//! The kids' profiles live on this PC (the Box), so a copy of them is kept as
++//! plain files in Documents\Orlis Play\Backups: one the parent asks for
++//! ("Save a backup"), and a quiet one after every change. The newest few are
++//! kept. The page hands over the text only (never a path); the files are
++//! named by this app.
++
++use std::{fs, path::{Path, PathBuf}, time::{SystemTime, UNIX_EPOCH}};
++use tauri::{AppHandle, Manager};
++
++/// How many backup files are kept.
++const KEEP: usize = 10;
++/// A backup is a small JSON file; anything bigger is not one.
++const MAX_BYTES: usize = 1_000_000;
++
++fn backups_dir(app: &AppHandle) -> Result<PathBuf, String> {
++    let docs = app.path().document_dir().map_err(|_| "Couldn't find the Documents folder.".to_string())?;
++    Ok(docs.join("Orlis Play").join("Backups"))
++}
++
++/// YYYY-MM-DD-HHMM for a time given as seconds since 1970 (UTC), so file names sort by time.
++fn stamp(secs: u64) -> String {
++    let days = (secs / 86_400) as i64;
++    let rem = secs % 86_400;
++    /* civil date from days since 1970-01-01 (Howard Hinnant's algorithm) */
++    let z = days + 719_468;
++    let era = z.div_euclid(146_097);
++    let doe = z.rem_euclid(146_097);
++    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
++    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
++    let mp = (5 * doy + 2) / 153;
++    let d = doy - (153 * mp + 2) / 5 + 1;
++    let m = if mp < 10 { mp + 3 } else { mp - 9 };
++    let y = yoe + era * 400 + if m <= 2 { 1 } else { 0 };
++    format!("{y:04}-{m:02}-{d:02}-{:02}{:02}", rem / 3600, rem % 3600 / 60)
++}
++
++fn is_backup(name: &str) -> bool {
++    name.starts_with("kids-") && name.ends_with(".json")
++}
++
++/// The backup files in a folder, oldest first.
++fn files_in(dir: &Path) -> Vec<PathBuf> {
++    let mut v: Vec<PathBuf> = fs::read_dir(dir)
++        .map(|r| r.filter_map(|e| e.ok()).map(|e| e.path()).filter(|p| p.is_file() && p.file_name().and_then(|n| n.to_str()).map_or(false, is_backup)).collect())
++        .unwrap_or_default();
++    v.sort();
++    v
++}
++
++/// Write a backup into `dir` (made if need be), then keep only the `KEEP` newest. Returns its path.
++fn write_backup(dir: &Path, text: &str, secs: u64) -> Result<PathBuf, String> {
++    if text.len() > MAX_BYTES || serde_json::from_str::<serde_json::Value>(text).is_err() {
++        return Err("That isn't a backup.".into());
++    }
++    fs::create_dir_all(dir).map_err(|e| format!("Couldn't make the Backups folder: {e}"))?;
++    let path = dir.join(format!("kids-{}.json", stamp(secs)));
++    fs::write(&path, text).map_err(|e| format!("Couldn't save the backup: {e}"))?;
++    let all = files_in(dir);
++    for old in all.iter().take(all.len().saturating_sub(KEEP)) {
++        let _ = fs::remove_file(old);
++    }
++    Ok(path)
++}
++
++/// The newest backup's text, if there is one.
++fn newest(dir: &Path) -> Option<String> {
++    files_in(dir).pop().and_then(|p| fs::read_to_string(p).ok())
++}
++
++fn now() -> u64 {
++    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
++}
++
++/// Save the kids' backup (the text the page made); the path it went to.
++#[tauri::command]
++pub fn kids_backup(app: AppHandle, text: String) -> Result<String, String> {
++    let p = write_backup(&backups_dir(&app)?, &text, now())?;
++    Ok(p.to_string_lossy().into_owned())
++}
++
++/// The newest backup's text, to offer it back if the app's own copy is gone.
++#[tauri::command]
++pub fn kids_backup_latest(app: AppHandle) -> Option<String> {
++    newest(&backups_dir(&app).ok()?)
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn temp(name: &str) -> PathBuf {
++        let d = std::env::temp_dir().join(format!("orlis-backups-test-{}-{name}", std::process::id()));
++        let _ = fs::remove_dir_all(&d);
++        d
++    }
++
++    #[test]
++    fn the_stamp_is_a_sortable_date_and_time() {
++        assert_eq!(stamp(0), "1970-01-01-0000");
++        assert_eq!(stamp(1_795_323_196), "2026-11-22-0453");
++        assert_eq!(stamp(951_782_400 + 86_399), "2000-02-29-2359");
++        assert!(stamp(1_000_000_000) < stamp(1_000_000_060));
++    }
++
++    #[test]
++    fn a_backup_is_written_into_a_folder_made_for_it_and_read_back() {
++        let dir = temp("write").join("Orlis Play").join("Backups");
++        let p = write_backup(&dir, r#"{"v":1,"kids":[]}"#, 1_795_323_196).unwrap();
++        assert_eq!(p.file_name().unwrap().to_str().unwrap(), "kids-2026-11-22-0453.json");
++        assert_eq!(fs::read_to_string(&p).unwrap(), r#"{"v":1,"kids":[]}"#);
++        assert_eq!(newest(&dir).unwrap(), r#"{"v":1,"kids":[]}"#);
++        let _ = fs::remove_dir_all(dir.parent().unwrap().parent().unwrap());
++    }
++
++    #[test]
++    fn only_the_ten_newest_are_kept_and_other_files_are_left_alone() {
++        let dir = temp("prune");
++        fs::create_dir_all(&dir).unwrap();
++        fs::write(dir.join("notes.txt"), "mine").unwrap();
++        for i in 0..14u64 {
++            write_backup(&dir, &format!(r#"{{"v":1,"n":{i}}}"#), 1_795_000_000 + i * 600).unwrap();
++        }
++        let left = files_in(&dir);
++        assert_eq!(left.len(), KEEP);
++        assert!(left[0].to_str().unwrap().contains(&stamp(1_795_000_000 + 4 * 600)), "the oldest four went");
++        assert_eq!(newest(&dir).unwrap(), r#"{"v":1,"n":13}"#);
++        assert!(dir.join("notes.txt").exists(), "nothing else is touched");
++        let _ = fs::remove_dir_all(&dir);
++    }
++
++    #[test]
++    fn what_is_not_a_backup_is_refused_and_nothing_is_written() {
++        let dir = temp("refuse");
++        assert!(write_backup(&dir, "not json", 1).is_err());
++        assert!(write_backup(&dir, &format!("\"{}\"", "x".repeat(MAX_BYTES)), 1).is_err());
++        assert!(!dir.exists());
++        assert!(newest(&dir).is_none());
++    }
++}
+diff --git a/app/client/src-tauri/src/main.rs b/app/client/src-tauri/src/main.rs
+index 06f8617..5dbfc30 100644
+--- a/app/client/src-tauri/src/main.rs
++++ b/app/client/src-tauri/src/main.rs
+@@ -16,6 +16,7 @@ use std::{path::Path, sync::Mutex, time::{Duration, Instant}};
+ use tauri::{AppHandle, LogicalSize, Manager, WebviewUrl, WebviewWindowBuilder};
+ use tauri_plugin_updater::{Update, UpdaterExt};
+ 
++mod backups;
+ mod creating;
+ mod pad;
+ mod setup;
+@@ -47,7 +48,7 @@ fn main() {
+         .plugin(tauri_plugin_updater::Builder::new().build())
+         .manage(Pending::default())
+         .manage(pad::PadHub::default())
+-        .invoke_handler(tauri::generate_handler![set_display_mode, check_update, install_update, find_servers, creating::games_list, creating::game_make, creating::game_write, creating::game_read, creating::game_show, creating::claude_open, creating::game_version, setup::setup_status, setup::install_tailscale, setup::tailscale_login, setup::install_claude, setup::claude_signin, setup::open_link, pad::pad_hub_info])
++        .invoke_handler(tauri::generate_handler![set_display_mode, check_update, install_update, find_servers, creating::games_list, creating::game_make, creating::game_write, creating::game_read, creating::game_show, creating::claude_open, creating::game_version, setup::setup_status, setup::install_tailscale, setup::tailscale_login, setup::install_claude, setup::claude_signin, setup::open_link, pad::pad_hub_info, backups::kids_backup, backups::kids_backup_latest])
+         .setup(|app| {
+             let app = app.handle().clone();
+             // The pad hub (phones as controllers) starts first, so the game's window can be told where it is.
+diff --git a/app/src/ui/account.js b/app/src/ui/account.js
+index 4cbc7a3..0c2362d 100644
+--- a/app/src/ui/account.js
++++ b/app/src/ui/account.js
+@@ -14,10 +14,11 @@ import { button, onPick } from './cursor.js';
+ import { screen, h, clearUI } from './screens.js';
+ import { sfx } from '../audio/sound.js';
+ import { openMaker, withFace, MAKING } from './avatar-maker.js';
+-import { editProfile, renameFamily } from './kid-editor.js';
++import { editProfile, renameFamily, askRestore } from './kid-editor.js';
+ import { setup } from './setup.js';
+ import { claudeChecklist } from './connect-claude.js';
+ import { HOME_SERVER } from './home-server.js';
++import { createKids, mergeProfiles, copyToBox, confirmMove, splitProfiles, isBoxApp, autoBackup, restoreOffer } from './kids.js';
+ 
+ const KEY = 'orlis.account';
+ export const AVATARS = {
+@@ -31,7 +32,7 @@ const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || null;
+ const save = (v) => { try { v ? localStorage.setItem(KEY, JSON.stringify(v)) : localStorage.removeItem(KEY); } catch {} };
+ 
+ export const account = {
+-  /* { server: { url, id, name }, token, account: { id, email, role }, household: { id, name }, profiles: [...] (the whole family's), current } */
++  /* { server: { url, id, name }, token, account: { id, email, role }, household: { id, name }, profiles: [...] (the whole family's: the grown-ups from the server, then the kids from the Box - kids.js; a kid has kid: true), current } */
+   state: load(),
+   get needed(){ return inApp(); },
+   get signedIn(){ return !!(this.state && this.state.token); },
+@@ -43,6 +44,7 @@ export const account = {
+   get isKid(){
+     const me = this.current, all = (this.state && this.state.profiles) || [];
+     if (!me) return false;
++    if (me.kid) return true;
+     const first = all.find(p => p.accountId === me.accountId);
+     return !!first && first.id !== me.id;
+   },
+@@ -57,8 +59,61 @@ export const account = {
+     const s = this.state;
+     if (s && s.token && s.server) call(s.server.url, 'POST', '/api/signout', null, s.token).catch(() => {});
+     this.state = s && s.server ? { server: s.server } : null;
++    this.toMove = []; this.offered = false;
+     save(this.state);
+   },
++  /* The kids' profiles live on this PC (kids.js), per family. */
++  get kids(){
++    const s = this.state;
++    return createKids(typeof localStorage !== 'undefined' ? localStorage : null, {
++      householdId: (s && s.household && s.household.id) || '',
++      grownups: () => ((s && s.profiles) || []).filter(p => !p.kid).length
++    });
++  },
++  /* The server's profile list, as the family's: its grown-ups, and the kids from the Box.
++     Any kids the server still has are copied into the Box first (kept ids), and
++     then it is asked to delete them - only once they're read back from here
++     (the one-time move, S3). If the server can't be told now, it is next refresh. */
++  takeProfiles(serverList, household = this.state && this.state.household){
++    /* not Orlis Play (a browser, the dev server): nobody is moved; the server's kids are shown, read-only */
++    if (!isBoxApp()){
++      const { grownups, kids: theirs } = splitProfiles(serverList || []);
++      return [...grownups, ...theirs.map(k => ({ ...k, kid: true, readOnly: true }))];
++    }
++    const kids = createKids(typeof localStorage !== 'undefined' ? localStorage : null, { householdId: (household && household.id) || '' });
++    const { grownups, ids } = copyToBox(kids, serverList || []);
++    this.toMove = [...new Set([...(this.toMove || []), ...ids])];
++    return mergeProfiles(grownups, kids.list());
++  },
++  toMove: [],
++  async finishMove(){
++    const ids = this.toMove || [];
++    if (!ids.length || !this.signedIn || !isBoxApp()) return;
++    this.toMove = [];
++    await autoBackup(this.kids);      /* (they are safe in a file here before the server is told) */
++    if (!await confirmMove(ids, (list) => this.call('POST', '/api/profiles/moved', { ids: list }))) this.toMove = ids;
++  },
++  /* the Box's kids changed (added, renamed, dressed, removed): the family's list follows */
++  kidsChanged(){
++    if (!this.state) return;
++    this.set({ profiles: mergeProfiles((this.state.profiles || []).filter(p => !p.kid || p.readOnly), this.kids.list()) });
++    autoBackup(this.kids);
++  },
++  /* On start, with the Box store empty and a backup file there: offer it back (once per start; "No" is remembered) */
++  offered: false,
++  async offerRestore(){
++    if (this.offered || !this.signedIn || !isBoxApp()) return;
++    this.offered = true;
++    const hid = (this.state.household && this.state.household.id) || '';
++    const NO = `orlis.kids.declined.${hid}`;
++    try { if (localStorage.getItem(NO)) return; } catch {}
++    const offer = await restoreOffer(this.kids);
++    if (!offer) return;
++    askRestore(offer, {
++      yes: () => { try { this.kids.importFile(offer.text); this.kidsChanged(); } catch {} },
++      no: () => { try { localStorage.setItem(NO, '1'); } catch {} }
++    });
++  },
+   /* With the server in reach: the profiles as they are now. Out of reach,
+      nothing changes. Signed out somewhere else: signed out here too. */
+   async refresh(){
+@@ -66,8 +121,10 @@ export const account = {
+     if (!s || !s.token || !s.server) return;
+     try {
+       const me = await call(s.server.url, 'GET', '/api/me', null, s.token);
+-      this.set({ account: me.account, household: me.household || null, profiles: me.profiles });
++      this.set({ account: me.account, household: me.household || null, profiles: this.takeProfiles(me.profiles, me.household || null) });
++      await this.finishMove();
+     } catch (e){ if (e.status === 401) this.signOut(); }
++    this.offerRestore();
+   },
+   call: async (method, path, body) => {
+     const s = account.state;
+@@ -281,7 +338,8 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
+   }
+   const device = () => (navigator.userAgent.includes('Windows') ? 'Windows PC' : 'A device');
+   const finish = (r, joined = false) => {
+-    account.set({ token: r.token, account: r.account, household: r.household || null, profiles: r.profiles, current: null });
++    account.set({ token: r.token, account: r.account, household: r.household || null, profiles: account.takeProfiles(r.profiles, r.household || null), current: null });
++    account.finishMove();
+     /* asked to join: straight on to the starter games while the owner lets them in */
+     if (r.account && r.account.waiting) return who();
+     sfx.gold?.();
+@@ -390,10 +448,10 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
+         sfx.select(); account.set({ current: p.id }); done(p);
+       }), p, 220));
+       /* (a grown-up looks after the family right here: a pencil on each) */
+-      if (grown){ const pen = onPick(button('✏️', 'whoedit'), () => { sfx.select(); editProfile(p, { self: p === head, onDone: changed }); }); pen.title = 'Change'; pen.setAttribute('aria-label', `Change ${p.name}`); cell.appendChild(pen); }
++      if (grown && !p.readOnly){ const pen = onPick(button('✏️', 'whoedit'), () => { sfx.select(); editProfile(p, { self: p === head, onDone: changed }); }); pen.title = 'Change'; pen.setAttribute('aria-label', `Change ${p.name}`); cell.appendChild(pen); }
+       tiles.appendChild(cell);
+     }
+-    if (grown && (account.state.profiles || []).length < 8) tiles.appendChild(onPick(button('<span class="av">+</span><span class="nm">Add a child</span>', 'who add'), () => { sfx.select(); editProfile(null, { onDone: changed }); }));
++    if (grown && isBoxApp() && (account.state.profiles || []).length < 8) tiles.appendChild(onPick(button('<span class="av">+</span><span class="nm">Add a child</span>', 'who add'), () => { sfx.select(); editProfile(null, { onDone: changed }); }));
+     /* the family's name is the title (no "Who's playing?": the faces say it) */
+     const fam = account.state.household && account.state.household.name;
+     const title = h('h2', 'whotitle', esc(fam || 'Who\u2019s playing?'));
+diff --git a/app/src/ui/avatar-maker.js b/app/src/ui/avatar-maker.js
+index a6f73b9..e9284a5 100644
+--- a/app/src/ui/avatar-maker.js
++++ b/app/src/ui/avatar-maker.js
+@@ -137,8 +137,13 @@ export function openMaker(profile, { onDone = () => {} } = {}){
+     onPick(button('Done', 'setbtn go avbig'), async () => {
+       say.textContent = 'Saving…';
+       try {
+-        const p = await account.call('PATCH', `/api/profiles/${encodeURIComponent(profile.id)}`, { look: storable(look) });
+-        account.set({ profiles: (account.state.profiles || []).map(x => x.id === profile.id ? { ...x, look: p.look } : x) });
++        /* a child's look is kept on this PC (kids.js); a grown-up's own goes to the server */
++        let p;
++        if (profile.kid){ p = account.kids.update(profile.id, { look: storable(look) }); account.kidsChanged(); }
++        else {
++          p = await account.call('PATCH', `/api/profiles/${encodeURIComponent(profile.id)}`, { look: storable(look) });
++          account.set({ profiles: (account.state.profiles || []).map(x => x.id === profile.id ? { ...x, look: p.look } : x) });
++        }
+         sfx.gold?.(); close(); onDone(p.look);
+       } catch (e){ say.textContent = e.message || 'That didn’t save. Try again.'; }
+     })
+diff --git a/app/src/ui/kid-editor.js b/app/src/ui/kid-editor.js
+index 0339def..2b25660 100644
+--- a/app/src/ui/kid-editor.js
++++ b/app/src/ui/kid-editor.js
+@@ -1,7 +1,8 @@
+ /* Looking after the family, on the first screen (the one you get to by picking
+    your picture): a pencil on each profile opens a small card to rename them,
+    change their picture or avatar, or remove them (a child, not the grown-up
+-   who made the account); a pencil by the family's name changes that.
++   who made the account; a child's profile is kept on this PC - kids.js - and
++   only a grown-up's own profile goes to the server); a pencil by the family's name changes that.
+ 
+    The account's maker is the head of the household and a grown-up; everyone
+    else is a family member, taken to be under 18. There's no second grown-up to
+@@ -72,9 +73,12 @@ export function editProfile(p, { self = false, onDone = () => {} } = {}){
+   const go = async () => {
+     const name = box.value.trim(); if (!name) return box.focus();
+     try {
+-      if (p){ await account.call('PATCH', `/api/profiles/${encodeURIComponent(p.id)}`, { name, avatar: pick }); sfx.gold?.(); finish(); }
++      if (p && !p.kid){ await account.call('PATCH', `/api/profiles/${encodeURIComponent(p.id)}`, { name, avatar: pick }); sfx.gold?.(); finish(); }
++      else if (p){ account.kids.update(p.id, { name, avatar: pick }); account.kidsChanged(); sfx.gold?.(); finish(); }
+       else {
+-        const made = await account.call('POST', '/api/profiles', { name, avatar: pick });
++        /* a child's profile is kept on this PC, not on the server */
++        const made = { ...account.kids.add({ name, avatar: pick }), kid: true };
++        account.kidsChanged();
+         sfx.gold?.(); close();
+         /* straight on to making their avatar (Cancel keeps the picture) */
+         if (MAKING) openMaker(made, { onDone }); else onDone();
+@@ -84,7 +88,7 @@ export function editProfile(p, { self = false, onDone = () => {} } = {}){
+   box.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+   const row = h('div', 'fbtns');
+   if (p && !self) row.appendChild(sure('Remove', 'Remove? Pick again', async () => {
+-    try { await account.call('DELETE', `/api/profiles/${encodeURIComponent(p.id)}`); finish(); } catch (e){ problem(card)(e); }
++    try { account.kids.remove(p.id); account.kidsChanged(); finish(); } catch (e){ problem(card)(e); }
+   }));
+   row.append(btn('Cancel', () => { sfx.back?.(); close(); }), btn(p ? 'Save' : 'Add', go, 'go'));
+   card.appendChild(row);
+@@ -103,3 +107,10 @@ export function renameFamily({ onDone = () => {} } = {}){
+   card.appendChild(h('div', 'fbtns')).append(btn('Cancel', () => { sfx.back?.(); close(); }), btn('Save', save, 'go'));
+   setTimeout(() => { box.focus(); box.select(); }, 50);
+ }
++
++/* On start, a backup of the kids is on this PC but the app's own copy is empty: bring them back? */
++export function askRestore(offer, { yes = () => {}, no = () => {} } = {}){
++  const { card, close } = popup(h('h2', '', 'Bring back your kids\u2019 profiles?'),
++    h('p', 'fnote', `A backup is saved on this PC (${offer.count} ${offer.count === 1 ? 'profile' : 'profiles'}).`));
++  card.appendChild(h('div', 'fbtns')).append(btn('No', () => { sfx.back?.(); no(); close(); }), btn('Yes', () => { sfx.gold?.(); yes(); close(); }, 'go'));
++}
+diff --git a/app/src/ui/kids.js b/app/src/ui/kids.js
+index 9e3fb56..f16dc90 100644
+--- a/app/src/ui/kids.js
++++ b/app/src/ui/kids.js
+@@ -1,4 +1,8 @@
+-/* Skin tones for the cartoon children, one per player. */
++/* Two things live here: the cartoon children the games draw (drawKid, drawPup), and the
++   family's kids' profiles, kept on this PC (the Box), not on the server (decisions 0011, 0028;
++   plan package S3). No imports, so the games load this file cheaply.
++
++   Skin tones for the cartoon children, one per player. */
+ export const KID_SKINS = ['#e9b892', '#c98f6a', '#f2c6a0', '#b97f5c'];
+ 
+ /* Little cartoon stand-ins, shared by the games: a child for when there's
+@@ -38,3 +42,182 @@ export function drawKid(c, x, y, r, t, skin = '#e9b892'){
+   c.fillStyle = 'rgba(255,120,120,.35)';
+   for (const side of [-1, 1]){ c.beginPath(); c.arc(x + side * r * 0.33, y + r * 0.24, r * 0.09, 0, 6.2832); c.fill(); }
+ }
++
++
++/* ---------- the kids' profiles, on the Box ---------- */
++
++export const LIMITS = { profiles: 8, name: [1, 20] };      /* per family; the same as the server's */
++/* the pictures to choose from (the same ids as account.js's AVATARS; a test keeps them in step) */
++export const AVATAR_IDS = ['cube', 'rocket', 'star', 'moon', 'balloon', 'fish', 'dino', 'cat', 'dog', 'owl', 'bee', 'leaf'];
++const FILE_V = 1;
++
++const fail = (message, code) => { const e = new Error(message); e.code = code; return e; };
++
++/* A profile's name: a first name or nickname. Not an email or a phone
++   number - kids' profiles carry no contact details. (The server's rule for
++   a grown-up's own profile, word for word.) */
++export function cleanName(v){
++  const n = (typeof v === 'string' ? v : '').trim().replace(/\s+/g, ' ');
++  if (n.length < LIMITS.name[0] || n.length > LIMITS.name[1]) throw fail(`Names are ${LIMITS.name[0]} to ${LIMITS.name[1]} letters.`, 'bad_name');
++  if (/@|\d{5,}|https?:/i.test(n)) throw fail('Just a first name or nickname, please.', 'bad_name');
++  return n;
++}
++export function cleanAvatar(v){
++  const a = (typeof v === 'string' ? v.trim() : '') || AVATAR_IDS[0];
++  if (!AVATAR_IDS.includes(a)) throw fail('Pick one of the avatars.', 'bad_avatar');
++  return a;
++}
++/* an avatar's look is the maker's own data: a plain object (or none), kept small */
++function cleanLook(v){
++  if (v == null) return null;
++  if (typeof v !== 'object' || Array.isArray(v)) throw fail('That avatar didn’t look right.', 'bad_look');
++  let t; try { t = JSON.stringify(v); } catch { t = null; }
++  if (!t || t.length > 4000) throw fail('That avatar didn’t look right.', 'bad_look');
++  return JSON.parse(t);
++}
++const cleanId = (v) => (typeof v === 'string' && /^[\w-]{1,64}$/.test(v) ? v : null);
++const newKidId = () => (globalThis.crypto && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 18) : Math.random().toString(16).slice(2, 11) + Date.now().toString(16));
++const keep = (k) => ({ id: k.id, name: k.name, avatar: k.avatar, look: k.look ?? null, createdAt: k.createdAt });
++
++/* The family's kids. storage: localStorage (or anything with getItem/setItem).
++   householdId names the family's key (orlis.kids.<householdId>); grownups()
++   says how many grown-ups there are, because 8 profiles is the family's limit
++   and they count too. */
++export function createKids(storage = (typeof localStorage !== 'undefined' ? localStorage : null), { householdId = '', grownups = () => 1 } = {}){
++  const KEY = `orlis.kids.${householdId}`;
++  const read = () => {
++    try {
++      const v = JSON.parse(storage.getItem(KEY));
++      return v && Array.isArray(v.kids) ? v.kids.filter(k => k && cleanId(k.id)).map(keep) : [];
++    } catch { return []; }
++  };
++  /* false if it couldn't be kept (the caller must not count it as copied) */
++  const write = (kids) => { try { storage.setItem(KEY, JSON.stringify({ v: FILE_V, kids })); return true; } catch { return false; } };
++  const room = (kids) => kids.length + Math.max(0, grownups()) < LIMITS.profiles;
++  const must = (kids) => { if (!write(kids)) throw fail('That didn’t save on this PC. Try again.', 'not_saved'); };
++
++  const api = {
++    grownups: () => grownups(),
++    list(){ return read().map((k, i) => [k, i]).sort((a, b) => (a[0].createdAt || 0) - (b[0].createdAt || 0) || a[1] - b[1]).map(x => x[0]); },
++    add({ name, avatar, look } = {}){
++      const kids = read();
++      if (!room(kids)) throw fail(`A family can have up to ${LIMITS.profiles} profiles.`, 'full');
++      const k = { id: newKidId(), name: cleanName(name), avatar: cleanAvatar(avatar), look: cleanLook(look), createdAt: Date.now() };
++      must([...kids, k]);
++      return { ...k };
++    },
++    update(id, patch = {}){
++      const kids = read(), i = kids.findIndex(k => k.id === id);
++      if (i < 0) throw fail('No such profile.', 'no_profile');
++      const k = { ...kids[i] };
++      if (patch.name !== undefined) k.name = cleanName(patch.name);
++      if (patch.avatar !== undefined) k.avatar = cleanAvatar(patch.avatar);
++      if (patch.look !== undefined) k.look = cleanLook(patch.look);
++      kids[i] = k; must(kids);
++      return { ...k };
++    },
++    remove(id){
++      const kids = read();
++      if (!kids.some(k => k.id === id)) throw fail('No such profile.', 'no_profile');
++      must(kids.filter(k => k.id !== id));
++    },
++    /* the server's kids (their ids kept, so seats, trusted phones and saved state still match); the ones already here stay as they are.
++       Returns the ids that are safely kept here now (read back, not just written). */
++    importFromServer(profiles = []){
++      const kids = read(), have = new Set(kids.map(k => k.id));
++      const add = [];
++      for (const p of profiles){
++        const id = p && cleanId(p.id); if (!id || have.has(id)) continue;
++        let k; try { k = { id, name: cleanName(p.name), avatar: cleanAvatar(p.avatar), look: cleanLook(p.look), createdAt: Number(p.createdAt) || Date.parse(p.createdAt) || Date.now() }; } catch { continue; }
++        have.add(id); add.push(k);
++      }
++      if (add.length) write([...kids, ...add]);
++      const now = new Set(read().map(k => k.id));
++      return profiles.map(p => p && p.id).filter(id => now.has(id));
++    },
++    /* a backup the parent can keep: { v: 1, kids: [...] } */
++    exportFile(){ return JSON.stringify({ v: FILE_V, kids: api.list() }, null, 2); },
++    /* a backup read back: the kids not here yet are added, with their own ids. { added, skipped } */
++    importFile(text){
++      let f; try { f = JSON.parse(text); } catch { f = null; }
++      if (!f || f.v !== FILE_V || !Array.isArray(f.kids)) throw fail('That isn’t an Orlis backup file.', 'bad_file');
++      const kids = read(), have = new Set(kids.map(k => k.id));
++      let added = 0, skipped = 0;
++      for (const p of f.kids){
++        const id = p && cleanId(p.id);
++        let k = null; try { k = id && { id, name: cleanName(p.name), avatar: cleanAvatar(p.avatar), look: cleanLook(p.look), createdAt: Number(p.createdAt) || Date.now() }; } catch { k = null; }
++        if (k && have.has(id)) continue;                   /* already here */
++        if (!k || !room(kids)){ skipped++; continue; }
++        kids.push(k); have.add(id); added++;
++      }
++      if (added) must(kids);
++      return { added, skipped };
++    }
++  };
++  return api;
++}
++
++/* The server's list as a grown-up's own profile (the first on each account)
++   and children (everyone else): the server's list is in the order they were made. */
++export function splitProfiles(list = []){
++  const seen = new Set(), grownups = [], kids = [];
++  for (const p of list){
++    if (!p || p.kid) continue;
++    if (!seen.has(p.accountId)){ seen.add(p.accountId); grownups.push(p); } else kids.push(p);
++  }
++  return { grownups, kids };
++}
++/* who's playing: the grown-ups from the server, then the kids from the Box */
++export const mergeProfiles = (grownups, kids) => [...grownups, ...kids.map(k => ({ ...k, kid: true }))];
++
++/* The one-time move, step 1: copy the server's kids into the Box. Returns the
++   grown-ups, and the ids the server may now delete (only ones read back from the Box). */
++export function copyToBox(kids, serverProfiles){
++  const { grownups, kids: theirs } = splitProfiles(serverProfiles);
++  return { grownups, ids: theirs.length ? kids.importFromServer(theirs) : [] };
++}
++/* step 2: tell the server, which deletes them. True once it has answered. */
++export async function confirmMove(ids, post){
++  if (!ids.length) return true;
++  try { const r = await post(ids); return !!r && Array.isArray(r.ids); } catch { return false; }
++}
++
++/* Only Orlis Play (the Windows app) is a Box: it alone takes the kids from the
++   server and keeps their backups as files. A browser, or the dev server, never
++   moves anyone - it shows the server's kids as they are, read-only. */
++export const isBoxApp = () => typeof window !== 'undefined' && !!window.__TAURI_INTERNALS__;
++const invoke = (cmd, args) => window.__TAURI_INTERNALS__.invoke(cmd, args);
++
++/* A backup to the parent. In Orlis Play: a file in Documents\Orlis Play\Backups. In a browser: a download.
++   Returns what to tell them. */
++export async function saveBackup(text, name = `orlis-kids-${new Date().toISOString().slice(0, 10)}.json`){
++  if (isBoxApp()){
++    await invoke('kids_backup', { text });
++    return 'Saved to Documents \u203a Orlis Play \u203a Backups';
++  }
++  const a = document.createElement('a');
++  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name;
++  document.body.appendChild(a); a.click(); a.remove();
++  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
++  return 'Saved';
++}
++
++/* The quiet safety copy, after every change (Orlis Play only; the newest 10 files are kept). Never throws. */
++export async function autoBackup(kids){
++  if (!isBoxApp()) return false;
++  try { await invoke('kids_backup', { text: kids.exportFile() }); return true; } catch { return false; }
++}
++
++/* On start: this family's Box store is empty, but a backup file is there. Returns { text, count } to offer, or null. */
++export async function restoreOffer(kids, latest = () => invoke('kids_backup_latest')){
++  if (!isBoxApp() || kids.list().length) return null;
++  let text; try { text = await latest(); } catch { return null; }
++  if (!text) return null;
++  let f; try { f = JSON.parse(text); } catch { return null; }
++  if (!f || f.v !== FILE_V || !Array.isArray(f.kids)) return null;
++  /* what it would bring back (a dry run in a scratch store) */
++  const tmp = new Map();
++  const probe = createKids({ getItem: (k) => (tmp.has(k) ? tmp.get(k) : null), setItem: (k, v) => tmp.set(k, v) }, { householdId: 'probe', grownups: kids.grownups });
++  let count = 0; try { count = probe.importFile(text).added; } catch { return null; }
++  return count ? { text, count } : null;
++}
+diff --git a/app/src/ui/menu.js b/app/src/ui/menu.js
+index 8eb9a0a..aea411f 100644
+--- a/app/src/ui/menu.js
++++ b/app/src/ui/menu.js
+@@ -19,6 +19,7 @@ import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
+ import { banner as wideBanner, discoverCoverUrl, seeAllCoverUrl } from './covers.js';
+ import { buildingRow, testingRow } from './building.js';
+ import { openTrustedPhones } from './trusted-phones.js';
++import { saveBackup } from './kids.js';
+ import { createTrust } from '../session/trust.js';
+ 
+ /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
+@@ -658,6 +659,29 @@ function settings(onRecalibrate){
+   const phones = createTrust().list().length;
+   row('Trusted phones', h('span', 'keyhint', phones ? `${phones} phone${phones === 1 ? '' : 's'}` : 'none yet'), small('See the list', () => { sfx.select?.(); openTrustedPhones(); }));
+ 
++  /* the kids' profiles live on this PC: a backup the grown-up can keep, and put back */
++  if (account.signedIn && !account.isKid){
++    group('Kids');
++    const say = h('span', 'keyhint', '');
++    const tell = (t) => { say.textContent = t; };
++    const save = small('Save a backup', async () => {
++      sfx.select?.();
++      try { tell(await saveBackup(account.kids.exportFile())); } catch (e){ tell('Couldn\u2019t save'); }
++    });
++    const pick = document.createElement('input'); pick.type = 'file'; pick.accept = '.json,application/json'; pick.style.display = 'none';
++    pick.addEventListener('change', async () => {
++      const f = pick.files && pick.files[0]; pick.value = '';
++      if (!f) return;
++      try {
++        const r = account.kids.importFile(await f.text());
++        account.kidsChanged();
++        tell(r.added ? `Loaded ${r.added} kid${r.added === 1 ? '' : 's'}` : 'Nothing new in it');
++      } catch (e){ tell(e.message || 'Couldn\u2019t load that'); }
++    });
++    const load = small('Load a backup', () => { sfx.select?.(); pick.click(); });
++    row('Kids\u2019 profiles', say, save, load, pick);
++  }
++
+   /* testing only */
+   group('Testing');
+   /* the mode, for testing (a build that was told its mode has no switch) */
+diff --git a/app/test/kids-box.test.mjs b/app/test/kids-box.test.mjs
+new file mode 100644
+index 0000000..b6d9332
+--- /dev/null
++++ b/app/test/kids-box.test.mjs
+@@ -0,0 +1,103 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { createKids, restoreOffer, autoBackup, saveBackup, isBoxApp } from '../src/ui/kids.js';
++import { account } from '../src/ui/account.js';
++
++const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); } }; };
++const fresh = () => createKids(mem(), { householdId: 'h1' });
++const server = (...rows) => rows.map(([id, name, accountId]) => ({ id, name, avatar: 'cat', look: null, accountId, createdAt: '2026-01-01T00:00:00.000Z' }));
++
++/* Orlis Play (Tauri) or not; the "app" records what it was asked to do */
++const asApp = (handlers = {}) => { const calls = []; window.__TAURI_INTERNALS__ = { invoke: async (cmd, args) => { calls.push([cmd, args]); return handlers[cmd] ? handlers[cmd](args) : null; } }; return calls; };
++const notApp = () => { delete window.__TAURI_INTERNALS__; };
++
++test('only Orlis Play moves the kids: a browser shows the server\'s kids, read-only, and nothing is copied or deleted', async () => {
++  notApp();
++  assert.equal(isBoxApp(), false);
++  const was = { state: account.state, toMove: account.toMove };
++  const realFetch = globalThis.fetch; let fetched = 0; globalThis.fetch = async () => { fetched++; throw new Error('no network in this test'); };
++  try {
++    account.state = { household: { id: 'h-web' }, token: 't', server: { url: 'http://x' } };
++    account.toMove = [];
++    const list = account.takeProfiles(server(['g1', 'Deep', 'A'], ['k1', 'Ellie', 'A']), { id: 'h-web' });
++    assert.deepEqual(list.map(p => p.name), ['Deep', 'Ellie'], 'they are still shown');
++    assert.equal(list[1].readOnly, true); assert.equal(list[1].kid, true); assert.ok(!list[0].readOnly);
++    assert.deepEqual(account.toMove, [], 'nothing to move');
++    assert.equal(localStorage.getItem('orlis.kids.h-web'), null, 'nothing written to this browser');
++    account.toMove = ['k1'];
++    await account.finishMove();
++    assert.equal(fetched, 0, 'the server is never asked to delete');
++    account.state = { ...account.state, profiles: list };
++    account.kidsChanged();
++    assert.deepEqual(account.state.profiles.map(p => p.name), ['Deep', 'Ellie'], 'still shown');
++  } finally { globalThis.fetch = realFetch; account.state = was.state; account.toMove = was.toMove; }
++});
++
++test('in Orlis Play the move runs: copied, backed up as a file, then the server is told', async () => {
++  const calls = asApp();
++  const was = { state: account.state, toMove: account.toMove };
++  const realFetch = globalThis.fetch; const asked = [];
++  globalThis.fetch = async (url, o) => { asked.push([url, JSON.parse(o.body)]); return { ok: true, json: async () => ({ ids: ['k1'] }) }; };
++  try {
++    account.state = { household: { id: 'h-app' }, token: 't', server: { url: 'http://x' } };
++    account.toMove = [];
++    account.state.profiles = account.takeProfiles(server(['g1', 'Deep', 'A'], ['k1', 'Ellie', 'A']), { id: 'h-app' });
++    assert.deepEqual(account.state.profiles.map(p => p.name), ['Deep', 'Ellie']);
++    assert.ok(!account.state.profiles[1].readOnly);
++    await account.finishMove();
++    assert.equal(calls[0][0], 'kids_backup', 'the file first');
++    assert.equal(JSON.parse(calls[0][1].text).kids[0].name, 'Ellie');
++    assert.deepEqual(asked, [['http://x/api/profiles/moved', { ids: ['k1'] }]]);
++    assert.deepEqual(account.toMove, []);
++  } finally { notApp(); globalThis.fetch = realFetch; account.state = was.state; account.toMove = was.toMove; }
++});
++
++test('a safety copy after a change; Save a backup in the app writes the file (no download)', async () => {
++  const kids = fresh();
++  kids.add({ name: 'Ollie' });
++  notApp();
++  assert.equal(await autoBackup(kids), false, 'a browser keeps no files');
++  const calls = asApp();
++  assert.equal(await autoBackup(kids), true);
++  assert.equal(calls[0][0], 'kids_backup'); assert.equal(JSON.parse(calls[0][1].text).kids.length, 1);
++  assert.match(await saveBackup(kids.exportFile()), /Documents .* Orlis Play .* Backups/);
++  assert.equal(calls.length, 2);
++  asApp({ kids_backup: () => { throw new Error('disk full'); } });
++  assert.equal(await autoBackup(kids), false, 'a failed quiet copy never gets in the way');
++  notApp();
++});
++
++test('on start: an empty store with a backup file offers it back; otherwise nothing', async () => {
++  const a = fresh(), b = fresh();
++  a.add({ name: 'Ollie' }); a.add({ name: 'Mia' });
++  const file = a.exportFile();
++  notApp();
++  assert.equal(await restoreOffer(b, async () => file), null, 'only in Orlis Play');
++  asApp();
++  const offer = await restoreOffer(b, async () => file);
++  assert.equal(offer.count, 2); assert.equal(offer.text, file);
++  assert.deepEqual(b.list(), [], 'offering changes nothing');
++  assert.equal(await restoreOffer(b, async () => null), null, 'no file');
++  assert.equal(await restoreOffer(b, async () => 'junk'), null, 'not a backup');
++  assert.equal(await restoreOffer(b, async () => JSON.stringify({ v: 1, kids: [] })), null, 'nobody in it');
++  assert.equal(await restoreOffer(b, async () => { throw new Error('x'); }), null);
++  b.importFile(file);
++  assert.equal(await restoreOffer(b, async () => file), null, 'the store is not empty: no offer');
++  notApp();
++});
++
++test('saying yes brings them back through the account', async () => {
++  const was = { state: account.state, offered: account.offered };
++  const a = fresh(); a.add({ name: 'Ollie' });
++  asApp({ kids_backup_latest: () => a.exportFile() });
++  try {
++    account.state = { household: { id: 'h-restore' }, token: 't', server: { url: 'http://x' }, profiles: [{ id: 'g1', name: 'Deep', accountId: 'A' }] };
++    account.offered = false;
++    assert.equal(createKids(localStorage, { householdId: 'h-restore' }).list().length, 0);
++    /* (the question itself is a popup; the test answers it) */
++    const offer = await restoreOffer(account.kids);
++    assert.equal(offer.count, 1);
++    account.kids.importFile(offer.text); account.kidsChanged();
++    assert.deepEqual(account.state.profiles.map(p => p.name), ['Deep', 'Ollie']);
++  } finally { notApp(); account.state = was.state; account.offered = was.offered; }
++});
+diff --git a/app/test/kids.test.mjs b/app/test/kids.test.mjs
+new file mode 100644
+index 0000000..5a19a89
+--- /dev/null
++++ b/app/test/kids.test.mjs
+@@ -0,0 +1,190 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { createKids, cleanName, splitProfiles, mergeProfiles, copyToBox, confirmMove, LIMITS, AVATAR_IDS } from '../src/ui/kids.js';
++import { account, AVATARS } from '../src/ui/account.js';
++
++/* a storage like localStorage's (which can be told to fail) */
++const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem(k, v){ if (this.broken) throw new Error('full'); m.set(k, String(v)); }, removeItem: (k) => m.delete(k), m }; };
++const fresh = (opts = {}) => { const st = mem(); return { st, kids: createKids(st, { householdId: 'h1', ...opts }) }; };
++
++test('the avatar ids are the account screen\'s', () => {
++  assert.deepEqual(AVATAR_IDS, Object.keys(AVATARS));
++});
++
++test('add, update, remove: a kid has an id, a name, a picture, an avatar and a date', () => {
++  const { kids, st } = fresh();
++  const a = kids.add({ name: '  Ollie  ', avatar: 'dino' });
++  assert.match(a.id, /^[\w-]{8,}$/);
++  assert.equal(a.name, 'Ollie'); assert.equal(a.avatar, 'dino'); assert.equal(a.look, null); assert.ok(a.createdAt > 0);
++  assert.ok(st.m.has('orlis.kids.h1'), 'kept under the family\'s key');
++  const look = { colour: 'pink', top: 'bob' };
++  assert.deepEqual(kids.update(a.id, { name: 'Olly', look }).look, look);
++  assert.equal(kids.update(a.id, { avatar: 'owl' }).name, 'Olly', 'a part at a time');
++  assert.deepEqual(kids.list().map(k => k.name), ['Olly']);
++  assert.throws(() => kids.update('nope', { name: 'X' }), { code: 'no_profile' });
++  kids.remove(a.id);
++  assert.deepEqual(kids.list(), []);
++  assert.throws(() => kids.remove(a.id), { code: 'no_profile' });
++  /* kept across a reload */
++  const b = kids.add({ name: 'Mia' });
++  assert.equal(createKids(st, { householdId: 'h1' }).list()[0].id, b.id);
++  assert.deepEqual(createKids(st, { householdId: 'h2' }).list(), [], 'another family\'s are not these');
++});
++
++test('the same name rules as the server: a first name or nickname', () => {
++  const { kids } = fresh();
++  for (const bad of ['kid@example.com', '07700 900123', 'https://x.y', '', '   ', 'x'.repeat(21)]){
++    assert.throws(() => kids.add({ name: bad }), { code: 'bad_name' }, JSON.stringify(bad));
++  }
++  assert.equal(cleanName('Anna  Lee'), 'Anna Lee');
++  assert.throws(() => kids.add({ name: 'Ok', avatar: 'nope' }), { code: 'bad_avatar' });
++  assert.throws(() => kids.add({ name: 'Ok', look: [1] }), { code: 'bad_look' });
++  assert.throws(() => kids.update('x', { name: '' }));
++  assert.deepEqual(kids.list(), [], 'nothing kept from a refused one');
++});
++
++test('8 profiles to a family, the grown-ups counting too', () => {
++  const { kids } = fresh({ grownups: () => 2 });
++  for (let i = 0; i < LIMITS.profiles - 2; i++) kids.add({ name: `Kid ${String.fromCharCode(65 + i)}` });
++  assert.throws(() => kids.add({ name: 'One more' }), { code: 'full' });
++  assert.equal(kids.list().length, 6);
++});
++
++test('a save that does not stick is an error, never a quiet loss', () => {
++  const { kids, st } = fresh();
++  st.broken = true;
++  assert.throws(() => kids.add({ name: 'Ollie' }), { code: 'not_saved' });
++  assert.deepEqual(kids.list(), []);
++});
++
++const server = (...rows) => rows.map(([id, name, accountId, createdAt = '2026-01-01T00:00:00.000Z']) => ({ id, name, avatar: 'cat', look: null, accountId, createdAt }));
++
++test('importFromServer keeps ids, is idempotent, and leaves what is here alone', () => {
++  const { kids } = fresh();
++  const mine = kids.add({ name: 'Local' });
++  const rows = server(['p1', 'Ellie', 'A'], ['p2', 'Ravi', 'A', '2026-02-01T00:00:00.000Z']);
++  assert.deepEqual(kids.importFromServer(rows), ['p1', 'p2'], 'the ids now kept');
++  assert.deepEqual(kids.importFromServer(rows), ['p1', 'p2'], 'again: still the same');
++  assert.deepEqual(kids.list().map(k => k.id).sort(), ['p1', 'p2', mine.id].sort(), 'once each');
++  kids.update('p1', { name: 'Elle' });
++  kids.importFromServer(rows);
++  assert.equal(kids.list().find(k => k.id === 'p1').name, 'Elle', 'a change made here is not undone');
++  assert.deepEqual(kids.importFromServer([{ id: 'p9', name: 'bad@name', avatar: 'cat' }, null]), [], 'a bad one is not counted as copied');
++});
++
++test('what could not be kept is not reported as copied', () => {
++  const { kids, st } = fresh();
++  st.broken = true;
++  assert.deepEqual(kids.importFromServer(server(['p1', 'Ellie', 'A'])), []);
++});
++
++test('export, then import: the same kids come back, with their ids', () => {
++  const a = fresh(), b = fresh();
++  const x = a.kids.add({ name: 'Ollie', avatar: 'fish', look: { colour: 'pink' } });
++  a.kids.add({ name: 'Mia' });
++  const text = a.kids.exportFile();
++  assert.equal(JSON.parse(text).v, 1);
++  assert.deepEqual(b.kids.importFile(text), { added: 2, skipped: 0 });
++  assert.deepEqual(b.kids.list(), a.kids.list());
++  assert.equal(b.kids.list().find(k => k.id === x.id).look.colour, 'pink');
++  assert.deepEqual(b.kids.importFile(text), { added: 0, skipped: 0 }, 'again: nothing new');
++  for (const junk of ['', 'nope', '{}', '{"v":2,"kids":[]}', '[1]']) assert.throws(() => b.kids.importFile(junk), { code: 'bad_file' });
++  const odd = JSON.stringify({ v: 1, kids: [{ id: 'x1', name: 'a@b.c', avatar: 'cat' }, { id: 'x2', name: 'Fine' }, 7] });
++  assert.deepEqual(b.kids.importFile(odd), { added: 1, skipped: 2 }, 'a bad entry is skipped, the rest kept');
++});
++
++test('the merged list: grown-ups from the server, then the kids from the Box (marked)', () => {
++  const rows = server(['g1', 'Deep', 'A'], ['k1', 'Ellie', 'A'], ['g2', 'Sam', 'B'], ['k2', 'Ravi', 'B']);
++  const { grownups, kids } = splitProfiles(rows);
++  assert.deepEqual(grownups.map(p => p.id), ['g1', 'g2']);
++  assert.deepEqual(kids.map(p => p.id), ['k1', 'k2']);
++  const box = fresh().kids; box.importFromServer(kids);
++  const all = mergeProfiles(grownups, box.list());
++  assert.deepEqual(all.map(p => p.name), ['Deep', 'Sam', 'Ellie', 'Ravi']);
++  assert.deepEqual(all.map(p => !!p.kid), [false, false, true, true]);
++  assert.equal(splitProfiles(all).kids.length, 0, 'a merged list is not split again');
++});
++
++test('the account holds the merged list, and knows a kid when one is playing', () => {
++  const was = { state: account.state, toMove: account.toMove };
++  window.__TAURI_INTERNALS__ = { invoke: async () => null };      /* (Orlis Play) */
++  try {
++    account.state = { household: { id: 'h-merge' }, token: 't', server: { url: 'http://x' } };
++    const list = account.takeProfiles(server(['g1', 'Deep', 'A'], ['k1', 'Ellie', 'A']), { id: 'h-merge' });
++    assert.deepEqual(list.map(p => p.name), ['Deep', 'Ellie']);
++    assert.deepEqual(account.toMove, ['k1'], 'the server is to be told about it');
++    account.state = { ...account.state, profiles: list, current: 'k1' };
++    assert.equal(account.isKid, true);
++    account.state = { ...account.state, current: 'g1' };
++    assert.equal(account.isKid, false);
++    /* a kid added on the Box shows in the list */
++    const made = account.kids.add({ name: 'Mia' });
++    account.kidsChanged();
++    assert.deepEqual(account.state.profiles.map(p => p.name), ['Deep', 'Ellie', 'Mia']);
++    assert.equal(account.state.profiles[2].id, made.id);
++    account.kids.remove(made.id); account.kids.remove('k1'); account.kidsChanged();
++    assert.deepEqual(account.state.profiles.map(p => p.name), ['Deep']);
++  } finally { delete window.__TAURI_INTERNALS__; account.state = was.state; account.toMove = was.toMove; }
++});
++
++/* the one-time move, against a fake server */
++function fakeServer(rows, { failDelete = 0 } = {}){
++  const s = { rows: [...rows], log: [], failDelete, ownIds: new Set(rows.filter((r, i) => rows.findIndex(x => x.accountId === r.accountId) === i).map(r => r.id)) };
++  s.me = () => s.rows.map(r => ({ ...r }));
++  s.moved = async (ids) => {
++    s.log.push(['moved', [...ids]]);
++    if (s.failDelete > 0){ s.failDelete--; throw new Error('Couldn\'t reach the Orlis server.'); }
++    const gone = ids.filter(id => s.rows.some(r => r.id === id) && !s.ownIds.has(id));
++    s.rows = s.rows.filter(r => !gone.includes(r.id));
++    return { ids: gone };
++  };
++  return s;
++}
++const refresh = async (box, srv) => {
++  const { grownups, ids } = copyToBox(box, srv.me());
++  const copied = box.list().map(k => k.id);
++  const ok = await confirmMove(ids, (list) => { srv.log.push(['had', copied.length]); return srv.moved(list); });
++  return { grownups, ids, ok };
++};
++
++test('the move: copied to the Box before the server deletes anything', async () => {
++  const srv = fakeServer(server(['g1', 'Deep', 'A'], ['k1', 'Ellie', 'A'], ['k2', 'Ravi', 'A']));
++  const { kids: box } = fresh();
++  const r = await refresh(box, srv);
++  assert.equal(r.ok, true);
++  assert.deepEqual(srv.log[0], ['had', 2], 'both were in the Box when the server was asked');
++  assert.deepEqual(srv.log[1], ['moved', ['k1', 'k2']]);
++  assert.deepEqual(srv.rows.map(x => x.id), ['g1'], 'only the grown-up is left there');
++  assert.deepEqual(box.list().map(k => k.name), ['Ellie', 'Ravi']);
++});
++
++test('the move: a failed delete is tried again next refresh, and a second run does nothing', async () => {
++  const srv = fakeServer(server(['g1', 'Deep', 'A'], ['k1', 'Ellie', 'A']), { failDelete: 1 });
++  const { kids: box } = fresh();
++  assert.equal((await refresh(box, srv)).ok, false, 'could not be told');
++  assert.equal(srv.rows.length, 2, 'still on the server');
++  assert.deepEqual(box.list().map(k => k.name), ['Ellie'], 'but safely in the Box');
++  assert.equal((await refresh(box, srv)).ok, true, 'the next time');
++  assert.equal(box.list().length, 1, 'copied once');
++  assert.deepEqual(srv.rows.map(x => x.id), ['g1']);
++  const n = srv.log.length;
++  const third = await refresh(box, srv);
++  assert.equal(third.ok, true); assert.deepEqual(third.ids, []);
++  assert.equal(srv.log.length, n, 'nothing asked of the server the third time');
++});
++
++test('the move: nothing is deleted when the Box could not keep the copy', async () => {
++  const srv = fakeServer(server(['g1', 'Deep', 'A'], ['k1', 'Ellie', 'A']));
++  const { kids: box, st } = fresh();
++  st.broken = true;
++  const r = await refresh(box, srv);
++  assert.deepEqual(r.ids, []);
++  assert.equal(srv.log.length, 0, 'the server was not asked');
++  assert.equal(srv.rows.length, 2);
++});
++
++test('the move: an answer that is not an answer is a failure', async () => {
++  assert.equal(await confirmMove(['k1'], async () => ({})), false);
++  assert.equal(await confirmMove(['k1'], async () => { throw new Error('x'); }), false);
++  assert.equal(await confirmMove([], async () => { throw new Error('never called'); }), true);
++});
+diff --git a/app/tools/rehearsal-play.mjs b/app/tools/rehearsal-play.mjs
+index 5b36aec..17e5a1d 100644
+--- a/app/tools/rehearsal-play.mjs
++++ b/app/tools/rehearsal-play.mjs
+@@ -43,8 +43,9 @@ const s = await start({ dataDir: mkdtempSync(join(tmpdir(), 'orlis-play-')), por
+ const S = `http://127.0.0.1:${s.port}`;
+ const api = async (m, p, b, tok) => { const r = await fetch(S + p, { method: m, headers: { 'Content-Type': 'application/json', ...(tok ? { Authorization: `Bearer ${tok}` } : {}) }, body: b ? JSON.stringify(b) : undefined }); return r.json(); };
+ const me = await api('POST', '/api/signup', { email: 'deep@example.com', password: 'correct horse', name: 'Deep', adult: true, family: 'The Patels' });
+-const kid = await api('POST', '/api/profiles', { name: 'Mia', avatar: 'rocket' }, me.token);
+-const state = { server: { url: S, name: 'Orlis' }, token: me.token, account: me.account, household: me.household, profiles: [...me.profiles, kid], current: me.profiles[0].id };
++/* (kids live on the Box now: Mia is only on the server the old way, so the app moves her over as it signs in) */
++s.db.prepare('INSERT INTO profiles (id, account_id, name, avatar, created_at) VALUES (?, ?, ?, ?, ?)').run('kid-mia', me.account.id, 'Mia', 'rocket', new Date().toISOString());
++const state = { server: { url: S, name: 'Orlis' }, token: me.token, account: me.account, household: me.household, profiles: (await api('GET', '/api/me', null, me.token)).profiles, current: me.profiles[0].id };
+ const TAURI = `window.__closed = 0; window.__TAURI__ = { core: { invoke: async (c) => c === 'find_servers' ? [] : null }, window: { getCurrentWindow: () => ({ close(){ window.__closed++; }, minimize(){}, toggleMaximize(){} }) } };`;
+ 
+ const b = await chromium.launch();
+diff --git a/docs/notes-for-opus.md b/docs/notes-for-opus.md
+index 6717f84..e6c6b3b 100644
+--- a/docs/notes-for-opus.md
++++ b/docs/notes-for-opus.md
+@@ -74,3 +74,16 @@ Readings of the spec where it was open (change any you disagree with):
+ - `rng` is accepted but unused: the layout is fixed data.
+ - Layout numbers (shed at x 12..18, z 22..27; four trees; nine places) are mine; K4 should check the TV view of them.
+ - `npm test` here: 5 failures not from this package (missing `esbuild`, and headless Chromium tests); all peekaboo tests pass.
++
++## 2026-11-22, S3 (kids' profiles move to the Box), Sonnet
++Readings of the spec where it was open:
++- `kids.js` already held the cartoon-kid drawing helpers (used by castle-defense); the store is added to the same file, which still has no imports. Name rules are copied from the server (with tests); avatar ids are copied too, and a test keeps them equal to account.js `AVATARS`.
++- **Merge:** the pure functions (`splitProfiles`, `mergeProfiles`, `copyToBox`, `confirmMove`) are in kids.js so they are testable; account.js calls them in one place (`takeProfiles`, used by sign-in and `refresh`). Merged list = grown-ups first, then kids; a kid has `kid: true` (no accountId), and `isKid` checks that flag first. Other code is unchanged.
++- **Grown-up vs kid** on the server = the first profile on an account (by created_at, rowid) is the grown-up's own; the rest are kids. Same rule in the app's split.
++- **`POST /api/profiles`** answers 410 whenever the account already has a profile (always, after sign-up); it still creates one only if an account has none. `/moved` silently skips ids that are not deletable (own, another family's, unknown) and answers with the ids it did delete; History gets one `kids-moved` entry only if N > 0 ("moved N kids' profiles to the Box").
++- The server now also sends `createdAt` on each profile (so the Box keeps their order). `/api/households` gets `kidsWaiting`; the management Families row shows "N kids' profiles waiting to move to the Box" when N > 0.
++- The move deletes on the server only ids read back from the Box store; if the Box can't save (storage error), nothing is sent. A failed call is retried at the next refresh.
++- Backup file import adds only kids whose ids aren't there (never overwrites), respects the 8 limit, skips bad entries and reports counts.
++- Existing server tests that made kids with POST now insert them into the database (`server/test/kids-helper.mjs`); `app/tools/rehearsal-play.mjs` was adjusted the same way (not re-run in full).
++- **Untested / open:** the Tauri save dialog. `saveBackup` uses `window.__TAURI__.dialog.save` + `fs.writeTextFile` if present, otherwise a browser download; the Tauri build has neither plugin yet (only the updater), so in the Windows app it falls back to the browser download, which may not work in the webview. Adding `tauri-plugin-dialog` and `tauri-plugin-fs` (Cargo + capabilities) is needed; I did not touch Rust. Screenshot: `docs/s3/settings-kids-backup.png` (Settings, "Kids" group, shown to signed-in grown-ups only).
++- **S3 review changes (Sonnet):** the move, the safety copies and the restore offer run only when `window.__TAURI_INTERNALS__` exists (`isBoxApp()` in kids.js); elsewhere server kids are shown with `readOnly: true` (no pencil, no Add a child) and nothing is copied or deleted. Rust `app/client/src-tauri/src/backups.rs`: `kids_backup(text) -> path` and `kids_backup_latest()`; files `Documents\Orlis Play\Backups\kids-YYYY-MM-DD-HHMM.json`, newest 10 kept, only `kids-*.json` ever pruned. The timestamp is **UTC** (no time-zone crate), and two writes in the same minute overwrite. Custom commands need no capability entry in this config. The quiet copy is also written before the server is told (right after the copy), not only after. A "No" to the restore offer is remembered per household (`orlis.kids.declined.<id>`); Load a backup in Settings still works. Screenshot predates this change (Settings buttons unchanged).
+diff --git a/docs/s3/settings-kids-backup.png b/docs/s3/settings-kids-backup.png
+new file mode 100644
+index 0000000..df60dd5
+Binary files /dev/null and b/docs/s3/settings-kids-backup.png differ
+diff --git a/server/src/api.js b/server/src/api.js
+index 2c97c12..14de1ec 100644
+--- a/server/src/api.js
++++ b/server/src/api.js
+@@ -114,7 +114,11 @@ export function api(db, info, extra = () => [], manageKey = null){
+   const householdOf = (a) => { const h = q('SELECT id, name FROM households WHERE id = ?').get(a.household_id); return h ? { ...h } : null; };
+   /* the family's profiles: everyone's kids (and grown-ups) in the household */
+   const lookOf = (t) => { try { return t ? JSON.parse(t) : null; } catch { return null; } };
+-  const profilesOf = (a) => q('SELECT p.id, p.name, p.avatar, p.look, p.account_id AS accountId FROM profiles p JOIN accounts x ON x.id = p.account_id WHERE x.household_id = ? ORDER BY p.created_at, p.rowid').all(a.household_id).map(p => ({ ...p, look: lookOf(p.look) }));
++  const profilesOf = (a) => q('SELECT p.id, p.name, p.avatar, p.look, p.account_id AS accountId, p.created_at AS createdAt FROM profiles p JOIN accounts x ON x.id = p.account_id WHERE x.household_id = ? ORDER BY p.created_at, p.rowid').all(a.household_id).map(p => ({ ...p, look: lookOf(p.look) }));
++  /* A grown-up's own profile is the first on their account; every other profile is a child's (and lives on the family's Box now: 0011, S3) */
++  const ownProfileId = (accountId) => { const r = q('SELECT id FROM profiles WHERE account_id = ? ORDER BY created_at, rowid LIMIT 1').get(accountId); return r ? r.id : null; };
++  const isKid = (p) => ownProfileId(p.account_id) !== p.id;
++  const gone = () => new Fail(410, 'moved', 'Kids\' profiles now live on your Orlis Play PC.');
+   const ownProfiles = (accountId) => q('SELECT COUNT(*) AS n FROM profiles WHERE account_id = ?').get(accountId).n;
+   /* a profile in the asker's family, or nothing */
+   const familyProfile = (a, id) => q('SELECT p.* FROM profiles p JOIN accounts x ON x.id = p.account_id WHERE p.id = ? AND x.household_id = ?').get(id, a.household_id);
+@@ -227,6 +231,8 @@ export function api(db, info, extra = () => [], manageKey = null){
+     /* ---------- the family's profiles ---------- */
+     ['POST', '/api/profiles', ({ headers, body }) => {
+       const a = who(headers, { waiting: true });   /* (their own family: fine while waiting) */
++      /* only a grown-up's own profile is made here (at sign-up); a child's is the Box's now */
++      if (ownProfiles(a.id) > 0) throw gone();
+       if (profilesOf(a).length >= LIMITS.profiles) throw new Fail(400, 'full', `A family can have up to ${LIMITS.profiles} profiles.`);
+       const p = { id: newId(), name: name(body.name), avatar: avatar(body.avatar), look: body.look === undefined ? null : look(body.look) };
+       q('INSERT INTO profiles (id, account_id, name, avatar, look, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(p.id, a.id, p.name, p.avatar, p.look && JSON.stringify(p.look), now());
+@@ -236,6 +242,7 @@ export function api(db, info, extra = () => [], manageKey = null){
+       const a = who(headers, { waiting: true });   /* (their own family: fine while waiting) */
+       const p = familyProfile(a, params.id);
+       if (!p) throw new Fail(404, 'no_profile', 'No such profile.');
++      if (isKid(p)) throw gone();
+       const n = body.name === undefined ? p.name : name(body.name);
+       const v = body.avatar === undefined ? p.avatar : avatar(body.avatar);
+       const l = body.look === undefined ? lookOf(p.look) : look(body.look);
+@@ -246,6 +253,7 @@ export function api(db, info, extra = () => [], manageKey = null){
+       const a = who(headers, { waiting: true });   /* (their own family: fine while waiting) */
+       const p = familyProfile(a, params.id);
+       if (!p) throw new Fail(404, 'no_profile', 'No such profile.');
++      if (isKid(p)) throw gone();
+       /* (a grown-up's own profile - the first on their account - stays) */
+       const theirs = q('SELECT id FROM profiles WHERE account_id = ? ORDER BY created_at, rowid LIMIT 1').get(p.account_id);
+       if (ownProfiles(p.account_id) <= 1 || (theirs && theirs.id === p.id)) throw new Fail(400, 'last', 'Each grown-up keeps their own profile.');
+@@ -253,6 +261,23 @@ export function api(db, info, extra = () => [], manageKey = null){
+       return { ok: true };
+     }],
+ 
++    /* The Box has copied these children (S3): delete exactly the ones that are
++       in the asker's family and are not a grown-up's own profile. The answer
++       lists the ids deleted; the History entry has a number, never a name. */
++    ['POST', '/api/profiles/moved', ({ headers, body }) => {
++      const a = who(headers, { waiting: true });
++      const ids = Array.isArray(body && body.ids) ? [...new Set(body.ids.filter(i => typeof i === 'string'))].slice(0, 100) : [];
++      const done = [];
++      for (const id of ids){
++        const p = familyProfile(a, id);
++        if (!p || !isKid(p)) continue;
++        q('DELETE FROM profiles WHERE id = ?').run(p.id);
++        done.push(p.id);
++      }
++      if (done.length) history(db).add(a, 'kids-moved', { note: `moved ${done.length} kids\' profiles to the Box` });
++      return { ids: done };
++    }],
++
+     /* Invites: the owner's to start a new family (household: 'new'), and
+        any parent's to bring another grown-up into their own ('mine'). Only
+        the owner makes someone a creator. */
+@@ -296,6 +321,8 @@ export function api(db, info, extra = () => [], manageKey = null){
+       for (const h of hs){
+         h.accounts = q('SELECT id, email, role, devkit, slots, created_at AS createdAt FROM accounts WHERE household_id = ? ORDER BY created_at').all(h.id).map(r => ({ ...r, devkit: r.role === 'owner' || !!r.devkit }));
+         h.profiles = q('SELECT COUNT(*) AS n FROM profiles p JOIN accounts x ON x.id = p.account_id WHERE x.household_id = ?').get(h.id).n;
++        /* children's profiles still waiting to move to the family's Box (a number, no names) */
++        h.kidsWaiting = q('SELECT COUNT(*) AS n FROM profiles p JOIN accounts x ON x.id = p.account_id WHERE x.household_id = ? AND p.id != COALESCE((SELECT p2.id FROM profiles p2 WHERE p2.account_id = p.account_id ORDER BY p2.created_at, p2.rowid LIMIT 1), \'\')').get(h.id).n;
+       }
+       return { households: hs.filter(h => h.accounts.length) };
+     }],
+diff --git a/server/src/history.js b/server/src/history.js
+index 69d1862..4f04c34 100644
+--- a/server/src/history.js
++++ b/server/src/history.js
+@@ -6,7 +6,7 @@
+    history(db).add(who, what, { gameId, name, version, note })
+      who: the account that did it (or null: the server itself)
+    history(db).list(n)  the newest n, newest first */
+-export const WHAT = ['sent', 'played', 'approved', 'declined', 'withdrawn', 'removed', 'creator', 'not-creator', 'joined', 'requested', 'making', 'made', 'request-declined', 'devkit-on', 'devkit-off', 'shared', 'family-only', 'slots', 'asked-to-join', 'join-approved', 'join-declined', 'beta-requested', 'beta-approved', 'beta-declined', 'password-set', 'featured', 'unfeatured', 'tested', 'published', 'publish-asked', 'publish-declined', 'taken-off'];
++export const WHAT = ['sent', 'played', 'approved', 'declined', 'withdrawn', 'removed', 'creator', 'not-creator', 'joined', 'requested', 'making', 'made', 'request-declined', 'devkit-on', 'devkit-off', 'shared', 'family-only', 'slots', 'asked-to-join', 'join-approved', 'join-declined', 'beta-requested', 'beta-approved', 'beta-declined', 'password-set', 'featured', 'unfeatured', 'tested', 'published', 'publish-asked', 'publish-declined', 'taken-off', 'kids-moved'];
+ 
+ export function history(db){
+   const add = (who, what, { gameId = null, name = null, version = null, note = null } = {}) => {
+diff --git a/server/src/manage-page.js b/server/src/manage-page.js
+index d51126d..360f125 100644
+--- a/server/src/manage-page.js
++++ b/server/src/manage-page.js
+@@ -274,7 +274,7 @@ var TRY = ${TRY_SECS};
+       return Promise.all([call('GET', '/api/households'), call('GET', '/api/invites')]).then(function(r){
+         var c = card('Families');
+         r[0].households.forEach(function(f){
+-          row(c, '<span class="fam">' + esc(f.name) + '</span><small>' + f.profiles + ' profile' + (f.profiles === 1 ? '' : 's') + '</small>');
++          row(c, '<span class="fam">' + esc(f.name) + '</span><small>' + f.profiles + ' profile' + (f.profiles === 1 ? '' : 's') + (f.kidsWaiting ? ' \\u00b7 ' + f.kidsWaiting + ' kid' + (f.kidsWaiting === 1 ? '' : 's') + '\\u2019 profile' + (f.kidsWaiting === 1 ? '' : 's') + ' waiting to move to the Box' : '') + '</small>');
+           f.accounts.forEach(function(a){
+             var right = [];
+             if (a.role === 'owner') right.push(h('<b style="color:#6d5efc">Owner</b>'));
+@@ -326,7 +326,7 @@ var TRY = ${TRY_SECS};
+       return call('GET', '/api/history').then(function(r){
+         var c = card('What happened to the family\\u2019s games');
+         if (!r.history.length) note(c, 'Nothing yet. Every game sent, played, approved, declined or taken out is kept here, and every grown-up made a creator or not.');
+-        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of Discover', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed', 'asked-to-join': 'Asked to join', 'join-approved': 'Let in', 'join-declined': 'Not let in', 'beta-requested': 'Asked for the beta', 'beta-approved': 'Approved for the beta', 'beta-declined': 'Beta request declined', 'password-set': 'Given a new password', featured: 'Featured in Discover', unfeatured: 'No longer featured' };
++        var SAY = { sent: 'Sent for your OK', played: 'Played', approved: 'Approved', declined: 'Declined', withdrawn: 'Taken back by its maker', removed: 'Taken out of Discover', creator: 'Made a creator', 'not-creator': 'No longer a creator', joined: 'Joined from away (Tailscale)', requested: 'Asked for a game', making: 'Making a requested game', made: 'Made a requested game', 'request-declined': 'Request declined', 'devkit-on': 'Given the Dev Kit', 'devkit-off': 'Dev Kit taken away', shared: 'Shared with everyone', 'family-only': 'Kept to its family', slots: 'Game slots changed', 'asked-to-join': 'Asked to join', 'join-approved': 'Let in', 'join-declined': 'Not let in', 'beta-requested': 'Asked for the beta', 'beta-approved': 'Approved for the beta', 'beta-declined': 'Beta request declined', 'password-set': 'Given a new password', 'kids-moved': 'Kids\\u2019 profiles moved to the Box', featured: 'Featured in Discover', unfeatured: 'No longer featured' };
+         r.history.forEach(function(x){
+           row(c, '<span class="tag ' + (x.what === 'approved' ? 'ok' : x.what === 'declined' || x.what === 'removed' ? 'declined' : '') + '">' + esc(SAY[x.what] || x.what) + '</span> ' +
+             (x.name ? '<b>' + esc(x.name) + '</b>' + (x.version ? ' <span class="tag">version ' + esc(x.version) + '</span>' : '') : '') +
+diff --git a/server/test/accounts.test.mjs b/server/test/accounts.test.mjs
+index a8dce32..daec74a 100644
+--- a/server/test/accounts.test.mjs
++++ b/server/test/accounts.test.mjs
+@@ -7,6 +7,7 @@ import { createSocket } from 'node:dgram';
+ import { start } from '../src/app.js';
+ import { HELLO } from '../src/discovery.js';
+ import { LIMITS } from '../src/api.js';
++import { addKid } from './kids-helper.mjs';
+ 
+ /* A fresh server on a spare port, with its own empty data folder. */
+ async function fresh(opts = { everyoneCreates: false }){
+@@ -95,26 +96,28 @@ test('accounts are for grown-ups; profiles carry no contact details', async () =
+     assert.equal((await call('POST', '/api/signup', grownUp('a@example.com', { password: 'short' }))).error, 'short_password');
+     const me = await call('POST', '/api/signup', grownUp('a@example.com'));
+     for (const bad of ['kid@example.com', '07700 900123', 'https://x.y', '', 'x'.repeat(21)]){
+-      assert.equal((await call('POST', '/api/profiles', { name: bad }, me.token)).error, 'bad_name', `rejects ${JSON.stringify(bad)}`);
++      assert.equal((await call('PATCH', `/api/profiles/${me.profiles[0].id}`, { name: bad }, me.token)).error, 'bad_name', `rejects ${JSON.stringify(bad)}`);
+     }
+-    assert.equal((await call('POST', '/api/profiles', { name: 'Ollie', avatar: 'nope' }, me.token)).error, 'bad_avatar');
++    assert.equal((await call('PATCH', `/api/profiles/${me.profiles[0].id}`, { avatar: 'nope' }, me.token)).error, 'bad_avatar');
+   } finally { await s.close(); }
+ });
+ 
+-test('a family manages its kids\' profiles - only its own', async () => {
++test('a grown-up\'s own profile is the server\'s; a kid\'s is the Box\'s (410 on create, edit, delete)', async () => {
+   const { s, call } = await fresh();
+   try {
+     const me = await call('POST', '/api/signup', grownUp('a@example.com'));
+-    const kid = await call('POST', '/api/profiles', { name: 'Ollie', avatar: 'rocket' }, me.token);
+-    assert.equal(kid.status, 201);
+-    assert.equal((await call('PATCH', `/api/profiles/${kid.id}`, { avatar: 'dino' }, me.token)).avatar, 'dino');
++    const own = me.profiles[0].id;
++    assert.equal((await call('PATCH', `/api/profiles/${own}`, { avatar: 'dino' }, me.token)).avatar, 'dino', 'their own, yes');
++    const made = await call('POST', '/api/profiles', { name: 'Ollie', avatar: 'rocket' }, me.token);
++    assert.equal(made.status, 410); assert.equal(made.error, 'moved');
++    assert.equal((await call('GET', '/api/me', null, me.token)).profiles.length, 1, 'nothing was made');
++    const kid = addKid(s.db, me.account.id, 'Ollie');
++    assert.equal((await call('PATCH', `/api/profiles/${kid}`, { avatar: 'dino' }, me.token)).status, 410);
++    assert.equal((await call('DELETE', `/api/profiles/${kid}`, null, me.token)).status, 410);
++    assert.equal((await call('GET', '/api/me', null, me.token)).profiles.length, 2, 'untouched');
+     const other = await call('POST', '/api/signup', grownUp('b@example.com', { invite: (await call('POST', '/api/invites', { household: 'new' }, me.token)).code }));
+-    assert.equal((await call('DELETE', `/api/profiles/${kid.id}`, null, other.token)).status, 404, 'not another family\'s');
+-    assert.equal((await call('GET', '/api/me', null, me.token)).profiles.length, 2);
+-    for (let i = 2; i < LIMITS.profiles; i++) await call('POST', '/api/profiles', { name: `Kid ${String.fromCharCode(65 + i)}` }, me.token);
+-    assert.equal((await call('POST', '/api/profiles', { name: 'One more' }, me.token)).error, 'full');
+-    const solo = await call('GET', '/api/me', null, other.token);
+-    assert.equal((await call('DELETE', `/api/profiles/${solo.profiles[0].id}`, null, other.token)).error, 'last', 'keeps at least one');
++    assert.equal((await call('DELETE', `/api/profiles/${kid}`, null, other.token)).status, 404, 'not another family\'s');
++    assert.equal((await call('DELETE', `/api/profiles/${other.profiles[0].id}`, null, other.token)).error, 'last', 'keeps their own');
+   } finally { await s.close(); }
+ });
+ 
+@@ -208,14 +211,15 @@ test('families: a new family is its own; a second parent shares the kids', async
+   try {
+     const me = await call('POST', '/api/signup', grownUp('me@example.com', { name: 'Deep', family: 'The Patels' }));
+     assert.equal(me.household.name, 'The Patels');
+-    await call('POST', '/api/profiles', { name: 'Ellie', avatar: 'star' }, me.token);
++    const ellieId = addKid(s.db, me.account.id, 'Ellie', { avatar: 'star' });
+     /* a second parent, into this family */
+     const join = await call('POST', '/api/invites', {}, me.token);
+     const partner = await call('POST', '/api/signup', grownUp('partner@example.com', { name: 'Sam', invite: join.code }));
+     assert.equal(partner.household.id, me.household.id);
+     assert.deepEqual(partner.profiles.map(p => p.name), ['Deep', 'Ellie', 'Sam'], 'the same kids, from either parent');
+     const ellie = partner.profiles.find(p => p.name === 'Ellie');
+-    assert.equal((await call('PATCH', `/api/profiles/${ellie.id}`, { avatar: 'owl' }, partner.token)).avatar, 'owl');
++    assert.equal(ellie.id, ellieId);
++    assert.equal((await call('PATCH', `/api/profiles/${ellie.id}`, { avatar: 'owl' }, partner.token)).status, 410, 'a kid is the Box\'s now');
+     const deep = partner.profiles.find(p => p.name === 'Deep');
+     assert.equal((await call('DELETE', `/api/profiles/${deep.id}`, null, partner.token)).error, 'last', "each grown-up keeps their own profile");
+     /* a friend's family: separate */
+@@ -266,15 +270,14 @@ test("a profile's avatar: its look saved, checked, and sent with the profiles",
+   try {
+     const me = await call('POST', '/api/signup', grownUp('a@example.com'));
+     const LOOK = { skin: '#f3c393', hair: 'ponytail', hairColor: '#5a3825', eyes: 'sparkle', mouth: 'grin', color: '#ff5d8f', outfit: 'stars', extra: 'bow' };
+-    const kid = await call('POST', '/api/profiles', { name: 'Ellie', avatar: 'star', look: LOOK }, me.token);
+-    assert.deepEqual(kid.look, LOOK);
++    const kid = { id: me.profiles[0].id };
++    assert.deepEqual((await call('PATCH', `/api/profiles/${kid.id}`, { look: LOOK }, me.token)).look, LOOK);
+     assert.equal((await call('PATCH', `/api/profiles/${kid.id}`, { look: { ...LOOK, hair: 'mohawk' } }, me.token)).error, 'bad_look', 'only the choices');
+     assert.equal((await call('PATCH', `/api/profiles/${kid.id}`, { look: { ...LOOK, color: 'url(x)' } }, me.token)).error, 'bad_look');
+     const tinted = await call('PATCH', `/api/profiles/${kid.id}`, { look: { ...LOOK, color: '#123abc', sneaky: 'x' } }, me.token);
+     assert.equal(tinted.look.color, '#123abc', 'any colour code'); assert.equal(tinted.look.sneaky, undefined, 'nothing else kept');
+     const all = (await call('GET', '/api/me', null, me.token)).profiles;
+     assert.equal(all.find(p => p.id === kid.id).look.hair, 'ponytail');
+-    assert.equal(all.find(p => p.id !== kid.id).look, null, 'no avatar made yet');
+     /* the one character (0042): names, never raw colours */
+     const NEW = { colour: 'pink', face: { eyes: 'star', mouth: 'grin' }, top: 'bob', outfit: 'overalls', outfitColour: 'ui.gold', extra: 'glasses' };
+     assert.deepEqual((await call('PATCH', `/api/profiles/${kid.id}`, { look: NEW }, me.token)).look, NEW);
+diff --git a/server/test/backup.test.mjs b/server/test/backup.test.mjs
+index 8149f42..b0c9507 100644
+--- a/server/test/backup.test.mjs
++++ b/server/test/backup.test.mjs
+@@ -7,6 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
+ import { start } from '../src/app.js';
+ import { backups, KEEP } from '../src/backup.js';
+ import { writeOrlis } from '../src/orlis-file.js';
++import { addKid } from './kids-helper.mjs';
+ 
+ const game = (id) => writeOrlis({ 'manifest.json': JSON.stringify({ format: 1, kit: 2, id, name: id, version: '1.0' }), 'game.js': '' });
+ const fresh = () => mkdtempSync(join(tmpdir(), 'orlis-backup-'));
+@@ -24,7 +25,7 @@ test('a backup has the accounts and profiles, and the Store\'s games', async ()
+   const dir = fresh(), { s, call } = await server(dir);
+   try {
+     const me = await call('POST', '/api/signup', { email: 'p@example.com', password: 'correct horse', name: 'Sam', adult: true });
+-    await call('POST', '/api/profiles', { name: 'Ellie', avatar: 'star' }, me.token);
++    addKid(s.db, me.account.id, 'Ellie', { avatar: 'star' });
+     const b = s.backups.make('manual', s.db);
+     assert.equal(b.reason, 'manual'); assert.equal(b.accounts, 1); assert.equal(b.profiles, 2); assert.equal(b.games, 1);
+     const copy = new DatabaseSync(join(dir, 'backups', b.id, 'orlis.db'));
+@@ -53,7 +54,7 @@ test('a restore: asked for, done as the server starts again, and itself undoable
+   const me = await call('POST', '/api/signup', { email: 'p@example.com', password: 'correct horse', name: 'Sam', adult: true });
+   const saved = (await call('POST', '/api/backups', null, me.token));
+   assert.equal(saved.status, 201);
+-  await call('POST', '/api/profiles', { name: 'Late', avatar: 'cat' }, me.token);
++  addKid(s.db, me.account.id, 'Late', { avatar: 'cat' });
+   const r = await call('POST', `/api/backups/${saved.id}/restore`, null, me.token);
+   assert.equal(r.ok, true); assert.equal(r.restarting, false, 'no way to restart here: on the next start');
+   assert.equal((await call('GET', '/api/server', null, me.token)).restoring, saved.id);
+diff --git a/server/test/joins.test.mjs b/server/test/joins.test.mjs
+index d3bf8fa..fa0580e 100644
+--- a/server/test/joins.test.mjs
++++ b/server/test/joins.test.mjs
+@@ -34,8 +34,8 @@ test('joining with the owner\'s OK: no code - they ask, wait, and are let in (or
+     assert.equal((await call('GET', '/api/store', null, sam.token)).status, 403);
+     assert.equal((await call('POST', '/api/requests', { start: 'new', view: 'hands', action: 'catch' }, sam.token)).status, 403);
+     /* but their own family, yes: they add their kids while they wait (and play the starter games) */
+-    assert.equal((await call('POST', '/api/profiles', { name: 'Kiddo', avatar: 'rocket' }, sam.token)).status, 201);
+-    assert.equal((await call('GET', '/api/me', null, sam.token)).profiles.length, 2);
++    assert.equal((await call('PATCH', `/api/profiles/${sam.profiles[0].id}`, { avatar: 'rocket' }, sam.token)).avatar, 'rocket');
++    assert.equal((await call('GET', '/api/me', null, sam.token)).profiles.length, 1);
+     /* signing in again, still waiting */
+     assert.equal((await call('POST', '/api/signin', { email: 'sam@example.com', password: 'correct horse' })).account.waiting, true);
+ 
+diff --git a/server/test/kids-helper.mjs b/server/test/kids-helper.mjs
+new file mode 100644
+index 0000000..7eb3011
+--- /dev/null
++++ b/server/test/kids-helper.mjs
+@@ -0,0 +1,11 @@
++import { newId } from '../src/secure.js';
++
++/* Kids' profiles live on the Box now, so the server no longer makes them.
++   A test that needs one the way an old server would have it (a second
++   profile on an account) puts it straight in the database. Returns its id. */
++export function addKid(db, accountId, name, { avatar = 'rocket', look = null } = {}){
++  const id = newId();
++  db.prepare('INSERT INTO profiles (id, account_id, name, avatar, look, created_at) VALUES (?, ?, ?, ?, ?, ?)')
++    .run(id, accountId, name, avatar, look && JSON.stringify(look), new Date().toISOString());
++  return id;
++}
+diff --git a/server/test/kids-move.test.mjs b/server/test/kids-move.test.mjs
+new file mode 100644
+index 0000000..3a2b7f2
+--- /dev/null
++++ b/server/test/kids-move.test.mjs
+@@ -0,0 +1,95 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { mkdtempSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { start } from '../src/app.js';
++import { history } from '../src/history.js';
++import { addKid } from './kids-helper.mjs';
++
++async function fresh(){
++  const dataDir = mkdtempSync(join(tmpdir(), 'orlis-kids-'));
++  const s = await start({ everyoneCreates: false, dataDir, port: 0, discoveryPort: 0, name: 'Test Orlis' });
++  const call = async (method, path, body, token, manage = false) => {
++    const r = await fetch(`http://127.0.0.1:${s.port}${path}`, {
++      method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(manage ? { 'X-Orlis-Manage': s.manageKey } : {}) },
++      body: body ? JSON.stringify(body) : undefined
++    });
++    return { status: r.status, ...(await r.json()) };
++  };
++  return { s, call };
++}
++const grownUp = (email, extra = {}) => ({ email, password: 'correct horse', name: 'Sam', adult: true, device: 'Laptop', ...extra });
++const count = (db) => db.prepare('SELECT COUNT(*) AS n FROM profiles').get().n;
++
++async function twoFamilies(){
++  const { s, call } = await fresh();
++  const me = await call('POST', '/api/signup', grownUp('a@example.com', { name: 'Deep', family: 'The Patels' }));
++  const partner = await call('POST', '/api/signup', grownUp('p@example.com', { name: 'Pat', invite: (await call('POST', '/api/invites', {}, me.token)).code }));
++  const friend = await call('POST', '/api/signup', grownUp('f@example.com', { name: 'Max', invite: (await call('POST', '/api/invites', { household: 'new' }, me.token)).code }));
++  return { s, call, me, partner, friend };
++}
++
++test('moved: deletes the family\'s kids, and only them', async () => {
++  const { s, call, me, partner, friend } = await twoFamilies();
++  try {
++    const ellie = addKid(s.db, me.account.id, 'Ellie'), ravi = addKid(s.db, partner.account.id, 'Ravi');
++    const theirs = addKid(s.db, friend.account.id, 'Zed');
++    const r = await call('POST', '/api/profiles/moved', { ids: [ellie, ravi] }, me.token);
++    assert.equal(r.status, 200);
++    assert.deepEqual([...r.ids].sort(), [ellie, ravi].sort());
++    assert.deepEqual((await call('GET', '/api/me', null, me.token)).profiles.map(p => p.name).sort(), ['Deep', 'Pat']);
++    assert.ok(s.db.prepare('SELECT 1 FROM profiles WHERE id = ?').get(theirs), 'another family\'s kid is still there');
++    assert.deepEqual((await call('POST', '/api/profiles/moved', { ids: [ellie] }, me.token)).ids, [], 'a second time does nothing');
++  } finally { await s.close(); }
++});
++
++test('moved: never a grown-up\'s own profile, never another family\'s', async () => {
++  const { s, call, me, partner, friend } = await twoFamilies();
++  try {
++    const kid = addKid(s.db, friend.account.id, 'Zed');
++    const before = count(s.db);
++    const ids = [me.profiles[0].id, partner.profiles.find(p => p.accountId === partner.account.id).id, kid, 'nope', 7, null];
++    const r = await call('POST', '/api/profiles/moved', { ids }, me.token);
++    assert.deepEqual(r.ids, []);
++    assert.equal(count(s.db), before, 'nothing deleted');
++    assert.equal((await call('POST', '/api/profiles/moved', {}, me.token)).status, 200, 'no ids: nothing');
++    assert.equal((await call('POST', '/api/profiles/moved', { ids: [kid] }, null)).status, 401, 'signed in only');
++    assert.equal(count(s.db), before);
++  } finally { await s.close(); }
++});
++
++test('a kid cannot be made, changed or removed on the server: 410', async () => {
++  const { s, call } = await fresh();
++  try {
++    const me = await call('POST', '/api/signup', grownUp('a@example.com'));
++    const kid = addKid(s.db, me.account.id, 'Ollie');
++    const made = await call('POST', '/api/profiles', { name: 'New' }, me.token);
++    assert.equal(made.status, 410); assert.equal(made.error, 'moved'); assert.match(made.message, /Orlis Play PC/);
++    assert.equal((await call('PATCH', `/api/profiles/${kid}`, { name: 'X' }, me.token)).status, 410);
++    assert.equal((await call('DELETE', `/api/profiles/${kid}`, null, me.token)).status, 410);
++    assert.equal(count(s.db), 2);
++    assert.equal((await call('PATCH', `/api/profiles/${me.profiles[0].id}`, { name: 'Deep' }, me.token)).name, 'Deep', 'the grown-up\'s own still changes');
++  } finally { await s.close(); }
++});
++
++test('the History entry counts kids and names none; the management page counts those waiting', async () => {
++  const { s, call, me, friend } = await twoFamilies();
++  try {
++    const a = addKid(s.db, me.account.id, 'Ellie'), b = addKid(s.db, me.account.id, 'Bartholomew');
++    addKid(s.db, friend.account.id, 'Zed');
++    const fams = async () => Object.fromEntries((await call('GET', '/api/households', null, null, true)).households.map(h => [h.name, h]));
++    let f = await fams();
++    assert.equal(f['The Patels'].kidsWaiting, 2); assert.equal(f["Max's family"].kidsWaiting, 1);
++    assert.equal(f['The Patels'].profiles, 4, 'two grown-ups and two kids');
++    await call('POST', '/api/profiles/moved', { ids: [a, b] }, me.token);
++    f = await fams();
++    assert.equal(f['The Patels'].kidsWaiting, 0); assert.equal(f["Max's family"].kidsWaiting, 1, 'the other family still waits');
++    const log = history(s.db).list().filter(e => e.what === 'kids-moved');
++    assert.equal(log.length, 1);
++    assert.equal(log[0].note, "moved 2 kids' profiles to the Box");
++    assert.ok(!JSON.stringify(history(s.db).list()).match(/Ellie|Bartholomew|Zed/), 'no kid names in History');
++    await call('POST', '/api/profiles/moved', { ids: [a] }, me.token);
++    assert.equal(history(s.db).list().filter(e => e.what === 'kids-moved').length, 1, 'nothing moved, nothing logged');
++  } finally { await s.close(); }
++});
