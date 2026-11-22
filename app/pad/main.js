@@ -1,6 +1,7 @@
 /* The pad page (plan package P3; protocol: docs/specs/pad-protocol.md; screens: docs/pads-mockup.html).
    Opening -> pictures (a new phone) -> who are you -> you're in -> "I'm ready" -> the game's pad program (or "Look at the TV!").
    A phone that has joined before comes straight back with its device token. Plain modules, no framework. */
+import '../src/ui/paper-cut.js';   /* (the character's paper-cut edge; see avatar-art.js) */
 import { createLink, CLOSE } from './link.js';
 import { keepAwake } from './awake.js';
 import { paintPicture, paintCubo, paintPerson, personColour, hasGL } from './art.js';
