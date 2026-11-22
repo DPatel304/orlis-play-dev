@@ -221,10 +221,17 @@ const MOVES = {
     return [A, B, mirror(A), mirror(B)][i % 4];
   },
   /* a longer stride, leaving the ground between steps, leaning into it */
+  /* a run, in four stills (each ~0.2 s): in the air with the front knee up and the foot under it, the back leg pushing off diagonally; then
+     landing low on the front foot with the other leg trailing; then the same on the other side. The torso leans forward only a little, the head
+     stays upright, the arms are bent and pump close to the body against the legs, and the body bobs up and down between the stills. */
   run: (i) => {
-    const A = { yo: -0.05, rot: 0.3, legs: [[[-0.16, -0.1], [-0.26, -0.09]], [[0.16, -0.11], [0.27, -0.03]]], arms: [[[-0.31, -0.33], [-0.36, -0.25]], [[0.31, -0.3], [0.33, -0.42]]] };
-    const B = { yo: 0, rot: 0.3, legs: [[[-0.14, -0.07], [-0.2, -0.02]], [null, [0.2, 0]]], arms: [[[-0.29, -0.3], [-0.3, -0.22]], [[0.3, -0.3], [0.31, -0.38]]] };
-    return [A, B, mirror(A), mirror(B)][i % 4];
+    const hip = (side, yo) => [side * 0.104, -0.135 + yo];
+    const front = (side, yo, air) => { const [hx, hy] = hip(side, yo); return air ? [[hx + 0.086, hy + 0.025], [hx + 0.076, hy + 0.16]] : [[hx + 0.046, hy + 0.01], [hx + 0.026, hy + 0.135]]; };
+    const back = (side, yo, air) => { const [hx, hy] = hip(side, yo); return air ? [[hx - 0.046, hy + 0.045], [hx - 0.096, hy + 0.17]] : [[hx - 0.026, hy + 0.035], [hx - 0.066, hy + 0.135]]; };
+    const arm = (side, yo, ph) => { const x = side * 0.255, up = ph === 'fwd', mid = ph === 'mid'; return [[x, -0.31 + yo * 0.5], [x + side * 0.02, (up ? -0.41 : mid ? -0.33 : -0.235) + yo * 0.5]]; };
+    const k = i % 4, air = k % 2 === 0, yo = air ? -0.04 : 0, rightFront = k < 2, f = rightFront ? 1 : -1;
+    return { yo, rot: 0.14, headUp: 1, legs: [f > 0 ? back(-1, yo, air) : front(-1, yo, air), f > 0 ? front(1, yo, air) : back(1, yo, air)],
+      arms: [arm(-1, yo, air ? (f > 0 ? 'fwd' : 'back') : 'mid'), arm(1, yo, air ? (f > 0 ? 'back' : 'fwd') : 'mid')] };
   },
   /* off the ground, in four stills: the landing squash (the whole body squashes, feet apart), the take-off (legs stretched down, toes pointed,
      arms up), the top (knees tucked out to the sides, arms high), the way down (legs reaching for the ground). The shadow stays on the grass. */
@@ -232,7 +239,7 @@ const MOVES = {
     const arms = (up, k) => [[[-0.31 - k * 0.04, -0.52 - up], [-0.3 - k * 0.07, -0.68 - up]], [[0.31 + k * 0.04, -0.52 - up], [0.3 + k * 0.07, -0.68 - up]]];
     if (i % 4 === 0) return { yo: 0.02, squash: 0.09, legs: [[null, [-0.15, 0]], [null, [0.15, 0]]], arms: [[[-0.34, -0.17]], [[0.34, -0.17]]] };
     if (i % 4 === 1) return { yo: -0.2, legs: [[null, [-0.07, -0.2 + 0.03]], [null, [0.07, -0.2 + 0.03]]], arms: arms(0.2, 0) };
-    if (i % 4 === 2) return { yo: -0.32, legs: [[[-0.2, -0.32 - 0.1], [-0.1, -0.32 - 0.035]], [[0.2, -0.32 - 0.1], [0.1, -0.32 - 0.035]]], arms: arms(0.32, 1) };
+    if (i % 4 === 2) return { yo: -0.32, legs: [[[-0.115, -0.32 - 0.1], [-0.085, -0.32 + 0.02]], [[0.115, -0.32 - 0.1], [0.085, -0.32 + 0.02]]], arms: arms(0.32, 1) };
     return { yo: -0.17, legs: [[null, [-0.1, -0.17 + 0.02]], [null, [0.1, -0.17 + 0.02]]], arms: arms(0.17, 0.5) };
   },
   /* frozen: arms out, shivering */
@@ -296,7 +303,7 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
       drawArm(cc, a, S, pts, d < 0);
     }
     cc.save(); cc.translate(0, by + yo); drawTorso(cc, a, S, bw, bh); cc.restore();
-    cc.save(); cc.translate(0, -S * BODY.tot + yo); drawHead(cc, a, S, back, t); cc.restore();
+    cc.save(); cc.translate(0, -S * BODY.tot + yo + hh / 2); if (mv && mv.headUp) cc.rotate(-rot * mv.headUp); cc.translate(0, -hh / 2); drawHead(cc, a, S, back, t); cc.restore();
     cc.restore();
   });
   live = null;
