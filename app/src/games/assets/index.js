@@ -15,7 +15,8 @@
    The library is why a game made in Create always looks like an Orlis game, and why it can't show anything that hasn't been
    looked at: new pieces are added here (by request, approved by the Orlis owner), and games only ever name them. */
 import { color as paletteColor } from './palette.js';
-import { drawFigure, POSE_NAMES, FACE_NAMES } from '../figure.js';
+import { POSE_NAMES, FACE_NAMES } from '../figure.js';
+import { cuboFigure } from '../../ui/avatar-art.js';
 import { EMOJI } from './emoji.js';
 import { PROPS } from './props.js';
 import { SCENES, drawScene } from './scenes.js';
@@ -23,10 +24,10 @@ import { SCENES, drawScene } from './scenes.js';
 const ASSETS = {};
 const add = (a) => { ASSETS[a.id] = { aspect: 1, tags: [], poses: null, faces: null, ...a }; };
 
-/* Cubo: the Orlis cube, flat like a sticker. size is his height (about 2.3 of his body units). */
+/* Cubo: the one Orlis cube character (decision 0042), drawn with the avatar art. size is his height. */
 add({ id: 'cubo', name: 'Cubo', kind: 'character', tags: ['person', 'cube'], aspect: 0.8, poses: POSE_NAMES, faces: FACE_NAMES,
-  /* (his drawing is centred on his middle; this centres the whole of him, head to feet, on the point asked for) */
-  draw(c, s, o){ drawFigure(c, o.pose || 'freeze', 0, 0.44 * (s / 2.3), s / 2.3, o.t || 0, o.face || null, !!o.marks); } });
+  /* (this centres the whole of him, head to feet, on the point asked for) */
+  draw(c, s, o){ cuboFigure(c, 0, s * 0.5, s * 0.95, o.pose || 'freeze', o.t || 0, o.face || null); } });
 
 /* the emoji pieces, by their kind */
 const KIND = { animal: 'animal', food: 'food', nature: 'nature' };
