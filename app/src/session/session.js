@@ -169,6 +169,8 @@ export function createSession({ game, people, trust, send, colourFor = defaultCo
     get join() { return { pictures: join.pictures.slice(), grid: join.grid.slice() }; },
     get seats() { return seatList(); },
     get phase() { return phase; },
+    /* true when `start()` would work: in the lobby (or after a round) with every required phone in. The TV's Start button dims on it. */
+    get canStart() { return (phase === 'lobby' || phase === 'over') && !missing().length; },
 
     open(from, ua) { conns.set(from, { ua: ua || '', verified: false, device: null }); },
     close(from) {

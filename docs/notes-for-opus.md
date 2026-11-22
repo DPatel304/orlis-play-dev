@@ -51,3 +51,13 @@ Readings I chose where `docs/specs/session.md` was open (change any you disagree
 - Old looks are carried over **on read** (`normalizeLook` in `app/src/ui/look.js`); the database keeps what it had, and the server still accepts an old-shape look so old clients and backups restore. New saves are the new shape. A hat that was the old "extra" becomes the topper only when there was no hair; an old hoodie becomes plain (it was all in their colour). Kid profiles on the Box (0028) were not touched: nothing in this repo stores them yet.
 - U8 is `app/src/tracking/player-colours.js`; `PLAYER_COLORS` is now one array filled in place from it (lkp-*/castle-* read it unchanged). Only the app's own `crew` pushes into it. A child who clashes on a colour is also drawn in the colour they play in.
 - Question: the Guest on the phone page used the painted asset-library Cubo; it is now the new cube character in sky (Cubo, same drawing as everyone). The asset-library Cubo is unchanged.
+
+## 2026-11-21, S1 and P5 (pads in the shell, join card, trusted phones), Sonnet
+- **Rust hub / app must set `window.__ORLIS_PAD_HUB__ = { port, key, lan }`**: `lan` is the computer's home-network address; without it the QR falls back to the address the page was opened from, else 127.0.0.1 (useless on a phone). Also bundle `app/pads/` (each game's `pad.js`) for `/pads/<game>/`.
+- **Guest** is not added by the session (the brief said it was); the shell's `peopleFrom()` appends it. Say if it should move into the session.
+- **Tracked seats** are fixed when the join card appears (camera players present, at least `seats.tracked[0]`); players arriving later are not seats, so phones' seat numbers stay put.
+- **Play again** keeps the session and phones; phones that were ready stay ready. Leaving to Home (or anywhere else) stops the session, so phones show "Start Orlis on the TV" and rejoin by token next time.
+- **`pads.send`** is my choice: a game message becomes `{t:'ev', e: m.e || 'msg', ...}`. `on('join')` replays for phones already seated (the card comes before the game is made).
+- **No hub (plain browser)**: the card still shows (no QR); a game that needs a phone can't start. A calmer message there is not built.
+- Session got `canStart`. Settings has a "Phones" group with "See the list" opening the Trusted phones overlay (its look follows the mockup; it is an overlay, not a Settings page).
+- Not covered: wave-to-Start on a real camera (Start is an ordinary `.btn`, so the cursor's wave works; tested with a mouse click), real phones.

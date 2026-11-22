@@ -70,3 +70,16 @@ host), covering spec tests 1 to 3 against the real session (P6 extends this to a
   `window.__ORLIS_PAD_HUB__ = {port, key}`, which the shell sets in S1. Set tracked seats before phones join (pad seats are numbered after them).
 - A known token whose person was deleted gets `who?`; the same token on a new connection takes over its seat.
 
+
+## The game API for pads (S1, built 2026-11-21; `app/src/session/pads.js`)
+- **Manifest:** `seats: { tracked:[min,max], pads:[min,max] }`, `pads: { program, need }`, `requiredPads`. A game without `seats.pads[1] > 0` is not touched (no session, no hub).
+- **The shell** creates the session when such a game is picked (kept for "play again", dropped on leaving to Home), connects it with `host-link.js`, sets the
+  camera players as tracked seats when the join card appears, passes `colourFor` (favourite if free, else nearest free) and `people` (the household's profiles with
+  looks, then Guest, which the shell adds). Flow: camera ready, line-up, **join card**, the TV's Start (`session.start()`), round, scores.
+- **A game gets** `game.create(players, { pads })`: `pads.on('input' | 'join' | 'leave' | 'pause' | 'resume', fn)` (`join` also fires at once for phones already in),
+  `pads.send(seat | '*', m)` (arrives on the pad as `ev`, `e` = `m.e || 'msg'`), `pads.state(obj)` (throttled to about 18 a second, latest wins), `pads.seats`, `pads.phase`.
+  No start or end: only the TV starts. Handlers go away when the round ends.
+- **Pause:** the shell stops stepping the round and shows the paper pill "Waiting for <name>'s phone" (face included); after 120 s it adds "End the game".
+- **Hub address:** the app sets `window.__ORLIS_PAD_HUB__ = { port, key, lan? }` (`lan`: this computer's address on the home network, for the QR; or `url`).
+  Browser dev (owner or dev server only): `?padhub=<port>:<key>` and optional `&padhost=<lan address>` point at `node tools/pad-hub.mjs`.
+- Added to the session: `canStart` (true when `start()` would work). Pad programs live in `app/pads/<game>/pad.js` (the Node hub serves that folder at `/pads/`).
