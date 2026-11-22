@@ -1,0 +1,963 @@
+diff --git a/app/pads/pop-party/pad.js b/app/pads/pop-party/pad.js
+new file mode 100644
+index 0000000..ed6f65b
+--- /dev/null
++++ b/app/pads/pop-party/pad.js
+@@ -0,0 +1,60 @@
++/* The pad program for Pop Party (plan package S2): the whole phone screen is a touch pad in the player's colour.
++   Where the finger is (x and y, 0 to 1, left to right and top to bottom; the phone held sideways has the TV's shape) goes to the TV about
++   30 times a second while it touches, and { up: true } when it lifts. The TV moves that player's mitt there and pops balloons with it.
++   When the TV says { e: 'pop' } (this player popped something) the pad gives a small pop: a ring where the finger is, and a buzz if it can. */
++export default function start(api) {
++  const root = api.root, colour = api.colour || '#3da9ff';
++  root.style.cssText = `position:absolute;inset:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background:${colour}`;
++  root.innerHTML = '';
++
++  const hint = document.createElement('div');
++  hint.className = 'popHint';
++  hint.textContent = 'Drag to move your mitt';
++  hint.style.cssText = 'position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font:800 clamp(22px,6vmin,40px)/1.2 system-ui,sans-serif;color:#fff;text-shadow:0 2px 0 rgba(47,43,69,.35);padding:0 24px;pointer-events:none;transition:opacity .25s';
++  const finger = document.createElement('div');
++  finger.className = 'popFinger';
++  const F = Math.max(70, Math.min(window.innerWidth, window.innerHeight) * 0.2);
++  finger.style.cssText = `position:absolute;left:0;top:0;width:${F}px;height:${F}px;margin:${-F / 2}px 0 0 ${-F / 2}px;border-radius:50%;background:#fff;border:6px solid #2f2b45;box-shadow:0 0 0 ${F * 0.25}px rgba(255,255,255,.35);opacity:0;transition:opacity .12s;pointer-events:none`;
++  root.append(hint, finger);
++
++  let held = false, x = 0.5, y = 0.5, lastSent = '', lastAt = 0, timer = 0;
++  const clamp = (v) => Math.max(0, Math.min(1, v));
++  const r2 = (v) => Math.round(v * 1000) / 1000;
++  function post(force) {
++    const k = r2(x) + ',' + r2(y), now = Date.now();
++    if (!force && k === lastSent && now - lastAt < 100) return;
++    lastSent = k; lastAt = now;
++    api.send({ x: r2(x), y: r2(y) });
++  }
++  function at(e) {
++    const b = root.getBoundingClientRect();
++    x = clamp((e.clientX - b.left) / b.width); y = clamp((e.clientY - b.top) / b.height);
++    finger.style.transform = `translate(${x * b.width}px,${y * b.height}px)`;
++  }
++  root.addEventListener('pointerdown', (e) => {
++    held = true; try { root.setPointerCapture(e.pointerId); } catch { /* fine */ }
++    at(e); finger.style.opacity = '1'; hint.style.opacity = '0';
++    post(true); clearInterval(timer); timer = setInterval(() => { if (held) post(false); }, 33);   /* about 30 a second */
++  });
++  root.addEventListener('pointermove', (e) => { if (held) at(e); });
++  const up = () => {
++    if (!held) return;
++    held = false; clearInterval(timer); finger.style.opacity = '0'; hint.style.opacity = '1';
++    lastSent = ''; api.send({ up: true });
++  };
++  root.addEventListener('pointerup', up); root.addEventListener('pointercancel', up);
++
++  /* a small pop: a ring where the finger is */
++  function pop() {
++    const ring = document.createElement('div');
++    ring.className = 'popRing';
++    const b = root.getBoundingClientRect();
++    ring.style.cssText = `position:absolute;left:${x * b.width}px;top:${y * b.height}px;width:${F}px;height:${F}px;margin:${-F / 2}px 0 0 ${-F / 2}px;border-radius:50%;border:8px solid #fff;pointer-events:none;opacity:.9;transform:scale(.6);transition:transform .35s ease-out,opacity .35s ease-out`;
++    root.appendChild(ring);
++    requestAnimationFrame(() => requestAnimationFrame(() => { ring.style.transform = 'scale(2.2)'; ring.style.opacity = '0'; }));
++    setTimeout(() => ring.remove(), 450);
++    try { if (navigator.vibrate) navigator.vibrate(25); } catch { /* fine */ }
++  }
++  if (api.onEvent) api.onEvent((ev) => { if (ev && ev.e === 'pop') pop(); });
++  return { stop() { clearInterval(timer); } };
++}
+diff --git a/app/src/games/pop-party.js b/app/src/games/pop-party.js
+index 771374e..b1eb9b8 100644
+--- a/app/src/games/pop-party.js
++++ b/app/src/games/pop-party.js
+@@ -4,9 +4,10 @@ import { sayBubble } from './hud.js';
+ import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
+ import { sfx, music } from '../audio/sound.js';
+ import { Scene } from './pop-party-scene.js';
+-import { Avatars } from '../ui/avatars.js';
++import { Avatars, drawMitt } from '../ui/avatars.js';
+ import { crew } from '../ui/crew.js';
+-import { body } from '../ui/avatar-art.js';
++import { body, head } from '../ui/avatar-art.js';
++import { normalizeLook } from '../ui/look.js';
+ import { ANIMALS, animalParts, animalCol, touches, drawAnimal } from './pop-party-animals.js';
+ 
+ /* Three-minute rounds; the storm is always the last ten seconds. */
+@@ -23,9 +24,17 @@ export default {
+   id:'pop-party', unit: 'points', name:'Pop Party', stars:1, accent:color('fav.pink'), secs:ROUND,
+   /* The moves it uses, shown as pictures on the home screen. */
+   moves: ['reach'],
+-  create(n){ return new PopParty(n); }
++  /* Camera players, and up to four phones as extra players (decision 0028, S2): a phone is a touch pad, a finger drags a mitt. Without
++     phones it plays exactly as before. */
++  seats: { tracked: [1, 4], pads: [0, 4] },
++  pads: { program: '/pads/pop-party/', need: 'controller' },
++  create(n, env = {}){ return new PopParty(n, env.pads || null); }
+ };
+ 
++/* Phone players ("pad hands"): how many, the first score slot they use (after the camera players'), and how fast a mitt follows the finger
++   (a fraction of the way each second, as an exponential rate) and fades in and out. */
++export const PAD_MAX = 4, PAD_BASE = MAX_PLAYERS, PAD_FOLLOW = 16, PAD_FADE_IN = 8, PAD_FADE_OUT = 5;
++
+ /* Size classes rather than a continuous range, so a child can learn that the
+    little ones are worth chasing. The first is a rare teeny one, a fifth of an
+    ordinary balloon. Radius is a fraction of screen height; rise is screen
+@@ -105,9 +114,9 @@ const rand = ([a, b]) => a + Math.random() * (b - a);
+ 
+ let blob = null;
+ class PopParty {
+-  constructor(players){
++  constructor(players, pads = null){
+     this.players = players;
+-    const each = (v) => Array.from({ length: MAX_PLAYERS }, () => v);
++    const each = (v) => Array.from({ length: PAD_BASE + PAD_MAX }, () => v);
+     this.score = each(0);
+     this.combo = each(0);
+     this.comboT = each(0);
+@@ -124,10 +133,59 @@ class PopParty {
+     this.scene = new Scene();
+     this.avatars = new Avatars();
+     /* Every balloon each player pops, by colour: the bouquet they take home. */
+-    this.popped = Array.from({ length: MAX_PLAYERS }, () => []);
++    this.popped = Array.from({ length: PAD_BASE + PAD_MAX }, () => []);
+     this.out = null;
++    /* The phones: seat -> mitt. Each phone player takes the next score slot (PAD_BASE + k) and keeps it for the round, even if the phone drops. */
++    this.pads = pads; this.mitts = new Map(); this.offs = [];
++    if (pads){
++      this.offs.push(pads.on('join', (e) => this._mitt(e)));
++      this.offs.push(pads.on('input', ({ seat, m }) => this._pad(seat, m)));
++      this.offs.push(pads.on('leave', ({ seat }) => this._lift(this.mitts.get(seat))));
++    }
+   }
+ 
++  /* ---------- phones ---------- */
++  _mitt({ seat, name, avatar, colour }){
++    let m = this.mitts.get(seat);
++    if (!m){
++      if (this.mitts.size >= PAD_MAX) return null;
++      m = { seat, idx: PAD_BASE + this.mitts.size, x: 0.5, y: 0.5, tx: 0.5, ty: 0.5, down: false, a: 0, glow: 0, flash: 0, seen: false, col: PLAYER_COLORS[0], name: name || '', look: null };
++      this.mitts.set(seat, m);
++    }
++    if (name) m.name = name;
++    if (colour){ m.colour = colour; m.col = color('fav.' + colour); }
++    m.look = { ...normalizeLook(avatar), ...(colour ? { colour } : {}) };
++    return m;
++  }
++  /* a finger: { x, y } (0..1) while it touches, { up: true } when it lifts */
++  _pad(seat, m){
++    if (!m || typeof m !== 'object') return;
++    let mt = this.mitts.get(seat);
++    if (!mt){
++      const s = this.pads && this.pads.seats.find(q => q.n === seat);
++      mt = this._mitt({ seat, name: s && s.name, avatar: s && s.avatar, colour: s && s.colour });
++      if (!mt) return;
++    }
++    if (m.up){ this._lift(mt); return; }
++    const x = Number(m.x), y = Number(m.y);
++    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
++    mt.tx = clamp(x, 0, 1); mt.ty = clamp(y, 0, 1);
++    /* a fresh touch starts where the finger is; only a finger that stays down is followed smoothly */
++    if (!mt.down && mt.a < 0.05){ mt.x = mt.tx; mt.y = mt.ty; }
++    mt.down = true; mt.seen = true;
++  }
++  _lift(mt){
++    if (!mt || !mt.down) return;
++    mt.down = false;
++    /* resting on the giant counted as one slap; lifting lets the next touch be another */
++    for (const b of this.balloons) if (b.inside) b.inside.delete(mt.idx * 2);
++  }
++  _mittOf(idx){ for (const m of this.mitts.values()) if (m.idx === idx) return m; return null; }
++  _col(i){ if (i < PAD_BASE) return PLAYER_COLORS[i]; const m = this._mittOf(i); return m ? m.col : PLAYER_COLORS[0]; }
++  /* told to the phone: it popped something (the pad gives a little pop) */
++  _told(who, pts){ const m = who >= PAD_BASE ? this._mittOf(who) : null; if (m && this.pads) this.pads.send(m.seat, { e: 'pop', pts }); }
++  destroy(){ this.offs.forEach(f => f()); this.offs = []; }
++
+   step(dt, W, H){
+     this.t += dt;
+ 
+@@ -218,20 +276,15 @@ class PopParty {
+       /* The mouse drives both hands at once; counting both would make every
+          touch on the giant a double slap. */
+       const hands = pose.mouse.active ? [p.hands.right] : [p.hands.left, p.hands.right];
+-      for (const hand of hands){
+-        for (const b of this.balloons){
+-          if (b.dead) continue;
+-          const d = Math.hypot((hand.x - b.x) * (W / H), hand.y - b.y);
+-          if (b.giant){
+-            const key = hand === p.hands.left ? i * 2 : i * 2 + 1;
+-            if (d < b.r * 0.85){
+-              if (!b.inside.has(key)){ b.inside.add(key); this._slap(b, i, W, H); }
+-            } else b.inside.delete(key);
+-          } else if (d < Math.max(b.r * 1.15, MIN_REACH)) this._hit(b, i, W, H);
+-        }
+-        const an = this.animal;
+-        if (an && an.popT < 0 && touches(an, hand.x, hand.y, W, H)) this._hitAnimal(i, W, H);
+-      }
++      for (const hand of hands) this._reach(hand, i, hand === p.hands.left ? i * 2 : i * 2 + 1, W, H);
++    }
++    /* A phone's mitt follows the finger and pops like a hand while the finger is down; lifted, it fades and pops nothing. */
++    for (const m of this.mitts.values()){
++      if (m.down){ const k = 1 - Math.exp(-PAD_FOLLOW * dt); m.x += (m.tx - m.x) * k; m.y += (m.ty - m.y) * k; m.a = Math.min(1, m.a + dt * PAD_FADE_IN); }
++      else m.a = Math.max(0, m.a - dt * PAD_FADE_OUT);
++      const lvl = this.comboT[m.idx] > 0 ? (this.combo[m.idx] >= 10 ? 2 : this.combo[m.idx] >= 5 ? 1 : 0) : 0;
++      m.glow += (lvl / 2 - m.glow) * Math.min(1, dt * 4); m.flash = Math.max(0, m.flash - dt * 1.6);
++      if (m.down) this._reach(m, m.idx, m.idx * 2, W, H);
+     }
+ 
+     this.balloons = this.balloons.filter(b => {
+@@ -247,6 +300,21 @@ class PopParty {
+     this.avatars.step(dt, this.players, this.combo.map((c, i) => this.comboT[i] > 0 ? (c >= 10 ? 2 : c >= 5 ? 1 : 0) : 0));
+   }
+ 
++  /* One hand (a camera hand or a phone's mitt) at a point: pops what it touches. `key` tells the giant balloon which hand is resting on it. */
++  _reach(hand, i, key, W, H){
++    for (const b of this.balloons){
++      if (b.dead) continue;
++      const d = Math.hypot((hand.x - b.x) * (W / H), hand.y - b.y);
++      if (b.giant){
++        if (d < b.r * 0.85){
++          if (!b.inside.has(key)){ b.inside.add(key); this._slap(b, i, W, H); }
++        } else b.inside.delete(key);
++      } else if (d < Math.max(b.r * 1.15, MIN_REACH)) this._hit(b, i, W, H);
++    }
++    const an = this.animal;
++    if (an && an.popT < 0 && touches(an, hand.x, hand.y, W, H)) this._hitAnimal(i, W, H);
++  }
++
+   _make(x0){
+     const size = pick(SIZES);
+     const motion = pick(Object.entries(MOTIONS).map(([k, m]) => ({ k, w: m.w }))).k;
+@@ -345,7 +413,10 @@ class PopParty {
+     const mult = c >= 10 ? 3 : c >= 5 ? 2 : 1;
+     const pts = b.worth * mult;
+     this.score[who] += pts;
+-    if (c === 5 || c === 10){ sfx.combo(mult - 1); this.avatars.burst(who, this.players); }
++    if (c === 5 || c === 10){
++      sfx.combo(mult - 1);
++      if (who < PAD_BASE) this.avatars.burst(who, this.players); else { const m = this._mittOf(who); if (m) m.flash = 1; }
++    }
+ 
+     /* Bigger balloons pop lower and heavier; the combo walks the pop up the
+        scale the music is in, so a streak plays a tune. */
+@@ -377,11 +448,12 @@ class PopParty {
+     if (b.str.length) this.fx.push({ k:'string', pts:b.str.map(p => ({ ...p })), age:0, life:0.9 });
+ 
+     const label = mult > 1 ? `+${pts}  x${mult}` : '+' + pts;
+-    this.j.pop(px, py, label, PLAYER_COLORS[who]);
++    this.j.pop(px, py, label, this._col(who));
++    this._told(who, pts);
+ 
+     if (b.parade && ++this.parade.popped === this.parade.total){
+       this.score[who] += PARADE_BONUS;
+-      this.j.pop(px, py - H * 0.08, '+' + PARADE_BONUS, PLAYER_COLORS[who]);
++      this.j.pop(px, py - H * 0.08, '+' + PARADE_BONUS, this._col(who));
+       sfx.combo(3);
+     }
+   }
+@@ -444,6 +516,7 @@ class PopParty {
+        With three or four, each bunch is a little smaller so they all fit. */
+     const who = [];
+     for (let i = 0; i < this.players; i++) if (pose.players[i].present || this.popped[i].length) who.push(i);
++    for (const m of this.mitts.values()) if (m.seen || this.popped[m.idx].length) who.push(m.idx);
+     const most = who.length > 2 ? Math.round(BOUQUET.most * 0.6) : BOUQUET.most;
+     for (const i of who){
+       let hues = this.popped[i].map(h => h < 0 ? (Math.random() * 360) | 0 : h);
+@@ -476,7 +549,13 @@ class PopParty {
+     /* With nobody to hold it, a bunch waits where its child would stand:
+        spread across the meadow in order. */
+     const here = pose.players.slice(0, this.players).map((q, j) => j).filter(j => pose.players[j].present || this.popped[j].length);
++    for (const m of this.mitts.values()) if (m.seen || this.popped[m.idx].length) here.push(m.idx);
+     const n = Math.max(1, here.length), k = Math.max(0, here.indexOf(i)), home = (k + 0.5) / n * 0.8 + 0.1;
++    /* a phone player holds the bunch where their mitt last was */
++    if (i >= PAD_BASE){
++      const m = this._mittOf(i);
++      return m && m.seen ? { x: Math.max(0.12, Math.min(0.88, m.x)), y: Math.max(0.45, Math.min(0.8, m.y)) } : { x: home, y: 0.62 };
++    }
+     const p = pose.players[i];
+     if (!p || !p.present) return { x: home, y: 0.62 };
+     const hands = pose.mouse.active ? [p.hands.right] : [p.hands.left, p.hands.right];
+@@ -490,7 +569,7 @@ class PopParty {
+     for (const g of this.out.groups){
+       const h = H * 0.46, x = g.ax * W, base = H * 0.99;
+       c.save(); c.globalAlpha = 1; c.fillStyle = color('shade.ink');
+-      try { body(c, x, base, h, crew.lookOf(g.who), this.out.t + g.who, 'stand'); } catch (e){ /* never break the ending over a drawing */ }
++      try { body(c, x, base, h, g.who >= PAD_BASE ? (this._mittOf(g.who) || {}).look : crew.lookOf(g.who), this.out.t + g.who, 'stand'); } catch (e){ /* never break the ending over a drawing */ }
+       c.restore();
+     }
+     for (const g of this.out.groups){
+@@ -504,11 +583,23 @@ class PopParty {
+       c.stroke();
+       for (const b of g.items) this._balloon(c, b, W, H);
+       /* The knot the strings are gathered into, in the player's colour. */
+-      c.fillStyle = PLAYER_COLORS[g.who];
++      c.fillStyle = this._col(g.who);
+       c.beginPath(); c.arc(ax, ay, Math.max(5, H * 0.012), 0, 6.2832); c.fill();
+     }
+   }
+ 
++  /* A phone's mitt: the same glowing mitt a tracked hand is, with its player's face small beside it; it fades when the finger lifts. */
++  _drawPadMitts(c, W, H){
++    for (const m of this.mitts.values()){
++      if (m.a < 0.02) continue;
++      const x = m.x * W, y = m.y * H, r = H * 0.03;
++      drawMitt(c, x, y, H, m.col, { glow: m.glow, flash: m.flash, t: this.t, i: m.idx, alpha: m.a });
++      c.save(); c.globalAlpha = m.a;
++      try { head(c, x + r * 1.9, y - r * 0.6, r * 1.15, m.look, this.t); } catch (e){ /* a missing face never breaks the game */ }
++      c.restore();
++    }
++  }
++
+   _paradeOn(){ return this.balloons.some(b => b.parade); }
+ 
+   /* Where the players stand, averaged, for the scene's parallax. */
+@@ -581,7 +672,8 @@ class PopParty {
+     this.popped[who].push(an.hue);
+     this.scene.pop(an.x, an.hue);
+     sfx[ANIMAL_SOUNDS[an.kind]](); this.j.kick(10);
+-    this.j.pop(an.x * W, an.y * H - H * 0.12, '+' + ANIMAL_WORTH, PLAYER_COLORS[who]);
++    this.j.pop(an.x * W, an.y * H - H * 0.12, '+' + ANIMAL_WORTH, this._col(who));
++    this._told(who, ANIMAL_WORTH);
+   }
+ 
+   _stepFx(dt, H){
+@@ -622,7 +714,7 @@ class PopParty {
+     /* At the end the hands are holding bouquets; otherwise they go on top
+        of everything, so a child never loses them. */
+     if (this.out) this._drawBouquets(c, W, H);
+-    else this.avatars.drawMitts(c, W, H, this.players);
++    else { this.avatars.drawMitts(c, W, H, this.players); this._drawPadMitts(c, W, H); }
+     /* the first seconds: what to do (then it eases away) */
+     if (!this.out) sayBubble(c, W, H, { text: '\u{1F388} Pop the balloons!', t: this.t, until: 7 });
+   }
+@@ -745,16 +837,21 @@ class PopParty {
+       if (!this.score[i] && !pose.players[i].present) continue;
+       rows.push({ label: `Player ${i + 1}`, value: this.score[i], color: PLAYER_COLORS[i] });
+     }
++    for (const m of this.mitts.values()){
++      if (!this.score[m.idx] && !m.seen) continue;
++      rows.push({ label: m.name || `Player ${m.idx + 1}`, value: this.score[m.idx], color: m.col });
++    }
+     return rows;
+   }
+   winner(){
+     const played = this.score.slice(0, this.players).map((s, i) => i).filter(i => this.score[i] > 0 || pose.players[i].present);
++    for (const m of this.mitts.values()) if (this.score[m.idx] > 0 || m.seen) played.push(m.idx);
+     if (played.length < 2) return null;
+     const top = Math.max(...played.map(i => this.score[i]));
+     const best = played.filter(i => this.score[i] === top);
+     return best.length > 1 ? -1 : best[0];
+   }
+-  value(){ return Math.max(...this.score.slice(0, this.players)); }
++  value(){ return Math.max(...this.score.slice(0, this.players), ...[...this.mitts.values()].map(m => this.score[m.idx])); }
+ }
+ 
+ /* Surprises are planned when the round starts so they never pile up. The
+diff --git a/app/src/main.js b/app/src/main.js
+index 248f733..ed397ff 100644
+--- a/app/src/main.js
++++ b/app/src/main.js
+@@ -34,6 +34,7 @@ import { countText } from './ui/units.js';
+ import { usesPads, createPads, padHub, peopleFrom } from './session/pads.js';
+ import { joinCard } from './ui/join-card.js';
+ import { padWaitPill } from './ui/pause-pill.js';
++import { joinChip } from './ui/join-chip.js';
+ import { normalizeLook } from './ui/look.js';
+ 
+ const stage = document.getElementById('stage');
+@@ -58,7 +59,7 @@ let scene = null, mode = 'boot';
+ let game = null, inst = null, players = 1, roundLeft = 0, played = 0;
+ let paused = null, lost = null, handsUp = 0, empty = 0, joined = new Set();
+ /* Phones (S1): the session for a game that uses them, this round's handle on it for the game, and the "Waiting for <name>'s phone" pill */
+-let padsRt = null, roundPads = null, padWait = null;
++let padsRt = null, roundPads = null, padWait = null, joinChipRt = null;
+ const DEV = !!(import.meta.env && import.meta.env.DEV);
+ 
+ /* The camera's on only where it's used: a game, its scores (a wave picks
+@@ -228,7 +229,10 @@ function lineUpThenPlay(){
+   go('lineup', () => lineUp({ profiles: crew.profiles, onDone: () => { if (mode === 'lineup') afterLineUp(); } }));
+ }
+ /* A game that uses phones shows the join card first (QR, the three pictures, who has joined, Start); any other starts at once. */
+-function afterLineUp(){ if (usesPads(game) && padsRt) toJoin(); else startRound(); }
++/* A game that NEEDS a phone (`seats.pads[0] > 0`) shows the join card first. A game where phones are optional (Pop Party) never does: it starts as it
++   always did, and phones drop in at any time through the join chip (corner while playing, bigger on the pause screen). */
++const needsPads = (g) => usesPads(g) && (g.seats.pads[0] | 0) > 0;
++function afterLineUp(){ if (needsPads(game) && padsRt) toJoin(); else startRound(); }
+ function toJoin(){
+   launch.release();
+   padsRt.setTracked(trackedSeats());
+@@ -259,9 +263,15 @@ function preparePads(g){
+ function stopPads(){
+   if (roundPads){ roundPads.dispose(); roundPads = null; }
+   if (padsRt){ padsRt.stop(); padsRt = null; window.__pads = null; }
+-  dropWait();
++  dropWait(); dropChip();
+ }
+ function dropWait(){ if (padWait){ padWait.remove(); padWait = null; } }
++function dropChip(){ if (joinChipRt){ joinChipRt.remove(); joinChipRt = null; } }
++/* phones are optional and the hub is up: the corner chip with the QR and pictures, until every pad seat is taken */
++function showChip(){
++  dropChip();
++  if (game && usesPads(game) && !needsPads(game) && padsRt && padsRt.config && mode === 'play'){ joinChipRt = joinChip({ rt: padsRt }); document.getElementById('ui').appendChild(joinChipRt.el); }
++}
+ /* a needed phone dropped (or came back, or has been gone 120 s): the pill, and the round waits */
+ function onPadPause(){
+   if (mode !== 'play' || !padsRt) return;
+@@ -310,6 +320,8 @@ function startRound(){
+   veilIntro = !!launch.el && launch.el.classList.contains('hascard') && !game.passive;
+   introLeft = 0; introN = 0;      /* (no countdown: the cover goes and the game's on) */ moveCard.pose = null; hud.introText = null; hud.spoken = false; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
+   if (roundPads){ roundPads.dispose(); roundPads = null; }
++  /* phones that may come and go: the session starts with the round (the camera players first, so phones are seated after them) */
++  if (usesPads(game) && !needsPads(game) && padsRt && padsRt.config){ padsRt.setTracked(trackedSeats()); padsRt.go(); }
+   inst = game.create(players, usesPads(game) && padsRt ? { pads: (roundPads = padsRt.forRound()) } : undefined);
+   /* A game where squatting is a move keeps players who crouch or sit. */
+   pose.keepSitters = !!game.keepSitters;
+@@ -321,6 +333,7 @@ function startRound(){
+   /* (a game that sets its own music level from the start) */
+   music.intensity(inst.mood != null ? inst.mood : game.loud ? 0.85 : 0.15);
+   go('play', null);
++  showChip();
+ }
+ 
+ /* A game can end on a moment of its own before the scores - Pop Party's
+@@ -392,6 +405,8 @@ function openPause(){
+     game.back ? 'Back to Create' : 'Home');
+   /* who's who, to put right a mix-up */
+   if (MAKING && crew.profiles.length >= 2) paused.querySelector('.gbtext').appendChild(whoRow(crew.profiles));
++  /* phones that may join: the QR and pictures, bigger, here too */
++  if (game && usesPads(game) && !needsPads(game) && padsRt && padsRt.config) paused.appendChild(joinChip({ rt: padsRt, big: true }).el);
+   sfx.whoosh();
+ }
+ 
+@@ -407,7 +422,9 @@ remote.install(() => {
+ function checkLost(dt){
+   if (mode !== 'play' || game.passive){ empty = 0; if (lost){ lost.remove(); lost = null; } return; }
+   pose.players.forEach((p, i) => { if (p.present) joined.add(i); });
+-  const anyone = pose.mouse.active || pose.players.some(p => p.present);
++  /* a phone with a finger on its pad in the last 10 s is someone playing (and counts as a player in the scores) */
++  if (padsRt) for (const n of padsRt.activeSeats(Infinity)) joined.add('p' + n);
++  const anyone = pose.mouse.active || pose.players.some(p => p.present) || (!!padsRt && padsRt.activeSeats(10).length > 0);
+   empty = anyone ? 0 : empty + dt;
+   if (empty > EMPTY_AFTER && !lost){ lost = lostOverlay(); healed = false; }
+   /* nobody seen for a long while in a game: the camera is started over once, in case it's what's wrong */
+diff --git a/app/src/session/pads.js b/app/src/session/pads.js
+index e390e39..6eb5070 100644
+--- a/app/src/session/pads.js
++++ b/app/src/session/pads.js
+@@ -119,7 +119,9 @@ export function createPads({ game, people, trust = createTrust(), config, create
+     for (const [n, s] of next) { const t = live.get(n); if (!t || t.who !== s.who) emit('join', seatInfo(s)); }
+     live = next;
+   });
+-  session.on('input', (e) => emit('input', e));
++  /* when each phone last sent something (a finger on its pad): a round with only phones still counts as someone playing */
++  const heard = new Map();
++  session.on('input', (e) => { heard.set(e.seat, now()); emit('input', e); });
+   session.on('pause', (e) => emit('pause', e));
+   session.on('resume', (e) => emit('resume', e));
+ 
+@@ -165,6 +167,10 @@ export function createPads({ game, people, trust = createTrust(), config, create
+     get config() { return config; },
+     get padUrl() { return padPageUrl(config); },
+     connOf: (seat) => conns.get(seat) || null,        /* (for tests) */
++    /* the pad seats heard from in the last `secs` seconds (Infinity: ever) */
++    activeSeats(secs = 10) { const t = now(); return [...heard].filter(([, at]) => t - at <= secs * 1000).map(([n]) => n); },
++    /* every pad seat is taken (a phone in it, even one that has dropped) */
++    get full() { const max = (game.seats && game.seats.pads && game.seats.pads[1]) | 0; return max > 0 && padSeats().filter(q => q.state !== 'empty').length >= max; },
+     connect() { return link.start(); },                /* connect to the hub (a no-op without one) */
+     /* the TV's Start: true when the round can begin (the required phones are in) */
+     go() { return session.start(); },
+diff --git a/app/src/style.css b/app/src/style.css
+index 761184f..ea77ba6 100644
+--- a/app/src/style.css
++++ b/app/src/style.css
+@@ -1845,6 +1845,17 @@ body.remote .btn.slock.kfocus:not(.tvtile):not(.play){ outline:none; box-shadow:
+ .waitpill{ display:flex; align-items:center; gap:2vh; padding:1.4vh 4vh 1.4vh 1.4vh; white-space:nowrap; background:#fffdf8; color:#2f2b45; border:.45vh solid #2f2b45; box-shadow:0 1vh 0 rgba(52,40,96,.18); border-radius:999px;
+   font-family:var(--ui); font-size:5.4vh; font-weight:600; animation:popin var(--t-base) var(--ease-pop) both; }
+ .waitpill .wf{ display:inline-flex; }
++/* The join chip: QR and the three pictures, for a game where phones are optional (small in the corner while playing; larger on the pause screen) */
++.joinchip{ position:fixed; right:2vh; bottom:2vh; display:flex; align-items:center; gap:1vh; padding:.8vh; background:rgba(255,253,248,.72); border-radius:2vh; pointer-events:none; opacity:.85; z-index:5; }
++.joinchip.hide, #ui:has(.screen.pause) .joinchip:not(.big){ display:none; }
++.joinchip canvas{ display:block; border-radius:1vh; background:#fff; }
++.joinchip .jcqr canvas{ width:15vh; height:15vh; }
++.joinchip .jcpics{ display:flex; flex-direction:column; gap:.4vh; }
++.joinchip .jcpics canvas{ width:4.6vh; height:4.6vh; border-radius:1vh; background:#fffdf8; }
++.joinchip.big{ opacity:1; background:#fffdf8; border:.45vh solid #2f2b45; gap:2vh; padding:1.4vh; }
++.joinchip.big .jcqr canvas{ width:18vh; height:18vh; }
++.joinchip.big .jcpics{ flex-direction:row; gap:1vh; }
++.joinchip.big .jcpics canvas{ width:8vh; height:8vh; }
+ .btn.setbtn.waitend{ margin-top:2vh; font-size:3.4vh; padding:1.2vh 3.4vh; }
+ /* Trusted phones: grown-up small print (Inter-style system text), as in the mockup */
+ .setcard.trustcard{ width:min(94vw, 62em); background:#faf6ec; color:#2f2b45; font-family:var(--sys); }
+diff --git a/app/src/ui/avatars.js b/app/src/ui/avatars.js
+index bc290e3..a590626 100644
+--- a/app/src/ui/avatars.js
++++ b/app/src/ui/avatars.js
+@@ -130,27 +130,32 @@ export class Avatars {
+     }
+     c.globalAlpha = 1;
+ 
+-    for (const [i, h] of this._hands(players)){
+-      const x = h.x * W, y = h.y * H, col = PLAYER_COLORS[i];
+-      const g = this.glow[i], f = this.flash[i];
+-      const r = H * 0.03 * (1 + g * 0.25 + f * 0.3);
+-      /* The halo grows with the streak and flares on each new level. */
+-      const halo = c.createRadialGradient(x, y, r * 0.4, x, y, r * (2.2 + g * 1.2 + f));
+-      halo.addColorStop(0, hexA(col, 0.55 + g * 0.3));
+-      halo.addColorStop(1, hexA(col, 0));
+-      c.fillStyle = halo;
+-      c.beginPath(); c.arc(x, y, r * (2.2 + g * 1.2 + f), 0, 6.2832); c.fill();
+-      c.fillStyle = '#fff';
+-      c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.fill();
+-      c.lineWidth = Math.max(3, r * 0.28); c.strokeStyle = col;
+-      c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.stroke();
+-      /* A slow twinkle inside, so it reads as magic rather than a dot. */
+-      c.fillStyle = hexA(col, 0.9);
+-      star(c, x, y, r * (0.55 + Math.sin(this.t * 6 + i) * 0.12));
+-    }
++    for (const [i, h] of this._hands(players)) drawMitt(c, h.x * W, h.y * H, H, PLAYER_COLORS[i], { glow: this.glow[i], flash: this.flash[i], t: this.t, i });
+   }
+ }
+ 
++/* One glowing mitt: a white disc ringed in the player's colour with a halo and a twinkle. A phone's mitt (Pop Party's pad hands) is drawn
++   with the very same function, so it looks like a tracked hand; alpha fades it. */
++export function drawMitt(c, x, y, H, col, { glow = 0, flash = 0, t = 0, i = 0, alpha = 1 } = {}){
++  const g = glow, f = flash;
++  const r = H * 0.03 * (1 + g * 0.25 + f * 0.3);
++  if (alpha < 1) c.globalAlpha = alpha;
++  /* The halo grows with the streak and flares on each new level. */
++  const halo = c.createRadialGradient(x, y, r * 0.4, x, y, r * (2.2 + g * 1.2 + f));
++  halo.addColorStop(0, hexA(col, 0.55 + g * 0.3));
++  halo.addColorStop(1, hexA(col, 0));
++  c.fillStyle = halo;
++  c.beginPath(); c.arc(x, y, r * (2.2 + g * 1.2 + f), 0, 6.2832); c.fill();
++  c.fillStyle = '#fff';
++  c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.fill();
++  c.lineWidth = Math.max(3, r * 0.28); c.strokeStyle = col;
++  c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.stroke();
++  /* A slow twinkle inside, so it reads as magic rather than a dot. */
++  c.fillStyle = hexA(col, 0.9);
++  star(c, x, y, r * (0.55 + Math.sin(t * 6 + i) * 0.12));
++  c.globalAlpha = 1;
++}
++
+ export function silhouette(c, lm, W, H, col, alpha){
+   const P = (i) => [lm[i].x * W, lm[i].y * H];
+   const seen = (i) => (lm[i].v ?? 1) > 0.3;
+diff --git a/app/src/ui/join-chip.js b/app/src/ui/join-chip.js
+new file mode 100644
+index 0000000..3bcbb70
+--- /dev/null
++++ b/app/src/ui/join-chip.js
+@@ -0,0 +1,38 @@
++/* The join chip (plan package S2): for a game where phones are optional (`seats.pads[0] === 0`, like Pop Party) there is no join card before the round;
++   the round starts as it always did and phones drop in at any time. This is how a phone finds the game: the QR and the three pictures, small in the
++   bottom-right corner while playing (`joinChip({ rt })`), and larger on the pause screen (`joinChip({ rt, big: true })`). It hides itself once every
++   pad seat is taken, and comes back if a seat frees up. It never takes a tap (pointer-events none).                                                  */
++import { h } from './screens.js';
++import { assets } from '../games/assets/index.js';
++import { qrMatrix, drawQR } from '../session/qr.js';
++
++const vh = () => (typeof innerHeight === 'number' ? innerHeight : 720);
++const dpr = () => Math.min(2, (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1);
++
++export function joinChip({ rt, big = false }) {
++  const el = h('div', 'joinchip' + (big ? ' big' : ''));
++  el.dataset.kind = big ? 'pause' : 'corner';
++  const side = Math.round(vh() * (big ? 0.18 : 0.15) * dpr());     /* the corner chip is about 15% of the screen height */
++  const qrBox = h('div', 'jcqr'), qc = document.createElement('canvas');
++  qc.width = qc.height = side;
++  const url = rt.padUrl;
++  if (url) { try { drawQR(qc.getContext('2d'), qrMatrix(url), 0, 0, side); } catch { /* the pictures still work from the pad page */ } }
++  qc.dataset.url = url || '';
++  qrBox.appendChild(qc);
++  const pics = h('div', 'jcpics');
++  for (const id of rt.session.join.pictures) {
++    const cv = document.createElement('canvas'); cv.width = cv.height = Math.round(side / 2.2); cv.dataset.id = id;
++    const c = cv.getContext('2d');
++    if (c) { try { assets.draw(c, id, cv.width / 2, cv.height / 2, cv.width * 0.8); } catch { /* a blank card */ } }
++    pics.appendChild(cv);
++  }
++  el.append(qrBox, pics);
++  let seen = false, off = null;
++  const sync = () => {
++    if (el.isConnected) seen = true; else if (seen) { if (off) off(); off = null; return; }      /* (taken away with its screen: stop listening) */
++    el.classList.toggle('hide', rt.full);
++  };
++  off = rt.session.on('change', sync);
++  sync();
++  return { el, sync, remove() { if (off) off(); off = null; el.remove(); } };
++}
+diff --git a/app/test/harness/pads-rig.mjs b/app/test/harness/pads-rig.mjs
+index dddeaaf..876fd29 100644
+--- a/app/test/harness/pads-rig.mjs
++++ b/app/test/harness/pads-rig.mjs
+@@ -83,7 +83,7 @@ export async function toJoinCard(tv, ms = 20000) {
+ 
+ /* the join: open the pad page, tap the three pictures the TV shows, pick who, say ready */
+ export async function joinPhone(rig, tv, phone, who, { ready = true } = {}) {
+-  const ids = await tv.page.locator('.jpics canvas').evaluateAll(els => els.map(e => e.dataset.id));
++  const ids = await tv.page.locator('.jpics canvas, .jcpics canvas').evaluateAll(els => els.map(e => e.dataset.id));
+   await phone.page.goto(rig.hub.url + '/');
+   await phone.page.getByText('Tap the three', { exact: false }).first().waitFor({ state: 'visible', timeout: 8000 });
+   for (const id of ids) await phone.page.locator(`.cell[data-id="${id}"]`).tap();
+diff --git a/app/test/pads-shell.node.mjs b/app/test/pads-shell.node.mjs
+index 8449fe2..bc325c1 100644
+--- a/app/test/pads-shell.node.mjs
++++ b/app/test/pads-shell.node.mjs
+@@ -117,3 +117,84 @@ test('Settings lists the trusted phones with who and when; Remove makes that pho
+   await until(async () => (await tv.page.locator('.trustcard .trow').count()) === 0, 4000, 'all rows to go');
+   assert.equal(await tv.page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('orlis.trustedPads') || '{}')).length), 0);
+ });
++
++/* Pop Party: phones are optional, so there is no join card; the round starts by itself and a phone drops in at any time (S2) */
++async function toRound(tv, ms = 20000) {
++  const t0 = Date.now();
++  for (;;) {
++    if (await tv.page.evaluate(() => !!(window.__round && window.__round() && window.__round().pads !== undefined && document.getElementById('ui') && !document.querySelector('.screen.lineup')))) return;
++    const go = tv.page.locator('.screen.lineup .btn.go');
++    if (await go.count()) await go.click().catch(() => {});
++    if (Date.now() - t0 > ms) throw new Error('no round; errors: ' + tv.errors.map(String).join(' | '));
++    await new Promise(r => setTimeout(r, 100));
++  }
++}
++const parkBalloon = (tv) => tv.page.evaluate(() => {
++  const r = window.__round(); r.spawn = 1e9; r.events = [];
++  const b = r._make(0.5); Object.assign(b, { by: 0.5, rise: 0, r: 0.07, worth: 1, kind: 'normal', motion: 'drift', dir: 0, f: 0, ph: 0 }); r.balloons = [b];
++});
++
++test('Pop Party with the hub up: no join card, the round starts at once, a corner chip shows the QR and pictures, and it hides when the pad seats are full', async () => {
++  const tv = await rig.tv('pop-party');
++  await toRound(tv);
++  assert.equal(await tv.page.locator('.joincard').count(), 0, 'no join card');
++  assert.equal(await tv.page.evaluate(() => window.__pads.session.phase), 'playing');
++  const chip = tv.page.locator('.joinchip[data-kind="corner"]');
++  await chip.waitFor({ timeout: 5000 });
++  assert.equal(await chip.locator('.jcqr canvas').getAttribute('data-url'), rig.hub.url + '/');
++  assert.deepEqual(await chip.locator('.jcpics canvas').evaluateAll(els => els.map(e => e.dataset.id)), await tv.page.evaluate(() => window.__pads.session.join.pictures));
++  const box = await chip.boundingBox(), vp = tv.page.viewportSize();
++  assert.ok(box.height > vp.height * 0.13 && box.height < vp.height * 0.2, 'about 15% of the screen height: ' + box.height);
++  assert.ok(box.x + box.width > vp.width * 0.8 && box.y + box.height > vp.height * 0.8, 'bottom-right');
++  /* full: the chip goes (a stand-in for four phones in; the real thing is the rt.full test in pads.test.mjs) */
++  await tv.page.evaluate(() => { Object.defineProperty(window.__pads, 'full', { get: () => true }); window.__pads.session.setTracked([]); });
++  await tv.page.locator('.joinchip.hide').waitFor({ state: 'attached', timeout: 3000 });
++  /* the pause screen shows the same QR and pictures, bigger */
++  await tv.page.evaluate(() => { Object.defineProperty(window.__pads, 'full', { get: () => false }); });
++  await tv.page.keyboard.press('Escape');
++  const big = tv.page.locator('.joinchip[data-kind="pause"]');
++  await big.waitFor({ timeout: 3000 });
++  assert.equal(await big.locator('.jcqr canvas').getAttribute('data-url'), rig.hub.url + '/');
++  assert.equal(await big.locator('.jcpics canvas').count(), 3);
++  assert.ok((await big.boundingBox()).height > vp.height * 0.2, 'bigger than the corner chip');
++  assert.deepEqual(tv.errors.map(String), [], 'no errors on the TV');
++});
++
++test('Pop Party: a phone joins mid-round, its mitt appears at once, it drags onto a balloon and pops it', async () => {
++  const tv = await rig.tv('pop-party');
++  await toRound(tv);
++  assert.equal(await tv.page.evaluate(() => window.__round().mitts.size), 0);
++  const sam = await rig.phone(PHONE);
++  await joinPhone(rig, tv, sam, 'sam');
++  await sam.page.waitForFunction(() => document.body.dataset.program === 'on');
++  await until(() => tv.page.evaluate(() => window.__round().mitts.size === 1), 5000, 'the phone to become a mitt');
++  assert.match(await sam.page.locator('.popHint').innerText(), /Drag to move your mitt/);
++  await parkBalloon(tv);
++  const box = await sam.page.locator('.padroot').boundingBox();
++  await sam.page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.8); await sam.page.mouse.down();
++  await sam.page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5, { steps: 8 });
++  await until(() => tv.page.evaluate(() => window.__round().score[4] >= 1), 6000, 'the balloon to pop');
++  await sam.page.locator('.popRing').waitFor({ state: 'attached', timeout: 4000 });          /* the phone's little pop */
++  await sam.page.mouse.up();
++  await until(() => tv.page.evaluate(() => [...window.__round().mitts.values()][0].down === false), 4000, 'the lift to arrive');
++  assert.deepEqual(tv.errors.map(String), [], 'no errors on the TV');
++});
++
++test('Pop Party with only phones: nobody in view of the camera, but a finger on a pad is someone playing, so no "step back into view" overlay', async () => {
++  const tv = await rig.tv('pop-party');
++  await toRound(tv);
++  await tv.page.evaluate(async () => { const { pose } = await import('/src/tracking/pose.js'); pose.mouse.active = false; for (const p of pose.players) p.present = false; });
++  /* nobody at all: the overlay comes after 2 s (the control) */
++  await tv.page.locator('.screen.lost').waitFor({ timeout: 6000 });
++  const sam = await rig.phone(PHONE);
++  await joinPhone(rig, tv, sam, 'sam');
++  await sam.page.waitForFunction(() => document.body.dataset.program === 'on');
++  const box = await sam.page.locator('.padroot').boundingBox();
++  await sam.page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5); await sam.page.mouse.down();
++  await sam.page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.5, { steps: 3 });
++  await tv.page.locator('.screen.lost').waitFor({ state: 'detached', timeout: 4000 });
++  await tv.page.waitForTimeout(2600);
++  assert.equal(await tv.page.locator('.screen.lost').count(), 0, 'still no overlay');
++  assert.equal(await tv.page.evaluate(() => window.__pads.activeSeats(10).length), 1);
++  assert.deepEqual(tv.errors.map(String), [], 'no errors on the TV');
++});
+diff --git a/app/test/pads-shell.test.mjs b/app/test/pads-shell.test.mjs
+index 43f93e8..a0fdce6 100644
+--- a/app/test/pads-shell.test.mjs
++++ b/app/test/pads-shell.test.mjs
+@@ -11,5 +11,5 @@ test('the shell with a phone: join card, Start, the stick moves the dot, a dropp
+   const code = await new Promise((resolve) => child.on('close', resolve));
+   assert.equal(code, 0, 'the shell and phone end-to-end tests failed:\n' + out.slice(-6000));
+   assert.match(out, /# fail 0/);
+-  assert.match(out, /# pass 3/);
++  assert.match(out, /# pass 6/);
+ });
+diff --git a/app/test/pads.test.mjs b/app/test/pads.test.mjs
+index 78bd8f3..42d8106 100644
+--- a/app/test/pads.test.mjs
++++ b/app/test/pads.test.mjs
+@@ -44,7 +44,7 @@ test('usesPads: only a game whose manifest has pad seats; games without behave a
+   assert.equal(usesPads(LAB), true); assert.equal(usesPads(POPPY), true);
+   assert.equal(usesPads(NOPADS), false); assert.equal(usesPads({ id: 'old' }), false); assert.equal(usesPads(null), false);
+   assert.equal(usesPads({ seats: { tracked: [1, 1], pads: [0, 0] } }), false);
+-  assert.ok(GAMES.every(g => !usesPads(g)), 'no catalogue game uses phones yet');
++  assert.deepEqual(GAMES.filter(g => usesPads(g)).map(g => g.id), ["pop-party"], "only Pop Party (S2) uses phones so far");
+ });
+ test('the pad lab is an owner-only lab with a manifest the session understands', () => {
+   assert.ok(LABS.includes(padLab) && !GAMES.includes(padLab));
+@@ -247,3 +247,21 @@ test('the Trusted phones rows: device name, the person (Guest and unknown ones t
+   assert.equal(rows[0].avatar, null); assert.equal(rows[1].avatar.colour, 'sky');
+   assert.deepEqual(personOf('guest', PROFILES), { name: 'Guest', avatar: null }); assert.equal(personOf(null, []).name, 'Guest');
+ });
++
++/* ---------- optional phones (S2): who is playing, and when every seat is taken ---------- */
++test('activeSeats: a phone heard from in the last 10 s counts as someone playing; full: every pad seat is taken', () => {
++  const r = rig(POPPY);
++  assert.deepEqual(r.rt.activeSeats(10), []); assert.equal(r.rt.full, false);
++  r.joinPhone('c1', 'sam');
++  assert.deepEqual(r.rt.activeSeats(10), [], 'in, but not heard yet');
++  r.s.message('c1', { t: 'in', seq: 1, x: 0.5, y: 0.5 });
++  const seat = r.rt.activeSeats(10);
++  assert.equal(seat.length, 1);
++  r.advance(9000); assert.deepEqual(r.rt.activeSeats(10), seat);
++  r.advance(2000); assert.deepEqual(r.rt.activeSeats(10), [], 'quiet for over 10 s');
++  assert.deepEqual(r.rt.activeSeats(Infinity), seat, 'but it did play (the scores count it)');
++  assert.equal(r.rt.full, false, 'one of two seats');
++  r.joinPhone('c2', 'mia');
++  assert.equal(r.rt.full, true, 'both seats taken: the corner chip hides');
++  assert.equal(rig(LAB).rt.full, false);
++});
+diff --git a/app/test/pop-party-pads.test.mjs b/app/test/pop-party-pads.test.mjs
+new file mode 100644
+index 0000000..5a8211a
+--- /dev/null
++++ b/app/test/pop-party-pads.test.mjs
+@@ -0,0 +1,138 @@
++/* Pop Party with phones (plan package S2): a pad player is a mitt that follows a finger and pops like a hand. A fake pads object stands in for the shell's. */
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import popParty, { PAD_BASE } from '../src/games/pop-party.js';
++import { usesPads } from '../src/session/pads.js';
++import { pose } from '../src/tracking/pose.js';
++
++function fakePads(seats = [{ n: 1, kind: 'pad', who: 'sam', name: 'Sam', avatar: null, colour: 'orange', state: 'live' }]) {
++  const subs = {}, sent = [];
++  return { subs, sent, seats,
++    on(name, fn) { (subs[name] ||= []).push(fn); return () => { subs[name] = subs[name].filter(f => f !== fn); }; },
++    send(to, m) { sent.push({ to, m }); }, state() {},
++    emit(name, e) { (subs[name] || []).slice().forEach(f => f(e)); },
++    join(s = seats[0]) { this.emit('join', { seat: s.n, who: s.who, name: s.name, avatar: s.avatar, colour: s.colour }); },
++    input(seat, m) { this.emit('input', { seat, who: 'x', m }); } };
++}
++function nobody() { pose.mouse.active = false; for (const p of pose.players) p.present = false; }
++function parked(inst, x, y, r = 0.065) {
++  const b = inst._make(x);
++  Object.assign(b, { by: y, rise: 0, r, worth: 1, kind: 'normal', motion: 'drift', dir: 0, f: 0, ph: 0 });
++  return b;
++}
++function mk(pads) { const i = popParty.create(1, { pads }); i.spawn = 1e9; i.events = []; return i; }
++const run = (inst, secs, dt = 1 / 60) => { for (let t = 0; t < secs; t += dt) inst.step(dt, 1280, 720); };
++
++test('the manifest: 1 to 4 tracked, 0 to 4 phones, with a pad program; without phones it still plays', () => {
++  assert.deepEqual(popParty.seats, { tracked: [1, 4], pads: [0, 4] });
++  assert.deepEqual(popParty.pads, { program: '/pads/pop-party/', need: 'controller' });
++  assert.equal(usesPads(popParty), true);
++  assert.equal(popParty.requiredPads, undefined, 'no phone is needed');
++  const inst = popParty.create(1);                       /* no env: exactly the old way */
++  assert.equal(inst.mitts.size, 0);
++  assert.doesNotThrow(() => { nobody(); run(inst, 1); });
++});
++
++test('a finger drags a mitt toward it; a fresh touch starts at the finger', () => {
++  nobody();
++  const pads = fakePads(), inst = mk(pads);
++  pads.join();
++  assert.equal(inst.mitts.size, 1);
++  const m = inst.mitts.get(1);
++  assert.equal(m.idx, PAD_BASE); assert.equal(m.down, false);
++  pads.input(1, { x: 0.2, y: 0.3 });
++  assert.equal(m.down, true); assert.equal(m.x, 0.2); assert.equal(m.y, 0.3, 'first touch lands on the finger');
++  pads.input(1, { x: 0.8, y: 0.6 });
++  run(inst, 1 / 30);
++  assert.ok(m.x > 0.2 && m.x < 0.8, 'moves smoothly, not a jump: ' + m.x);
++  run(inst, 1);
++  assert.ok(Math.abs(m.x - 0.8) < 0.01 && Math.abs(m.y - 0.6) < 0.01, 'arrives');
++  pads.input(1, { x: 5, y: -3 });
++  assert.equal(m.tx, 1); assert.equal(m.ty, 0, 'kept on the screen');
++  pads.input(1, { x: 'a', y: null }); assert.equal(m.tx, 1, 'junk is ignored');
++});
++
++test('a mitt pops a balloon like a hand: same score, counts for that player, and the phone is told', () => {
++  nobody();
++  const pads = fakePads(), inst = mk(pads);
++  pads.join();
++  inst.balloons = [parked(inst, 0.5, 0.5)];
++  pads.input(1, { x: 0.5, y: 0.5 });
++  run(inst, 0.1);
++  assert.equal(inst.balloons.length, 0, 'popped');
++  assert.equal(inst.score[PAD_BASE], 1);
++  assert.equal(inst.popped[PAD_BASE].length, 1);
++  assert.deepEqual(pads.sent.map(s => [s.to, s.m.e]), [[1, 'pop']]);
++  assert.equal(inst.score[0], 0, 'not the camera player');
++  const rows = inst.tally();
++  assert.deepEqual(rows.map(r => [r.label, r.value]), [['Sam', 1]]);
++  assert.equal(inst.value(), 1);
++  assert.equal(inst.winner(), null, 'one player: no winner');
++});
++
++test('a lifted finger: the mitt fades and pops nothing until touched again', () => {
++  nobody();
++  const pads = fakePads(), inst = mk(pads);
++  pads.join();
++  pads.input(1, { x: 0.3, y: 0.3 }); run(inst, 0.5);
++  const m = inst.mitts.get(1);
++  assert.equal(m.a, 1);
++  pads.input(1, { up: true });
++  inst.balloons = [parked(inst, 0.3, 0.3)];
++  run(inst, 0.5);
++  assert.equal(inst.balloons.length, 1, 'a lifted mitt does not pop');
++  assert.equal(m.a, 0, 'faded out');
++  pads.input(1, { x: 0.3, y: 0.3 }); run(inst, 0.1);
++  assert.equal(inst.balloons.length, 0, 'touching again pops');
++});
++
++test('a dropped phone stops popping; its score stays; coming back works', () => {
++  nobody();
++  const pads = fakePads(), inst = mk(pads);
++  pads.join(); pads.input(1, { x: 0.5, y: 0.5 }); inst.balloons = [parked(inst, 0.5, 0.5)]; run(inst, 0.1);
++  assert.equal(inst.score[PAD_BASE], 1);
++  pads.emit('leave', { seat: 1 });
++  assert.equal(inst.mitts.get(1).down, false);
++  inst.balloons = [parked(inst, 0.5, 0.5)]; run(inst, 0.2);
++  assert.equal(inst.balloons.length, 1);
++  pads.join(); assert.equal(inst.mitts.size, 1, 'the same player, not a second one');
++  pads.input(1, { x: 0.5, y: 0.5 }); run(inst, 0.1);
++  assert.equal(inst.score[PAD_BASE], 2);
++});
++
++test('two phones and a camera hand play together, each scored apart; the giant takes a slap from a mitt per touch', () => {
++  const seats = [{ n: 1, kind: 'pad', who: 'sam', name: 'Sam', colour: 'orange' }, { n: 2, kind: 'pad', who: 'mia', name: 'Mia', colour: 'pink' }];
++  const pads = fakePads(seats), inst = mk(pads);
++  nobody();
++  const p = pose.players[0]; p.present = true;
++  p.hands.left = { x: 0.2, y: 0.5, vx: 0, vy: 0, speed: 0 }; p.hands.right = { x: -1, y: -1, vx: 0, vy: 0, speed: 0 };
++  seats.forEach(s => pads.join(s));
++  inst.balloons = [parked(inst, 0.2, 0.5), parked(inst, 0.5, 0.5), parked(inst, 0.8, 0.5)];
++  pads.input(1, { x: 0.5, y: 0.5 }); pads.input(2, { x: 0.8, y: 0.5 });
++  run(inst, 0.1);
++  assert.equal(inst.balloons.length, 0);
++  assert.deepEqual([inst.score[0], inst.score[PAD_BASE], inst.score[PAD_BASE + 1]], [1, 1, 1]);
++  assert.deepEqual(inst.tally().map(r => r.label), ['Player 1', 'Sam', 'Mia']);
++  assert.deepEqual(pads.sent.map(s => s.to).sort(), [1, 2], 'each phone told about its own pop only');
++  /* the giant: one slap per touch from a mitt resting on it */
++  nobody();
++  const g = inst._giant(); g.by = 0.5; g.rise = 0; g.motion = 'drift'; g.dir = 0; g.f = 0; g.ph = 0; g.x0 = 0.5; g.by = 0.5; inst.balloons = [g];
++  pads.input(1, { up: true }); pads.input(2, { up: true });
++  pads.input(1, { x: 0.5, y: 0.5 }); run(inst, 0.5);
++  assert.equal(g.slaps, 1, 'resting counts once');
++  pads.input(1, { up: true }); pads.input(1, { x: 0.5, y: 0.5 }); run(inst, 0.3);
++  assert.equal(g.slaps, 2, 'a new touch is a new slap');
++});
++
++test('the round report and the bouquets count a phone player; drawing mitts, faces and bouquets does not throw', () => {
++  nobody();
++  const pads = fakePads(), inst = mk(pads);
++  pads.join(); pads.input(1, { x: 0.5, y: 0.5 });
++  const calls = [];
++  const c = new Proxy({}, { get: (t, k) => k in t ? t[k] : (k === 'createRadialGradient' || k === 'createLinearGradient' ? () => ({ addColorStop() {} }) : (...a) => { calls.push(k); }), set: (t, k, v) => { t[k] = v; return true; } });
++  assert.doesNotThrow(() => { run(inst, 0.5); inst._drawPadMitts(c, 1280, 720); });
++  assert.ok(calls.includes('arc'), 'the mitt is drawn');
++  inst._startOutro();
++  assert.deepEqual(inst.out.groups.map(g => g.who), [PAD_BASE], 'a bunch for the phone player');
++  assert.doesNotThrow(() => { inst.outro(0.1, 1280, 720); inst._drawBouquets(c, 1280, 720); });
++});
+diff --git a/app/test/preview/s2-shots.mjs b/app/test/preview/s2-shots.mjs
+new file mode 100644
+index 0000000..4db78c2
+--- /dev/null
++++ b/app/test/preview/s2-shots.mjs
+@@ -0,0 +1,53 @@
++/* The owner's pictures for Pop Party with phones (plan package S2) into docs/s2/, at device scale 2, from the real shell:
++     tv.png          the TV: one tracked hand (the mouse stands in for the camera), two phone mitts with their faces, and the corner join chip
++     pause.png       the pause screen with the larger QR and pictures
++     phone.png       a phone held sideways with a finger down (the pad in the player's colour)
++     phone-idle.png  the same phone before it is touched: the one hint
++   Run:  cd app && node test/preview/s2-shots.mjs */
++import path from 'node:path';
++import fs from 'node:fs';
++import { startRig, joinPhone, until, ANDROID, PHONE, APP } from '../harness/pads-rig.mjs';
++
++const OUT = path.join(APP, '..', 'docs', 's2');
++fs.mkdirSync(OUT, { recursive: true });
++const SIDEWAYS = (o) => ({ ...o, viewport: { width: 844, height: 390 } });
++const rig = await startRig({ tvSize: { width: 1280, height: 720 } });
++try {
++  const tv = await rig.tv('pop-party', { scale: 2 });
++  /* no join card: the line-up (three profiles) and the round starts */
++  for (let t0 = Date.now(); !(await tv.page.evaluate(() => !!(window.__round && window.__round() && !document.querySelector('.screen.lineup')))); ) {
++    const go = tv.page.locator('.screen.lineup .btn.go'); if (await go.count()) await go.click().catch(() => {});
++    if (Date.now() - t0 > 20000) throw new Error('no round');
++    await new Promise(r => setTimeout(r, 100));
++  }
++  await tv.page.locator('.joinchip[data-kind="corner"]').waitFor();
++  const sam = await rig.phone(SIDEWAYS(PHONE)), mia = await rig.phone(SIDEWAYS(ANDROID));
++  await joinPhone(rig, tv, sam, 'sam');
++  await joinPhone(rig, tv, mia, 'mia');
++  await sam.page.waitForFunction(() => document.body.dataset.program === 'on');
++  await sam.page.waitForTimeout(500);
++  await sam.page.screenshot({ path: path.join(OUT, 'phone-idle.png') });
++  await until(() => tv.page.evaluate(() => window.__round().mitts.size === 2), 5000, 'two mitts');
++  /* a calm moment: no animals, a few balloons spread over the sky, the opening line gone */
++  await tv.page.evaluate(() => {
++    const r = window.__round(); r.events = []; r.t = 12; r.spawn = 1e9; r.balloons = [];
++    [[0.12, 0.55], [0.3, 0.3], [0.45, 0.62], [0.62, 0.28], [0.74, 0.58], [0.9, 0.35], [0.2, 0.8], [0.55, 0.85]].forEach(([x, y], k) => {
++      const b = r._make(x); Object.assign(b, { by: y, rise: 0, r: 0.045 + (k % 3) * 0.015, kind: 'normal', motion: 'drift', dir: 0, f: 0, ph: k }); r.balloons.push(b);
++    });
++  });
++  const at = (p, fx, fy) => p.page.evaluate(() => 0).then(async () => { const b = await p.page.locator('.padroot').boundingBox(); await p.page.mouse.move(b.x + b.width * fx, b.y + b.height * fy); });
++  /* the tracked hand (the mouse) at the left, Sam on the middle left, Mia on the right; none touches a balloon */
++  await tv.page.mouse.move(1280 * 0.38, 720 * 0.45);
++  await at(sam, 0.52, 0.6); await sam.page.mouse.down(); await at(sam, 0.5, 0.55);
++  await at(mia, 0.8, 0.45); await mia.page.mouse.down(); await at(mia, 0.78, 0.47);
++  await tv.page.waitForTimeout(1200);
++  await tv.page.screenshot({ path: path.join(OUT, 'tv.png') });
++  await sam.page.screenshot({ path: path.join(OUT, 'phone.png') });
++  await tv.page.keyboard.press('Escape');
++  await tv.page.locator('.joinchip[data-kind="pause"]').waitFor();
++  await tv.page.waitForTimeout(900);
++  await tv.page.screenshot({ path: path.join(OUT, 'pause.png') });
++  console.log('pictures in', OUT);
++} finally {
++  await rig.close();
++}
+diff --git a/docs/s2/pause.png b/docs/s2/pause.png
+new file mode 100644
+index 0000000..27f9673
+Binary files /dev/null and b/docs/s2/pause.png differ
+diff --git a/docs/s2/phone-idle.png b/docs/s2/phone-idle.png
+new file mode 100644
+index 0000000..56f81e6
+Binary files /dev/null and b/docs/s2/phone-idle.png differ
+diff --git a/docs/s2/phone.png b/docs/s2/phone.png
+new file mode 100644
+index 0000000..4166b41
+Binary files /dev/null and b/docs/s2/phone.png differ
+diff --git a/docs/s2/tv.png b/docs/s2/tv.png
+new file mode 100644
+index 0000000..36fb81d
+Binary files /dev/null and b/docs/s2/tv.png differ
+diff --git a/docs/specs/session.md b/docs/specs/session.md
+index 7c35c51..b22780f 100644
+--- a/docs/specs/session.md
++++ b/docs/specs/session.md
+@@ -83,3 +83,5 @@ host), covering spec tests 1 to 3 against the real session (P6 extends this to a
+ - **Hub address:** the app sets `window.__ORLIS_PAD_HUB__ = { port, key, lan? }` (`lan`: this computer's address on the home network, for the QR; or `url`).
+   Browser dev (owner or dev server only): `?padhub=<port>:<key>` and optional `&padhost=<lan address>` point at `node tools/pad-hub.mjs`.
+ - Added to the session: `canStart` (true when `start()` would work). Pad programs live in `app/pads/<game>/pad.js` (the Node hub serves that folder at `/pads/`).
++- **Optional phones (S2, Opus review 2026-11-22):** a game whose manifest has `seats.pads[0] === 0` (Pop Party) **never shows the join card**. The round starts as it always did (the shell sets the tracked seats and calls `session.start()` itself), and phones drop in at any time: a phone that joins mid-round gets its game object at once (`pads.on('join')`), and trusted phones rejoin by themselves. While the hub is running the shell shows a **join chip** during play: the QR and the three pictures, bottom-right, about 15% of the screen height, semi-transparent (`app/src/ui/join-chip.js`); it hides once every pad seat is taken (`rt.full`) and comes back if one frees up. The pause screen shows the same QR and pictures, larger. Games that need a phone (`pads[0] > 0`: pad-lab, later Peekaboo) keep the join card.
++- **Phones count as present:** `rt.activeSeats(secs)` lists the pad seats heard from in the last `secs` seconds. The shell's "nobody in view" overlay does not show while any pad seat has been heard in the last 10 s, and pad players that have sent input are in the shell's `joined` set (so in the best-score player count).

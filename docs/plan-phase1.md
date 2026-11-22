@@ -53,7 +53,7 @@ numbers, answer these questions), plus the family playtests at M3 and M4.
 | P5 | **Done 2026-11-22 (owner approved the screens).** **Mockup approved 2026-11-21** (`docs/pads-mockup.html`). TV join card (QR, code, who has joined) and Settings list of trusted phones | Sonnet | P4, mockup | owner approves on the TV |
 | P6 | Headless end-to-end tests (Node hub, host page, pad pages) | Sonnet | P1, P3, P4 | all five spec tests in `npm test` |
 | S1 | **Done 2026-11-22.** Manifest fields and the game API for pads (`seats`, `pads.on`, `pads.send`) | Opus spec, Sonnet build | P4 | existing 655 tests pass; a tiny test game uses a pad |
-| S2 | Pop Party pad hands (drag a finger to move a mitt) | Sonnet | S1 | playable with 1 tracked + 2 phones |
+| S2 | **Dropped 2026-11-22 (owner; decision 0043; built work shelved in `docs/shelved/`).** Pop Party pad hands (drag a finger to move a mitt) | Sonnet | S1 | playable with 1 tracked + 2 phones |
 | S3 | Kid profiles to the Box; one-time move; server keeps grown-ups only | Sonnet, Opus review | — | migration tested both sides; nothing about a child left on the server |
 | K1 | Spike: TV 3D garden with tracking in its worker; hand-to-ground lantern | Opus | owner Shift+G result | measured on the owner's laptop; go or fallback decided |
 | K2 | **Hider: own character; sneaking between hiding places allowed; no buzz (owner, 2026-11-22).** Peekaboo design on paper and a greybox mockup (rules decided 2026-11-21: silent hiding, one hider keeps the phone, lantern on the busiest hand; the guided phone view still to mock up) | Opus | — | owner approves layout, hiding places, rules, round flow |
