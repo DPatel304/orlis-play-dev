@@ -336,62 +336,68 @@ export function portrait(c, x, y, s, look, t = 0){
 }
 
 /* ---------- the character as a player: posed by the camera ----------
-   The whole character drawn on a player's body as the camera sees it - arms where their arms are, the head where their head is, leaning as
-   they lean - so a child sees themselves as their avatar, like a mirror. lm: the pose landmarks (0..1, mirrored); lift: how far up to draw
-   them (px). */
-const NOSE = 0, L_EYE = 2, R_EYE = 5, L_EAR = 7, R_EAR = 8, L_SH = 11, R_SH = 12, L_EL = 13, R_EL = 14,
+   The character drawn where a player is, as a mirror: it takes only the DIRECTIONS of the player's limbs from the camera (the angles of
+   their upper arms, forearms, thighs and shins, how much their torso leans, how their head tilts), never their lengths. It is always the
+   Chibi character with its own fixed proportions, sized from the player's head-to-hip span, standing on the floor line under the player
+   (the lower ankle - so it lifts when they jump), with its hips over theirs. Arms and legs are two short chunky segments each, with mitten
+   hands and rounded feet; a straight, reaching arm stretches up to 1.3 times. Only the drawing is done here: games use the real landmarks
+   for hit points, and this changes none of that. lm: the pose landmarks (0..1, mirrored); lift: how far up to draw them (px). */
+const NOSE = 0, L_EYE = 2, R_EYE = 5, L_SH = 11, R_SH = 12, L_EL = 13, R_EL = 14,
   L_WR = 15, R_WR = 16, L_HIP = 23, R_HIP = 24, L_KN = 25, R_KN = 26, L_AN = 27, R_AN = 28;
 export function figure(c, lm, W, H, look, t = 0, { lift = 0 } = {}){
   if (!lm || !lm[L_SH] || !lm[R_SH]) return;
   const P = (i) => [lm[i].x * W, lm[i].y * H - lift];
   const seen = (i) => lm[i] && (lm[i].v ?? lm[i].visibility ?? 1) > 0.3;
-  const ls = P(L_SH), rs = P(R_SH);
-  const sw = Math.hypot(ls[0] - rs[0], ls[1] - rs[1]);
+  const ls = P(L_SH), rs = P(R_SH), sw = Math.hypot(ls[0] - rs[0], ls[1] - rs[1]);
   if (sw < 6) return;
-  /* the character is a little wider than a body: its torso is as wide as the shoulders, its head a third wider again */
-  const S = sw * 3.3, { hw, hh } = SIZE(S);
-  /* the head sits on the shoulders (its bottom edge just over the torso's top, the neck hidden), leaning as the body leans and a little
-     toward where their nose is */
-  const nose = P(NOSE), hip = (i) => (seen(i) ? P(i) : null);
-  const lh0 = hip(L_HIP), rh0 = hip(R_HIP);
-  const msx = (ls[0] + rs[0]) / 2, msy = (ls[1] + rs[1]) / 2;
-  const lean = lh0 && rh0 ? Math.atan2(-((lh0[0] + rh0[0]) / 2 - msx), (lh0[1] + rh0[1]) / 2 - msy) : 0;
-  const up = [Math.sin(lean), -Math.cos(lean)], rise = hh / 2 - S * 0.045;
-  const hx = msx + up[0] * rise + Math.max(-sw * 0.3, Math.min(sw * 0.3, (nose[0] - msx) * 0.4)), hy = msy + up[1] * rise;
+  const ms = [(ls[0] + rs[0]) / 2, (ls[1] + rs[1]) / 2];
+  /* their hips (or a torso's length under the shoulders) and how far their torso leans */
+  const hipOf = (i, sh) => (seen(i) ? P(i) : [sh[0], sh[1] + sw * 1.5]);
+  const lh = hipOf(L_HIP, ls), rh = hipOf(R_HIP, rs), mh = [(lh[0] + rh[0]) / 2, (lh[1] + rh[1]) / 2];
+  const lean = Math.max(-0.5, Math.min(0.5, Math.atan2(-(mh[0] - ms[0]), mh[1] - ms[1])));
+  /* the size: from their head-to-hip span (the chibi's head centre to hip line is 0.505 of its head size) */
+  const nose = seen(NOSE) ? P(NOSE) : [ms[0], ms[1] - sw * 0.8];
+  const D = Math.max(sw * 1.6, Math.min(sw * 4, Math.hypot(nose[0] - mh[0], nose[1] - mh[1])));
+  const S = D / (0.5 + 0.005), { hh, bw, bh } = SIZE(S);
+  const a = resolve(look);
+  /* which of their sides is on the left of the picture */
+  const sl = ls[0] <= rs[0] ? -1 : 1;
+  const cs = Math.cos(lean), sn = Math.sin(lean);
+  const rot = (px, py) => [px * cs - py * sn, px * sn + py * cs];               /* the torso's own frame -> the picture (origin: the middle of the torso's bottom edge) */
+  const dir = (p, q, fb) => { const dx = q[0] - p[0], dy = q[1] - p[1], d = Math.hypot(dx, dy); return d > 1e-6 ? [dx / d, dy / d] : fb; };
+  /* the legs: two short segments each, pointing the way their thigh and shin do; the hips go where they must for the feet to be on the floor */
+  const DOWN = [0, 1], hipJ = (side) => rot(side * bw * 0.28 / 1, S * 0.03);
+  const legs = [[L_HIP, L_KN, L_AN, lh, true], [R_HIP, R_KN, R_AN, rh, false]].map(([hi, ki, ai, h0, left]) => {
+    const side = left ? sl : -sl, j = hipJ(side), kn = seen(ki) ? P(ki) : null, an = seen(ai) ? P(ai) : null;
+    const u = kn ? dir(h0, kn, DOWN) : DOWN, v = kn && an ? dir(kn, an, u) : u, L = S * 0.07;
+    const k = [j[0] + u[0] * L, j[1] + u[1] * L], e = [k[0] + v[0] * L, k[1] + v[1] * L];
+    return { j, k, e, left, foot: e[1] + S * 0.07 };
+  });
+  /* the floor line: their lower ankle (a little under their hips if the camera can't see their feet) */
+  const ank = [L_AN, R_AN].filter(seen).map(i => P(i)[1]);
+  const floor = ank.length ? Math.max(...ank) : mh[1] + D * 1.1;
+  const ox = mh[0], oy = floor - Math.max(legs[0].foot, legs[1].foot);
+  /* the arms: an upper arm and a forearm of fixed length along their angles; straight arms reach (up to 1.3x) */
+  const sj = (side) => rot(side * (bw / 2 + S * 0.03), -bh + S * 0.06);
+  const arms = [[L_SH, L_EL, L_WR, ls, true], [R_SH, R_EL, R_WR, rs, false]].map(([si, ei, wi, s0, left]) => {
+    const side = left ? sl : -sl, j = sj(side), el = seen(ei) ? P(ei) : null, wr = seen(wi) ? P(wi) : null;
+    const u = el ? dir(s0, el, DOWN) : wr ? dir(s0, wr, DOWN) : DOWN, v = el && wr ? dir(el, wr, u) : u;
+    let reach = 0;
+    if (el && wr){ const real = Math.hypot(el[0] - s0[0], el[1] - s0[1]) + Math.hypot(wr[0] - el[0], wr[1] - el[1]); reach = real > 1e-6 ? Math.max(0, Math.min(1, (Math.hypot(wr[0] - s0[0], wr[1] - s0[1]) / real - 0.7) / 0.3)) : 0; }
+    else if (wr) reach = 1;
+    const L = S * 0.1 * (1 + 0.3 * reach), e = [j[0] + u[0] * L, j[1] + u[1] * L], h2 = [e[0] + v[0] * L, e[1] + v[1] * L];
+    return { pts: [j, e, h2], left };
+  });
   const tilt = seen(L_EYE) && seen(R_EYE) ? Math.atan2(P(R_EYE)[1] - P(L_EYE)[1], P(R_EYE)[0] - P(L_EYE)[0]) : 0;
   const tip = Math.abs(tilt) > Math.PI / 2 ? tilt - Math.sign(tilt) * Math.PI : tilt;
-  const pts = [ls, rs, [hx, hy]];
-  for (const i of [L_EL, R_EL, L_WR, R_WR, L_HIP, R_HIP, L_KN, R_KN, L_AN, R_AN]) if (seen(i)) pts.push(P(i));
-  const pad = S * 0.45;
-  const x0 = Math.min(...pts.map(p => p[0])) - pad, x1 = Math.max(...pts.map(p => p[0])) + pad;
-  const y0 = Math.min(...pts.map(p => p[1])) - pad, y1 = Math.max(...pts.map(p => p[1])) + pad;
-  const a = resolve(look);
-  paper(c, [x0, y0, x1 - x0, y1 - y0], S, (cc) => figureFlat(cc, a, P, seen, S, hx, hy, tip, t, hw, hh));
-}
-function figureFlat(c, a, P, seen, S, hx, hy, tilt, t, hw, hh){
-  const { bw } = SIZE(S);
-  const ls = P(L_SH), rs = P(R_SH), down = (p, by) => [p[0], p[1] + by];
-  /* hips: as seen, or a torso's length under the shoulders */
-  const lh = seen(L_HIP) ? P(L_HIP) : down(ls, S * 0.4), rh = seen(R_HIP) ? P(R_HIP) : down(rs, S * 0.4);
-  const ms = [(ls[0] + rs[0]) / 2, (ls[1] + rs[1]) / 2], mh = [(lh[0] + rh[0]) / 2, (lh[1] + rh[1]) / 2];
-  const D = Math.hypot(mh[0] - ms[0], mh[1] - ms[1]), ang = Math.atan2(-(mh[0] - ms[0]), mh[1] - ms[1]);
-  const bh = Math.max(S * BODY.bh, D + S * 0.05);
-  /* the cape, then the legs and feet */
-  c.save(); c.translate(ms[0], ms[1]); c.rotate(ang); c.translate(0, -S * 0.03); drawCape(c, a, S, bw, bh); c.restore();
-  for (const [h, k, an] of [[lh, L_KN, L_AN], [rh, R_KN, R_AN]]){
-    const leg = [h]; if (seen(k)){ leg.push(P(k)); if (seen(an)) leg.push(P(an)); } else leg.push(down(h, S * 0.3));
-    drawLeg(c, a, S, leg, true);
-    if (leg.length === 3) drawFoot(c, S, leg[2][0], leg[2][1] + S * 0.07, true);
-  }
-  /* the arms: a sleeve to the elbow, the forearm, then the hand */
-  for (const [s, e, w, left] of [[ls, L_EL, L_WR, true], [rs, R_EL, R_WR, false]]){
-    let pts;
-    if (!seen(e)) pts = [s, down(s, S * 0.26)];
-    else { pts = [s, P(e)]; if (seen(w)) pts.push(P(w)); }
-    drawArm(c, a, S, pts, left, true);
-  }
-  /* the torso, shoulders to hips */
-  c.save(); c.translate(ms[0], ms[1]); c.rotate(ang); c.translate(0, -S * 0.03); drawTorso(c, a, S, bw, bh); c.restore();
-  /* the head, tilted as theirs is */
-  c.save(); c.translate(hx, hy); c.rotate(tilt * 0.8); c.translate(0, -hh / 2); drawHead(c, a, S, false, t); c.restore();
+  paper(c, [ox - S, oy - S * 0.95, S * 2, S * 1.4], S, (cc) => {
+    cc.save(); cc.translate(ox, oy);
+    /* the cape, then the legs and feet, the arms, the torso, the head */
+    cc.save(); cc.rotate(lean); cc.translate(0, -bh); drawCape(cc, a, S, bw, bh); cc.restore();
+    for (const l of legs){ drawLeg(cc, a, S, [l.j, l.k, l.e]); drawFoot(cc, S, l.e[0], l.e[1] + S * 0.07); }
+    for (const ar of arms) drawArm(cc, a, S, ar.pts, ar.left);
+    cc.save(); cc.rotate(lean); cc.translate(0, -bh); drawTorso(cc, a, S, bw, bh); cc.restore();
+    cc.save(); cc.rotate(lean); cc.translate(0, -bh - hh / 2 + S * 0.015); cc.rotate(tip * 0.8); cc.translate(0, -hh / 2); drawHead(cc, a, S, false, t); cc.restore();
+    cc.restore();
+  });
 }
