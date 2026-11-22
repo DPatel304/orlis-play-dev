@@ -222,15 +222,15 @@ const MOVES = {
   },
   /* a longer stride, leaving the ground between steps, leaning into it */
   /* a run, in four stills (each ~0.2 s): in the air with the front knee up and the foot under it, the back leg pushing off diagonally; then
-     landing low on the front foot with the other leg trailing; then the same on the other side. The torso leans forward only a little, the head
-     stays upright, the arms are bent and pump close to the body against the legs, and the body bobs up and down between the stills. */
+     landing low on the front foot with the other leg trailing; then the same on the other side. The torso and head stay fully upright (no lean at all; the speed is
+     in the legs, the arms and the bob), the arms are bent and pump close to the body against the legs, and the body bobs up and down between the stills. */
   run: (i) => {
     const hip = (side, yo) => [side * 0.104, -0.135 + yo];
     const front = (side, yo, air) => { const [hx, hy] = hip(side, yo); return air ? [[hx + 0.086, hy + 0.025], [hx + 0.076, hy + 0.16]] : [[hx + 0.046, hy + 0.01], [hx + 0.026, hy + 0.135]]; };
     const back = (side, yo, air) => { const [hx, hy] = hip(side, yo); return air ? [[hx - 0.046, hy + 0.045], [hx - 0.096, hy + 0.17]] : [[hx - 0.026, hy + 0.035], [hx - 0.066, hy + 0.135]]; };
     const arm = (side, yo, ph) => { const x = side * 0.255, up = ph === 'fwd', mid = ph === 'mid'; return [[x, -0.31 + yo * 0.5], [x + side * 0.02, (up ? -0.41 : mid ? -0.33 : -0.235) + yo * 0.5]]; };
     const k = i % 4, air = k % 2 === 0, yo = air ? -0.04 : 0, rightFront = k < 2, f = rightFront ? 1 : -1;
-    return { yo, rot: 0.14, headUp: 1, legs: [f > 0 ? back(-1, yo, air) : front(-1, yo, air), f > 0 ? front(1, yo, air) : back(1, yo, air)],
+    return { yo, legs: [f > 0 ? back(-1, yo, air) : front(-1, yo, air), f > 0 ? front(1, yo, air) : back(1, yo, air)],
       arms: [arm(-1, yo, air ? (f > 0 ? 'fwd' : 'back') : 'mid'), arm(1, yo, air ? (f > 0 ? 'back' : 'fwd') : 'mid')] };
   },
   /* off the ground, in four stills: the landing squash (the whole body squashes, feet apart), the take-off (legs stretched down, toes pointed,
@@ -241,6 +241,15 @@ const MOVES = {
     if (i % 4 === 1) return { yo: -0.2, legs: [[null, [-0.07, -0.2 + 0.03]], [null, [0.07, -0.2 + 0.03]]], arms: arms(0.2, 0) };
     if (i % 4 === 2) return { yo: -0.32, legs: [[[-0.115, -0.32 - 0.1], [-0.085, -0.32 + 0.02]], [[0.115, -0.32 - 0.1], [0.085, -0.32 + 0.02]]], arms: arms(0.32, 1) };
     return { yo: -0.17, legs: [[null, [-0.1, -0.17 + 0.02]], [null, [0.1, -0.17 + 0.02]]], arms: arms(0.17, 0.5) };
+  },
+  /* a squat, from the front, in four stills (down, down, hold, hold): the body and head sink and squash, the feet stay flat on the floor a little
+     wider than the hips, the knees bow out to the sides and the shins come back down to the feet; the arms reach out in front for balance, seen
+     from the front as short arms with the mittens at chest height, slightly apart (drawn over the torso) */
+  squat: (i) => {
+    const p = [0.5, 1, 1, 1][i % 4], yo = 0.04 * p, hy = -0.135 + yo, s = (side, a, b) => [side * a, b];
+    const leg = (side) => [[side * (0.104 + 0.15 * p), hy], [side * (0.104 + 0.07 * p), 0, 0.035]];
+    return { yo, squash: 0.1 * p, armsFront: true, legs: [leg(-1), leg(1)],
+      arms: [[s(-1, 0.19, -0.29 + yo), s(-1, 0.115, -0.275 + yo)], [s(1, 0.19, -0.29 + yo), s(1, 0.115, -0.275 + yo)]] };
   },
   /* frozen: arms out, shivering */
   freeze: (i) => ({ yo: 0, dx: (i % 2 ? 1 : -1) * 0.009, arms: [[[-0.4, -0.29]], [[0.4, -0.29]]] })
@@ -284,8 +293,8 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
     cc.save(); lean(); cc.save(); cc.translate(0, by + yo); drawCape(cc, a, S, bw, bh); cc.restore(); cc.restore();
     if (mv && mv.legs){
       mv.legs.forEach(([kn, ft], i) => {
-        const d = i ? 1 : -1, hip = [d * bw * 0.28, ly + yo + S * 0.05], fp = [ft[0] * S, ft[1] * S];
-        const end = [fp[0], Math.max(fp[1] - S * 0.07, hip[1] + S * 0.02)];
+        const d = i ? 1 : -1, hip = [d * bw * 0.28, ly + yo + S * 0.05], fp = [ft[0] * S, ft[1] * S], drop = ft[2] != null ? ft[2] : 0.07;
+        const end = [fp[0], Math.max(fp[1] - S * drop, hip[1] + S * 0.02)];
         drawLeg(cc, a, S, kn ? [hip, [kn[0] * S, kn[1] * S], end] : [hip, end]);
         drawFoot(cc, S, fp[0], fp[1]);
       });
@@ -295,14 +304,16 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
     }
     cc.save(); lean();
     const reach = ARMS[pose] || ARMS.stand;
-    for (const d of [-1, 1]){
+    const armsDraw = () => { for (const d of [-1, 1]){
       const sx = d * (bw * 0.5 + S * 0.03), sy = sy0 + yo;
       let pts;
       if (mv && mv.arms){ pts = [[sx, sy], ...mv.arms[d < 0 ? 0 : 1].map(([px, py]) => [px * S, py * S])]; }
       else { const up = reach(d, S, bw, by, t); pts = up ? [[sx, sy], [(sx + up[0]) / 2 + d * S * 0.02, (sy + up[1]) / 2], up] : [[sx, sy], [sx + d * S * BODY.out + (idle ? Math.sin(t * Math.PI * 2 / 2.5 + 1.3 + d) * S * 0.008 : 0), sy + (by + bh * 0.88 - sy) * BODY.armLen]]; }
       drawArm(cc, a, S, pts, d < 0);
-    }
+    } };
+    if (!(mv && mv.armsFront)) armsDraw();
     cc.save(); cc.translate(0, by + yo); drawTorso(cc, a, S, bw, bh); cc.restore();
+    if (mv && mv.armsFront) armsDraw();
     cc.save(); cc.translate(0, -S * BODY.tot + yo + hh / 2); if (mv && mv.headUp) cc.rotate(-rot * mv.headUp); cc.translate(0, -hh / 2); drawHead(cc, a, S, back, t); cc.restore();
     cc.restore();
   });
@@ -325,7 +336,7 @@ export function blinkAt(t){
 }
 /* opts.look: which way his eyes glance ([x, y], -1..1); opts.talk: true while the voice reads about him */
 export function cuboFigure(c, x, base, h, pose = 'stand', t = 0, face = null, { look = null, talk = false } = {}){
-  const f = face || (FRAMES[pose] ? frameAt(pose, t).face : 'smile');
+  const f = face || (pose === 'squat' ? 'grin' : FRAMES[pose] ? frameAt(pose, t).face : 'smile');
   const m = talk ? 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * 2.4 + Math.sin(t * 1.7) * 1.5) : null;
   body(c, x, base, h, CUBO_LOOKS[f] || CUBO_LOOKS.smile, t, pose, { face: { blink: blinkAt(t), look, talk: m } });
 }
