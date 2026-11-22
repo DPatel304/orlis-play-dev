@@ -62,7 +62,7 @@ function drawHead(x, a, S, back, t){
   const glance = live && live.look || [0, 0], talk = live && live.talk != null ? live.talk : null;
 
   if (!back){
-    /* the face: always the same painted style - big friendly eyes with a shine, a soft blush, a wide mouth */
+    /* the face: always the same painted style - big friendly eyes with a shine, a wide mouth */
     const fy = hy + hh * 0.5, ex = hw * 0.2, er = S * 0.05;
     x.fillStyle = ink; x.strokeStyle = ink; x.lineWidth = S * 0.014;
     /* tall oval eyes (old Cubo's size) with a clear white shine, upper left, about a fifth of the eye's width across */
@@ -85,9 +85,6 @@ function drawHead(x, a, S, back, t){
       }
     });
     const my = fy + hh * 0.22, mx = -hw * 0.04;
-    /* a soft, warm blush under the eyes on every face */
-    x.fillStyle = alpha('fav.pink', 0.85, 'light');
-    [-1, 1].forEach((s) => { x.beginPath(); x.ellipse(s * hw * 0.36 - hw * 0.04, fy + S * 0.085, S * 0.032, S * 0.02, 0, 0, 7); x.fill(); });
     x.fillStyle = ink;
     /* while he talks the mouth opens and closes (a gasp or an "o" stays as it is) */
     const mouth = talk != null && a.mouth !== 'gasp' && a.mouth !== 'o' ? 'open' : a.mouth, k = talk != null && mouth === 'open' ? 0.3 + 0.7 * talk : 1;
