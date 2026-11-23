@@ -61,7 +61,7 @@ h2{ margin:10px 0 0; font-size:20px; }
     <symbol id="t2" viewBox="0 0 48 32"><path fill="currentColor" fill-rule="evenodd" d="M12 5 H36 C38.6 5 40 6.4 40.6 8.2 L45.2 22 C47 28 41 31 37.4 27.4 L34.6 24.5 H13.4 L10.6 27.4 C7 31 1 28 2.8 22 L7.4 8.2 C8 6.4 9.4 5 12 5 Z M16 9 H32 A2 2 0 0 1 34 11 V19 A2 2 0 0 1 32 21 H16 A2 2 0 0 1 14 19 V11 A2 2 0 0 1 16 9 Z M9.5 13 a2 2 0 1 0 0.01 0 Z M38.5 13 a2 2 0 1 0 0.01 0 Z"/></symbol>
     <!-- 3 Two-tone: grips solid, the screen a lighter panel -->
     <symbol id="t3" viewBox="0 0 48 32"><path fill="currentColor" d="M14 7 L9 7 C7.4 7 6.6 8 6.2 9.4 L2.6 22.4 C1.4 27 6 29.6 9 26.6 L12.6 23 H14 Z M34 7 L39 7 C40.6 7 41.4 8 41.8 9.4 L45.4 22.4 C46.6 27 42 29.6 39 26.6 L35.4 23 H34 Z"/>
-      <rect x="13" y="5" width="22" height="19" rx="3" fill="currentColor" opacity=".45"/><rect x="15.5" y="7.5" width="17" height="14" rx="1.6" fill="currentColor"/></symbol>
+      <path fill="currentColor" opacity=".55" fill-rule="evenodd" d="M16 5 H32 A3 3 0 0 1 35 8 V21 A3 3 0 0 1 32 24 H16 A3 3 0 0 1 13 21 V8 A3 3 0 0 1 16 5 Z M17.2 8 H30.8 A1.2 1.2 0 0 1 32 9.2 V19.8 A1.2 1.2 0 0 1 30.8 21 H17.2 A1.2 1.2 0 0 1 16 19.8 V9.2 A1.2 1.2 0 0 1 17.2 8 Z"/></symbol>
     <!-- 4 Minimal: screen and two pill grips, no controls -->
     <symbol id="t4" viewBox="0 0 48 32"><g fill="currentColor"><rect x="12" y="6" width="24" height="18" rx="3.5"/><rect x="2.5" y="8" width="11" height="20" rx="5.5" transform="rotate(-12 8 18)"/><rect x="34.5" y="8" width="11" height="20" rx="5.5" transform="rotate(12 40 18)"/></g>
       <rect x="15" y="9" width="18" height="12" rx="1.8" fill="#fff" opacity=".0"/></symbol>
@@ -77,7 +77,7 @@ h2{ margin:10px 0 0; font-size:20px; }
 const OPTS = [
   { id: 't1', name: 'Outline', what: 'A clean line drawing, like the menu icons (home, gear). Light and modern; the thinnest from far away.' },
   { id: 't2', name: 'Solid', what: 'One filled shape with the screen cut out and a dot for each stick. Reads best from the sofa.' },
-  { id: 't3', name: 'Two-tone', what: 'Solid grips with the screen as a lighter panel, so the tablet and the grip read as two parts.' },
+  { id: 't3', name: 'Two-tone (chosen)', what: 'Solid grips and a lighter tablet frame; the screen itself is see-through.' },
   { id: 't4', name: 'Minimal', what: 'Just the screen and two rounded grips, no controls at all. The simplest; may read as a generic gadget.' },
   { id: 't5', name: 'Chunky', what: 'Rounder and friendlier, the screen cut out and a stick on each grip. Closest to the painted game style.' }
 ];
