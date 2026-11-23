@@ -71,3 +71,4 @@ Date: YYYY-MM-DD
 | 0045 | Clean menus: two squares logo, Outfit, one-page home; games keep their own lettering (replaces the kit's menu font, paper menus and Cubo-head mark) | Accepted |
 | 0046 | A calmer home and HUD: the picture on the right, no hero title, players as an icon, the clock top right without a pill, hint words go after the start (replaces parts of 0045 and 0034) | Accepted |
 | 0047 | Home without a Play button (pick the tile); players drawn as one or two figures; the description wraps on the left (replaces 0045's Play and 0046's players number) | Accepted |
+| 0048 | Home: up to four player figures in a row (front one left, white); no "Your games" label; a smaller logo (replaces 0047's two-figure look) | Accepted |

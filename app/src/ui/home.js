@@ -91,7 +91,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   bgwrap.append(...layers, h('div', 'hscrim'));
   const box = h('div', 'hbox');
   const top = h('div', 'htop');
-  top.appendChild(logo({ size: 'calc(var(--u)*6.4)', light: true }));
+  top.appendChild(logo({ size: 'calc(var(--u)*4.4)', light: true }));
   const sys = h('div', 'hsys');
   /* this week's challenges, as a small pill beside the profile face */
   const ch = week.challenges;
@@ -163,7 +163,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   };
   rows.forEach((r, ri) => {
     const sec = h('section', 'hsec'), lab = h('div', 'hlab'), row = h('div', 'hrow');
-    lab.textContent = r.title; sec.append(lab, row); rowsEl.appendChild(sec);
+    /* (owner, 2026-11-23: no "Your games" label - the first row speaks for itself; the rows below keep theirs) */
+    lab.textContent = r.title; if (r.id === 'games') lab.classList.add('quiet'); sec.append(lab, row); rowsEl.appendChild(sec);
     tiles[ri] = r.items.map((item, ci) => {
       const t = makeTile(item); t.row = ri; t.col = ci; t.sec = sec; t.rowEl = row;
       onPick(t.el, () => activate(t));
@@ -201,11 +202,12 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     /* the last word and the figures stay together, so the figures sit right after the last word */
     const cut = hero.players ? hero.line.lastIndexOf(' ') + 1 : hero.line.length, tail = h('span', 'hlast');
     blurb.textContent = hero.line.slice(0, cut); tail.textContent = hero.line.slice(cut); blurb.appendChild(tail);
-    /* players: one figure, or two overlapping (the back one dimmer) for a game that takes more; no number */
+    /* players: one figure per player the game takes, up to 4, close together on one line; the front one (left) is white, the ones
+       behind it to the right are darker; no number (owner, 2026-11-23) */
     if (hero.players){
-      const { lo, hi } = hero.players, pl = h('span', 'hplayers' + (hi > 1 ? ' two' : ''));
-      if (hi > 1) pl.appendChild(iconEl('player', 48));
-      pl.appendChild(iconEl('player', 48));
+      const { lo, hi } = hero.players, n = Math.max(1, Math.min(4, hi)), pl = h('span', 'hplayers');
+      pl.style.setProperty('--n', n);
+      for (let k = 0; k < n; k++){ const f = iconEl('player', 48); f.style.setProperty('--k', k); pl.appendChild(f); }
       pl.setAttribute('role', 'img'); pl.setAttribute('aria-label', lo === hi ? `${hi} player${hi > 1 ? 's' : ''}` : `${lo} to ${hi} players`);
       tail.appendChild(pl);
     }

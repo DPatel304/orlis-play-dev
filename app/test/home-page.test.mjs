@@ -54,7 +54,7 @@ test('at rest the first game is focused: its name, one line and the players as f
   assert.ok(!q(s, '.ht') && qa(s, '.chip').length === 0, 'no hero title and no chips');
   const pl = q(s, '.hplayers');
   assert.ok(pl && txt(pl) === '' && /^(\d player|\d to \d players|\d players)/.test(pl.getAttribute('aria-label')), 'players: figures by the description, no number');
-  assert.equal(qa(pl, '.oicon').length, pl.classList.contains('two') ? 2 : 1);
+  assert.ok(qa(pl, '.oicon').length >= 1 && qa(pl, '.oicon').length <= 4, 'one figure per player, up to 4');
   assert.ok(!/min|sec/.test(txt(q(s, '.hinfo'))), 'no time');
   assert.equal(q(s, '.htile.on').getAttribute('aria-label'), 'Play ' + first.name);
   assert.ok(!q(s, '.hplay'), 'no Play button');
