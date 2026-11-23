@@ -6,6 +6,7 @@ import { icon, propIcon, GAME_PROP } from './brand.js';
 import { faceOf } from './avatar-maker.js';
 import { looks } from './menu.js';
 import { resultWords } from './units.js';
+import { showNews } from './chnews.js';
 
 const ui = () => document.getElementById('ui');
 
@@ -189,7 +190,10 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null, ex
     s.appendChild(crewEl);
   }
   sfx.fanfare();
-  return { tick(){}, draw(){} };
+  /* a weekly challenge this round moved (0051): one compact line under the buttons, added when the server has said (so it never moves them) */
+  const chNews = h('div', 'chnews'); c.appendChild(chNews);
+  let stopNews = () => {};
+  return { tick(){}, draw(){}, news(moves){ stopNews(); chNews.textContent = ''; stopNews = showNews(chNews, moves); }, leave(){ stopNews(); } };
 }
 
 /* ---------- pause ---------- */

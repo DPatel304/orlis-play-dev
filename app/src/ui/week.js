@@ -56,12 +56,23 @@ export const week = {
     return st.featured.map(id => st.games.find(g => g.id === id)).filter(Boolean);
   },
 
-  /* a round's over: which game, its best score, how long, how many played */
+  /* a round's over: which game, its best score, how long, how many played.
+     Answers what it moved this week: [{ id, kind, title, need, before, after, finished, slot }] (finished: it reached its goal this round). */
   async played(round){
     if (!account.needed || !account.signedIn) return [];
-    const was = new Set(((this.challenges && this.challenges.challenges) || []).filter(c => c.done).map(c => c.id));
+    const was = new Map(((this.challenges && this.challenges.challenges) || []).map(c => [c.id, c]));
     try { await account.call('POST', '/api/plays', round); } catch { return []; }
     await this.refresh({ force: true }).catch(() => {});
-    return ((this.challenges && this.challenges.challenges) || []).filter(c => c.done && !was.has(c.id));
+    return movesOf(was, (this.challenges && this.challenges.challenges) || []);
   }
 };
+
+/* what changed between two looks at this week's challenges (was: a Map by id) */
+export function movesOf(was, now){
+  const out = [];
+  now.forEach((c, slot) => {
+    const b = was.get(c.id), before = b ? b.have : 0, wasDone = !!(b && b.done);
+    if (c.have > before || (c.done && !wasDone)) out.push({ id: c.id, kind: c.kind, title: c.title, need: c.need, before, after: c.have, finished: !!c.done && !wasDone, slot });
+  });
+  return out;
+}

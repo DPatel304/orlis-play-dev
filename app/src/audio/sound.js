@@ -631,8 +631,14 @@ export const sfx = {
     const t = ctx().currentTime + 0.02, m = Math.max(0.2, merge);
     for (const n of [60, 64, 67, 71]) tone(n, t, m + 0.9, { type: 'triangle', gain: 0.035, attack: m * 0.85, verb: 0.5, dest: master });
     kalimba(72, t + m, 0.14);
-    bell(91, t + name + 0.05, 0.05, 0.6, master); bell(96, t + name + 0.2, 0.04, 0.6, master);
+    sparkles(name + 0.05);
   },
+  /* The two little sparkles of the intro's name, on their own (decision 0051: whenever a star appears). */
+  sparkles(){ sparkles(0); },
+  /* This week's challenges (0051), all quiet: a card landing, a block filling (p 0..1 of the way: higher the further on), a small happy chime. */
+  cardLand(){ hiss({ dur: 0.24, gain: 0.04, hp: 500, sweep: 2200 }); },
+  blockTick(p = 0){ blip({ freq: 520 * Math.pow(2, Math.max(0, Math.min(1, p))), dur: 0.07, type: 'sine', gain: 0.06 }); },
+  happy(){ const t = ctx().currentTime + 0.02; bell(79, t, 0.05, 0.5, master); bell(86, t + 0.12, 0.04, 0.5, master); },
   /* Moving along the shelf. */
   nav(){ blip({ freq: 520, to: 640, dur: 0.07, type: 'sine', gain: 0.1 }); hiss({ dur: 0.08, gain: 0.03, hp: 2400 }); },
   /* Into a game, or a choice made. */
@@ -774,6 +780,12 @@ function strum(ch, t, up, vel){
   const order = up ? [3, 2, 1] : [0, 1, 2, 3], gap = up ? 0.011 : 0.016;
   order.forEach((s, k) => pluck(ch.uke[s] + key, t + k * gap,
     { gain: vel * (up ? 0.6 : 1) * (0.85 + Math.random() * 0.3), verb: 0.12 }));
+}
+
+/* the intro's two sparkles: two high bells a hair apart (delay: seconds from now) */
+function sparkles(delay = 0){
+  const t = ctx().currentTime + 0.02 + delay;
+  bell(91, t, 0.05, 0.6, master); bell(96, t + 0.15, 0.04, 0.6, master);
 }
 
 function bell(m, t, gain = 0.05, verb = 0.5, dest = null){
