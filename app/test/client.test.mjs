@@ -78,7 +78,7 @@ test('the app finds Orlis Server on the Wi-Fi on the port the server listens on'
 test('an update found at start-up shows "Updating - back in a moment" while it installs, quietly', () => {
   assert.ok(main.includes('WebviewUrl::App("updating.html"') && main.includes('progress('), 'the small window, with progress');
   const page = readFileSync(new URL('../client/updating.html', import.meta.url), 'utf8');
-  assert.ok(page.includes('Updating \u2014 back in a moment') && page.includes('window.progress'));
+  assert.ok(page.includes('Updating, back in a moment') && page.includes('window.progress'));
   assert.ok(read('build-web.mjs').includes("'client/updating.html'"), 'carried into the app');
   assert.equal(conf.plugins.updater.windows.installMode, 'quiet', 'no installer window on top of it');
 });

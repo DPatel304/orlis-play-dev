@@ -1,5 +1,5 @@
 /* Orlis Server, running quietly: no window to keep open - just the Orlis
-   cube by the clock (the system tray). Right-click it for the log, the
+   icon by the clock (the system tray). Right-click it for the log, the
    data folder, Restart and Quit.
 
    When Orlis Server.exe is double-clicked, this part starts first. It
@@ -25,8 +25,8 @@ export const RESTART = 76;                    /* the server's "start me again" (
 const LOG_MAX = 1024 * 1024;
 const CRASHES = 5, CRASH_WINDOW = 10 * 60 * 1000, CRASH_WAIT = 3000;
 
-/* the Orlis cube, 32 pixels */
-export const ICON = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEnklEQVR4nMRXT2gcVRj/vjezyRqTNJtoRE1VgliaHoKeQg9N9eRFDx5bGwpRxEty0ARKgxQMaPXU4k0LSq2IoqLQogdDgzbkIGhpqlDLYk2aptk0aZJmd2P3vc9v5s28fTPbXSdboR8M376ZN+/3533vzVsB9zhcuIu4kac+L3c04TTUGQLqCAbuyuXpUwKYIoKppTyd9O5BHYFb6TxP1JQqwggQjPKLTZx16JxHgvfam+FdRNxMOmZiAqx4H3c+yoq70HqZ23oQMu0s2/pmphW/STLufxK4fot6hYBj3LHfVmxeJGsg2xGESZQwnMngeaiHwMI6dToujLOtg+DVClUqNmTwjk549xXnEykHxlpacDERgT+JGjMFGOaBDnOz1XQkq9NWnNCxxu+Pb8vA8Xh9RAjMFArPPkTpj/hm9x0VY0whJHSi/Dx7cxkGHn8Sz4WYkWX4/lp24Mfi0pxSkLMHiYBQlftVnpt+BLlfZ2ju2x/kKzZmhAApxDP5pT1jK5fTvxduneWXN5MMjrXIKdicvUZnP/m6lP7tgtyDSkVcj+6EhP5VlNTy4erC3s7VxtnXOh6+2iHcPntQonJNVLPbu9Y2YPr0T7cfXV/FvS63vcuJ7X1RAkpfyCTYDcip0va35+e270o1nR944MH70gKfis0p99PZVl6SdOnMtCzMXoM+h5+nPKt9cAR2oBYBZsfAJDWJkMzFQrH30JWr6oW2tqnn2pp3MkimSo2s/HJJ/vHzjGJgFL5ifh99cO6riAGjDkRbZg6FrwxIZ+SsJIjvcuu7D19ehOzG7UnuVyr3h9Lfi3Lyg9MSJi+o3YJQCLbKoVC5B57IAa+DCBwIwH1XdNvLG4oyx/9a6X+koSH7+mPbllkpnJqS7Sur1O/4ClGDBso9hUJpEj6pWjUglCgqUwNWVno6/CKVmuj8Rqn7rYs3uzuuNHNxIQOSr9ADYQeM8jK4R8YnVag6BYrKBagVY1AL6E+Hzhjc1w6JUJkBxQDMst+QoYoDiIhPAQWgFCgmAwoWeNmhMij5v71CM4rJrv5yrkEgWv12tkmEpDwSeq7Jt9d2ICxAESjXTlDFCUhEG3b1o1kFYKZDWKR0G439ZApNUGg7mrk35Go5oCTEQMptMNMijP2gyvabqo8UYLgUA4cCJ5I54Fe7tQRldEmGz8PBMbburaoPlAckahGQJfqClWWjyis3JTvHqz+sekHhug+V+/ZnXaQvqxI42fvEROv9mz287kd5jtfiBVixP5ClPFiSaBWgpZzHotGmtNPz4khqwsaseiQ7cG6hk4cfR4mDIIVA6dmO/qZE/NtrA7d3LDaA/8EJgF2lv3r+5qRIpQhPpJUz9tJIwiNZPF6euN7rgnOMSqJfb9PBdl3SeeeiG4AFJDwCPKwjadIlGj7wRkN9h9J4HPx+eR8pcZRBuyBQ7127cikw33qfBPrH8sFhN9GxPPE/o4+fb/+sUeZ3KIlHuD7y4T5hffXyDsKRAjo9ScG9SOyAHfu/yne5Ct9hB/Y/fcPx5vpUmlKHXh3COdhi1EUgjIOf/9P3DJfW0FBD3X9O74rA/xH/AgAA//81K2DfAAAABklEQVQDAF8fybt0/ZbUAAAAAElFTkSuQmCC';
+/* the Orlis mark (the two squares, decision 0045), 32 pixels */
+export const ICON = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAE80lEQVR4nK2XX2hcVR7HP79z7p2ZZCZN0n92Y7uiFLEVd30QBN3q4stuRdB9SEAU8UUqgvjvTdHZvC2CouCDTxYVVm18U4ssLKJWLeqyD9ZWaovVttDUNk2TTpLOved8fbgzbZImdSb6HQ6Xy5xzft/f95zfOd9rrBCSnJnFZf9HhvAXXkGX6991cIB6XU7S3yU9LelZSSOS/ixpcDlS7bFtJCsJbmZR0nXAmycPc9OJg+BTGNgApVVQ7Y+nJR0BDgD7gG+B78zsEIbmq2cryFzAeuDrz95i43/fbuSt9MCwcq/z/WtS1g0lXHEVrNsEq9ZBeSA2V//BfQU8Y2Yft0l0SyAxs1zSi4c/54nX/tlorhlypYsdIEYIuRQyYsiRonCJWaXq/NabK/ztIYIvc4+ZvS/Jd7UEreAO2L53d1TfgCUSaNHW8qlZkuLNADMkkCJ7dzfyxtlKMvyM3ynpWmDSLRFnuezbaq0/eypuOj2em0uxxcHbSqilRgwtgjIGN7hk3xdz+YkDrAW2m5k6JgC0+25uTrtqYzKPvsixYyiC9zB+BAFb5k/aCdrBtjQmIGsqWjej2yQElSoGTHdLoI0bTh9bwahWcOfNBjYAsB+WOgckq4PtH1tYojv+h1Hsg+tPHCkmkrojEAPqqTqfVGMEd/ASAsO75MfMwmhR1YsRUgfNGW0+eVQkKbZkr2VgBiGT1gyVrTbIOHB0IQHJxszC7TtVCau5liY9AApYxWGTc8RHtjE0fToOnfm5iU/pTgGDvInWb3SUezlkZrOSXAKyeh0bNYt/2aVHlfC4y7jGPIUOHqKBAhw6A3MJzDQiPVVbugQvp0CQNlwFtNYfcMnwLtzoiIVb39YL5X6ezM6B8qKU57OPTVAGcupK+sVYuwmAb9rvbmzEwra3dEupypPnJ8ljRsQAu/gTWCXFDp7Can909A0YIQfn6fg2kSBJcdU1CxRoHUSO+8wjBGaXlqaASgKHT8EXc8Y/HkyZnhKzM8VJh4FzBSFzhdzzYQYxSL2rEquuZpbilpxHADYptPJeBlFQK8Pze2DqhoQdz5XZfJ2jWoW8CeemxPREDDNTMWRzijFK1iIGMDkeszuGy1YbZLeZnZDkzSy2q+BXhRTgHZwP8PCHcP+Nntue8Axkwk2JmZNiasL7k8dg/CeYGG/SOJvHGESp17l7HqmV/rSd48BTrXtF0KUhkSD1xfPVL+H1FNbVjCv7jatXowdv4d83Ql+eseXcmWRjc7rUk81BeSBka6/kP8BjZvbjJYZk2zt6L+nlrqxBMLvg4y4Lb8WyZBGyHAWH/f/L81t5uXJgn1S6Hq4ArgZ6gcNm9n2RxEIv2bUlayO0SjF1UCoVluzOv5YHP3hJ3owc7Cit064dGGCxMV3JZbQAolAiCKZmCWYW6h/hJDlJvtUK+7WEK16xApfD/p87t+C/WYHfit+VgFx3LvsiATGHoe4u2EXBI1hkBmDrcOfzOIDo2GMeI3ZPQCJaCcXA8Tzhe5CNdpGIQzLLeCOb5nhSI5VoSoQOW44R0xrOHP/aO2Kzw7twYJ0TqIPtuc/OKONuZfxQ6qeU1vBpFX/huUwr9ZEkPSTNCV78dMReqdflxkYsdKNgsWnqcoxavH2nBrSKBwQ3E+grvmmX2ViO3CX8pPO8+8m99imSYZ1nfgnq9a6+ERaO1crH/gLHs3nAuFDjJQAAAABJRU5ErkJggg==';
 
 /* The tray icon, in PowerShell. It reads lines from this side ("status
    ...", "say title|text", "exit") and writes back what was picked ("log",
@@ -203,7 +203,7 @@ export function supervise({ exe, dataDir, version, afterUpdate = false, spawn = 
       if (h && h.app === 'orlis'){
         startTray();
         tell('status Orlis Server - already running');
-        tell("say Orlis Server is already running|Look for the Orlis cube by the clock - there's only ever one.");
+        tell("say Orlis Server is already running|Look for the Orlis icon by the clock - there's only ever one.");
         log('-- already running: this one closes --');
         setTimeout(() => finish(0), 7000);
         return;

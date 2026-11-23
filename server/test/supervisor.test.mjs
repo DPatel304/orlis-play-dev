@@ -77,7 +77,7 @@ test('double-clicked again while one is running: it says so and leaves it be', a
   assert.equal(w.workers.length, 0);
 });
 
-test('the icon script carries the Orlis cube and the menu', () => {
+test('the icon script carries the Orlis mark and the menu', () => {
   const png = Buffer.from(ICON, 'base64');
   assert.equal(png.subarray(1, 4).toString(), 'PNG');
   const ps = trayScript();

@@ -1,4 +1,4 @@
-/* Orlis Server.exe: double-click it, and it runs quietly - the Orlis cube by
+/* Orlis Server.exe: double-click it, and it runs quietly - the Orlis icon by
    the clock (supervisor.js), the server itself underneath (--worker).
 
    Its data (orlis.db, the Store's games, backups and the log) lives in an
@@ -72,7 +72,7 @@ async function main(){
     console.log(`${line}
   Orlis Server ${VERSION} is running: "${s.info.name}"
 
-  ${supervised ? 'It runs quietly: look for the Orlis cube by the clock, and right-click\n  it to quit.' : 'Leave this window open while anyone is playing or syncing.'}
+  ${supervised ? 'It runs quietly: look for the Orlis icon by the clock, and right-click\n  it to quit.' : 'Leave this window open while anyone is playing or syncing.'}
   Orlis Play on this Wi-Fi finds it by itself.
   (If it ever asks, the address is ${lan.map(a => `http://${a}:${s.port}`).join(' or ') || `http://localhost:${s.port}`})
 
@@ -82,7 +82,7 @@ async function main(){
   Games in the Store: ${(await s.store.games()).map(g => g.name).join(', ') || 'none yet'}
   (add a game by putting its .orlis file in ${s.store.dir})
 
-  ${supervised ? 'Manage it: double-click the Orlis cube.' : `Manage it (on this laptop): ${s.manageUrl}`}
+  ${supervised ? 'Manage it: double-click the Orlis icon.' : `Manage it (on this laptop): ${s.manageUrl}`}
 
   Data: ${dataDir}
   ${supervised ? '' : 'To stop it, close this window.'}${selfUpdates ? `

@@ -68,7 +68,7 @@ export function api(db, info, extra = () => [], manageKey = null){
      the management page, with the key the cube opens it with (manage). */
   const owner = (headers, ip) => {
     if (headers['x-orlis-manage'] !== undefined){
-      if (!manageKey || !isLocal(ip) || headers['x-orlis-manage'] !== manageKey) throw new Fail(403, 'not_owner', 'Open this from the Orlis cube by the clock, on the server\'s laptop.');
+      if (!manageKey || !isLocal(ip) || headers['x-orlis-manage'] !== manageKey) throw new Fail(403, 'not_owner', 'Open this from the Orlis icon by the clock, on the server\'s laptop.');
       const o = q("SELECT * FROM accounts WHERE role = 'owner' ORDER BY created_at LIMIT 1").get();
       if (!o) throw new Fail(409, 'not_set_up', 'Set up Orlis Play first: the first account made becomes the owner.');
       return o;

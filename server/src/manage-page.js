@@ -1,5 +1,5 @@
 import { TRY_SECS } from './submissions.js';
-/* The management page: the server's own, opened from the Orlis cube by the
+/* The management page: the server's own, opened from the Orlis icon by the
    clock (Manage Orlis Server), in the browser on this laptop only. It's
    where the owner looks after the server - every family and who's a
    creator, the Store's games, backups - so Orlis Play itself stays the
@@ -392,7 +392,7 @@ var TRY = ${TRY_SECS};
     main.innerHTML = ''; main.className = '';
     if (key) count();
     [].forEach.call(document.querySelectorAll('#tabs button'), function(b){ b.className = b.dataset.t === tab ? 'on' : ''; });
-    if (!key){ main.innerHTML = '<p class="empty">Open this page from the Orlis cube by the clock:<br>right-click it, then <b>Manage Orlis Server</b>.</p>'; return; }
+    if (!key){ main.innerHTML = '<p class="empty">Open this page from the Orlis icon by the clock:<br>right-click it, then <b>Manage Orlis Server</b>.</p>'; return; }
     views[tab]().catch(function(e){ main.innerHTML = '<p class="empty">' + esc(e.message) + '</p>'; });
   }
   document.getElementById('tabs').onclick = function(e){ var t = e.target.dataset && e.target.dataset.t; if (t){ tab = t; show(); } };
