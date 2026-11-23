@@ -370,7 +370,11 @@ function showResults(){
   if (!game.back && !game.trial && !game.passive) week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) })
     .then((done) => done.forEach((c, i) => setTimeout(() => { sfx.gold?.(); toast(`\u2605 Star earned: ${c.title}`, { ms: 6000 }); }, 900 + i * 1200)), () => {});
   /* (a game being tried goes back where it came from: Create) */
-  go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'Home', summary));
+  /* each child's face, name and count (in seat order; the counts only when the game's tally lines up with who played) */
+  const seats = [...joined].filter(i => i < players).sort((x, y) => x - y);
+  let rows = []; try { rows = inst.tally(); } catch {}
+  const kids = seats.map((i, k) => ({ i, name: crew.nameOf(i) || `Player ${i + 1}`, look: crew.lookOf(i), color: crew.colorOf(i, PLAYER_COLORS[i]), value: rows.length === seats.length ? Number(rows[k].value) || 0 : null }));
+  go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'Home', summary, { total, kids: game.passive ? [] : kids }));
 }
 
 /* ---------- pause by gesture ----------
@@ -399,7 +403,7 @@ function openPause(){
     () => { paused.remove(); paused = null; roundDone(); (game.back || toMenu)(); },
     game.back ? 'Back to Create' : 'Home');
   /* who's who, to put right a mix-up */
-  if (MAKING && crew.profiles.length >= 2) paused.querySelector('.gbtext').appendChild(whoRow(crew.profiles));
+  if (MAKING && crew.profiles.length >= 2) paused.querySelector('.pwho').appendChild(whoRow(crew.profiles));
   sfx.whoosh();
 }
 

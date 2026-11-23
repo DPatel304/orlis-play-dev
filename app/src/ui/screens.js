@@ -2,6 +2,10 @@ import { pose, BONES } from '../tracking/pose.js';
 import { cubo } from './cubo.js';
 import { button, onPick } from './cursor.js';
 import { sfx } from '../audio/sound.js';
+import { icon, propIcon, GAME_PROP } from './brand.js';
+import { faceOf } from './avatar-maker.js';
+import { looks } from './menu.js';
+import { resultWords } from './units.js';
 
 const ui = () => document.getElementById('ui');
 
@@ -130,59 +134,79 @@ export function drawSkeletons(c, W, H, alpha = 0.35){
   }
 }
 
-/* ---------- results ---------- */
-/* Pictures on the big buttons, so a child who can't read knows which is
-   which: round again, or home. */
-const ICON = {
-  again: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 7.7 10.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1l4 3.2-4 3.2z" fill="currentColor"/></svg>',
-  home: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.5L12 4l8.5 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10.5V20h4.5v-5h3v5H18v-9.5" fill="currentColor"/></svg>',
-  play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>'
-};
-const bigButton = (icon, label, cls, fn) => onPick(button(`<span class="ic">${ICON[icon]}</span><span class="tx">${label}</span>`, 'big ' + cls), fn);
+/* ---------- results and pause: a clean card over the game (decision 0045; the mockup is docs/screens-mockup.html) ---------- */
+/* The big buttons carry a picture, so a child who can't read knows which is which: round again, keep playing, home. Each has the hand
+   ring (cursor.js fills it, in the colour of whoever waves) and is the one size everywhere. */
+const bigButton = (name, label, cls, fn) => onPick(button(`${icon(name)}<span>${label}</span>`, 'cbtn ringed ' + cls), fn);
 
-/* The game's own banner, over the game: the same look as the banners on
-   Home, the Store and Create - a small line above, the game's name big,
-   and the big buttons (big enough to pick by pointing) along under it. */
-function gameBanner(cls, kicker, name, line){
-  const s = screen(cls + ' gamebanner');
-  const t = h('div', 'gbtext');
-  const title = h('h1', ''); title.textContent = name;
-  t.append(h('div', 'skicker', kicker), title);
-  if (line) t.append(h('p', '', line));
-  s.append(h('div', 'gbshade'), t);
-  return { s, t };
+/* a card, flat white, over the game: the small kicker, then what it has to say */
+function card(cls){
+  const s = screen(cls + ' gamecard');
+  const c = h('div', 'gcard');
+  s.appendChild(c);
+  return { s, c };
 }
 
-/* After the round's own ending: what everyone did together - one friendly line, no scores per child and no winner - and the way on.
-   The ending scene stays in view behind - the bouquets, the lanterns, the
-   sky full of pictures. back: where the other button goes ('Home', or
-   'Back to Create' for a game being tried). */
-export function results(game, onAgain, onMenu, back = 'Home', summary = null){
-  const { s, t } = gameBanner('end', game.passive ? 'The end' : 'Well played!', game.name);
+/* After the round's own ending: what everyone did together, then the way on. The ending scene stays in view behind - the bouquets, the
+   lanterns, the sky full of pictures - with a card on the left: the count big with the game's painted icon, "New best!" if there is
+   one, and Play again and Home. Each child's face, name and count sits in seat order along the bottom (never a ranking, no winner).
+   back: where the other button goes ('Home', or 'Back to Create' for a game being tried).
+   summary: { line, best } (the friendly line, for a game that says it its own way); extra: { total, kids: [{ i, name, look, value, color }] }. */
+export function results(game, onAgain, onMenu, back = 'Home', summary = null, extra = null){
+  const { s, c } = card('end');
   s.style.setProperty('--accent', game.accent);
-  /* what everyone did together (never a winner or a ranking), and a new best if there is one */
-  if (summary && summary.line){
-    const p = h('p', 'resultline'); p.textContent = summary.line;
-    if (summary.best){ const b = h('span', 'newbest'); b.textContent = '\u2605 New best!'; p.append(' ', b); }
-    t.appendChild(p);
+  const kick = h('div', 'gk');
+  kick.append(game.passive ? 'The end' : 'Well played!');
+  if (summary && summary.best){
+    const b = h('span', 'newbest'); b.append(propIcon('star', 96, {}, 'bestico'), 'New best!'); kick.appendChild(b);
   }
-  const row = h('div', 'row bigrow');
-  row.append(bigButton('again', game.passive ? 'Read again' : 'Play again', 'go', onAgain), bigButton('home', back, 'home', onMenu));
-  t.appendChild(row);
-  const hero = h('div', 'gbcubo'); s.appendChild(hero); cubo(hero, { pose: game.passive ? 'wave' : 'dance' });      /* Cubo cheers (or waves goodbye at the end of a story) */
+  c.appendChild(kick);
+  const total = extra && Number.isFinite(extra.total) && extra.total > 0 ? Math.round(extra.total) : 0;
+  if (total && !game.passive){
+    const big = h('div', 'gbig');
+    const [prop, opts] = GAME_PROP[game.id] || [];
+    big.appendChild(prop ? propIcon(prop, 240, opts || {}, 'gico') : looks({ id: game.id, icon: game.store && game.store.icon }).icon('gico sicon'));
+    const num = h('b'); num.textContent = String(total);
+    const words = h('span'); resultWords(game, total).forEach((w, i) => { if (i) words.appendChild(document.createElement('br')); words.append(w); });
+    big.append(num, words); c.appendChild(big);
+    if (summary && summary.line && summary.line.length > 0 && !/^(You|Together you) got /.test(summary.line)){ const l = h('p', 'gline'); l.textContent = summary.line; c.appendChild(l); }
+  } else if (summary && summary.line){ const l = h('p', 'gline big'); l.textContent = summary.line; c.appendChild(l); }
+  const row = h('div', 'btnrow');
+  row.append(bigButton('again', game.passive ? 'Read again' : 'Play again', 'go', onAgain), bigButton('house', back, 'ghost', onMenu));
+  c.appendChild(row);
+  /* each child: their face, name and count */
+  const kids = extra && extra.kids || [];
+  if (kids.length){
+    const crewEl = h('div', 'gkids');
+    for (const k of kids){
+      const pill = h('div', 'gkid'); pill.style.setProperty('--c', k.color);
+      const face = h('span', 'gkface'); face.appendChild(faceOf({ look: k.look }, 96));
+      const nm = h('span', 'gkname'); nm.textContent = k.name;
+      pill.append(face, nm);
+      if (k.value != null){ const n = h('b'); n.textContent = String(Math.round(k.value)); pill.appendChild(n); }
+      crewEl.appendChild(pill);
+    }
+    s.appendChild(crewEl);
+  }
   sfx.fanfare();
   return { tick(){}, draw(){} };
 }
 
 /* ---------- pause ---------- */
-/* left: seconds left in the round (none for an endless game). */
+/* A card on the left, the paused game visible beside it: "Paused", the game's name, the time left, "Who's who?" (main.js puts it in the
+   .pwho slot), and the big Keep playing and Home buttons with the hand ring. Cubo holds still on the right.
+   left: seconds left in the round (none for an endless game). */
 export function pauseOverlay(game, left, onResume, onQuit, back = 'Home'){
   const line = left == null || !isFinite(left) ? '' : `${Math.floor(left / 60)}:${String(Math.max(0, Math.floor(left % 60))).padStart(2, '0')} left`;
-  const { s, t } = gameBanner('dim pause', 'Paused', game.name, line);
+  const { s, c } = card('dim pause');
   s.style.setProperty('--accent', game.accent);
-  const row = h('div', 'row bigrow');
-  row.append(bigButton('play', 'Keep playing', 'go', onResume), bigButton('home', back, 'home', onQuit));
-  t.appendChild(row);
+  c.append(h('div', 'gk', 'Paused'));
+  const title = h('h3'); title.textContent = game.name; c.appendChild(title);
+  if (line){ const p = h('p', 'gleft'); p.textContent = line; c.appendChild(p); }
+  c.appendChild(h('div', 'pwho'));
+  const row = h('div', 'btnrow');
+  row.append(bigButton('play', 'Keep playing', 'go', onResume), bigButton('house', back, 'ghost', onQuit));
+  c.appendChild(row);
   const hero = h('div', 'gbcubo'); s.appendChild(hero); cubo(hero, { pose: 'freeze' });      /* Cubo holds still */
   return s;
 }

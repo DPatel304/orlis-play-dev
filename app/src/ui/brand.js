@@ -8,6 +8,8 @@
 import { button, onPick } from './cursor.js';
 import { h } from './screens.js';
 import { sfx } from '../audio/sound.js';
+import { assets } from '../games/assets/index.js';
+import { color } from '../games/assets/palette.js';
 
 /* the two squares as an inline SVG (fills come from the .sq-b and .sq-v classes) */
 export const twoSquares = (cls = 'lm') =>
@@ -76,3 +78,17 @@ export function loader({ name = '', line = '', cover = '' } = {}){
   }
   return el;
 }
+
+/* A painted prop (the games' own art, from the kit) as a small canvas: the Make a game tiles' pictures and a game's icon on its results
+   card. opts go to assets.draw (a colour, for the ones that take one). */
+export function propIcon(id, size = 160, opts = {}, cls = 'hprop'){
+  const cv = document.createElement('canvas'); cv.width = cv.height = size; cv.className = cls;
+  const c = cv.getContext && cv.getContext('2d');
+  if (c) try { c.translate(size / 2, size / 2); assets.draw(c, id, 0, 0, size * 0.86, opts); } catch {}
+  return cv;
+}
+/* the painted prop that stands for each game on its results card (a game without one gets its own icon) */
+export const GAME_PROP = {
+  'pop-party': ['balloon', { color: color('ui.go') }], 'keep-it-up': ['beachball'], 'stack-it-high': ['block'], 'sleepy-bear': ['star'],
+  'sky-painter': ['sparkle'], 'save-the-harvest': ['basket'], 'animal-gym': ['heart'], 'leaf-pile': ['star'], 'ptero-flight': ['star']
+};

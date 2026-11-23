@@ -28,11 +28,10 @@ import { launch } from './launch.js';
 import { shotOf, shotImage, makeShots } from './shots.js';
 import { makeCover, generatedArt, hasArt } from './covers.js';
 import { testingRow } from './building.js';
-import { logo, icon } from './brand.js';
+import { logo, icon, propIcon } from './brand.js';
 import { BLURB, iconOf, HIDDEN, openProfileSheet } from './menu.js';
 import { homeRows, makeFor, startFocus, step, heroOf, bigHero } from './home-model.js';
 import { Driver, EdgeHold, mapHand } from './hand.js';
-import { assets } from '../games/assets/index.js';
 import { color } from '../games/assets/palette.js';
 
 const HOVER_FOCUS = 0.05;      /* seconds of a hand on a tile to pick it (the cursor's already sticky) */
@@ -59,14 +58,6 @@ export function worldOf(g){
   } catch { url = null; }
   worlds.set(g.id, url);
   return url;
-}
-
-/* a painted prop as a small canvas (the Make a game tiles' pictures; no emoji) */
-export function propIcon(id, size = 160){
-  const cv = document.createElement('canvas'); cv.width = cv.height = size; cv.className = 'hprop';
-  const c = cv.getContext && cv.getContext('2d');
-  if (c) try { c.translate(size / 2, size / 2); assets.draw(c, id, 0, 0, size * 0.86, {}); } catch {}
-  return cv;
 }
 
 /* Is hand mode on this build: Big Picture (the TV), or ?hand=1 in the address (to try it in a browser). */
