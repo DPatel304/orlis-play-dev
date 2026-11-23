@@ -10,6 +10,7 @@ import { hud, drawShellHud } from './games/hud.js';
 import { figureCard, cardTucker } from './games/figure.js';
 import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
+import { cycleHands, handsName } from './ui/handshow.js';
 import { toggleFullscreen, openSettings, played as playedLately, BLURB } from './ui/menu.js';
 import { menu, handWanted } from './ui/home.js';
 import { LOOKS } from './ui/hand.js';
@@ -613,6 +614,8 @@ addEventListener('keydown', (e) => {
       toast(text.replace(/\n/g, ' · ') + ' (copied)', { ms: 15000 });
     }, () => toast('The 3D check could not run.', { ms: 4000 }));
   }
+  /* H cycles how hands are shown on screen (rings, body outline, glow), for trying - the owner's */
+  if ((e.key === 'h' || e.key === 'H') && account.role === 'owner' && !e.ctrlKey && !e.metaKey && !e.altKey){ cycleHands(); toast(`Hands on screen: ${handsName()}`, { ms: 1800 }); }
   /* R copies a performance report for the last round (or the one being played) to paste to the assistant - for the owner */
   if ((e.key === 'r' || e.key === 'R') && account.role === 'owner'){
     const text = mode === 'play' || !lastReport ? makeReport() : lastReport;

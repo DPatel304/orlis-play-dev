@@ -1,5 +1,6 @@
 import { pose, PLAYER_COLORS, MAX_PLAYERS, oneEuro } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
+import { handsMode } from './handshow.js';
 
 /* Point and wave. Every button in Orlis Play is a DOM .btn; the cursor
    finds the one each player's hand is pointing at and lights it up - and a
@@ -181,7 +182,7 @@ export const cursor = {
 
   /* Drawn on the game canvas so it sits above everything, including games. */
   draw(c, W, H){
-    if (this.skin) return;
+    if (this.skin || handsMode() !== 'rings') return;       /* (the other ways to show hands draw no ring: the button under the hand lights and fills its own) */
     for (const r of this.rings){
       /* over a button with its own ring (the clean look's .ringed), the ring runs round the button: no dot on top of its words */
       if (r.el && r.el.classList && r.el.classList.contains('ringed')) continue;

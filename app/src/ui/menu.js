@@ -10,6 +10,7 @@ import { icon, homeButton } from './brand.js';
 import { faceOf } from './avatar-maker.js';
 import { openTrustedPhones } from './trusted-phones.js';
 import { createTrust } from '../session/trust.js';
+import { HANDS, handsMode, setHandsMode } from './handshow.js';
 
 /* What the home page (home.js) and the other pages share: a line about each game, each game's icon and look, what was played lately,
    how many can play, Settings, and the profile sheet behind the profile face. */
@@ -285,6 +286,15 @@ function settings(onRecalibrate){
     }
     mark();
     row('Mode', seg);
+  }
+
+  /* how hands show on screen, for trying (H while playing does the same) */
+  if (account.role === 'owner'){
+    const seg = h('div', 'seg');
+    const mark = () => HANDS.forEach(([m], i) => seg.children[i].classList.toggle('chosen', handsMode() === m));
+    for (const [m, name] of HANDS) seg.appendChild(small(name, () => { sfx.select?.(); setHandsMode(m); mark(); }, 'hands'));
+    mark();
+    row('Hands on screen', seg);
   }
 
   s.appendChild(card);
