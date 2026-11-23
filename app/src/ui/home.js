@@ -277,9 +277,9 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   if (onFresh) week.refresh().then(changed => { if (changed && !going && !getting && !holdArrive && s.isConnected) onFresh(); }, () => {});
   /* the pictures still to make (one at a time, between frames) */
   const stopShots = makeShots([...new Map(items.filter(t => t.item.g).map(t => [t.item.g.id, t.item.g])).values()], (g) => items.forEach(t => { if (t.item.g && t.item.g.id === g.id) paintTile(t); }));
-  /* this week's challenge cards, on arriving (once each time the app starts) */
+  /* this week's challenge cards, on arriving (only the first time in a new challenge week, 0051) */
   let holdArrive = false;
-  if (!waiting && ch && ch.challenges && ch.challenges.length && splashWanted()){
+  if (!waiting && ch && ch.challenges && ch.challenges.length && splashWanted(ch)){
     holdArrive = true;
     showChallenges(ch, { auto: true, first: true, from: pill, onLeave: () => { holdArrive = false; } });
   }

@@ -1,6 +1,7 @@
 import './old-names.js';   /* (first: the old Astra Park settings, moved to their Orlis names) */
 import './ui/paper-cut.js';   /* (the character's paper-cut edge; see avatar-art.js) */
 import { week } from './ui/week.js';
+import { deliverRoundNews } from './ui/chnews.js';
 import { launch } from './ui/launch.js';
 import { toast } from './ui/toast.js';
 import { pose } from './tracking/pose.js';
@@ -357,14 +358,16 @@ function showResults(){
   }
   /* told to the family's server, for this week's challenges (not a game
      being tried out - from Create, or waiting for the owner's OK) */
-  if (!game.back && !game.trial && !game.passive) week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) })
-    .then((done) => done.forEach((c, i) => setTimeout(() => { sfx.gold?.(); toast(`Star earned: ${c.title}`, { ms: 6000, icon: 'glowstar' }); }, 900 + i * 1200)), () => {});
+  const toldWeek = !game.back && !game.trial && !game.passive
+    ? week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) }) : null;
   /* (a game being tried goes back where it came from: Create) */
   /* each child's face, name and count (in seat order; the counts only when the game's tally lines up with who played) */
   const seats = [...joined].filter(i => i < players).sort((x, y) => x - y);
   let rows = []; try { rows = inst.tally(); } catch {}
   const kids = seats.map((i, k) => ({ i, name: crew.nameOf(i) || `Player ${i + 1}`, look: crew.lookOf(i), color: crew.colorOf(i, PLAYER_COLORS[i]), value: rows.length === seats.length ? Number(rows[k].value) || 0 : null }));
   go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'Home', summary, { total, kids: game.passive ? [] : kids }));
+  /* (a challenge this round moved shows on the results screen once the server has answered - if that is still the page up) */
+  if (toldWeek) deliverRoundNews(toldWeek, () => (mode === 'results' ? scene : null));
 }
 
 /* ---------- pause by gesture ----------
