@@ -72,13 +72,13 @@ test('5. Play again keeps the same hider (same phone, same seat) and the tablet 
   await P.setT(3.9);                                       /* (the TV draws in software here: skip most of the 4 s reveal) */
   await P.tv.page.getByText('Play again').first().waitFor({ timeout: 45000 });
   await P.tv.page.getByText('Play again').first().click();
-  /* the shell shows the join card again for the same phones (the hider is still in, ready); the TV presses Start */
+  /* the same phones are already in: the new round starts by itself, with no join card */
+  let sawCard = false;
   await until(async () => {
-    const go = P.tv.page.locator('.joinstart:not(.wait)');
-    if (await go.count()) { await go.first().click().catch(() => {}); }
+    if (await P.tv.page.locator('.joinstart').count()) sawCard = true;
     const s = await P.state().catch(() => null); return s && s.phase === 'hide' && s.result == null && s.t < 3;
   }, 40000, 'a new round');
-  assert.equal(await P.tv.page.locator('.joinstart.wait').count(), 0, 'Start never waited: the same phone was still in');
+  assert.equal(sawCard, false, 'Play again never showed the join card');
   const s = await P.state();
   assert.equal(s.hiderSeat, seatBefore, 'the same hider');
   assert.equal(await P.tab.page.evaluate(() => localStorage.getItem('orlis.pad.device')), devBefore, 'the same phone, no new join');

@@ -2,7 +2,8 @@
    list's text (plan package P5). The shell itself, with a real phone, is in pads-shell.node.mjs. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPads, usesPads, padHub, padPageUrl, peopleFrom, colourFor, waitingText, pauseWatch, STATE_GAP_MS, WIFI_HINT_AFTER, currentPads } from '../src/session/pads.js';
+import { readFileSync } from 'node:fs';
+import { createPads, usesPads, padHub, padPageUrl, peopleFrom, colourFor, waitingText, skipJoinCard, pauseWatch, STATE_GAP_MS, WIFI_HINT_AFTER, currentPads } from '../src/session/pads.js';
 import { createTrust } from '../src/session/trust.js';
 import { whenText, phoneRows } from '../src/ui/trusted-phones.js';
 import { personOf } from '../src/ui/pad-faces.js';
@@ -246,4 +247,23 @@ test('the Trusted phones rows: device name, the person (Guest and unknown ones t
   assert.deepEqual(rows.map(r => [r.token, r.device, r.name, r.when]), [['b', 'Android phone', 'Guest', 'Today'], ['a', 'iPhone', 'Sam', 'Yesterday'], ['c', 'Android tablet', 'Someone', '3 weeks ago']]);
   assert.equal(rows[0].avatar, null); assert.equal(rows[1].avatar.colour, 'sky');
   assert.deepEqual(personOf('guest', PROFILES), { name: 'Guest', avatar: null }); assert.equal(personOf(null, []).name, 'Guest');
+});
+
+/* ---------- play again ---------- */
+test('play again with the phones still in starts at once; a fresh start, or a phone gone, shows the join card', () => {
+  const r = rig(LAB); const tracked = () => [{ who: 'cam0', name: 'Player 1' }];
+  assert.equal(skipJoinCard(r.rt, false, tracked), false, 'a fresh start from home: the join card');
+  r.joinPhone('c1', 'sam'); assert.equal(r.rt.go(), true); r.rt.end();            /* (a round, played and over) */
+  assert.equal(r.s.phase, 'over');
+  assert.equal(skipJoinCard(r.rt, true, tracked), true, 'play again: no join card');
+  assert.equal(r.s.phase, 'playing', 'and the session is in a new round');
+  r.rt.end(); r.s.close('c1');
+  assert.equal(skipJoinCard(r.rt, true, tracked), false, 'the needed phone dropped meanwhile: the card, to wait for it');
+  assert.equal(skipJoinCard(null, true, tracked), false);
+});
+test('the shell: play again reuses the phones and skips the join card, a fresh start does not', () => {
+  const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+  assert.ok(main.includes('padsAgain = true'), 'a reused session is a play again');
+  assert.ok(main.includes('skipJoinCard(padsRt, padsAgain, trackedSeats)'), 'afterLineUp asks before showing the card');
+  assert.ok(main.includes('padsAgain = false;'), 'a new session starts fresh');
 });

@@ -25,7 +25,7 @@ export const AHEAD = 360;
 
 export default {
   id: 'cubions-long-way-home', name: 'Cubion’s Long Way Home',
-  blurb: 'A funny story about a little cube who comes to Earth to learn how to move',
+  blurb: 'A funny story about a little cube learning to move.',
   beats: [
     /* page 1: the Cube Planet */
     { t: 'Far, far away there is a planet where everything is square.' },

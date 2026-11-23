@@ -1,6 +1,6 @@
 import { pose, PLAYER_COLORS, MAX_PLAYERS, oneEuro } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
-import { handsMode } from './handshow.js';
+import { handsMode } from './handsmode.js';
 
 /* Point and wave. Every button in Orlis Play is a DOM .btn; the cursor
    finds the one each player's hand is pointing at and lights it up - and a

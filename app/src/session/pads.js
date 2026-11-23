@@ -175,3 +175,11 @@ export function createPads({ game, people, trust = createTrust(), config, create
   current = rt;
   return rt;
 }
+
+/* Play again with the phones that are already in: true when the new round can start at once, with no join card
+   (a fresh start from home, or a needed phone gone, still shows the card). */
+export function skipJoinCard(rt, again, tracked) {
+  if (!again || !rt) return false;
+  rt.setTracked(tracked());
+  return !!rt.go();
+}
