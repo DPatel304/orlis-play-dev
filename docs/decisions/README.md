@@ -73,3 +73,4 @@ Date: YYYY-MM-DD
 | 0047 | Home without a Play button (pick the tile); players drawn as one or two figures; the description wraps on the left (replaces 0045's Play and 0046's players number) | Accepted |
 | 0048 | Home: up to four player figures in a row (front one left, white); no "Your games" label; a smaller logo (replaces 0047's two-figure look) | Accepted |
 | 0049 | Home is remote, keyboard and mouse only; no hand mode, no camera on home (replaces 0045's hand-mode line and the 2026-11-23 hand dot) | Accepted |
+| 0050 | The intro sound is "soft bloom" (a warm chord, a soft landing note, two sparkles for the name); no wink ding; the name comes in at 1.6 s | Accepted |

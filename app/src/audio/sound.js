@@ -625,9 +625,14 @@ export const sfx = {
   /* The console turning on: a kalimba - do, mi, sol, do - plucked as the
      four lights join into the cube; the same every time, so it becomes the
      sound of Orlis Play. */
-  boot(){ const t = ctx().currentTime; [72, 76, 79].forEach((m, i) => kalimba(m, t + i * 0.13, 0.3)); kalimba(84, t + 0.39, 0.22, 2.5); },
-  /* The cube's wink: one little high note. */
-  wink(){ kalimba(88, ctx().currentTime, 0.12); },
+  /* The app's intro (ui/boot.js, decision 0050 "soft bloom"): a warm chord swells while the squares come together and settles as they
+     land (merge, seconds from now), one soft note on the landing, and two little sparkles as the name comes in (name). */
+  boot({ merge = 0.95, name = 1.6 } = {}){
+    const t = ctx().currentTime + 0.02, m = Math.max(0.2, merge);
+    for (const n of [60, 64, 67, 71]) tone(n, t, m + 0.9, { type: 'triangle', gain: 0.035, attack: m * 0.85, verb: 0.5, dest: master });
+    kalimba(72, t + m, 0.14);
+    bell(91, t + name + 0.05, 0.05, 0.6, master); bell(96, t + name + 0.2, 0.04, 0.6, master);
+  },
   /* Moving along the shelf. */
   nav(){ blip({ freq: 520, to: 640, dur: 0.07, type: 'sine', gain: 0.1 }); hiss({ dur: 0.08, gain: 0.03, hp: 2400 }); },
   /* Into a game, or a choice made. */

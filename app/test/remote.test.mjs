@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resetDom, FakeEl } from './harness/browser.mjs';
 import { remote } from '../src/ui/remote.js';
-import { boot, HOLD, BOOT, MERGE } from '../src/ui/boot.js';
+import { boot, HOLD, BOOT, MERGE, NAME, WINK } from '../src/ui/boot.js';
 import { sfx } from '../src/audio/sound.js';
 
 /* A button laid out at (x, y), w x h. */
@@ -95,13 +95,15 @@ test('Back closes a small card (Create\'s, Family\'s) as a tap outside it does, 
   assert.equal(backs, 0, 'and the page behind stays');
 });
 
-test('the boot plays the kalimba as the lights merge, and hands over without waiting for the camera', () => {
+test('the boot books its one intro sound at the start (none at the wink), and hands over without waiting for the camera', () => {
   resetDom();
-  let chimed = 0; sfx.boot = () => { chimed++; };
+  let chimed = 0, at = null; sfx.boot = (o) => { chimed++; at = o; };
   const show = boot();
-  for (let k = 0; k < (MERGE + 0.1) * 60; k++) show.tick(1 / 60);
-  assert.equal(chimed, 1, 'the chime, once, as they join');
-  for (let k = 0; k < (HOLD - MERGE) * 60; k++) show.tick(1 / 60);
+  for (let k = 0; k < (WINK + 0.4) * 60; k++) show.tick(1 / 60);
+  assert.equal(chimed, 1, 'one sound, booked once');
+  assert.ok(Math.abs(at.merge - MERGE) < 0.05 && Math.abs(at.name - NAME) < 0.05, 'timed to the landing and the name');
+  assert.ok(NAME - MERGE >= 0.6, 'the name waits a moment after the squares land');
+  for (let k = 0; k < (HOLD - WINK - 0.4) * 60; k++) show.tick(1 / 60);
   show.camReady = false;
   for (let k = 0; k < 10 * 60; k++) show.tick(1 / 60);
   assert.ok(!show.done && Math.abs(show.t - HOLD) < 1e-6, 'it can still hold on the cube, if asked to');

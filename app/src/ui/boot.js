@@ -1,6 +1,6 @@
 /* The app turning on: Orlis Play's intro, about two and a half seconds, the same every time (decision 0045: the two squares).
-   A blue square pops in, the violet one hops onto it (the kalimba plays its do-mi-sol as it lands), the name comes up beside
-   them - "Orlis Play", "Play" in the gradient - and the squares do a little wink-squash. Then it hands over to the home screen.
+   A blue square pops in, the violet one hops onto it (a warm chord swells and settles as it lands), the name comes up beside
+   them (two sparkles) - "Orlis Play", "Play" in the gradient - and the squares do a little wink-squash. Then it hands over to the home screen.
    (camReady: the intro can wait, still, for something to be ready before it hands over - nothing does now; the camera waits for
    a game.) A click or a key skips to the end. */
 import { sfx } from '../audio/sound.js';
@@ -9,7 +9,8 @@ import { tok, twoSquares } from './brand.js';
 import { color } from '../games/assets/palette.js';
 
 /* Seconds: the blue square arrives; the violet one lands; the name; the squash; where it waits for the camera; the hand-over; the end. */
-export const ARRIVE = 0.45, MERGE = 0.95, NAME = 1.15, WINK = 1.7, HOLD = 2.2, BREAK = 2.25, BOOT = 2.5;
+/* (owner, 2026-11-23: the name waits a little longer after the squares land - 1.6 s, was 1.15) */
+export const ARRIVE = 0.45, MERGE = 0.95, NAME = 1.6, WINK = 2.15, HOLD = 2.65, BREAK = 2.7, BOOT = 2.95;
 /* The look: the room (style.css --paper). */
 export const PAPER = tok('--paper', 'white');
 export const SYS = '"Outfit",system-ui,-apple-system,"Segoe UI",sans-serif';
@@ -22,7 +23,7 @@ export function boot({ settle = false } = {}){
   const wait = h('p', 'bootwait', 'Starting the camera…');
   s.appendChild(wait);
 
-  let t = 0, idle = 0, merged = false, winked = false, skip = false;
+  let t = 0, idle = 0, chimed = false, skip = false;
   const end = () => { skip = true; };
   addEventListener('keydown', end, { once: true });
   addEventListener('pointerdown', end, { once: true });
@@ -37,8 +38,9 @@ export function boot({ settle = false } = {}){
       if (t < HOLD || show.camReady) t += dt;
       if (t > HOLD && !show.camReady) t = HOLD;
       wait.classList.toggle('show', t >= HOLD && !show.camReady && idle > HOLD + 1);
-      if (!merged && t >= MERGE){ merged = true; sfx.boot(); }
-      if (!winked && t >= WINK){ winked = true; sfx.wink(); }
+      /* the intro's one sound (decision 0050, "soft bloom"), booked from the start: a warm chord swells as the squares come together,
+         one soft note as they land, two sparkles as the name comes in. Nothing at the wink. (skipped: no sound) */
+      if (!chimed && !skip){ chimed = true; sfx.boot({ merge: MERGE - t, name: NAME - t }); }
     },
     draw(c, W, H){ drawBoot(c, W, H, t, idle); }
   };
