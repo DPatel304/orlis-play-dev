@@ -171,7 +171,13 @@ def('snowflake', 'Snowflake', 'nature snow', (c, s) => {
     for (let i = 0; i < 3; i++){ const a = i * Math.PI / 3; c.beginPath(); c.moveTo(Math.cos(a) * s * 0.4, Math.sin(a) * s * 0.4); c.lineTo(-Math.cos(a) * s * 0.4, -Math.sin(a) * s * 0.4); c.stroke(); } }
 });
 def('moon', 'Moon', 'nature night', (c, s) => {
-  part(c, s, pal('touch.sunflower', 'light'), () => { c.beginPath(); c.arc(0, 0, s * 0.4, 0.9, Math.PI * 2 - 0.9, true); c.arc(s * 0.2, 0, s * 0.31, Math.PI * 2 - 1.2, 1.2); c.closePath(); });
+  /* a crescent: the full moon with a bite out of its upper right, drawn as two clipped passes so the ink edge follows the crescent only */
+  const R = s * 0.4, bx = s * 0.2, by = -s * 0.12, br = s * 0.34;
+  c.save(); c.beginPath(); c.rect(-s, -s, 2 * s, 2 * s); c.arc(bx, by, br, 0, 7); c.clip('evenodd');
+  c.beginPath(); c.arc(0, 0, R, 0, 7); c.fillStyle = pal('touch.sunflower'); c.fill();
+  c.save(); c.clip(); c.beginPath(); c.arc(-R * 0.5, R * 0.55, R * 1.1, 0, 7); wash(c, SHADOW, 0.14); c.restore();
+  c.beginPath(); c.arc(0, 0, R, 0, 7); line(c, s, 0.05); c.restore();
+  c.save(); c.beginPath(); c.arc(0, 0, R, 0, 7); c.clip(); c.beginPath(); c.arc(bx, by, br, 0, 7); line(c, s, 0.05); c.restore();
 });
 def('sunrise', 'Sunset', 'sky', (c, s) => {
   part(c, s, pal('touch.sunflower'), () => { c.beginPath(); c.arc(0, s * 0.16, s * 0.3, Math.PI, 0); c.closePath(); });

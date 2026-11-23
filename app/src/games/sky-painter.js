@@ -189,7 +189,8 @@ class SkyPainter {
   /* the words, and how much of the sky is painted: the goal bar */
   _words(){
     const text = this.alive ? ['Look - a whale!', 'Look - a hot-air balloon!', 'Look - a butterfly!'][this.which] : 'What\u2019s hiding in the sky? Keep painting!';
-    return { icon: this.alive ? ['whale', 'sailboat', 'bee'][this.which] : 'paintbrush', text, t: 1 };
+    if (text !== this.sayText){ this.sayText = text; this.sayAt = this.t; }      /* (the words ease in when they change) */
+    return { icon: this.alive ? ['whale', 'sailboat', 'bee'][this.which] : 'paintbrush', text, t: this.t - this.sayAt };
   }
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
