@@ -68,3 +68,4 @@ Date: YYYY-MM-DD
 | 0042 | One character, many kids: every avatar is the same cube character; colour, face, topper, outfit, one extra | Accepted |
 | 0043 | Pop Party stays camera-only (replaces the Pop Party line of 0028) | Accepted |
 | 0044 | Everyone's profiles stay on the owner's server (nickname and avatar only; replaces 0011 and the profiles line of 0028) | Accepted |
+| 0045 | Clean menus: two squares logo, Outfit, one-page home; games keep their own lettering (replaces the kit's menu font, paper menus and Cubo-head mark) | Accepted |
