@@ -1,23 +1,22 @@
-/* Home: one page, no tabs (decision 0045; the approved mockup is docs/screens-mockup.html).
+/* Home: one page, no tabs (decisions 0045 to 0049; the approved mockup is docs/screens-mockup.html).
 
-   The focused game's painted world fills the screen, with its name in big plain outlined letters, one line and how many play (one figure or two). Under it, three rows: "Your games", "New to try" (what Discover was, with Get and download progress on its
-   tiles) and "Make a game" (Create: Ask for a game, Your requests, Create Pro). Moving to another row (down, or pointing at the row
-   edge) shrinks the hero to a banner. The profile face, top right, opens Profile, Settings and Sign out.
+   The focused game's painted world fills the screen, with its name in big plain outlined letters, one line and how many play
+   (figures). Under it, three rows: "Your games", "New to try" (what Discover was, with Get and download progress on its tiles) and
+   "Make a game" (Create: Ask for a game, Your requests, Create Pro). Moving to another row (down) shrinks the hero to a banner. The
+   profile face, top right, opens Profile, Settings and Sign out.
 
-   Remote, keyboard and mouse work as they always have (arrows move, OK picks, a click plays). In Big Picture the camera stays on,
-   lightly, and a child points and waves (hand.js): pointing lights a tile and shows "Wave to play" with their face; a wave plays;
-   holding still never starts anything; holding the cursor at the row edge moves between rows. The first hand up drives.
+   Home is driven by the remote, keyboard and mouse only (arrows move, OK picks, a click plays). No hand mode: no pointing, no waving
+   and no camera here (decision 0049); the cursor is off on this page.
 
-   The rows and focus live in home-model.js (tested); the hand's pieces in hand.js (tested). */
+   The rows and focus live in home-model.js (tested). */
 import { GAMES, LABS, STARTER_GAMES } from '../games/index.js';
-import { button, onPick, cursor } from './cursor.js';
+import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx, ambience } from '../audio/sound.js';
 import { pose } from '../tracking/pose.js';
 import { remote } from './remote.js';
 import { account } from './account.js';
 import { faceOf } from './avatar-maker.js';
-import { crew } from './crew.js';
 import { week } from './week.js';
 import { appMode } from './mode.js';
 import { library } from './library.js';
@@ -31,12 +30,9 @@ import { logo, icon, propIcon } from './brand.js';
 import { iconEl } from './icons.js';
 import { BLURB, iconOf, HIDDEN, openProfileSheet } from './menu.js';
 import { homeRows, makeFor, startFocus, step, heroOf, bigHero } from './home-model.js';
-import { Driver, EdgeHold, mapHand } from './hand.js';
 import { color } from '../games/assets/palette.js';
 
-const HOVER_FOCUS = 0.05;      /* seconds of a hand on a tile to pick it (the cursor's already sticky) */
 const LAUNCH = launch.OPEN;    /* seconds of going in (the tile opening up) */
-const POINT_AGAIN = 0.04;      /* how far (of the screen) a hand moves to take over from the remote */
 const WORLD = { w: 1280, h: 720 };
 
 /* The pick made this session ({ id }): coming back (from a game, or another page) it's still the one. */
@@ -62,9 +58,6 @@ export function worldOf(g){
   worlds.set(g.id, url);
   return url;
 }
-
-/* Is hand mode on this build: Big Picture (the TV), or ?hand=1 in the address (to try it in a browser). */
-export const handWanted = () => typeof window !== 'undefined' && (window.ORLIS_DISPLAY === 'bigpicture' || /[?&]hand=1\b/.test(location.search));
 
 /* nav: { home(), store(), create(), pro(), requests() } */
 export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh = null }){
@@ -175,17 +168,10 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     });
   });
   const items = tiles.flat();
-  /* hand mode: the row-edge strip (a pill at the bottom, and one at the top once scrolled) and the "Wave to play" pill */
-  const edgeDown = h('div', 'hedge down', `${icon('down')}<span></span>`), edgeUp = h('div', 'hedge up', `${icon('up')}<span></span>`);
-  const say = h('div', 'hsay'), sayFace = h('span', 'sface'), sayText = h('span', 'stext');
-  say.append(sayFace, sayText);
-  const dot = h('div', 'hcur', '<i class="rg"></i><i class="dot"></i>');
-  s.append(edgeUp, edgeDown, say, dot);
-
   /* ---------- focus ---------- */
   let pos = startFocus(rows, { session: sessionPick && sessionPick.id, last: remembered() });
   const mem = {};
-  let going = null, getting = false, handActive = false, bg = 0, lastWorld = null;
+  let going = null, getting = false, bg = 0, lastWorld = null;
   const current = () => tiles[pos.row][pos.col];
   const currentEl = () => current().el;
 
@@ -221,11 +207,6 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     const first = big ? 0 : Math.max(1, r - 1);
     rowsEl.style.setProperty('--first', first);
     tiles.forEach((rowTiles, k) => rowTiles[0].sec.classList.toggle('away', k < first || (!big && k === 0)));
-    /* the row edge pills: the next row's name along the bottom, the one before along the top */
-    const down = rows[r + 1], up = !big && rows[r - 1];
-    edgeDown.hidden = !down || !handActive; edgeUp.hidden = !up || !handActive;
-    if (down) edgeDown.querySelector('span').textContent = down.title;
-    if (up) edgeUp.querySelector('span').textContent = up.title;
   }
   function slide(t){
     if (!t) return;
@@ -305,83 +286,16 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const beta = typeof window === 'undefined' || !window.ORLIS_LABEL || window.ORLIS_LABEL.beta;
   if (beta) s.appendChild(h('div', 'buildstamp', typeof __BUILD__ === 'string' ? __BUILD__ : 'dev'));
 
-  /* ---------- hand mode ---------- */
-  const driver = new Driver(), edge = new EdgeHold();
-  const gate = { driver: () => driver.who, takeOver: (i) => { driver.takeOver(i); sfx.select?.(); } };
-  let keySeen = remote.lastKey, anchor = null, lit = null;
-  const startHand = () => {
-    handActive = true; cursor.enabled = true; cursor.map = mapHand; cursor.gate = gate; cursor.skin = true;
-    s.classList.add('hand'); layout();
-  };
-  const stopHand = () => {
-    handActive = false; pose.pointing = false; cursor.map = null; cursor.gate = null; cursor.skin = false; driver.who = null;
-    s.classList.remove('hand'); dot.classList.remove('show'); say.classList.remove('show'); edgeDown.hidden = edgeUp.hidden = true;
-  };
-  /* whoever drives gets their own colour and face: their place's colour, and the profile that's lined up there (else the signed-in one) */
-  const faceFor = (i) => { const p = crew.profileOf(i) || account.current || {}; return faceOf(p, 96); };
-
-  /* the tile pointed at: its lift, its "Wave to play" and the ring on the cursor */
-  function hand(dt){
-    const want = handWanted() && pose.on && !pose.mouse.active && !!pose.lite;
-    if (want && !handActive) startHand(); else if (!want && handActive) stopHand();
-    if (!handActive) return;
-    /* who has a hand up in the box (the driver's cursor ring is in cursor.rings) */
-    const active = pose.players.map(p => !!(p.present && p.lm && mapHand(p, pose.cursorHand(p))));
-    pose.pointing = active.some(Boolean);
-    driver.update(dt, active, pose.players.map(p => p.present));
-    const ring = cursor.rings.find(r => r.id === driver.who) || null;
-    cursor.enabled = !sheet && !going;
-    /* the cursor in the driver's colour, whichever way the games show hands (owner, 2026-11-23: home needs something to follow);
-       it hides over a lit tile or strip, which light up instead */
-    if (ring) s.style.setProperty('--c', ring.color);
-    const overButton = !!document.querySelector('.hot');
-    if (ring && !overButton && !(edgeDown.classList.contains('lit') || edgeUp.classList.contains('lit'))){
-      dot.classList.add('show');
-      dot.style.left = `${ring.x * 100}%`; dot.style.top = `${ring.y * 100}%`;
-      dot.style.setProperty('--k', `${Math.round(ring.progress * 100)}%`);
-    } else dot.classList.remove('show');
-    /* the lit one: a tile (or the profile face) the cursor has settled on */
-    const hot = [...items.map(t => t.el), me].find(el => el.classList.contains('hot')) || null;
-    document.querySelectorAll('.htile, .hme').forEach(el => { if (el !== hot) el.classList.remove('lit'); });
-    if (hot && ring){
-      hot.classList.add('lit');
-      const word = hot === me ? 'Wave to open' : current() && hot === current().el && current().item.kind === 'get' ? 'Wave to get' : current() && hot === current().el && ['make', 'more', 'test'].includes(current().item.kind) ? 'Wave to open' : 'Wave to play';
-      sayText.textContent = word;
-      if (lit !== ring.id){ sayFace.innerHTML = ''; sayFace.appendChild(faceFor(ring.id)); lit = ring.id; }
-      say.style.setProperty('--c', ring.color);
-      const r = hot.getBoundingClientRect();
-      say.style.left = `${r.left + r.width / 2}px`; say.style.top = `${Math.max(8, r.top - say.offsetHeight - 10)}px`;
-      say.classList.add('show');
-    } else say.classList.remove('show');
-    /* the row-edge strip: the cursor held at the bottom (or top) edge moves between rows */
-    const r = pos.row;
-    const e = edge.update(dt, ring && !sheet && !going ? ring.y : null, { canDown: !!rows[r + 1], canUp: !bigHero(pos, rows) && r > 0 });
-    edgeDown.style.setProperty('--k', `${Math.round((e.dir > 0 ? e.progress : 0) * 100)}%`); edgeUp.style.setProperty('--k', `${Math.round((e.dir < 0 ? e.progress : 0) * 100)}%`);
-    edgeDown.classList.toggle('lit', e.dir > 0); edgeUp.classList.toggle('lit', e.dir < 0);
-    if (e.step){ sfx.nav(); const to = step(rows, pos, e.step > 0 ? 'down' : 'up', mem); if (to) focusAt(to, { quiet: false }); }
-  }
-
   return {
-    leave(){ stopShots(); stopHand(); removeEventListener('keydown', keys, true); cursor.skin = false; cursor.enabled = false; },
+    leave(){ stopShots(); removeEventListener('keydown', keys, true); },
     get focus(){ return items.indexOf(current()); },
     get pos(){ return pos; },
-    get hand(){ return handActive; },
     /* (for the tests and the pictures) */
     focusAt, rows, items,
     tick(dt){
-      /* After the remote's used, pointing takes over again only once a hand (or the mouse) actually moves - not because the rows slid under one that's resting. */
-      if (remote.lastKey !== keySeen){ keySeen = remote.lastKey; anchor = cursor.rings.map(r => [r.x, r.y]); }
-      if (anchor && (cursor.rings.length !== anchor.length || cursor.rings.some((r, i) => Math.hypot(r.x - anchor[i][0], r.y - anchor[i][1]) > POINT_AGAIN))) anchor = null;
-      hand(dt);
-      /* The tile pointed at is the picked one. */
-      if (!anchor && !sheet && !going) for (const t of items){
-        const hot = t.el.classList.contains('hot') && !(pos.row === t.row && pos.col === t.col);
-        t.hot = hot ? (t.hot || 0) + dt : 0;
-        if (t.hot >= HOVER_FOCUS){ t.hot = 0; focusAt({ row: t.row, col: t.col }, { pointer: true }); }
-      }
       if (going){
         going.t += dt;
-        if (going.t >= LAUNCH){ ambience.stop(); const g = going.g; going = null; stopHand(); onPlay(g); }
+        if (going.t >= LAUNCH){ ambience.stop(); const g = going.g; going = null; onPlay(g); }
       }
     },
     draw(){}

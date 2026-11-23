@@ -1,5 +1,5 @@
 /* The home page as built (ui/home.js), in the little DOM: its three rows, focus and the backdrop that follows it, the hero shrinking to a banner,
-   the big Play, what each tile opens, and the profile sheet behind the profile face. (Hand mode is hand.test.mjs and test/preview/hand-home.mjs.) */
+   the big Play, what each tile opens, and the profile sheet behind the profile face. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resetDom } from './harness/browser.mjs';

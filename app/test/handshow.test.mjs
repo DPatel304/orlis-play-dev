@@ -54,7 +54,7 @@ test('rings: the mitts as ever; body: a faint outline and a glow; glow: a glow a
 });
 
 test('the ring cursor on menus is drawn only in the rings way', () => {
-  cursor.skin = false; cursor.rings.length = 0;
+  cursor.rings.length = 0;
   cursor.rings.push({ x: 0.5, y: 0.5, color: '#f00', progress: 0.5, id: 0, waving: 1 });
   for (const way of ['rings', 'body', 'glow']){
     setHandsMode(way); const c = canvas(); cursor.draw(c, 1920, 1080);
@@ -68,8 +68,7 @@ test('only the drawing changes: picking and pointing never ask which way hands a
   const update = src.slice(src.indexOf('  update(dt, root){'), src.indexOf('  /* The wave:'));
   assert.ok(!/handsMode/.test(update), 'cursor.update (pointing, waves, picks) does not look');
   const home = readFileSync(new URL('../src/ui/home.js', import.meta.url), 'utf8');
-  /* owner, 2026-11-23: home shows its own dot to follow, whichever way the games show hands */
-  assert.ok(/hcur/.test(home) && !/handsMode/.test(home), 'home has its cursor dot, in every way');
+  assert.ok(!/handsMode|hcur/.test(home), 'home has no hand cursor of its own (decision 0049)');
 });
 
 test('Settings > Testing has the choice for the owner, and H does it in play', () => {

@@ -45,9 +45,6 @@ export function inFront(){
 export const cursor = {
   rings: [],
   enabled: true,
-  map: null,              /* (p, hand, i) => { x, y } | null: where a hand points on the screen - home's reach box; null: not pointing */
-  skin: false,            /* the screen draws its own cursor (home does): leave the canvas ring off */
-  gate: null,             /* { driver(): player index | null, takeOver(i) }: home's one driver; the others take over by waving */
   _state: Array.from({ length: MAX_PLAYERS }, () => fresh()),
 
   reset(){ for (const s of this._state){ Object.assign(s, fresh()); s.cool = COOLDOWN; } this._clearFills(); },
@@ -79,19 +76,7 @@ export const cursor = {
       const p = pose.players[i], s = this._state[i];
       if (!p.present){ s.el = null; s.t = 0; s.cand = null; s.turns = 0; s.ease = null; continue; }
       const h = pose.cursorHand(p);
-      /* Home (hand.js) maps the hand through the child's reach box to the screen, and says no (null) for a hand hanging at their side;
-         everywhere else the hand is where it is. */
-      const m = this.map ? this.map(p, h, i) : h;
-      if (!m){ s.el = null; s.t = 0; s.cand = null; s.turns = 0; s.dir = 0; s.ease = null; continue; }
-      const x = m.x, y = m.y;
-      /* One driver, when there is a gate (home): the others only wave, to take over. */
-      const driving = !this.gate || this.gate.driver() === i;
-      if (!driving){
-        if (s.cool > 0){ s.cool -= dt; s.turns = 0; s.dir = 0; s.far = x; continue; }
-        this._wave(s, x, dt);
-        if (s.turns >= CLICK_TURNS){ s.turns = 0; s.dir = 0; s.el = null; s.cool = COOLDOWN; this.gate.takeOver(i); }
-        continue;
-      }
+      const x = h.x, y = h.y;
       const e = easeCursor(s.ease || (s.ease = {}), x, y, dt);
       this.rings.push({ x: e.x, y: e.y, color: PLAYER_COLORS[i], progress: 0, id: i, waving: 0 });
 
@@ -182,7 +167,7 @@ export const cursor = {
 
   /* Drawn on the game canvas so it sits above everything, including games. */
   draw(c, W, H){
-    if (this.skin || handsMode() !== 'rings') return;       /* (the other ways to show hands draw no ring: the button under the hand lights and fills its own) */
+    if (handsMode() !== 'rings') return;       /* (the other ways to show hands draw no ring: the button under the hand lights and fills its own) */
     for (const r of this.rings){
       /* over a button with its own ring (the clean look's .ringed), the ring runs round the button: no dot on top of its words */
       if (r.el && r.el.classList && r.el.classList.contains('ringed')) continue;

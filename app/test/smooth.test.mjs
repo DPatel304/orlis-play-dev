@@ -56,27 +56,3 @@ test('the cursor follows a hand across the screen almost at once', () => {
   for (let i = 0; i < 33; i++) p = easeCursor(f, 0.2 + 0.4 * (i / 33), 0.5, 1 / 165);   /* 0.2 s at 2 screens/s */
   assert.ok(0.2 + 0.4 - p.x < 0.04, 'within 4% of the screen of a fast hand: ' + (0.6 - p.x));
 });
-
-test('at home, the camera looks at the full rate while a hand points, and lightly otherwise', () => {
-  const wall = performance.now;
-  let t = 1e6, looked = 0, frame = 0;
-  performance.now = () => t;
-  pose.mouse.active = false; pose.ready = true; pose.on = true; pose.paused = false; pose.worker = null;
-  pose.lite = { hz: 10, idleHz: 2 };
-  pose.lm = { detectForVideo: () => { looked++; return { landmarks: [] }; } };
-  pose.video = { readyState: 2, currentTime: 0 };
-  pose.personCount = 1; pose._liteAt = 0; pose._since = 0;
-  let idleRun = false;
-  const run = (pointing, secs) => {
-    pose.pointing = pointing; looked = 0;
-    for (let i = 0; i < secs * 60; i++){ t += 1000 / 60; pose.personCount = idleRun ? 0 : 1; pose.video.currentTime = ++frame; pose.update(t, 1 / 60); }
-    return looked / secs;
-  };
-  const light = run(false, 3), full = run(true, 3);
-  assert.ok(light > 8 && light < 12, 'about ten a second with hands down: ' + light);
-  assert.ok(full > 55, 'every picture while pointing: ' + full);
-  idleRun = true; pose._liteAt = 0;
-  const idle = run(false, 4);
-  assert.ok(idle > 1.5 && idle < 2.6, 'two a second with nobody: ' + idle);
-  performance.now = wall; pose.lite = null; pose.pointing = false; pose.ready = false; pose.on = false; pose.lm = null;
-});

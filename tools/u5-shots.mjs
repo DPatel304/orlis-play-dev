@@ -1,7 +1,7 @@
 /* Pictures of the clean menus (plan packages U5, U7 and the U6 fixes; decision 0045), at 1920x1080, deviceScaleFactor 1, into docs/u5/.
    Each one matches a frame of the approved mockup (docs/screens-mockup.html). The real app is driven in headless Chromium, with a stand-in for the
    Windows app's shell (window.__TAURI__) and a pretend family server answered from the page, so the sign-in screens, Who's playing? and the
-   profile are the real ones. A camera is faked (and the tracker's picture replaced by scripted bodies, the way test/preview/hand-home.mjs does).
+   profile are the real ones. A camera is faked (and the tracker's picture replaced by scripted bodies).
 
      cd app && npx vite --port 5191 --strictPort &
      node tools/u5-shots.mjs [out-dir] [--only home-rest,pause]
@@ -95,7 +95,7 @@ if (want('home-rest') || want('home-focus') || want('home-scrolled') || want('ho
 }
 
 /* ---------- Hand mode: pointing, and between rows ---------- */
-/* a standing body through pose._assign, ten looks a second, with the pointing hand where the script says (test/preview/hand-home.mjs has the same) */
+/* a standing body through pose._assign, ten looks a second, with the pointing hand where the script says */
 const SCRIPT = `(() => {
   const pose = window.__pose; pose.update = () => {};
   const S = { hand: { x: 0.5, y: 0.35 }, gone: false }; window.__S = S;
@@ -104,28 +104,6 @@ const SCRIPT = `(() => {
     set(23, 0.46, 0.62); set(24, 0.54, 0.62); set(25, 0.46, 0.8); set(26, 0.54, 0.8); set(27, 0.46, 0.95); set(28, 0.54, 0.95); set(16, S.hand.x, S.hand.y); return lm; };
   setInterval(() => { if (S.gone) { pose._assign([], 0.1); return; } pose.on = true; pose.ready = true; pose._assign([body()], 0.1); }, 100);
 })()`;
-const handFor = (nx, ny) => ({ x: 0.5 - 0.18 + nx * 0.36, y: 0.32 - 0.6 * 0.12 * 16 / 9 + ny * (0.12 * 16 / 9 * 1.55) });
-if (want('hand-pointing') || want('hand-rows')){
-  const { page, ctx } = await open({ bigPicture: true, query: '&hand=1&hidden=1', store: true });
-  await page.waitForFunction(() => window.__scene && window.__scene().hand === true, null, { timeout: 60000 });
-  await page.evaluate(SCRIPT);
-  await sleep(page, 1500);
-  const point = async (nx, ny) => { const h = handFor(nx, ny); await page.evaluate(([x, y]) => { window.__S.hand.x = x; window.__S.hand.y = y; }, [h.x, h.y]); };
-  /* pointing at Leaf Pile, the ring part way round as the wave goes */
-  const t = await page.evaluate(() => { const tile = [...document.querySelectorAll('.htile.game')].find(e => e.querySelector('.hname')?.textContent === 'Leaf Pile'); const r = tile.getBoundingClientRect(); return { x: (r.left + r.width / 2) / innerWidth, y: (r.top + r.height / 2) / innerHeight }; });
-  await point(t.x, t.y); await sleep(page, 1800);
-  const h = handFor(t.x, t.y);
-  for (let i = 0; i < 3; i++){ await page.evaluate(([x, y]) => { window.__S.hand.x = x; window.__S.hand.y = y; }, [h.x + (i % 2 ? 0.04 : -0.04), h.y]); await sleep(page, 100); }
-  if (want('hand-pointing')) await shoot(page, 'hand-pointing');
-  await page.evaluate(([x, y]) => { window.__S.hand.x = x; window.__S.hand.y = y; }, [h.x, h.y]);
-  await sleep(page, 2000);
-  /* held at the bottom edge: the strip's ring fills */
-  await point(0.8, 0.985); await sleep(page, 560);
-  if (want('hand-rows')) await shoot(page, 'hand-between-rows');
-  await ctx.close();
-}
-
-
 /* Mia's hand (the scripted one) over a button, waving until the ring is part way round - then stopped, for the picture */
 async function waveAt(page, sel){
   const b = await page.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return { x: (r.left + r.width / 2) / innerWidth, y: (r.top + r.height / 2) / innerHeight }; }, sel);

@@ -12,8 +12,7 @@ import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
 import { cycleHands, handsName } from './ui/handshow.js';
 import { toggleFullscreen, openSettings, played as playedLately, BLURB } from './ui/menu.js';
-import { menu, handWanted } from './ui/home.js';
-import { LOOKS } from './ui/hand.js';
+import { menu } from './ui/home.js';
 import { PAPER } from './ui/boot.js';
 import { remote, typing } from './ui/remote.js';
 import { account, welcome, AVATARS } from './ui/account.js';
@@ -80,12 +79,8 @@ const INTO_GAME = new Set(['starting', 'lineup', 'join', 'play']);
 /* (?fx=0 turns the page fades off - the rehearsals read the page, and two pages at once would confuse them) */
 const NOFX = /[?&]fx=0\b/.test(location.search);
 function go(next, build){
-  /* Home, in Big Picture, keeps the camera on lightly (hand.js): one person (and a second to take over), a few looks a second.
-     Nowhere else is the camera on outside a game. */
-  const hand = next === 'menu' && handWanted() && !appMode.creator() && pose.reason !== 'debug';
-  pose.lite = hand ? LOOKS : null;
   /* (looking for everyone again, except in a round, which looks for its players) */
-  if (next !== 'play') pose.look(hand ? 1 : undefined);
+  if (next !== 'play') pose.look();
   /* (a page with something to tidy away first - the Store's previews) */
   if (scene && scene.leave) scene.leave();
   const was = mode;
@@ -98,7 +93,7 @@ function go(next, build){
   dropWait();
   if (!PADS_KEEP.has(next)) stopPads();
   /* (a passive game - a story - never turns the camera on: nobody has to do anything) */
-  if (CAMERA.has(next) || hand) pose.wake(); else pose.sleep();
+  if (CAMERA.has(next)) pose.wake(); else pose.sleep();
   if (game && game.passive && (INTO_GAME.has(next) || next === 'results')) pose.sleep();
   if (HOMEY.has(next)) updateIfWaiting();
   clearUI();
@@ -502,7 +497,7 @@ function tick(now){
   last = now;
 
   pose.paused = !!paused;
-  if (!away && (!CALM.has(mode) || pose.lite)) pose.update(now, dt);
+  if (!away && !CALM.has(mode)) pose.update(now, dt);
 
   /* paper, under the menus; dark under a game while it loads */
   c.fillStyle = mode === 'play' || mode === 'outro' || mode === 'results' || mode === 'starting' ? '#0d0b1a' : PAPER;

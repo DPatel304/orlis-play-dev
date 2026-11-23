@@ -91,14 +91,13 @@ test('one version people see (client/VERSION), with the build number behind it',
   assert.ok(main.includes('Beta \\u00B7 build') && main.includes('nameOf'), 'labelled "0.1 Beta · build 27" in the app');
 });
 
-test('the camera is on only in a game (and the camera check), and lightly on the home screen in Big Picture (hand mode): off through the intro and signing in', () => {
+test('the camera is on only in a game (and the camera check): off through the intro, signing in and the home screen', () => {
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   const set = main.match(/const CAMERA = new Set\(\[([^\]]*)\]\)/)[1];
   for (const m of ['play', 'outro', 'results', 'calibrate', 'starting']) assert.ok(set.includes(`'${m}'`), m);
   for (const m of ['boot', 'menu', 'who']) assert.ok(!set.includes(`'${m}'`), m);
-  assert.match(main, /CAMERA\.has\(next\) \|\| hand\) pose\.wake\(\); else pose\.sleep\(\)/);
-  assert.match(main, /const hand = next === 'menu' && handWanted\(\)/, 'home keeps the camera on only in Big Picture');
-  assert.match(main, /pose\.lite = hand \? LOOKS : null/, 'and only lightly (a few looks a second)');
+  assert.match(main, /if \(CAMERA\.has\(next\)\) pose\.wake\(\); else pose\.sleep\(\)/);
+  assert.ok(!/handWanted|pose\.lite|LOOKS/.test(main), 'no hand mode at home (decision 0049)');
   assert.ok(!/pose\.start\(/.test(main), 'boot no longer starts the camera');
 });
 
