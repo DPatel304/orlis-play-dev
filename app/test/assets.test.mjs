@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { assets, missing, lock, unwrap } from '../src/games/assets/index.js';
-import { EMOJI } from '../src/games/assets/emoji.js';
 import { RUNTIME, TEMPLATE } from '../src/ui/creator-kit.gen.js';
 import { readFileSync } from 'node:fs';
 
@@ -59,9 +58,6 @@ test('nothing in the library is for adults, or a weapon, or a word children shou
     const said = text.split(/[^a-z0-9]+/);
     for (const w of words) assert.ok(!said.includes(w), `${a.id}: "${w}"`);
   }
-  /* no weapons, drinks, smoking, or scary things among the emoji */
-  const NOT = ['\u{1F52B}', '\u{1F5E1}', '\u{1F52A}', '\u{1F4A3}', '\u{1F3F9}', '⚔', '\u{1FA93}', '\u{1F9E8}', '\u{1F37A}', '\u{1F377}', '\u{1F378}', '\u{1F37E}', '\u{1F6AC}', '\u{1F480}', '☠', '\u{1F47B}', '\u{1F47F}', '\u{1F608}', '\u{1FA78}', '\u{1F489}', '\u{1F48A}', '\u{1F577}', '\u{1F982}', '\u{1F40D}'];
-  for (const [id, ch] of EMOJI) for (const bad of NOT) assert.ok(!ch.includes(bad), `${id} is not for the library`);
 });
 
 test('Cubo has all his moves and faces', () => {

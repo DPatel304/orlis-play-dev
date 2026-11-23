@@ -501,6 +501,374 @@ def('player', 'Player', 'person people', (c, s) => {
    Two flat, one-colour icons translated from the approved SVG drawings in docs/icon-mockups.html (symbols p1 and t3), drawn with Path2D into the
    icon box. The colour is o.tint (a palette colour, default the ink); the "lighter" parts are the same colour at 55% opacity, and the PlayPad's
    screen is a real hole (even-odd), so whatever is behind shows through. */
+/* ---------- the rest of the old emoji pieces, painted (decision 0041): animals, food, nature, things ---------- */
+const stroke2 = (c, s, col, w, draw) => { c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = INK; c.lineWidth = s * (w + 0.07); draw(); c.stroke(); c.strokeStyle = col; c.lineWidth = s * w; draw(); c.stroke(); };
+const rays = (c, s, x, y, r0, r1, n, w = 0.03, a0 = 0) => { c.lineWidth = s * w; c.strokeStyle = INK; c.lineCap = 'round'; for (let i = 0; i < n; i++){ const a = a0 + i * Math.PI * 2 / n; c.beginPath(); c.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); c.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1); c.stroke(); } };
+const cheeks = (c, s, y, dx) => { c.save(); for (const sx of [-1, 1]){ ell(c, sx * s * dx, y * s, s * 0.05, s * 0.03)(); wash(c, pal('touch.bubblegum'), 0.45); } c.restore(); };
+const whisk = (c, s, x, y, len = 0.18) => { c.lineWidth = s * 0.02; c.strokeStyle = INK; c.lineCap = 'round'; for (const sx of [-1, 1]) for (const d of [-0.03, 0.04]){ c.beginPath(); c.moveTo(sx * x * s, y * s + d * s); c.lineTo(sx * (x + len) * s, y * s + d * s * 3); c.stroke(); } };
+const pink = pal('touch.bubblegum', 'light');
+
+/* animals */
+def('turtle', 'Turtle', 'animal slow', (c, s) => {
+  const g = pal('meadow.grass');
+  for (const x of [-0.26, 0.16]) part(c, s, g, ell(c, x * s, s * 0.28, s * 0.1, s * 0.09));
+  part(c, s, g, ell(c, s * 0.38, s * 0.04, s * 0.14, s * 0.13));
+  part(c, s, pal('meadow.deep'), () => { c.beginPath(); c.arc(-s * 0.04, s * 0.24, s * 0.38, Math.PI, 0); c.closePath(); });
+  c.beginPath(); c.moveTo(-s * 0.04, -s * 0.14); c.lineTo(-s * 0.04, s * 0.24); c.moveTo(-s * 0.3, s * 0.02); c.lineTo(s * 0.22, s * 0.02); line(c, s, 0.035);
+  eye(c, s * 0.42, s * 0.0, s * 0.035);
+});
+def('duck', 'Duck', 'animal pond', (c, s) => {
+  part(c, s, pal('touch.sunflower'), poly(c, [[-s * 0.3, s * 0.0], [-s * 0.48, -s * 0.12], [-s * 0.36, s * 0.14]]));
+  part(c, s, pal('touch.sunflower'), ell(c, -s * 0.04, s * 0.2, s * 0.38, s * 0.26));
+  part(c, s, pal('touch.sunflower', 'shade'), ell(c, -s * 0.12, s * 0.2, s * 0.16, s * 0.1, 0.3), { shade: false });
+  part(c, s, pal('touch.sunflower'), circ(c, s * 0.16, -s * 0.22, s * 0.2));
+  part(c, s, pal('touch.tangerine'), ell(c, s * 0.38, -s * 0.18, s * 0.12, s * 0.06, 0.15));
+  eye(c, s * 0.2, -s * 0.28, s * 0.04);
+});
+def('lion', 'Lion', 'animal', (c, s) => {
+  part(c, s, pal('earth.clay'), circ(c, 0, 0, s * 0.45));
+  for (let i = 0; i < 10; i++){ const a = i * Math.PI / 5; part(c, s, pal('earth.clay'), circ(c, Math.cos(a) * s * 0.4, Math.sin(a) * s * 0.4, s * 0.09), { shade: false, w: 0.035 }); }
+  part(c, s, pal('earth.clay'), circ(c, 0, 0, s * 0.42), { w: 0.0001 });
+  for (const sx of [-1, 1]) part(c, s, pal('touch.sunflower'), circ(c, sx * s * 0.2, -s * 0.24, s * 0.08), { shade: false });
+  part(c, s, pal('touch.sunflower'), circ(c, 0, s * 0.02, s * 0.3));
+  part(c, s, pal('earth.sand'), ell(c, 0, s * 0.14, s * 0.15, s * 0.11), { shade: false });
+  eye(c, -s * 0.12, -s * 0.08, s * 0.04); eye(c, s * 0.12, -s * 0.08, s * 0.04);
+  dot(c, 0, s * 0.08, s * 0.035, INK); smile(c, s, 0, s * 0.19, s * 0.06);
+});
+def('panda', 'Panda', 'animal', (c, s) => {
+  for (const sx of [-1, 1]) part(c, s, pal('fur.charcoal'), circ(c, sx * s * 0.28, -s * 0.28, s * 0.13));
+  part(c, s, SNOW, circ(c, 0, s * 0.04, s * 0.38));
+  for (const sx of [-1, 1]){ part(c, s, pal('fur.charcoal'), ell(c, sx * s * 0.15, -s * 0.02, s * 0.09, s * 0.12, sx * 0.4), { shade: false }); dot(c, sx * s * 0.14, -s * 0.03, s * 0.035, SNOW); dot(c, sx * s * 0.14, -s * 0.03, s * 0.018, INK); }
+  part(c, s, pal('fur.charcoal'), ell(c, 0, s * 0.1, s * 0.05, s * 0.035), { shade: false }); smile(c, s, 0, s * 0.15, s * 0.07);
+});
+def('fox', 'Fox', 'animal forest', (c, s) => {
+  for (const sx of [-1, 1]) part(c, s, pal('touch.tangerine'), poly(c, [[sx * s * 0.38, -s * 0.06], [sx * s * 0.3, -s * 0.44], [sx * s * 0.08, -s * 0.2]]));
+  part(c, s, pal('touch.tangerine'), ell(c, 0, s * 0.0, s * 0.4, s * 0.3));
+  part(c, s, SNOW, poly(c, [[-s * 0.38, s * 0.06], [-s * 0.1, s * 0.14], [0, s * 0.42], [s * 0.1, s * 0.14], [s * 0.38, s * 0.06], [s * 0.3, s * 0.26], [0, s * 0.44], [-s * 0.3, s * 0.26]]), { shade: false });
+  dot(c, 0, s * 0.4, s * 0.045, INK);
+  eye(c, -s * 0.16, -s * 0.06, s * 0.04); eye(c, s * 0.16, -s * 0.06, s * 0.04);
+});
+def('pig', 'Pig', 'animal farm', (c, s) => {
+  const p = pal('touch.bubblegum', 'light');
+  for (const sx of [-1, 1]) part(c, s, pal('touch.bubblegum'), poly(c, [[sx * s * 0.36, -s * 0.12], [sx * s * 0.32, -s * 0.4], [sx * s * 0.1, -s * 0.28]]));
+  part(c, s, p, circ(c, 0, s * 0.04, s * 0.4));
+  part(c, s, pal('touch.bubblegum'), ell(c, 0, s * 0.14, s * 0.18, s * 0.13), { shade: false });
+  dot(c, -s * 0.06, s * 0.14, s * 0.025, INK); dot(c, s * 0.06, s * 0.14, s * 0.025, INK);
+  eye(c, -s * 0.18, -s * 0.08, s * 0.04); eye(c, s * 0.18, -s * 0.08, s * 0.04);
+});
+def('sheep', 'Sheep', 'animal farm', (c, s) => {
+  for (const sx of [-1, 1]) part(c, s, pal('fur.charcoal'), ell(c, sx * s * 0.3, s * 0.0, s * 0.12, s * 0.06, sx * 0.4));
+  for (const [x, y, r] of [[-0.26, -0.18, 0.18], [0.0, -0.28, 0.2], [0.26, -0.18, 0.18], [-0.3, 0.08, 0.17], [0.3, 0.08, 0.17], [0, -0.04, 0.3]]) part(c, s, SNOW, circ(c, x * s, y * s, r * s), { w: 0.04 });
+  part(c, s, pal('fur.charcoal'), ell(c, 0, s * 0.14, s * 0.19, s * 0.25));
+  eye(c, -s * 0.08, s * 0.08, s * 0.035); eye(c, s * 0.08, s * 0.08, s * 0.035);
+});
+def('cow', 'Cow', 'animal farm', (c, s) => {
+  for (const sx of [-1, 1]){ part(c, s, pal('earth.sand'), poly(c, [[sx * s * 0.18, -s * 0.2], [sx * s * 0.24, -s * 0.42], [sx * s * 0.34, -s * 0.2]])); part(c, s, SNOW, ell(c, sx * s * 0.4, -s * 0.06, s * 0.13, s * 0.07, sx * 0.4)); }
+  part(c, s, SNOW, ell(c, 0, s * 0.0, s * 0.3, s * 0.36));
+  c.save(); ell(c, 0, 0, s * 0.3, s * 0.36)(); c.clip(); ell(c, -s * 0.24, -s * 0.2, s * 0.14, s * 0.14)(); c.fillStyle = pal('fur.charcoal'); c.fill(); c.restore();
+  part(c, s, pal('touch.bubblegum', 'light'), ell(c, 0, s * 0.22, s * 0.22, s * 0.14), { shade: false });
+  dot(c, -s * 0.07, s * 0.22, s * 0.025, INK); dot(c, s * 0.07, s * 0.22, s * 0.025, INK);
+  eye(c, -s * 0.12, -s * 0.1, s * 0.04); eye(c, s * 0.12, -s * 0.1, s * 0.04);
+});
+def('horse', 'Horse', 'animal farm', (c, s) => {
+  for (const sx of [-1, 1]) part(c, s, pal('fur.brown'), poly(c, [[sx * s * 0.22, -s * 0.2], [sx * s * 0.2, -s * 0.46], [sx * s * 0.06, -s * 0.28]]));
+  part(c, s, pal('fur.charcoal'), ell(c, 0, -s * 0.2, s * 0.1, s * 0.1));
+  part(c, s, pal('fur.brown'), ell(c, 0, s * 0.04, s * 0.27, s * 0.4));
+  part(c, s, pal('fur.charcoal'), poly(c, [[-s * 0.08, -s * 0.3], [s * 0.08, -s * 0.3], [0, -s * 0.08]]), { shade: false });
+  part(c, s, pal('earth.sand'), ell(c, 0, s * 0.28, s * 0.17, s * 0.13), { shade: false });
+  dot(c, -s * 0.06, s * 0.28, s * 0.022, INK); dot(c, s * 0.06, s * 0.28, s * 0.022, INK);
+  eye(c, -s * 0.13, -s * 0.02, s * 0.04); eye(c, s * 0.13, -s * 0.02, s * 0.04);
+});
+def('mouse', 'Mouse', 'animal small', (c, s) => {
+  const g = pal('shade.light');
+  for (const sx of [-1, 1]){ part(c, s, g, circ(c, sx * s * 0.28, -s * 0.18, s * 0.17)); dot(c, sx * s * 0.28, -s * 0.18, s * 0.09, pink); }
+  part(c, s, g, ell(c, 0, s * 0.08, s * 0.36, s * 0.32));
+  eye(c, -s * 0.13, s * 0.0, s * 0.04); eye(c, s * 0.13, s * 0.0, s * 0.04);
+  dot(c, 0, s * 0.16, s * 0.04, pal('touch.bubblegum')); whisk(c, s, 0.1, 0.18, 0.28); cheeks(c, s, 0.1, 0.24);
+});
+def('hedgehog', 'Hedgehog', 'animal forest small', (c, s) => {
+  const spines = []; for (let i = 0; i <= 14; i++){ const a = Math.PI + i * Math.PI / 14 - 0.1; spines.push([Math.cos(a) * s * (i % 2 ? 0.34 : 0.48), s * 0.2 + Math.sin(a) * s * (i % 2 ? 0.34 : 0.54)]); }
+  part(c, s, pal('earth.bark'), poly(c, [...spines, [s * 0.44, s * 0.3], [-s * 0.4, s * 0.3]]));
+  part(c, s, pal('earth.sand'), ell(c, s * 0.14, s * 0.14, s * 0.26, s * 0.2), { shade: false });
+  dot(c, s * 0.38, s * 0.14, s * 0.035, INK); eye(c, s * 0.12, s * 0.06, s * 0.04);
+  for (const x of [-0.2, 0.08]) part(c, s, pal('earth.sand'), ell(c, x * s, s * 0.36, s * 0.09, s * 0.05), { shade: false });
+});
+def('ladybug', 'Ladybug', 'animal garden small', (c, s) => {
+  c.lineWidth = s * 0.035; c.strokeStyle = INK; c.lineCap = 'round'; for (const sx of [-1, 1]){ c.beginPath(); c.moveTo(sx * s * 0.08, -s * 0.38); c.quadraticCurveTo(sx * s * 0.14, -s * 0.5, sx * s * 0.22, -s * 0.48); c.stroke(); }
+  part(c, s, INK, ell(c, 0, -s * 0.28, s * 0.17, s * 0.12), { shade: false });
+  part(c, s, pal('touch.cherry'), ell(c, 0, s * 0.08, s * 0.4, s * 0.4));
+  c.beginPath(); c.moveTo(0, -s * 0.28); c.lineTo(0, s * 0.48); line(c, s, 0.04);
+  for (const [x, y] of [[-0.2, -0.04], [0.2, -0.04], [-0.22, 0.22], [0.22, 0.22]]) dot(c, x * s, y * s, s * 0.07, INK);
+});
+def('snail', 'Snail', 'animal slow garden', (c, s) => {
+  for (const x of [0.28, 0.38]){ c.beginPath(); c.moveTo(x * s, -s * 0.04); c.lineTo((x + 0.04) * s, -s * 0.3); line(c, s, 0.035); dot(c, (x + 0.04) * s, -s * 0.31, s * 0.04, INK); }
+  part(c, s, pal('earth.sand'), () => { c.beginPath(); c.moveTo(-s * 0.46, s * 0.36); c.lineTo(s * 0.34, s * 0.36); c.quadraticCurveTo(s * 0.48, s * 0.36, s * 0.46, s * 0.14); c.quadraticCurveTo(s * 0.4, -s * 0.02, s * 0.3, s * 0.0); c.lineTo(s * 0.1, s * 0.2); c.lineTo(-s * 0.46, s * 0.2); c.closePath(); });
+  part(c, s, pal('touch.tangerine'), circ(c, -s * 0.1, -s * 0.02, s * 0.3));
+  c.beginPath(); c.moveTo(-s * 0.1, -s * 0.02); c.arc(-s * 0.1, -s * 0.02, s * 0.06, 0, 4.5); c.arc(-s * 0.1, -s * 0.02, s * 0.16, 4.5, 0.4, true); line(c, s, 0.035);
+  c.beginPath(); c.arc(-s * 0.1, -s * 0.02, s * 0.2, 3.4, 6.1); line(c, s, 0.035);
+});
+def('crab', 'Crab', 'animal sea', (c, s) => {
+  for (const sx of [-1, 1]){ c.beginPath(); c.moveTo(sx * s * 0.2, s * 0.2); c.lineTo(sx * s * 0.44, s * 0.36); c.moveTo(sx * s * 0.14, s * 0.26); c.lineTo(sx * s * 0.34, s * 0.44); line(c, s, 0.05); }
+  for (const sx of [-1, 1]){ c.beginPath(); c.moveTo(sx * s * 0.3, -s * 0.04); c.lineTo(sx * s * 0.4, -s * 0.2); line(c, s, 0.05); part(c, s, pal('touch.cherry'), poly(c, [[sx * s * 0.3, -s * 0.22], [sx * s * 0.5, -s * 0.46], [sx * s * 0.46, -s * 0.12]])); part(c, s, pal('touch.cherry'), circ(c, sx * s * 0.36, -s * 0.2, s * 0.1)); }
+  part(c, s, pal('touch.cherry'), ell(c, 0, s * 0.12, s * 0.34, s * 0.24));
+  for (const sx of [-1, 1]){ c.beginPath(); c.moveTo(sx * s * 0.1, s * 0.0); c.lineTo(sx * s * 0.1, -s * 0.12); line(c, s, 0.035); eye(c, sx * s * 0.1, -s * 0.14, s * 0.055); }
+  smile(c, s, 0, s * 0.14, s * 0.08);
+});
+def('octopus', 'Octopus', 'animal sea', (c, s) => {
+  for (const x of [-0.3, -0.1, 0.1, 0.3]) part(c, s, pal('touch.grape'), ell(c, x * s, s * 0.32, s * 0.08, s * 0.16, x * -0.6));
+  part(c, s, pal('touch.grape'), ell(c, 0, -s * 0.08, s * 0.36, s * 0.36));
+  eye(c, -s * 0.13, -s * 0.06, s * 0.06); eye(c, s * 0.13, -s * 0.06, s * 0.06); smile(c, s, 0, s * 0.08, s * 0.08);
+  cheeks(c, s, 0.06, 0.24);
+});
+def('dolphin', 'Dolphin', 'animal sea', (c, s) => {
+  const b = pal('touch.skyBlue');
+  part(c, s, b, poly(c, [[-s * 0.36, s * 0.04], [-s * 0.48, -s * 0.22], [-s * 0.26, -s * 0.06], [-s * 0.18, -s * 0.2]]));
+  part(c, s, b, ell(c, -s * 0.02, s * 0.06, s * 0.4, s * 0.24, -0.35));
+  part(c, s, b, ell(c, s * 0.42, -s * 0.18, s * 0.12, s * 0.05, -0.35));
+  part(c, s, pal('touch.skyBlue', 'light'), ell(c, s * 0.04, s * 0.18, s * 0.28, s * 0.1, -0.35), { shade: false });
+  part(c, s, b, poly(c, [[-s * 0.06, -s * 0.12], [s * 0.04, -s * 0.34], [s * 0.12, -s * 0.06]]));
+  eye(c, s * 0.2, -s * 0.12, s * 0.035);
+});
+def('koala', 'Koala', 'animal', (c, s) => {
+  const g = pal('shade.light');
+  for (const sx of [-1, 1]){ part(c, s, g, circ(c, sx * s * 0.34, -s * 0.18, s * 0.17)); dot(c, sx * s * 0.34, -s * 0.18, s * 0.09, SNOW); }
+  part(c, s, g, circ(c, 0, s * 0.04, s * 0.36));
+  part(c, s, INK, ell(c, 0, s * 0.06, s * 0.08, s * 0.12), { shade: false }); dot(c, -s * 0.025, s * 0.02, s * 0.02, SNOW);
+  eye(c, -s * 0.16, -s * 0.04, s * 0.04); eye(c, s * 0.16, -s * 0.04, s * 0.04);
+});
+def('kangaroo', 'Kangaroo', 'animal hop', (c, s) => {
+  const f = pal('earth.clay');
+  part(c, s, f, poly(c, [[-s * 0.1, s * 0.3], [-s * 0.5, s * 0.46], [-s * 0.2, s * 0.14]]));
+  part(c, s, f, ell(c, 0, s * 0.18, s * 0.26, s * 0.3));
+  part(c, s, pal('earth.sand'), ell(c, s * 0.04, s * 0.26, s * 0.14, s * 0.14), { shade: false });
+  for (const sx of [-1, 1]) part(c, s, f, ell(c, sx * s * 0.1 + s * 0.02, -s * 0.3, s * 0.06, s * 0.14, sx * 0.2));
+  part(c, s, f, ell(c, s * 0.04, -s * 0.08, s * 0.17, s * 0.15));
+  part(c, s, pal('earth.sand'), ell(c, s * 0.04, -s * 0.02, s * 0.1, s * 0.08), { shade: false });
+  dot(c, s * 0.04, -s * 0.05, s * 0.025, INK); eye(c, -s * 0.04, -s * 0.12, s * 0.03); eye(c, s * 0.12, -s * 0.12, s * 0.03);
+});
+def('flamingo', 'Flamingo', 'animal', (c, s) => {
+  const p = pal('touch.bubblegum');
+  c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = s * 0.05; c.beginPath(); c.moveTo(-s * 0.04, s * 0.2); c.lineTo(-s * 0.04, s * 0.46); c.moveTo(s * 0.1, s * 0.2); c.lineTo(s * 0.14, s * 0.34); c.lineTo(s * 0.04, s * 0.4); c.stroke();
+  stroke2(c, s, p, 0.1, () => { c.beginPath(); c.moveTo(s * 0.12, s * 0.04); c.bezierCurveTo(s * 0.4, -s * 0.06, s * 0.36, -s * 0.36, s * 0.12, -s * 0.34); });
+  part(c, s, p, ell(c, -s * 0.04, s * 0.1, s * 0.3, s * 0.18, -0.2));
+  part(c, s, p, circ(c, s * 0.1, -s * 0.34, s * 0.09));
+  part(c, s, INK, poly(c, [[s * 0.03, -s * 0.37], [-s * 0.1, -s * 0.28], [s * 0.04, -s * 0.28]]), { shade: false });
+  dot(c, s * 0.12, -s * 0.36, s * 0.018, INK);
+});
+def('parrot', 'Parrot', 'animal fly', (c, s) => {
+  part(c, s, pal('touch.skyBlue'), poly(c, [[-s * 0.14, s * 0.2], [-s * 0.34, s * 0.5], [-s * 0.02, s * 0.46], [s * 0.1, s * 0.22]]));
+  part(c, s, pal('touch.cherry'), ell(c, 0, s * 0.06, s * 0.28, s * 0.36));
+  part(c, s, pal('touch.mint'), ell(c, -s * 0.14, s * 0.12, s * 0.1, s * 0.22, 0.2));
+  part(c, s, pal('touch.cherry'), circ(c, s * 0.02, -s * 0.2, s * 0.2));
+  part(c, s, pal('touch.sunflower'), poly(c, [[s * 0.1, -s * 0.28], [s * 0.34, -s * 0.2], [s * 0.2, -s * 0.06], [s * 0.1, -s * 0.12]]));
+  eye(c, s * 0.0, -s * 0.24, s * 0.045);
+});
+def('swan', 'Swan', 'animal pond', (c, s) => {
+  part(c, s, SNOW, () => { c.beginPath(); c.moveTo(-s * 0.46, s * 0.1); c.quadraticCurveTo(-s * 0.3, s * 0.0, -s * 0.2, -s * 0.1); c.quadraticCurveTo(s * 0.0, s * 0.14, s * 0.36, s * 0.02); c.quadraticCurveTo(s * 0.34, s * 0.4, -s * 0.06, s * 0.4); c.quadraticCurveTo(-s * 0.4, s * 0.4, -s * 0.46, s * 0.1); c.closePath(); });
+  stroke2(c, s, SNOW, 0.12, () => { c.beginPath(); c.moveTo(s * 0.26, s * 0.06); c.bezierCurveTo(s * 0.46, -s * 0.1, s * 0.4, -s * 0.3, s * 0.22, -s * 0.34); });
+  part(c, s, SNOW, circ(c, s * 0.2, -s * 0.34, s * 0.09));
+  part(c, s, pal('touch.tangerine'), poly(c, [[s * 0.26, -s * 0.38], [s * 0.44, -s * 0.33], [s * 0.26, -s * 0.29]]), { shade: false });
+  dot(c, s * 0.2, -s * 0.36, s * 0.018, INK);
+});
+def('seal', 'Seal', 'animal sea', (c, s) => {
+  const g = pal('space.rock');
+  part(c, s, g, poly(c, [[-s * 0.34, s * 0.26], [-s * 0.5, s * 0.46], [-s * 0.24, s * 0.4]]));
+  part(c, s, g, ell(c, -s * 0.06, s * 0.14, s * 0.34, s * 0.3, -0.5));
+  part(c, s, g, circ(c, s * 0.16, -s * 0.16, s * 0.2));
+  part(c, s, pal('space.dust'), ell(c, s * 0.2, -s * 0.1, s * 0.12, s * 0.08), { shade: false });
+  dot(c, s * 0.24, -s * 0.14, s * 0.03, INK); eye(c, s * 0.08, -s * 0.22, s * 0.035); eye(c, s * 0.24, -s * 0.22, s * 0.035);
+  whisk(c, s, -0.2, -0.1, 0.0);
+});
+
+/* food */
+def('banana', 'Banana', 'food fruit', (c, s) => {
+  stroke2(c, s, pal('touch.sunflower'), 0.2, () => { c.beginPath(); c.arc(0, -s * 0.12, s * 0.4, Math.PI * 0.12, Math.PI * 0.88); });
+  dot(c, -s * 0.37, s * 0.08, s * 0.045, pal('earth.bark')); dot(c, s * 0.37, s * 0.08, s * 0.045, pal('earth.bark'));
+  c.beginPath(); c.arc(0, -s * 0.12, s * 0.34, Math.PI * 0.2, Math.PI * 0.8); c.strokeStyle = pal('touch.sunflower', 'light'); c.lineWidth = s * 0.04; c.stroke();
+});
+def('orange', 'Orange', 'food fruit', (c, s) => {
+  part(c, s, pal('touch.tangerine'), circ(c, 0, s * 0.08, s * 0.38));
+  c.save(); ell(c, -s * 0.14, -s * 0.04, s * 0.09, s * 0.06, -0.6)(); wash(c, SNOW, 0.5); c.restore();
+  part(c, s, pal('meadow.fresh'), ell(c, s * 0.14, -s * 0.34, s * 0.14, s * 0.06, -0.4));
+  c.beginPath(); c.moveTo(0, -s * 0.28); c.lineTo(0, -s * 0.38); line(c, s, 0.05);
+});
+def('grapes', 'Grapes', 'food fruit', (c, s) => {
+  part(c, s, pal('meadow.fresh'), ell(c, s * 0.18, -s * 0.34, s * 0.15, s * 0.06, -0.4));
+  c.beginPath(); c.moveTo(0, -s * 0.2); c.lineTo(s * 0.02, -s * 0.38); line(c, s, 0.05);
+  for (const [x, y] of [[-0.24, -0.08], [0, -0.08], [0.24, -0.08], [-0.12, 0.12], [0.12, 0.12], [0, 0.32]]) part(c, s, pal('touch.grape'), circ(c, x * s, y * s, s * 0.13));
+  c.save(); c.fillStyle = SNOW; c.globalAlpha *= 0.55; for (const [x, y] of [[-0.28, -0.12], [-0.04, -0.12], [0.2, -0.12], [-0.16, 0.08], [0.08, 0.08], [-0.04, 0.28]]){ c.beginPath(); c.arc(x * s, y * s, s * 0.025, 0, 7); c.fill(); } c.restore();
+});
+def('cherry', 'Cherries', 'food fruit', (c, s) => {
+  c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = s * 0.05; c.beginPath(); c.moveTo(-s * 0.2, s * 0.14); c.quadraticCurveTo(-s * 0.1, -s * 0.2, s * 0.12, -s * 0.38); c.moveTo(s * 0.2, s * 0.2); c.quadraticCurveTo(s * 0.2, -s * 0.12, s * 0.12, -s * 0.38); c.stroke();
+  part(c, s, pal('meadow.fresh'), ell(c, s * 0.28, -s * 0.34, s * 0.16, s * 0.06, -0.3));
+  for (const x of [-0.2, 0.2]){ part(c, s, pal('touch.cherry'), circ(c, x * s, s * 0.22, s * 0.2)); c.save(); ell(c, (x - 0.07) * s, s * 0.14, s * 0.05, s * 0.035, -0.6)(); wash(c, SNOW, 0.6); c.restore(); }
+});
+def('watermelon', 'Watermelon', 'food fruit', (c, s) => {
+  part(c, s, pal('meadow.deep'), () => { c.beginPath(); c.arc(0, -s * 0.18, s * 0.46, 0, Math.PI); c.closePath(); });
+  part(c, s, SNOW, () => { c.beginPath(); c.arc(0, -s * 0.18, s * 0.39, 0, Math.PI); c.closePath(); }, { shade: false, w: 0.001 });
+  part(c, s, pal('touch.cherry'), () => { c.beginPath(); c.arc(0, -s * 0.18, s * 0.34, 0, Math.PI); c.closePath(); }, { w: 0.001 });
+  for (const [x, y] of [[-0.18, 0.02], [0, 0.1], [0.18, 0.02], [-0.08, 0.2], [0.1, 0.22]]){ c.save(); c.translate(x * s, y * s); c.rotate(-0.2); c.fillStyle = INK; c.beginPath(); c.ellipse(0, 0, s * 0.03, s * 0.05, 0, 0, 7); c.fill(); c.restore(); }
+});
+def('carrot', 'Carrot', 'food', (c, s) => {
+  for (const a of [-0.5, 0, 0.5]) part(c, s, pal('meadow.fresh'), () => { c.save(); c.translate(s * 0.22, -s * 0.22); c.rotate(a + 0.7); c.beginPath(); c.ellipse(0, -s * 0.15, s * 0.06, s * 0.15, 0, 0, 7); c.restore(); });
+  part(c, s, pal('touch.tangerine'), () => { c.beginPath(); c.moveTo(-s * 0.34, s * 0.46); c.lineTo(s * 0.08, -s * 0.28); c.quadraticCurveTo(s * 0.26, -s * 0.34, s * 0.36, -s * 0.18); c.quadraticCurveTo(s * 0.4, -s * 0.06, s * 0.3, s * 0.0); c.closePath(); });
+  c.lineWidth = s * 0.035; c.strokeStyle = INK; c.lineCap = 'round'; for (const [a, b, d, e] of [[0.02, 0.1, 0.1, 0.02], [-0.1, 0.24, 0.0, 0.16], [0.08, -0.06, 0.18, -0.1]]){ c.beginPath(); c.moveTo(a * s, b * s); c.lineTo(d * s, e * s); c.stroke(); }
+});
+def('cookie', 'Cookie', 'food treat', (c, s) => {
+  part(c, s, pal('earth.sand'), circ(c, 0, 0, s * 0.42));
+  for (const [x, y, r] of [[-0.16, -0.14, 0.06], [0.14, -0.2, 0.05], [0.2, 0.06, 0.06], [-0.2, 0.14, 0.055], [0.0, 0.0, 0.05], [0.06, 0.24, 0.05]]) dot(c, x * s, y * s, r * s, pal('earth.bark'));
+});
+def('icecream', 'Ice cream', 'food treat', (c, s) => {
+  part(c, s, pal('earth.sand'), poly(c, [[-s * 0.22, s * 0.02], [s * 0.22, s * 0.02], [0, s * 0.48]]));
+  c.save(); poly(c, [[-s * 0.22, s * 0.02], [s * 0.22, s * 0.02], [0, s * 0.48]])(); c.clip(); c.lineWidth = s * 0.025; c.strokeStyle = INK; for (const k of [-0.2, 0, 0.2, 0.4]){ c.beginPath(); c.moveTo(-s * 0.3, s * (k + 0.04)); c.lineTo(s * 0.3, s * (k + 0.34)); c.moveTo(s * 0.3, s * (k + 0.04)); c.lineTo(-s * 0.3, s * (k + 0.34)); c.stroke(); } c.restore();
+  part(c, s, pal('touch.bubblegum'), circ(c, 0, -s * 0.12, s * 0.28));
+  part(c, s, pal('touch.bubblegum'), ell(c, -s * 0.18, s * 0.02, s * 0.1, s * 0.07), { shade: false });
+  part(c, s, pal('touch.bubblegum'), ell(c, s * 0.16, s * 0.02, s * 0.1, s * 0.07), { shade: false });
+  part(c, s, pal('touch.cherry'), circ(c, 0, -s * 0.4, s * 0.07));
+});
+def('pizza', 'Pizza', 'food', (c, s) => {
+  part(c, s, pal('touch.sunflower'), poly(c, [[-s * 0.42, -s * 0.26], [s * 0.42, -s * 0.26], [0, s * 0.46]]));
+  part(c, s, pal('earth.clay'), rrect(c, -s * 0.46, -s * 0.36, s * 0.92, s * 0.14, s * 0.07));
+  for (const [x, y, r] of [[-0.14, -0.08, 0.075], [0.16, -0.06, 0.07], [0.0, 0.12, 0.07]]) part(c, s, pal('touch.cherry'), circ(c, x * s, y * s, r * s), { w: 0.035 });
+});
+
+/* nature */
+def('sunflower', 'Sunflower', 'nature garden', (c, s) => {
+  for (let i = 0; i < 10; i++){ const a = i * Math.PI / 5; part(c, s, pal('touch.sunflower'), ell(c, Math.cos(a) * s * 0.3, Math.sin(a) * s * 0.3, s * 0.15, s * 0.075, a), { shade: i > 4, w: 0.04 }); }
+  part(c, s, pal('earth.bark'), circ(c, 0, 0, s * 0.2));
+  dot(c, -s * 0.06, -s * 0.06, s * 0.04, pal('earth.bark', 'light'));
+});
+def('tulip', 'Tulip', 'nature garden', (c, s) => {
+  c.beginPath(); c.moveTo(0, s * 0.0); c.lineTo(0, s * 0.46); line(c, s, 0.07); c.strokeStyle = pal('meadow.fresh'); c.lineWidth = s * 0.04; c.stroke();
+  for (const sx of [-1, 1]) part(c, s, pal('meadow.fresh'), () => { c.beginPath(); c.moveTo(0, s * 0.42); c.quadraticCurveTo(sx * s * 0.34, s * 0.34, sx * s * 0.3, s * 0.08); c.quadraticCurveTo(sx * s * 0.1, s * 0.2, 0, s * 0.42); c.closePath(); });
+  part(c, s, pal('touch.cherry'), () => { c.beginPath(); c.moveTo(-s * 0.26, -s * 0.28); c.lineTo(-s * 0.14, -s * 0.12); c.lineTo(0, -s * 0.3); c.lineTo(s * 0.14, -s * 0.12); c.lineTo(s * 0.26, -s * 0.28); c.quadraticCurveTo(s * 0.3, s * 0.02, 0, s * 0.06); c.quadraticCurveTo(-s * 0.3, s * 0.02, -s * 0.26, -s * 0.28); c.closePath(); });
+});
+def('mapleleaf', 'Maple leaf', 'nature autumn', (c, s) => {
+  c.beginPath(); c.moveTo(0, s * 0.2); c.lineTo(0, s * 0.46); line(c, s, 0.06);
+  part(c, s, pal('autumn.rust'), poly(c, [[0, -s * 0.46], [s * 0.1, -s * 0.28], [s * 0.2, -s * 0.34], [s * 0.18, -s * 0.12], [s * 0.4, -s * 0.18], [s * 0.3, s * 0.02], [s * 0.46, s * 0.1], [s * 0.2, s * 0.24], [s * 0.04, s * 0.2], [0, s * 0.3], [-s * 0.04, s * 0.2], [-s * 0.2, s * 0.24], [-s * 0.46, s * 0.1], [-s * 0.3, s * 0.02], [-s * 0.4, -s * 0.18], [-s * 0.18, -s * 0.12], [-s * 0.2, -s * 0.34], [-s * 0.1, -s * 0.28]]));
+  c.beginPath(); c.moveTo(0, s * 0.2); c.lineTo(0, -s * 0.2); c.moveTo(0, s * 0.04); c.lineTo(s * 0.22, -s * 0.08); c.moveTo(0, s * 0.04); c.lineTo(-s * 0.22, -s * 0.08); c.lineWidth = s * 0.025; c.strokeStyle = INK; c.stroke();
+});
+def('mushroom', 'Mushroom', 'nature forest', (c, s) => {
+  part(c, s, SNOW, rrect(c, -s * 0.14, -s * 0.04, s * 0.28, s * 0.46, s * 0.08));
+  part(c, s, pal('touch.cherry'), () => { c.beginPath(); c.ellipse(0, -s * 0.04, s * 0.46, s * 0.4, 0, Math.PI, 0); c.quadraticCurveTo(0, s * 0.08, -s * 0.46, -s * 0.04); c.closePath(); });
+  for (const [x, y, r] of [[-0.22, -0.18, 0.07], [0.04, -0.28, 0.07], [0.26, -0.14, 0.06]]) dot(c, x * s, y * s, r * s, SNOW);
+});
+def('snowman', 'Snowman', 'snow', (c, s) => {
+  part(c, s, SNOW, circ(c, 0, s * 0.24, s * 0.26));
+  part(c, s, SNOW, circ(c, 0, -s * 0.12, s * 0.2));
+  part(c, s, pal('touch.cherry'), rrect(c, -s * 0.2, s * 0.04, s * 0.4, s * 0.07, s * 0.035), { shade: false });
+  part(c, s, pal('fur.charcoal'), rrect(c, -s * 0.2, -s * 0.28, s * 0.4, s * 0.05, s * 0.02), { shade: false });
+  part(c, s, pal('fur.charcoal'), rrect(c, -s * 0.12, -s * 0.46, s * 0.24, s * 0.2, s * 0.03), { shade: false });
+  dot(c, -s * 0.07, -s * 0.14, s * 0.025, INK); dot(c, s * 0.07, -s * 0.14, s * 0.025, INK);
+  part(c, s, pal('touch.tangerine'), poly(c, [[0, -s * 0.1], [s * 0.18, -s * 0.07], [0, -s * 0.04]]), { shade: false, w: 0.035 });
+  for (const y of [0.18, 0.3]) dot(c, 0, y * s, s * 0.025, INK);
+});
+def('cactus', 'Cactus', 'nature', (c, s) => {
+  const g = pal('meadow.fresh');
+  part(c, s, g, rrect(c, -s * 0.34, -s * 0.12, s * 0.12, s * 0.3, s * 0.06)); part(c, s, g, rrect(c, -s * 0.34, s * 0.08, s * 0.3, s * 0.12, s * 0.06));
+  part(c, s, g, rrect(c, s * 0.22, -s * 0.26, s * 0.12, s * 0.26, s * 0.06)); part(c, s, g, rrect(c, s * 0.0, -s * 0.02, s * 0.34, s * 0.12, s * 0.06));
+  part(c, s, g, rrect(c, -s * 0.14, -s * 0.42, s * 0.28, s * 0.72, s * 0.14));
+  part(c, s, pal('earth.clay'), poly(c, [[-s * 0.26, s * 0.3], [s * 0.26, s * 0.3], [s * 0.2, s * 0.48], [-s * 0.2, s * 0.48]]));
+  for (const [x, y] of [[-0.04, -0.28], [0.05, -0.12], [-0.04, 0.04], [0.04, 0.18]]) dot(c, x * s, y * s, s * 0.018, INK);
+});
+def('seedling', 'Seedling', 'nature garden', (c, s) => {
+  part(c, s, pal('earth.clay'), ell(c, 0, s * 0.38, s * 0.34, s * 0.12));
+  c.beginPath(); c.moveTo(0, s * 0.34); c.quadraticCurveTo(s * 0.02, s * 0.1, 0, -s * 0.06); line(c, s, 0.1); c.strokeStyle = pal('meadow.fresh'); c.lineWidth = s * 0.05; c.stroke();
+  for (const sx of [-1, 1]) part(c, s, pal('meadow.fresh'), () => { c.beginPath(); c.moveTo(0, -s * 0.04); c.quadraticCurveTo(sx * s * 0.1, -s * 0.4, sx * s * 0.44, -s * 0.32); c.quadraticCurveTo(sx * s * 0.34, s * 0.0, 0, -s * 0.04); c.closePath(); });
+});
+def('shell', 'Shell', 'nature beach', (c, s) => {
+  part(c, s, pal('earth.peach'), () => { c.beginPath(); c.moveTo(-s * 0.14, s * 0.38); c.lineTo(-s * 0.44, s * 0.0); c.arc(0, s * 0.0, s * 0.44, Math.PI, 0); c.lineTo(s * 0.14, s * 0.38); c.closePath(); });
+  c.save(); c.beginPath(); c.moveTo(-s * 0.14, s * 0.38); c.lineTo(-s * 0.44, s * 0.0); c.arc(0, s * 0.0, s * 0.44, Math.PI, 0); c.lineTo(s * 0.14, s * 0.38); c.closePath(); c.clip();
+  c.lineWidth = s * 0.03; c.strokeStyle = INK; for (const a of [-2.7, -2.2, -1.57, -0.94, -0.44]){ c.beginPath(); c.moveTo(0, s * 0.4); c.lineTo(Math.cos(a) * s * 0.5, Math.sin(a) * s * 0.5); c.stroke(); } c.restore();
+  part(c, s, pal('earth.sand'), rrect(c, -s * 0.16, s * 0.34, s * 0.32, s * 0.1, s * 0.04), { shade: false });
+});
+
+/* things */
+def('car', 'Car', 'thing', (c, s) => {
+  part(c, s, pal('touch.cherry'), rrect(c, -s * 0.2, -s * 0.24, s * 0.4, s * 0.28, s * 0.1));
+  part(c, s, pal('touch.cherry'), rrect(c, -s * 0.46, -s * 0.04, s * 0.92, s * 0.34, s * 0.1));
+  part(c, s, pal('sea.sunlit'), rrect(c, -s * 0.13, -s * 0.18, s * 0.11, s * 0.16, s * 0.03), { shade: false, w: 0.035 }); part(c, s, pal('sea.sunlit'), rrect(c, s * 0.03, -s * 0.18, s * 0.11, s * 0.16, s * 0.03), { shade: false, w: 0.035 });
+  part(c, s, pal('touch.sunflower'), circ(c, s * 0.4, s * 0.08, s * 0.05), { shade: false, w: 0.03 });
+  for (const x of [-0.26, 0.26]){ part(c, s, pal('fur.charcoal'), circ(c, x * s, s * 0.3, s * 0.12)); dot(c, x * s, s * 0.3, s * 0.04, pal('shade.light')); }
+});
+def('train', 'Train', 'thing', (c, s) => {
+  part(c, s, INK, rrect(c, -s * 0.28, -s * 0.34, s * 0.12, s * 0.2, s * 0.03), { shade: false });
+  part(c, s, pal('touch.mint'), rrect(c, -s * 0.46, -s * 0.16, s * 0.56, s * 0.34, s * 0.07));
+  part(c, s, pal('touch.skyBlue'), rrect(c, s * 0.1, -s * 0.34, s * 0.34, s * 0.52, s * 0.05));
+  part(c, s, pal('sea.sunlit'), rrect(c, s * 0.18, -s * 0.26, s * 0.18, s * 0.18, s * 0.03), { shade: false, w: 0.035 });
+  part(c, s, pal('touch.sunflower'), rrect(c, s * 0.04, -s * 0.38, s * 0.46, s * 0.07, s * 0.03), { shade: false, w: 0.035 });
+  part(c, s, pal('touch.sunflower'), circ(c, -s * 0.46, s * 0.0, s * 0.05), { shade: false, w: 0.03 });
+  for (const x of [-0.3, -0.06, 0.28]){ part(c, s, pal('touch.cherry'), circ(c, x * s, s * 0.3, x > 0 ? s * 0.12 : s * 0.1)); dot(c, x * s, s * 0.3, s * 0.035, pal('shade.light')); }
+});
+def('castle', 'Castle', 'place', (c, s) => {
+  const stone = pal('earth.sand');
+  for (const sx of [-1, 1]){ part(c, s, stone, rrect(c, sx * s * 0.3 - s * 0.1, -s * 0.12, s * 0.2, s * 0.56, s * 0.02)); part(c, s, pal('earth.plumRoof'), poly(c, [[sx * s * 0.3 - s * 0.14, -s * 0.12], [sx * s * 0.3, -s * 0.4], [sx * s * 0.3 + s * 0.14, -s * 0.12]])); }
+  part(c, s, stone, rrect(c, -s * 0.22, -s * 0.2, s * 0.44, s * 0.64, s * 0.02));
+  part(c, s, pal('earth.plumRoof'), poly(c, [[-s * 0.26, -s * 0.2], [0, -s * 0.5], [s * 0.26, -s * 0.2]]));
+  part(c, s, pal('touch.cherry'), poly(c, [[0, -s * 0.5], [s * 0.2, -s * 0.44], [0, -s * 0.38]]), { shade: false, w: 0.03 });
+  part(c, s, pal('earth.bark'), () => { c.beginPath(); c.moveTo(-s * 0.1, s * 0.44); c.lineTo(-s * 0.1, s * 0.22); c.arc(0, s * 0.22, s * 0.1, Math.PI, 0); c.lineTo(s * 0.1, s * 0.44); c.closePath(); }, { shade: false });
+  for (const [x, y] of [[-0.3, 0.04], [0.3, 0.04], [0, -0.06]]) part(c, s, pal('earth.bark'), rrect(c, (x - 0.025) * s, y * s, s * 0.05, s * 0.1, s * 0.02), { shade: false, w: 0.03 });
+});
+def('tent', 'Tent', 'place', (c, s) => {
+  part(c, s, pal('meadow.soft'), ell(c, 0, s * 0.38, s * 0.46, s * 0.09), { shade: false });
+  part(c, s, pal('touch.tangerine'), poly(c, [[0, -s * 0.38], [s * 0.46, s * 0.4], [-s * 0.46, s * 0.4]]));
+  part(c, s, pal('shade.shadow'), poly(c, [[0, -s * 0.06], [s * 0.18, s * 0.4], [-s * 0.18, s * 0.4]]), { shade: false });
+  c.beginPath(); c.moveTo(0, -s * 0.38); c.lineTo(0, -s * 0.06); line(c, s, 0.035);
+  part(c, s, pal('touch.cherry'), poly(c, [[0, -s * 0.38], [s * 0.18, -s * 0.32], [0, -s * 0.26]]), { shade: false, w: 0.03 });
+});
+def('drum', 'Drum', 'thing music', (c, s) => {
+  c.lineCap = 'round'; for (const sx of [-1, 1]){ c.beginPath(); c.moveTo(sx * s * 0.08, -s * 0.06); c.lineTo(sx * s * 0.36, -s * 0.46); c.lineWidth = s * 0.1; c.strokeStyle = INK; c.stroke(); c.lineWidth = s * 0.045; c.strokeStyle = pal('earth.sand'); c.stroke(); }
+  part(c, s, pal('touch.cherry'), () => { c.beginPath(); c.moveTo(-s * 0.4, -s * 0.06); c.lineTo(-s * 0.4, s * 0.3); c.ellipse(0, s * 0.3, s * 0.4, s * 0.12, 0, Math.PI, 0, true); c.lineTo(s * 0.4, -s * 0.06); c.closePath(); });
+  part(c, s, pal('shade.light'), ell(c, 0, -s * 0.06, s * 0.4, s * 0.13), { shade: false });
+  c.save(); c.beginPath(); c.rect(-s * 0.4, -s * 0.06, s * 0.8, s * 0.5); c.clip(); c.beginPath(); c.moveTo(-s * 0.36, s * 0.04); for (let i = 0; i < 4; i++){ c.lineTo((-0.36 + (i + 0.5) * 0.18) * s, s * 0.3); c.lineTo((-0.36 + (i + 1) * 0.18) * s, s * 0.04); } c.lineWidth = s * 0.035; c.strokeStyle = pal('touch.sunflower'); c.stroke(); c.restore();
+});
+def('guitar', 'Guitar', 'thing music', (c, s) => {
+  c.save(); c.rotate(-0.7);
+  part(c, s, pal('earth.bark'), rrect(c, -s * 0.05, -s * 0.5, s * 0.1, s * 0.44, s * 0.02));
+  part(c, s, pal('fur.charcoal'), rrect(c, -s * 0.08, -s * 0.58, s * 0.16, s * 0.12, s * 0.03), { shade: false });
+  part(c, s, pal('earth.clay'), circ(c, 0, s * 0.08, s * 0.16)); part(c, s, pal('earth.clay'), circ(c, 0, s * 0.3, s * 0.22));
+  dot(c, 0, s * 0.2, s * 0.07, INK);
+  c.beginPath(); c.moveTo(0, s * 0.06); c.lineTo(0, s * 0.4); c.lineWidth = s * 0.02; c.strokeStyle = INK; c.stroke();
+  c.restore();
+});
+def('teddy', 'Teddy bear', 'thing toy', (c, s) => {
+  const b = pal('earth.clay');
+  for (const sx of [-1, 1]){ part(c, s, b, circ(c, sx * s * 0.2, s * 0.38, s * 0.1)); part(c, s, b, ell(c, sx * s * 0.3, s * 0.18, s * 0.08, s * 0.11, sx * -0.5)); }
+  part(c, s, b, ell(c, 0, s * 0.24, s * 0.26, s * 0.24));
+  part(c, s, pal('earth.sand'), ell(c, 0, s * 0.27, s * 0.14, s * 0.15), { shade: false });
+  for (const sx of [-1, 1]) part(c, s, b, circ(c, sx * s * 0.24, -s * 0.28, s * 0.1));
+  part(c, s, b, circ(c, 0, -s * 0.12, s * 0.28));
+  part(c, s, pal('earth.sand'), ell(c, 0, -s * 0.05, s * 0.12, s * 0.09), { shade: false });
+  dot(c, 0, -s * 0.08, s * 0.03, INK); eye(c, -s * 0.11, -s * 0.18, s * 0.035); eye(c, s * 0.11, -s * 0.18, s * 0.035);
+  part(c, s, pal('touch.cherry'), poly(c, [[0, s * 0.1], [-s * 0.12, s * 0.04], [-s * 0.12, s * 0.16]]), { shade: false, w: 0.035 }); part(c, s, pal('touch.cherry'), poly(c, [[0, s * 0.1], [s * 0.12, s * 0.04], [s * 0.12, s * 0.16]]), { shade: false, w: 0.035 });
+});
+def('basketball', 'Basketball', 'thing ball', (c, s) => {
+  part(c, s, pal('touch.tangerine'), circ(c, 0, 0, s * 0.42));
+  c.save(); c.beginPath(); c.arc(0, 0, s * 0.42, 0, 7); c.clip(); c.lineWidth = s * 0.035; c.strokeStyle = INK;
+  c.beginPath(); c.moveTo(-s * 0.42, 0); c.lineTo(s * 0.42, 0); c.moveTo(0, -s * 0.42); c.lineTo(0, s * 0.42); c.stroke();
+  c.beginPath(); c.arc(-s * 0.5, 0, s * 0.34, -1.1, 1.1); c.stroke(); c.beginPath(); c.arc(s * 0.5, 0, s * 0.34, Math.PI - 1.1, Math.PI + 1.1); c.stroke(); c.restore();
+});
+def('soccerball', 'Football', 'thing ball', (c, s) => {
+  part(c, s, SNOW, circ(c, 0, 0, s * 0.42));
+  const pent = (r, x, y, rot) => { c.beginPath(); for (let k = 0; k < 5; k++){ const a = rot + k * Math.PI * 2 / 5; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.closePath(); };
+  c.save(); c.beginPath(); c.arc(0, 0, s * 0.42, 0, 7); c.clip(); c.fillStyle = pal('fur.charcoal'); c.strokeStyle = INK; c.lineWidth = s * 0.03; c.lineJoin = 'round';
+  for (let k = 0; k < 5; k++){ const a = -Math.PI / 2 + k * Math.PI * 2 / 5; c.beginPath(); c.moveTo(Math.cos(a) * s * 0.14, Math.sin(a) * s * 0.14); c.lineTo(Math.cos(a) * s * 0.28, Math.sin(a) * s * 0.28); c.stroke(); pent(s * 0.13, Math.cos(a) * s * 0.46, Math.sin(a) * s * 0.46, a + Math.PI / 5 * 0 + 0.3); c.fill(); }
+  pent(s * 0.15, 0, 0, -Math.PI / 2); c.fill(); c.stroke(); c.restore();
+  c.save(); c.beginPath(); c.arc(0, 0, s * 0.42, 0, 7); c.clip(); c.beginPath(); c.arc(s * 0.3, s * 0.34, s * 0.46, 0, 7); wash(c, SHADOW, 0.16); c.restore();
+  c.beginPath(); c.arc(0, 0, s * 0.42, 0, 7); line(c, s, 0.05);
+});
+def('umbrella', 'Umbrella', 'thing rain', (c, s) => {
+  c.beginPath(); c.moveTo(0, -s * 0.06); c.lineTo(0, s * 0.34); c.arc(-s * 0.08, s * 0.34, s * 0.08, 0, Math.PI); line(c, s, 0.09); c.strokeStyle = pal('earth.bark'); c.lineWidth = s * 0.04; c.stroke();
+  const top = -s * 0.04, R = s * 0.46;
+  for (let i = 0; i < 4; i++) part(c, s, i % 2 ? SNOW : pal('touch.cherry'), () => { c.beginPath(); c.moveTo(0, top); c.arc(0, top, R, Math.PI + i * Math.PI / 4, Math.PI + (i + 1) * Math.PI / 4); c.closePath(); }, { w: 0.04 });
+});
+def('balloonemoji', 'Party balloon', 'thing party', (c, s) => {
+  c.beginPath(); c.moveTo(0, s * 0.3); c.quadraticCurveTo(-s * 0.1, s * 0.4, s * 0.04, s * 0.5); line(c, s, 0.025);
+  part(c, s, pal('touch.cherry'), poly(c, [[0, s * 0.3], [-s * 0.06, s * 0.38], [s * 0.06, s * 0.38]]), { shade: false, w: 0.03 });
+  part(c, s, pal('touch.cherry'), ell(c, 0, -s * 0.08, s * 0.3, s * 0.38));
+  c.save(); ell(c, -s * 0.12, -s * 0.22, s * 0.06, s * 0.1, 0.4)(); wash(c, SNOW, 0.6); c.restore();
+});
+
 const MONO = (c, s, o, vw, vh, parts) => {
   if (typeof Path2D === 'undefined') return;
   const k = s / Math.max(vw, vh);

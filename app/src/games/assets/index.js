@@ -17,7 +17,6 @@
 import { color as paletteColor } from './palette.js';
 import { POSE_NAMES, FACE_NAMES } from '../figure.js';
 import { cuboFigure } from '../../ui/avatar-art.js';
-import { EMOJI } from './emoji.js';
 import { PROPS } from './props.js';
 import { ICONS } from './icons.js';
 import { SCENES, drawScene } from './scenes.js';
@@ -30,21 +29,13 @@ add({ id: 'cubo', name: 'Cubo', kind: 'character', tags: ['person', 'cube'], asp
   /* (this centres the whole of him, head to feet, on the point asked for) */
   draw(c, s, o){ cuboFigure(c, 0, s * 0.5, s * 0.95, o.pose || 'freeze', o.t || 0, o.face || null); } });
 
-/* the emoji pieces, by their kind */
-const KIND = { animal: 'animal', food: 'food', nature: 'nature' };
-for (const [id, ch, name, tags] of EMOJI){
-  const t = tags.split(' '), kind = KIND[t[0]] || 'thing';
-  add({ id, name, kind: t[0] === 'effect' ? 'effect' : kind, tags: t, aspect: 1,
-    draw(c, s){ c.fillStyle = paletteColor('shade.ink'); c.font = `${Math.round(s * 0.86)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ch, 0, s * 0.04); } });
-}
-
 /* the pieces drawn in code */
 for (const [id, [name, tags, aspect, draw]] of Object.entries(PROPS)){
   const t = tags.split(' '), kind = t[0] === 'effect' ? 'effect' : t[0] === 'nature' || t[0] === 'animal' ? t[0] : 'thing';
   add({ id, name, kind, tags: t, aspect, draw });
 }
 
-/* the painted icons (icons.js): they replace the emoji pieces of the same id, so the HUD, the hint words and Create's hints never show a system emoji */
+/* the painted icons (icons.js): animals, food, nature and things, so the HUD, the hint words and Create's hints never show a system emoji */
 for (const [id, [name, tags, aspect, draw]] of Object.entries(ICONS)){
   const t = tags.split(' '), kind = t[0] === 'effect' ? 'effect' : t[0] === 'nature' || t[0] === 'animal' || t[0] === 'food' ? t[0] : 'thing';
   add({ id, name, kind, tags: t, aspect, draw });

@@ -3,8 +3,6 @@
    into its character, and fails on any emoji.
    Left alone on purpose (a reviewer may delete them, or they are the library's own table):
      - Last Known Position (lkp-*.js) and Tower Defense (castle-*.js): not part of U3/U4 while the owner decides whether to keep them;
-     - games/assets/emoji.js: the library's older system-emoji pieces (a creator's game may still ask for one); painted ones with the same id
-       (icons.js) replace them, and the rest are to be repainted as they are needed;
      - games/assets/legacy-emoji.js: the one place old emoji are named, to turn them into icons. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,7 +11,7 @@ import { join, relative, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const EXEMPT = [/\/lkp-[^/]*\.js$/, /\/castle-[^/]*\.js$/, /assets\/emoji\.js$/, /assets\/legacy-emoji\.js$/];
+const EXEMPT = [/\/lkp-[^/]*\.js$/, /\/castle-[^/]*\.js$/, /assets\/legacy-emoji\.js$/];
 const EMOJI = /\p{Extended_Pictographic}|\p{Emoji_Presentation}|\uFE0F|\u200D/u;
 
 const files = (d) => readdirSync(d).flatMap(f => { const p = join(d, f); return statSync(p).isDirectory() ? files(p) : /\.(js|mjs|md|json)$/.test(p) ? [p] : []; });
@@ -41,7 +39,11 @@ test('the painted replacements are real: every icon the shell and the games name
   const { assets } = await import('../src/games/assets/index.js');
   for (const id of ['giraffe', 'bunny', 'bird', 'frog', 'elephant', 'penguin', 'dinosaur', 'fallenleaf', 'volleyball', 'balloon', 'block', 'musicnote', 'snowflake', 'apple', 'pear', 'strawberry', 'feather',
     'dice', 'wind', 'raven', 'basket', 'confetti', 'sparkles', 'glowstar', 'gem', 'volcano', 'palm', 'pinetree', 'roundtree', 'fern', 'egg', 'flower', 'lizard', 'waterfall', 'paintbrush', 'whale', 'sailboat', 'bee',
-    'gamepad', 'compass', 'clock', 'pencil', 'chain', 'key', 'wrench', 'tv', 'warning', 'sign', 'crane', 'tag', 'speech', 'pointer', 'acrobat', 'palette', 'rocket', 'helicopter', 'house'])
+    'gamepad', 'compass', 'clock', 'pencil', 'chain', 'key', 'wrench', 'tv', 'warning', 'sign', 'crane', 'tag', 'speech', 'pointer', 'acrobat', 'palette', 'rocket', 'helicopter', 'house',
+    /* the last emoji pieces, now painted */
+    'turtle', 'duck', 'lion', 'panda', 'fox', 'pig', 'sheep', 'cow', 'horse', 'mouse', 'hedgehog', 'ladybug', 'snail', 'crab', 'octopus', 'dolphin', 'koala', 'kangaroo', 'flamingo', 'parrot', 'swan', 'seal',
+    'banana', 'orange', 'grapes', 'cherry', 'watermelon', 'carrot', 'cookie', 'icecream', 'pizza', 'sunflower', 'tulip', 'mapleleaf', 'mushroom', 'snowman', 'cactus', 'seedling', 'shell',
+    'car', 'train', 'castle', 'tent', 'drum', 'guitar', 'teddy', 'basketball', 'soccerball', 'umbrella', 'balloonemoji'])
     assert.ok(assets.has(id), id);
   /* and an old-style hint still shows: the leading emoji becomes the icon that says the same */
   const { splitHint } = await import('../src/games/assets/legacy-emoji.js');
