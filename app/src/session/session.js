@@ -28,7 +28,6 @@ function randomToken() {
 export function createSession({ game, people, trust, send, colourFor = defaultColourFor, now = Date.now, rng = Math.random,
   newToken = randomToken, setTimer = setTimeout, clearTimer = clearTimeout }) {
   const padRange = (game && game.seats && game.seats.pads) || [0, 0];
-  const trackedRange = (game && game.seats && game.seats.tracked) || [0, 0];
   const maxPads = padRange[1] | 0;
   const conns = new Map();            /* hub id -> { ua, verified, device } */
   const padSeats = [];                /* index -> { device, conn, who, name, avatar, colour, state, ready } or null */

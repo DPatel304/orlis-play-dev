@@ -12,11 +12,11 @@ import { figureCard, cardTucker } from './games/figure.js';
 import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
 import { cycleHands, handsName } from './ui/handshow.js';
-import { toggleFullscreen, openSettings, played as playedLately, BLURB } from './ui/menu.js';
+import { toggleFullscreen, played as playedLately, BLURB } from './ui/menu.js';
 import { menu, discoverPage } from './ui/home.js';
 import { PAPER } from './ui/boot.js';
 import { remote, typing } from './ui/remote.js';
-import { account, welcome, AVATARS } from './ui/account.js';
+import { account, welcome } from './ui/account.js';
 import { smoothness, joinLine } from './ui/smoothness.js';
 import { buildReport, gpuName } from './ui/perfreport.js';
 import { installTitlebar, titlebarPlaying } from './ui/titlebar.js';
@@ -24,7 +24,7 @@ import { library } from './ui/library.js';
 import { createPage } from './ui/create.js';
 import { boot as bootShow } from './ui/boot.js';
 import { calibration, results, pauseOverlay, lostOverlay,
-         clearUI, drawSkeletons, screen, h } from './ui/screens.js';
+         clearUI, drawSkeletons } from './ui/screens.js';
 import { audio, music, sfx, ambience } from './audio/sound.js';
 import { voice } from './audio/voice.js';
 import { scores } from './games/common.js';
@@ -290,8 +290,6 @@ function crewTick(dt){
   for (const { i } of crew.popped()){ const p = crew.profileOf(i); if (p && MAKING) namePop(p); }
 }
 
-/* The first moments of a round: a card saying what to do, then 3, 2, 1 (the game waits, the hands already work) */
-const INTRO_CARD = 0.9, INTRO = INTRO_CARD + 3;
 let introLeft = 0, introN = 0, veilIntro = false;   /* (veilIntro: the card and the countdown are on the launch cover, not drawn over the game) */
 /* The move card: a game says which move to show (inst.card(), or null for none) and the shell draws it, the same way
    for every game: it slides in when the move changes and out when there is none. */

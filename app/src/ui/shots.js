@@ -44,11 +44,6 @@ function put(g, made, withArt){
     return true;
   } catch { return false; }
 }
-/* a cover from a picture of the game playing (a downloaded game's banner) */
-export function keepShot(g, canvas){
-  const made = makeCover(g, { still: canvas, accent: g.accent });
-  return !!made && put(g, made, false);
-}
 /* A Discover entry's cover, for its tile: one already made (it's been here
    before, or played), else made now from its art (built-in games) or its
    cover picture (a creator's: it comes with the entry, and is drawn a

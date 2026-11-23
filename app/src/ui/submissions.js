@@ -18,12 +18,6 @@ export function waitingEntries(submissions = []){
   });
 }
 
-/* fetch them (the owner only; [] for anyone else or when the server can't be reached) */
-export async function loadWaiting(){
-  if (!seesWaiting()) return [];
-  try { return waitingEntries((await account.call('GET', '/api/submissions?all=1')).submissions); } catch { return []; }
-}
-
 /* Try it: the game, fetched and checked and played in the sandbox, marked as the trial of this submission (played long enough, it can be approved) */
 export async function tryIt(g){
   const game = await library.preview(g);

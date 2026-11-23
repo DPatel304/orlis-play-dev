@@ -16,13 +16,6 @@ export const FEATURED_MAX = 3;
 /* how many rows keep the big hero (Play's two; Discover keeps it for its first row only) */
 export const PLAY_BIG = 2;
 
-/* the Make a game tiles (kept for the Create page's wording): what each opens, and whether only grown-ups see it */
-export const MAKE = [
-  { id: 'ask', name: 'Ask for a game', line: 'Tell us the game you imagine', prop: 'sparkle', tone: 'm1' },
-  { id: 'requests', name: 'Your requests', line: 'Games being made for you', prop: 'chest', tone: 'm2' },
-  { id: 'pro', name: 'Create Pro', line: 'Build games with Claude Code', prop: 'block', tone: 'm3', tag: 'Grown-ups' }
-];
-
 /* pool: the games on this PC (shown in the order given); featured: this week's featured Discover games not on this PC yet (stand-ins that
    know their entry); discover: whether Discover has a page to open (the Discover tile); testing: games a creator is trying on this TV. */
 export function homeRows({ pool = [], featured = [], discover = false, testing = [] } = {}){
@@ -48,14 +41,6 @@ export function discoverRows({ waiting = [], updates = [], rows = [] } = {}){
 export function tabsFor({ kid = false, waiting = false, creatorApp = false, modeTabs = ['home', 'store', 'create'] } = {}){
   if (kid || waiting || creatorApp || !modeTabs.includes('create') || !modeTabs.includes('home')) return [];
   return ['play', 'create'];
-}
-
-/* which Make tiles a person sees: a child none; a grown-up Ask and Requests; a creator (or the owner) Create Pro as well;
-   the Creator app is only Create Pro */
-export function makeFor({ kid = false, creator = false, creatorApp = false } = {}){
-  if (kid) return [];
-  if (creatorApp) return creator ? ['pro'] : ['ask'];
-  return creator ? ['ask', 'requests', 'pro'] : ['ask', 'requests'];
 }
 
 /* where focus starts: the game picked this session, else the one played last, else the first of "Your games" (families mostly replay

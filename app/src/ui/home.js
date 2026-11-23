@@ -27,7 +27,6 @@ import { splashWanted, showChallenges, challengePill } from './challenges.js';
 import { launch } from './launch.js';
 import { shotOf, coverOf, shotImage, makeShots } from './shots.js';
 import { makeCover, generatedArt, hasArt } from './covers.js';
-import { testingRow } from './building.js';
 import { icon, homeButton, twoSquares } from './brand.js';
 import { iconEl } from './icons.js';
 import { BLURB, iconOf, HIDDEN, openProfileSheet } from './menu.js';

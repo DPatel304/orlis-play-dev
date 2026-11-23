@@ -1,9 +1,6 @@
-import { GAMES } from '../games/index.js';
 import { button, onPick } from './cursor.js';
 import { screen, h } from './screens.js';
 import { audio, sfx } from '../audio/sound.js';
-import { pose, MAX_PLAYERS } from '../tracking/pose.js';
-import { remote } from './remote.js';
 import { account } from './account.js';
 import { appMode } from './mode.js';
 import { icon, homeButton } from './brand.js';
@@ -90,8 +87,6 @@ export function looks(g){
   return { icon, art, accent: ic.cols[0] };
 }
 
-
-
 /* Games kept off the home screen for now (still there, just not shown). */
 export const HIDDEN = new Set(['last-known-position', 'castle-defense']);
 /* What's been played lately, newest first (Jump back in). */
@@ -104,13 +99,6 @@ export const CREATE_SOON = {
   name: 'Create', line: 'Make your own games',
   about: 'Build your own movement games, then play them by moving. Share the ones you like with the family in Discover.'
 };
-
-
-/* How many can play: '1-4 players', or just the one number. */
-export function howMany(g){
-  const lo = Math.min(g.minPlayers || 1, pose.cap), hi = Math.min(g.maxPlayers || MAX_PLAYERS, pose.cap);
-  return lo === hi ? `${hi} player${hi > 1 ? 's' : ''}` : `${lo}\u2013${hi} players`;
-}
 
 /* The trailer plays at TV shape, TW x TH, and the banner shows the part of
    it the trailer says (anchor: how far down the middle of the view sits). */
@@ -181,7 +169,6 @@ function overlay(){
   return s;
 }
 
-export { settings as openSettings };
 
 function settings(onRecalibrate){
   /* a full-screen sheet (TV size), the big Home button where the logo sits */
