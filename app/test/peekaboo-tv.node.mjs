@@ -12,7 +12,7 @@ after(async () => { await rig?.close(); });
 test('the TV view draws hide, seek (two lanterns, a rustle, a silhouette in the light), found and hidden without errors', async () => {
   const tv = await rig.tv(null, { extra: '&home' });
   const { page } = tv, go = (fn) => page.evaluate(fn);
-  await page.locator('.btn.burger').waitFor({ timeout: 30000 });
+  await page.locator('.screen.home').waitFor({ timeout: 30000 });
   await go(async () => { window.pk = (await import('/test/harness/peekaboo-page.js')).setup(); window.pk.loop(); });
 
   /* hide: dim, no lanterns, nobody drawn */
@@ -52,7 +52,7 @@ test('the game opens in the real shell as far as the join card, and its home til
   assert.equal(await tv.page.evaluate(() => window.__pads.game.id), 'peekaboo');
   assert.deepEqual(tv.errors.map(String), [], 'no errors on the TV');
   const home = await rig.tv(null, { extra: '&home' });
-  await home.page.locator('.btn.burger').waitFor({ timeout: 30000 });
+  await home.page.locator('.screen.home').waitFor({ timeout: 30000 });
   await home.page.waitForTimeout(1500);
   assert.equal(await home.page.evaluate(() => document.querySelectorAll('canvas[style*="position:fixed"]').length > 1), false, 'no 3D layer on the home screen');
   assert.deepEqual(home.errors.map(String), []);

@@ -1,0 +1,37 @@
+/* ---------- Settings (a full-screen sheet), and the small cards over pages ---------- */
+.screen.dim.setscreen{ background:var(--paper); -webkit-backdrop-filter:none; backdrop-filter:none; display:block; padding:0; text-align:left; overflow-y:auto; font-family:var(--ui); color:var(--ink); }
+.screen.dim.setscreen:not(.setsheet){ background:rgba(29,27,46,.4); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.setcard{ width:min(92vw, calc(var(--u)*95)); padding:calc(var(--u)*3.4) calc(var(--u)*4) calc(var(--u)*2.4); border-radius:calc(var(--u)*3); background:var(--surface); color:var(--ink); box-shadow:var(--soft); font:400 calc(var(--u)*3.4)/1.3 var(--ui); text-align:left; animation:popin var(--t-base) var(--ease) both; }
+.setsheet .setcard{ width:min(94vw, calc(var(--u)*125)); margin:calc(var(--u)*17) auto calc(var(--u)*8); background:transparent; box-shadow:none; padding:0; animation:none; }
+.setsheet .sethead{ margin:0 0 calc(var(--u)*3); } .setsheet .sethead h2{ font:700 calc(var(--u)*9)/1 var(--ui); margin:0; }
+.setsheet .setgroup{ margin:calc(var(--u)*4) 0 calc(var(--u)*1.4); font:700 calc(var(--u)*2.9) var(--ui); letter-spacing:.14em; color:var(--ink-soft); text-transform:uppercase; }
+.setsheet .setgroup:first-of-type{ margin-top:0; }
+.setsheet .setrow{ display:flex; align-items:center; justify-content:space-between; gap:calc(var(--u)*3); min-height:calc(var(--u)*11); padding:calc(var(--u)*1.6) calc(var(--u)*3.4); margin-top:calc(var(--u)*1); border:0; border-radius:calc(var(--u)*2.4); background:var(--surface); box-shadow:var(--soft-sm); }
+.setsheet .setgroup + .setrow{ margin-top:0; }
+.setname{ font:700 calc(var(--u)*4) var(--ui); color:var(--ink); }
+.setctl{ gap:calc(var(--u)*1.4); }
+.setslider{ width:min(34vw, calc(var(--u)*40)); accent-color:var(--blue); height:calc(var(--u)*3); }
+.btn.setbtn{ font-family:var(--ui); padding:calc(var(--u)*1.3) calc(var(--u)*3); font-size:calc(var(--u)*3.4); font-weight:700; border:0; border-radius:var(--pill); background:var(--paper); color:var(--ink); box-shadow:none; }
+.btn.setbtn .fill{ background:var(--grad); opacity:.18; }
+.btn.setbtn.hot,.btn.setbtn:hover,body.remote .btn.setbtn.kfocus{ background:var(--surface); box-shadow:0 0 0 calc(var(--u)*.5) var(--who,var(--blue)); transform:none; border-color:transparent; }
+.btn.setbtn.go,.btn.setbtn.soonok,.btn.setbtn.sget,.btn.setbtn.splay{ background:var(--ink); color:#fff; border:0; }
+.btn.setbtn.go:hover{ background:var(--ink); }
+.btn.setbtn.danger{ background:#fff1f2; color:#be123c; }
+.btn.setbtn.flink{ background:transparent; color:var(--ink-soft); }
+.setctl .btn.setbtn{ min-width:calc(var(--u)*17); } .setctl .btn.setbtn.spk{ min-width:0; width:calc(var(--u)*7); height:calc(var(--u)*7); background:var(--paper); }
+.btn.setbtn.spk svg{ width:calc(var(--u)*4); height:calc(var(--u)*4); }
+.seg{ background:var(--paper); padding:calc(var(--u)*.5); gap:calc(var(--u)*.5); } .seg .btn.setbtn{ background:transparent; min-width:calc(var(--u)*17); }
+.seg .btn.setbtn.chosen{ background:var(--ink); color:#fff; box-shadow:none; }
+.btn.mode.chosen{ border-color:transparent; box-shadow:none; }
+.keyhint{ font-size:calc(var(--u)*3); color:var(--ink-soft); font-weight:700; opacity:1; }
+/* the other cards that share .setcard (Discover's game page, Trusted phones, soon pages) */
+.setcard h2{ font-family:var(--ui); }
+.setcard.trustcard{ background:var(--surface); color:var(--ink); font-family:var(--ui); }
+.trow{ background:var(--paper); border:0; border-radius:calc(var(--u)*2); }
+.btn.setbtn.trustrm{ border:0; background:var(--paper); color:var(--ink); }
+/* the small cards over a page: bigger type at TV size */
+.fpop{ width:min(92vw, calc(var(--u)*92)); padding:calc(var(--u)*3.4) calc(var(--u)*4) calc(var(--u)*3); font-size:calc(var(--u)*3.4); }
+.fpop h2{ font-size:calc(var(--u)*5.6); margin:0 0 calc(var(--u)*2); }
+.fpop .fnote{ color:var(--ink-soft); } .fpop .ferr{ color:#be123c; }
+.fpop.reqpop{ width:min(94vw, calc(var(--u)*130)); }
+.fbtns{ gap:calc(var(--u)*1.6); }

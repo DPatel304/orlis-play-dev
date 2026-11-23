@@ -15,7 +15,7 @@ const rig = await startRig();
 try {
   const tv = await rig.tv(null, { scale: 2, extra: '&home' });
   const { page } = tv;
-  await page.locator('.btn.burger').waitFor({ timeout: 30000 });
+  await page.locator('.screen.home').waitFor({ timeout: 30000 });
   await page.evaluate(async () => { window.pk = (await import('/test/harness/peekaboo-page.js')).setup(); window.pk.loop(); });
   const shot = (name) => page.screenshot({ path: path.join(OUT, name) });
   const go = (fn, arg) => page.evaluate(fn, arg);

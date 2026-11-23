@@ -145,6 +145,7 @@ export const pose = {
      is slow; look only now and then when nobody is there; not at all while the
      pause screen is up. `wanted` is how many people to look for. */
   skip:1, paused:false, wanted:SEEN_MAX, _n:0, _acc:0, _emptyFor:0, _idleAt:0,
+  lite:null,                 /* { hz, idleHz }: look this often (someone in view, nobody) instead of every picture - the home screen's light mode */
   worker:null, _wbusy:false, _wres:null,
   look(players){
     const n = players == null ? SEEN_MAX : posesWanted(players, SEEN_MAX);
@@ -367,6 +368,13 @@ export const pose = {
     if (this.paused){ this._decay(dt); return; }
     /* Nobody there for a few seconds: look a few times a second, not thirty. */
     this._acc += dt;
+    /* Looking lightly (the home screen, hand.js LOOKS): a fixed few looks a second - more with someone in view, fewer with
+       nobody - however many pictures the camera makes. */
+    if (this.lite){
+      const gap = 1000 / (this.personCount > 0 ? this.lite.hz : this.lite.idleHz);
+      if (wall - (this._liteAt || 0) < gap) return;
+      this._liteAt = wall;
+    } else
     if (isIdle(this._emptyFor)){
       if (wall - this._idleAt < IDLE_EVERY_MS){ return; }
       this._idleAt = wall;

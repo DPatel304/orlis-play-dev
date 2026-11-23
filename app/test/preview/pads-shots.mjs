@@ -47,9 +47,9 @@ try {
       t2: { who: 'mia', ua: 'Mozilla/5.0 (Linux; Android 14; Tab S9) AppleWebKit/537.36 Chrome/124.0 Safari/537.36', lastSeen: now - day },
       t3: { who: 'guest', ua: ANDROID.userAgent, lastSeen: now - 21 * day } }) };
     const tv = await rig.tv(null, { scale: 2, seed, extra: '&home' });
-    await tv.page.locator('.btn.burger').waitFor({ timeout: 30000 });
+    await tv.page.locator('.screen.home').waitFor({ timeout: 30000 });
     await tv.page.waitForTimeout(1500);
-    await tv.page.locator('.btn.burger').click();
+    await tv.page.locator('.screen.home').click();
     await tv.page.locator('.popitem', { hasText: 'Settings' }).click();
     await tv.page.locator('.setcard').waitFor();
     await tv.page.locator('.setbtn', { hasText: 'See the list' }).click();

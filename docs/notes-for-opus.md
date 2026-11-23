@@ -74,3 +74,18 @@ Readings of the spec where it was open (change any you disagree with):
 - `rng` is accepted but unused: the layout is fixed data.
 - Layout numbers (shed at x 12..18, z 22..27; four trees; nine places) are mine; K4 should check the TV view of them.
 - `npm test` here: 5 failures not from this package (missing `esbuild`, and headless Chromium tests); all peekaboo tests pass.
+
+## 2026-11-23, U5/U7 and the U6 fixes (clean menus, decision 0045), Sonnet
+Readings and choices (change any you disagree with):
+- **Hand mode looks for two people, not one:** `pose.look(1)` asks for `posesWanted(1) = 2` (one player and one to take over by waving). The brief said "one person"; a single pose would make "others take over by waving" impossible. Say if it should be 1.
+- **Light mode** is `pose.lite = { hz: 10, idleHz: 1 }` (hand.js `LOOKS`): ten looks a second with someone in view, one a second with nobody, only on Home in Big Picture (or `?hand=1` in a browser). Everywhere else the camera is off outside a game, as before. A hand hanging at the child's side (below the belly, past the box) is "not pointing": it lights nothing and its waves count for nothing.
+- **Cost numbers** are in the report; the headless Chromium here has no GPU, so one look takes 450 to 560 ms and ten a second cannot be reached. The page's own cost (17 % of the main thread, software rendering) and the looks/s counters are real; the tracker's cost per look on a laptop is what P (live performance) shows.
+- **Discover is no longer a tab.** "New to try" lists Discover's games not on this PC (this week's featured first, at most six) and "More to try" opens the old Discover page. That page and Create's pages now have only the big Home button on top (`ui/tabs.js topBar`); their insides are the old pages with the clean colours, not rebuilt.
+- **Make a game** is: Ask for a game (the old Create flow), Your requests (new: the games asked for and how each is going; "Under construction" is no longer a row on Home), Create Pro (creators and the owner). A child sees no Make row. A waiting grown-up sees Ask for a game, which opens "Pending approval".
+- **Sign-in** keeps the email-first flow (email, then password, or the join form); both steps now read "Sign in", name the server and show the email. I did not merge email and password into one card as the mockup draws it (it would change when the server is asked whether the account exists).
+- **Edit child** sends no avatar on a save; a new child is created with avatar `cube` (the server needs one) and goes straight into the avatar maker.
+- **Results** take `{ total, kids }` from main.js: a child's count is shown only when the game's `tally()` lines up with the children who played. The words under the count ("balloons popped") are `units.js resultWords` (a table by game id, else the unit).
+- `app/src/ui/menu.js` is now only what Home, Settings and the Store share (blurbs, icons, `looks`, the profile sheet, Settings). The old Home (rows, cinema, tile fly-in, All games) is gone; the tab bar and the cube button are gone. Old CSS for them is still in `style.css` (unused); I left it rather than risk the Store and Create pages that share rules. It can be deleted in a tidy-up.
+- Not done: the Store page and Create's request builder are only recoloured (the builder still has its emoji pictures: they were not in the U6 list); the intro (`boot.js`) is a short two-squares hop (2.5 s) instead of the 6-second cube show.
+- Not tested: a real camera, a real TV, Windows Big Picture, the real family server (the pictures use a pretend one, `tools/u5-shots.mjs`).
+

@@ -417,3 +417,14 @@ export function changePop({ game, send, onDone = () => {} }){
   draw();
   return { close };
 }
+
+/* The name a request's tile shows while the game is being made: what the child called it, else the name the game has (once made), else
+   the first name that fits what it is about ("Balloons Party"), else the plainest thing that is true. Never just "Your game" when there
+   is something to say. */
+export function requestName(x){
+  const recipe = (x && x.recipe) || {};
+  const own = String(recipe.name || '').trim() || String((x && x.game && x.game.name) || '').trim();
+  if (own) return own;
+  try { const idea = nameIdeas(recipe)[0]; if (idea && (recipe.thing || recipe.action)) return idea; } catch {}
+  return 'Your game';
+}

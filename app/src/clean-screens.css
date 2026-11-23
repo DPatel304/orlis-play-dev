@@ -1,0 +1,42 @@
+/* ---------- Pause and results: a clean card over the game ---------- */
+.screen.gamecard{ display:block; padding:0; text-align:left; background:none; font-family:var(--ui); color:var(--ink); }
+.screen.dim.pause.gamecard{ background:rgba(29,27,46,.4); -webkit-backdrop-filter:none; backdrop-filter:none; }
+.gcard{ position:absolute; left:calc(var(--u)*5); top:50%; transform:translateY(-50%); width:calc(var(--u)*79); max-width:92vw; padding:calc(var(--u)*4) calc(var(--u)*5) calc(var(--u)*5.4); background:var(--surface); border-radius:calc(var(--u)*3); box-shadow:var(--soft); animation:cardin var(--t-base) var(--ease) both; }
+.pause .gcard{ left:calc(var(--u)*7); width:calc(var(--u)*102); }
+@keyframes cardin{ from{ opacity:0; transform:translateY(-46%); } }
+.gk{ font:700 calc(var(--u)*2.9) var(--ui); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); }
+.newbest{ display:inline-flex; align-items:center; gap:calc(var(--u)*1); margin-left:calc(var(--u)*1.6); padding:calc(var(--u)*.5) calc(var(--u)*2) calc(var(--u)*.5) calc(var(--u)*.8); border-radius:var(--pill); background:var(--paper); font:700 calc(var(--u)*3.2) var(--ui); letter-spacing:0; text-transform:none; color:var(--ink); vertical-align:middle; }
+.newbest .bestico{ width:calc(var(--u)*4.4); height:calc(var(--u)*4.4); display:block; }
+.gcard h3{ margin:calc(var(--u)*.4) 0 calc(var(--u)*.6); font:700 calc(var(--u)*9)/1 var(--ui); color:var(--ink); }
+.gleft{ margin:0 0 calc(var(--u)*2.6); font-size:calc(var(--u)*3.7); color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+.gbig{ display:flex; align-items:center; gap:calc(var(--u)*2.4); margin:calc(var(--u)*1.6) 0 calc(var(--u)*3.6); }
+.gbig b{ font:700 calc(var(--u)*19)/.9 var(--ui); color:var(--ink); font-variant-numeric:tabular-nums; }
+.gbig .gico{ width:calc(var(--u)*17); height:calc(var(--u)*17); display:block; flex:none; }
+.gbig .sicon.gico{ border-radius:28%; }
+.gbig span{ font:400 calc(var(--u)*4.8)/1.1 var(--ui); color:var(--ink-soft); }
+.gline{ margin:calc(var(--u)*-2) 0 calc(var(--u)*3); font-size:calc(var(--u)*3.4); color:var(--ink-soft); }
+.gline.big{ margin:calc(var(--u)*1.6) 0 calc(var(--u)*3.6); font-size:calc(var(--u)*5); color:var(--ink); font-weight:700; line-height:1.15; }
+.btnrow{ display:flex; gap:calc(var(--u)*3); flex-wrap:wrap; }
+.btn.cbtn{ display:inline-flex; align-items:center; justify-content:center; padding:calc(var(--u)*2.1) calc(var(--u)*4.2); border:0; border-radius:var(--pill); background:var(--ink); color:#fff; font:700 calc(var(--u)*4.4) var(--ui); box-shadow:var(--soft); white-space:nowrap; }
+.btn.cbtn .lbl{ display:inline-flex; align-items:center; gap:calc(var(--u)*1.8); }
+.btn.cbtn svg.i{ width:calc(var(--u)*5); height:calc(var(--u)*5); }
+.btn.cbtn.ghost{ background:var(--surface); color:var(--ink); }
+.btn.cbtn:hover,.btn.cbtn.hot,body.remote .btn.cbtn.kfocus{ transform:scale(1.04); box-shadow:0 0 0 calc(var(--u)*.6) var(--who,var(--blue)), var(--soft); }
+.btn.cbtn.ringed.hot{ transform:scale(1.04); box-shadow:var(--soft); }
+.pause .btnrow{ margin-top:calc(var(--u)*3.4); }
+.pause .btn.cbtn{ font-size:calc(var(--u)*4.6); padding:calc(var(--u)*2.2) calc(var(--u)*5.4); }
+.gbcubo{ position:absolute; right:calc(var(--u)*12); bottom:calc(var(--u)*3); top:auto; width:calc(var(--u)*61); height:calc(var(--u)*66); pointer-events:none; z-index:1; }
+/* who's who: each child's face and name in their colour */
+.whorow{ margin-top:calc(var(--u)*1.4); }
+.whorowlbl{ font:700 calc(var(--u)*2.9) var(--ui); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 calc(var(--u)*1.2); opacity:1; }
+.whochips{ display:flex; gap:calc(var(--u)*2); flex-wrap:wrap; }
+.btn.whochip2{ display:inline-flex; padding:calc(var(--u)*.6) calc(var(--u)*2.4) calc(var(--u)*.6) calc(var(--u)*.6); border:0; border-radius:var(--pill); background:var(--paper); color:var(--ink); font:700 calc(var(--u)*3.8) var(--ui); box-shadow:none; }
+.btn.whochip2 .lbl{ display:flex; align-items:center; gap:calc(var(--u)*1.2); }
+.btn.whochip2 canvas.avface,.btn.whochip2 .av{ width:calc(var(--u)*6.8); height:calc(var(--u)*6.8); border-radius:30%; box-shadow:0 0 0 calc(var(--u)*.5) var(--who,var(--blue)); background:var(--surface); display:block; }
+.btn.whochip2 .fill{ display:none; }
+.btn.whochip2:hover,.btn.whochip2.hot{ background:var(--surface); box-shadow:0 0 0 calc(var(--u)*.5) var(--who,var(--blue)); transform:none; }
+/* results: each child's face, name and count along the bottom, in their colour */
+.gkids{ position:absolute; left:calc(var(--u)*88); right:calc(var(--u)*3); bottom:calc(var(--u)*2); display:flex; justify-content:space-around; gap:calc(var(--u)*1.5); z-index:2; }
+.gkid{ display:flex; align-items:center; gap:calc(var(--u)*1); padding:calc(var(--u)*.5) calc(var(--u)*2.6) calc(var(--u)*.5) calc(var(--u)*.5); font:400 calc(var(--u)*4.2) var(--ui); white-space:nowrap; border-radius:var(--pill); background:var(--surface); box-shadow:var(--soft); }
+.gkid .gkface{ display:block; width:calc(var(--u)*7); height:calc(var(--u)*7); border-radius:30%; box-shadow:0 0 0 calc(var(--u)*.5) var(--c); overflow:hidden; background:var(--paper); flex:none; } .gkid .gkface canvas{ width:100%; height:100%; display:block; }
+.gkid b{ font-weight:700; margin-left:calc(var(--u)*1); }

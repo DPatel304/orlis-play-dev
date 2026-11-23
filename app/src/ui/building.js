@@ -8,7 +8,7 @@ import { week } from './week.js';
 import { sfx } from '../audio/sound.js';
 import { toast } from './toast.js';
 import { buildingCoverUrl } from './covers.js';
-import { looksOf } from './request.js';
+import { looksOf, requestName } from './request.js';
 
 const STATE = { waiting: ['In line', 15], making: ['Building…', 55], made: ['Waiting for OK', 90], ready: ['Waiting for OK', 90], declined: ['Not this time', 0] };
 
@@ -35,7 +35,7 @@ function askRemove(x, name, onChange){
 export function buildingTile(x, onChange = () => {}){
   const [label, pct] = STATE[x.state] || ['Building…', 50];
   const recipe = x.recipe || {};
-  const name = (recipe.name || '').trim() || (x.game && x.game.name) || 'Your game';
+  const name = requestName(x);
   const t = button('', 'slock pictile covered buildingtile ' + x.state);
   const th = h('div', 'sthumb');
   const pic = buildingCoverUrl({ name, cols: looksOf(recipe).cols, label, pct }); if (pic) th.style.backgroundImage = `url(${pic})`;

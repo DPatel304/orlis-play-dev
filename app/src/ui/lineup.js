@@ -120,7 +120,7 @@ export function lineUp({ profiles, onDone }){
 
 export function whoRow(profiles){
   const wrap = h('div', 'whorow');
-  const label = h('div', 'whorowlbl', 'Who’s who? Pick a face to change it');
+  const label = h('div', 'whorowlbl', 'Who’s who?');
   const row = h('div', 'whochips');
   wrap.append(label, row);
   const draw = () => {

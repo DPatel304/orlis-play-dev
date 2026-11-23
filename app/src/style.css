@@ -12,7 +12,7 @@
   font-family:"Fredoka"; font-weight:300 700; font-display:block;
   src:url(fonts/fredoka.woff2) format("woff2");
 }
-/* Outfit (decision 0045): the font for everything you read or press, the in-game HUD and the toasts included. Regular and Bold; OFL (fonts/Outfit-OFL.txt). */
+/* Outfit: the menus' type (decision 0045), for everything you read or press outside a game's own lettering. Bundled; OFL. */
 @font-face{ font-family:"Outfit"; font-weight:400; font-display:block; src:url(fonts/outfit-Regular.woff2) format("woff2"); }
 @font-face{ font-family:"Outfit"; font-weight:700; font-display:block; src:url(fonts/outfit-Bold.woff2) format("woff2"); }
 /* For Last Known Position's title cards: Inter (SIL Open Font License),
@@ -24,11 +24,26 @@
   --fg:#f3f0ff; --dim:#9b94c4; --faint:#635c92;
   --p1:#3da9ff; --p2:#ff8a3d;
   --good:#53e59a; --bad:#ff5d73; --gold:#ffd24a;
-  --ui:"Fredoka",ui-rounded,"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  --ui:"Outfit",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --painted:"Fredoka",ui-rounded,"Segoe UI",system-ui,sans-serif;   /* the games' own painted side keeps Fredoka */
   --safe:clamp(12px,2.6vmin,40px);
-  --sys:"Segoe UI Variable Display","Segoe UI","SF Pro Display",-apple-system,Inter,system-ui,Roboto,Helvetica,Arial,sans-serif;
+  --sys:var(--ui);
   /* light only: the browser's own controls (boxes, ticks, scroll bars) drawn light too */
   color-scheme:light;
+}
+/* ---------- the clean look's tokens (decision 0045) ----------
+   Flat surfaces, soft shadows, near-black ink, a blue to violet accent on a light neutral. The art (covers, worlds, faces) is the colour.
+   --u is one percent of the height of the 16:9 box the screen fits in, so the TV sizes below hold in any window shape. */
+:root{
+  --ink:#1d1b2e; --ink-soft:#6b6a82; --paper:#f4f5f9; --surface:#fff; --line:#e2e4ee;
+  --blue:#3da9ff; --violet:#8b5cf6; --grad:linear-gradient(120deg,#3da9ff,#8b5cf6); --grad-night:linear-gradient(120deg,#7cc4ff,#b79bff);
+  --p1:#3da9ff; --p2:#ff8a3d; --p3:#22c55e; --p4:#a855f7;        /* the four players' colours: the palette's favourites (fav.sky, orange, green, purple) */
+  --u:min(1vh,.5625vw);
+  --soft:0 calc(var(--u)*.9) calc(var(--u)*2.8) rgba(29,27,46,.18); --soft-sm:0 6px 22px rgba(29,27,46,.10);
+  --pill:999px;
+  /* the TV type scale, in --u (Big Picture and the TV; a window uses the same, scaled by its height) */
+  --tv-title:calc(var(--u)*13); --tv-h1:calc(var(--u)*9); --tv-line:calc(var(--u)*4.4); --tv-label:calc(var(--u)*4.2);
+  --tv-btn:calc(var(--u)*4.6); --tv-chip:calc(var(--u)*3.3); --tv-small:calc(var(--u)*2.9);
 }
 *{box-sizing:border-box;margin:0;}
 html,body{height:100%;overflow:hidden;background:var(--bg);}
@@ -1289,18 +1304,15 @@ canvas.avface{ display:block; border-radius:22%; }
    the problems under the sign-in card. Problems inside a card or popup
    (.ferr, .serr) look the same, in place. */
 .toast{
-  position:fixed; right:5vh; top:calc(var(--safe) + 5vh); z-index:60;
-  max-width:min(60vw, 30em); width:max-content; padding:.6em 1.2em; border-radius:999px;
-  background:#fffdf8; color:#2f2b45; font-family:Outfit,var(--ui); font-weight:700; font-size:clamp(13px, 2.6vh, 28px); line-height:1.3; text-align:center;
-  border:.45vh solid #2f2b45; box-shadow:0 .7vh 0 rgba(52,40,96,.18); animation:toastin var(--t-base) ease-out both; pointer-events:none;
+  position:fixed; left:50%; top:calc(var(--safe) + 7.5vh); z-index:60; transform:translateX(-50%);
+  max-width:min(90vw, 36em); width:max-content; padding:.75em 1.4em; border-radius:1.3em;
+  background:rgba(255,255,255,.96); color:#24242e; font-family:var(--sys); font-weight:600; font-size:clamp(13px, 2.1vh, 24px); line-height:1.4; text-align:center;
+  box-shadow:0 1vh 3.4vh rgba(30,40,90,.18); animation:toastin var(--t-base) ease-out both; pointer-events:none;
 }
-.toast .oicon{ width:1.3em; height:1.3em; vertical-align:-.3em; margin-right:.1em; }
-.toast.bad{ background:#fff1f2; color:#be123c; border-color:#be123c; box-shadow:0 .7vh 0 rgba(190,18,60,.18); }
+.toast.bad{ background:#fff1f2; color:#be123c; box-shadow:0 0 0 1px #fecdd3, 0 1vh 3vh rgba(190,18,60,.14); }
 .toast.out{ animation:toastout var(--t-base) ease-in both; }
-@keyframes toastin{ from{ opacity:0; transform:translateY(-1.6vh) } to{ opacity:1; transform:translateY(0) } }
-@keyframes toastout{ to{ opacity:0; transform:translateY(-1.6vh) } }
-/* painted icons in the shell's screens (ui/icons.js): a square the size of the text around them */
-.oicon{ display:inline-block; width:1em; height:1em; vertical-align:-.14em; object-fit:contain; flex:none; }
+@keyframes toastin{ from{ opacity:0; transform:translate(-50%, -1.6vh) } to{ opacity:1; transform:translate(-50%, 0) } }
+@keyframes toastout{ to{ opacity:0; transform:translate(-50%, -1.6vh) } }
 .ferr, .serr, .sact .serr{
   display:block; width:fit-content; max-width:100%; margin:1.4vh auto 0; padding:.6em 1.1em; border-radius:1.1em;
   background:#fff1f2; color:#be123c; box-shadow:0 0 0 1px #fecdd3; font-family:var(--sys); font-weight:500; font-size:clamp(12px, 1.9vh, 22px); line-height:1.4; text-align:center;
@@ -1310,13 +1322,6 @@ canvas.avface{ display:block; border-radius:22%; }
 .cend .btn{ font-size:.8em; padding:.4em 1em; }
 
 /* ---------- Big Picture: the front door from across the room ---------- */
-body.bigpicture .screen.account .acctcard{ width:min(50vw, 980px); padding:5vh 4.4vh 4.4vh; border-radius:4vh; }
-body.bigpicture .acctcard .acctform{ font-size:3.2vh; gap:2vh; }
-body.bigpicture .acctcard h2{ font-size:6vh; }
-body.bigpicture .acctcard .lede{ font-size:3vh; max-width:none; }
-body.bigpicture .acctcard .btn.cardicon{ width:7vh; height:7vh; font-size:3.6vh; }
-body.bigpicture .acctcard .formmsg, body.bigpicture .toast{ font-size:2.8vh; }
-body.bigpicture .finding{ font-size:3.6vh; }
 /* the remote's highlight on a box or the tick */
 body.remote .acctform input.kfocus{ border-color:#6d5efc; }
 body.remote .acctform label.check input.kfocus{ box-shadow:0 0 0 .25em rgba(109,94,252,.35); }
@@ -1325,7 +1330,6 @@ body.remote .acctform label.check input.kfocus{ box-shadow:0 0 0 .25em rgba(109,
 .acctform label.check input{ font-size:inherit; }
 /* the grown-ups line, under the button */
 .acctcard .grownups{ margin:-.6vh 0 0; color:#8a8ea0; font-size:clamp(12px, 1.8vh, 20px); }
-body.bigpicture .acctcard .grownups{ font-size:2.6vh; }
 
 /* ---------- Play: a shorter banner, then rows - Jump back in, Featured, All ---------- */
 .homepage .shero{ height:44vh; }

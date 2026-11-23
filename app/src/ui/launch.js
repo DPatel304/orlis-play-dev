@@ -6,6 +6,7 @@
      launch.begin({ rect, url, accent, name })   expand from the tile's place
      launch.release()                            fade it away (now: at once)
      launch.at                                   when it began (ms)            */
+import { loader } from './brand.js';
 const OPEN_MS = 560;
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -17,10 +18,9 @@ export const launch = {
     const el = document.createElement('div');
     el.className = 'launchveil';
     el.style.setProperty('--accent', accent);
+    this.url = url;
     if (url) el.style.backgroundImage = `url(${url})`;
     else el.innerHTML = `<div class="launchname">${String(name).replace(/[&<>]/g, '')}</div>`;
-    /* Something is happening (not how long it will take): Cubo's head, top right, twirling. */
-    el.insertAdjacentHTML('beforeend', '<div class="launchhead"><div class="lh"><i class="eye"></i><i class="eye"></i><i class="mouth"></i></div></div>');
     document.body.appendChild(el);
     this.el = el; this.at = performance.now();
     if (reduced() || !rect){ el.classList.add('full', 'plain'); return; }
@@ -33,10 +33,10 @@ export const launch = {
   /* The card that says what to do, on the cover while the camera starts: the game's name and a line about it, there
      at once. No countdown - nothing says when it ends; the twirling head says it's working. The game starts when the cover goes. */
   card({ title = '', blurb = '' } = {}){
-    const el = this.el; if (!el || el.querySelector('.launchcard')) return;
-    const esc = (s) => String(s).replace(/[&<>]/g, '');
+    const el = this.el; if (!el || el.querySelector('.loadhop')) return;
     el.classList.add('hascard');
-    el.insertAdjacentHTML('beforeend', `<div class="launchcard"><h2>${esc(title)}</h2><p>${esc(blurb)}</p></div>`);
+    /* the one loading pattern (decision 0045): the two squares hopping, with the game's name card, over the paper */
+    el.appendChild(loader({ name: title, line: blurb, cover: this.url || '' }));
   },
 
   release(now = false){

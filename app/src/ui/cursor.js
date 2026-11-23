@@ -35,6 +35,9 @@ export function inFront(){
 export const cursor = {
   rings: [],
   enabled: true,
+  map: null,              /* (p, hand, i) => { x, y } | null: where a hand points on the screen - home's reach box; null: not pointing */
+  skin: false,            /* the screen draws its own cursor (home does): leave the canvas ring off */
+  gate: null,             /* { driver(): player index | null, takeOver(i) }: home's one driver; the others take over by waving */
   _state: Array.from({ length: MAX_PLAYERS }, () => fresh()),
 
   reset(){ for (const s of this._state){ Object.assign(s, fresh()); s.cool = COOLDOWN; } this._clearFills(); },
@@ -47,6 +50,7 @@ export const cursor = {
     document.querySelectorAll('.btn.hot').forEach(b => {
       b.classList.remove('hot');
       const f = b.querySelector('.fill'); if (f) f.style.transform = 'scaleX(0)';
+      b.style.setProperty('--k', '0%');
     });
   },
 
@@ -65,7 +69,19 @@ export const cursor = {
       const p = pose.players[i], s = this._state[i];
       if (!p.present){ s.el = null; s.t = 0; s.cand = null; s.turns = 0; continue; }
       const h = pose.cursorHand(p);
-      const x = h.x, y = h.y;
+      /* Home (hand.js) maps the hand through the child's reach box to the screen, and says no (null) for a hand hanging at their side;
+         everywhere else the hand is where it is. */
+      const m = this.map ? this.map(p, h, i) : h;
+      if (!m){ s.el = null; s.t = 0; s.cand = null; s.turns = 0; s.dir = 0; continue; }
+      const x = m.x, y = m.y;
+      /* One driver, when there is a gate (home): the others only wave, to take over. */
+      const driving = !this.gate || this.gate.driver() === i;
+      if (!driving){
+        if (s.cool > 0){ s.cool -= dt; s.turns = 0; s.dir = 0; s.far = x; continue; }
+        this._wave(s, x, dt);
+        if (s.turns >= CLICK_TURNS){ s.turns = 0; s.dir = 0; s.el = null; s.cool = COOLDOWN; this.gate.takeOver(i); }
+        continue;
+      }
       this.rings.push({ x, y, color: PLAYER_COLORS[i], progress: 0, id: i, waving: 0 });
 
       if (s.cool > 0){
@@ -73,17 +89,7 @@ export const cursor = {
         s.x = x; s.y = y; s.el = null; s.t = 0; s.cand = null; s.turns = 0; s.dir = 0; s.far = x;
         continue;
       }
-      /* The wave: turns of the hand back and forth. (Not for the mouse,
-         which has a real click.) */
-      s.since += dt;
-      if (pose.mouse.active){ s.turns = 0; s.dir = 0; s.far = x; }
-      else if (!s.dir){ if (Math.abs(x - s.far) > WAVE_SWING){ s.dir = Math.sign(x - s.far); s.far = x; } }
-      else if ((x - s.far) * s.dir > 0) s.far = x;
-      else if (Math.abs(x - s.far) > WAVE_SWING){
-        if (s.since >= TURN_GAP){ s.turns++; s.since = 0; }
-        s.dir = -s.dir; s.far = x;
-      }
-      if (s.turns && s.since > WAVE_GONE){ s.turns = 0; s.dir = 0; s.far = x; }
+      this._wave(s, x, dt);
       const waving = s.turns > 0;
       /* What's pointed at: held still while waving; otherwise sticky. */
       if (!waving){
@@ -112,8 +118,9 @@ export const cursor = {
         const f = el.querySelector('.fill');
         const k = Math.min(1, s.turns / CLICK_TURNS);
         if (f) f.style.transform = `scaleX(${k.toFixed(3)})`;
+        el.style.setProperty('--k', `${Math.round(k * 100)}%`);       /* (the clean look's ring around a button fills with the wave) */
         const ring = this.rings[this.rings.length - 1];
-        ring.progress = k; ring.waving = waving ? 1 : 0;
+        ring.progress = k; ring.waving = waving ? 1 : 0; ring.el = el;
         if (s.lit !== el){ s.lit = el; sfx.tick(); }
         if (s.turns >= CLICK_TURNS){
           s.t = 0; s.el = null; s.cool = COOLDOWN; s.turns = 0; s.dir = 0; s.lit = null;
@@ -128,8 +135,22 @@ export const cursor = {
       if (!seen.has(b)){
         b.classList.remove('hot');
         const f = b.querySelector('.fill'); if (f) f.style.transform = 'scaleX(0)';
+        b.style.setProperty('--k', '0%');
       }
     });
+  },
+
+  /* The wave: turns of the hand back and forth. (Not for the mouse, which has a real click.) */
+  _wave(s, x, dt){
+    s.since += dt;
+    if (pose.mouse.active){ s.turns = 0; s.dir = 0; s.far = x; }
+    else if (!s.dir){ if (Math.abs(x - s.far) > WAVE_SWING){ s.dir = Math.sign(x - s.far); s.far = x; } }
+    else if ((x - s.far) * s.dir > 0) s.far = x;
+    else if (Math.abs(x - s.far) > WAVE_SWING){
+      if (s.since >= TURN_GAP){ s.turns++; s.since = 0; }
+      s.dir = -s.dir; s.far = x;
+    }
+    if (s.turns && s.since > WAVE_GONE){ s.turns = 0; s.dir = 0; s.far = x; }
   },
 
   _hit(nx, ny, root, lit = null){
@@ -138,7 +159,7 @@ export const cursor = {
     /* The lit one first: it keeps its wider reach. */
     if (lit && btns.includes(lit)){ btns.splice(btns.indexOf(lit), 1); btns.unshift(lit); }
     for (const b of btns){
-      if (b.disabled || b.closest('.hide')) continue;
+      if (b.disabled || b.closest('.hide, .away')) continue;
       const r = b.getBoundingClientRect();
       if (r.width === 0) continue;
       /* A little forgiveness around the edge: a hand is not a mouse. */
@@ -150,7 +171,10 @@ export const cursor = {
 
   /* Drawn on the game canvas so it sits above everything, including games. */
   draw(c, W, H){
+    if (this.skin) return;
     for (const r of this.rings){
+      /* over a button with its own ring (the clean look's .ringed), the ring runs round the button: no dot on top of its words */
+      if (r.el && r.el.classList && r.el.classList.contains('ringed')) continue;
       const x = r.x * W, y = r.y * H, rad = Math.max(16, H * 0.035);
       c.save();
       c.lineWidth = Math.max(4, H * 0.008);
