@@ -24,3 +24,11 @@ page, and the clean-look page (six logos, six fonts, four layouts).
 ## Replaces
 In the UI kit (U1, `docs/ui-kit.html`): Fredoka as the interface font, the paper look for menus, and the painted Cubo head as the one brand
 mark (`docs/ui-review.md` items 5 and 6). The three tabs on top of the home screen.
+
+## Owner's answers on the mockup (2026-11-23)
+1. The big title in the home hero is **plain outlined Outfit** (as mocked up), not the game's own lettering; the tiles keep each cover's
+   painted title.
+2. On every screen but home, the logo's place top left is a big **Home** button.
+3. Sign-in typing stays on the TV (keyboard or remote) for now; "type on your phone" is for later.
+4. Pause is a **card on the left**, the paused game visible beside it.
+The mockup `docs/screens-mockup.html` (clean look) is approved.
