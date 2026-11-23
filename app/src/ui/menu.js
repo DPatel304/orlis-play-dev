@@ -1,4 +1,5 @@
 import { GAMES, LABS, STARTER_GAMES } from '../games/index.js';
+import { iconHTML } from './icons.js';
 import { button, onPick, cursor } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { audio, sfx, ambience } from '../audio/sound.js';
@@ -146,7 +147,7 @@ const FLY = 0.7, FLY_STAGGER = 0.05;   /* arriving: each tile's flight, one afte
 
 /* What Create is, until it's here. */
 export const CREATE_SOON = {
-  icon: '\u{1F58C}\u{FE0F}', name: 'Create', line: 'Make your own games',
+  icon: 'paintbrush', name: 'Create', line: 'Make your own games',
   about: 'Build your own movement games, then play them by moving. Share the ones you like with the family in Discover.'
 };
 
@@ -158,7 +159,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   /* the top bar, with the tabs */
   const bar = topBar('home', nav, { onWho, onRecalibrate, isBusy: () => !!going });
   s.appendChild(bar.el);
-  if (pose.mouse.active && pose.reason !== 'debug') s.appendChild(h('div', 'warnstrip', '⚠ No camera — the mouse is playing'));
+  if (pose.mouse.active && pose.reason !== 'debug') s.appendChild(h('div', 'warnstrip', iconHTML('warning', 64) + ' No camera \u2014 the mouse is playing'));
 
   const items = [];
   /* (waiting to be let in: the starter games only) */

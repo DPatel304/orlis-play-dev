@@ -5,6 +5,7 @@
    topBar(page, nav, opts) gives { el, tick() }: put el on the page and call
    tick() each frame. nav has home(), store() and
    create(); the tab for the page you're on is just a label. */
+import { iconHTML } from './icons.js';
 import { button, onPick } from './cursor.js';
 import { screen, h } from './screens.js';
 import { sfx } from '../audio/sound.js';
@@ -69,7 +70,7 @@ export function topBar(page, nav, { onWho, onRecalibrate, isBusy = () => false }
   let whoChip = null;
   if (who && onWho){
     /* (on the right, beside the menu) */
-    whoChip = (withFace(onPick(button(`<span class="av">${AVATARS[who.avatar] || AVATARS.cube}</span><span class="nm">${who.name.replace(/[&<>]/g, '')}</span>`, 'whochip'), () => { sfx.select(); onWho(); }), who, 64));
+    whoChip = (withFace(onPick(button(`<span class="av">${iconHTML(AVATARS[who.avatar] || AVATARS.cube, 96)}</span><span class="nm">${who.name.replace(/[&<>]/g, '')}</span>`, 'whochip'), () => { sfx.select(); onWho(); }), who, 64));
   }
   /* the three tabs (a child playing sees Play and Discover; Create is for
      grown-ups). The one you're on is just a label. */

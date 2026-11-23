@@ -10,11 +10,12 @@
      challengePill(data)                    the pill, for the top bar
      showChallenges(data, { auto, from })   the cards; from: the pill they fly to
      splashWanted()                         true until they've been shown once      */
+import { iconHTML } from './icons.js';
 import { screen, h } from './screens.js';
 import { button, onPick } from './cursor.js';
 import { sfx } from '../audio/sound.js';
 
-const ICON = { rounds: '\u{1F3AE}', different: '\u{1F9ED}', minutes: '⏱️' };
+const ICON = { rounds: 'gamepad', different: 'compass', minutes: 'clock' };
 const COLS = [['#6d5efc', '#a78bfa'], ['#0ea5e9', '#38bdf8'], ['#f59e0b', '#fbbf24']];
 const SHOW_SECS = 4.5;
 /* the star: gold, rounded - the same one everywhere (an SVG, so it looks the same on every PC) */
@@ -48,7 +49,7 @@ export function showChallenges(data, { auto = false, first = false, from = null,
   list.forEach((c, i) => {
     const pct = Math.round(100 * c.have / c.need);
     const card = h('div', 'chbig' + (c.done ? ' done' : ''),
-      `<div class="chic" style="background:linear-gradient(135deg,${COLS[i % 3][0]},${COLS[i % 3][1]})">${ICON[c.kind] || '⭐'}</div>
+      `<div class="chic" style="background:linear-gradient(135deg,${COLS[i % 3][0]},${COLS[i % 3][1]})">${iconHTML(ICON[c.kind] || 'glowstar', 128)}</div>
        <div class="chtt">${esc(c.title)}</div>
        <div class="chbarbig"><i style="width:${pct}%"></i></div>
        <div class="chft"><span>${c.have} / ${c.need}</span>${c.done ? `<span class="chtr got">${STAR('2.2vh')} Star earned!</span>` : `<span class="chtr">${STAR('2.2vh')} Earns a star</span>`}</div>`);

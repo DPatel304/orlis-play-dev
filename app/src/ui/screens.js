@@ -1,4 +1,5 @@
 import { pose, BONES } from '../tracking/pose.js';
+import { iconHTML } from './icons.js';
 import { cubo } from './cubo.js';
 import { button, onPick } from './cursor.js';
 import { sfx } from '../audio/sound.js';
@@ -163,7 +164,7 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null){
   /* what everyone did together (never a winner or a ranking), and a new best if there is one */
   if (summary && summary.line){
     const p = h('p', 'resultline'); p.textContent = summary.line;
-    if (summary.best){ const b = h('span', 'newbest'); b.textContent = '\u2605 New best!'; p.append(' ', b); }
+    if (summary.best){ const b = h('span', 'newbest'); b.innerHTML = iconHTML('glowstar', 96) + ' New best!'; p.append(' ', b); }
     t.appendChild(p);
   }
   const row = h('div', 'row bigrow');

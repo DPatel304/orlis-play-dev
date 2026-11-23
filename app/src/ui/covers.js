@@ -7,6 +7,7 @@
    shows while it plays. The title goes on top in one of five styles: all
    cream with a dark outline (one family), each with its own tilt, layout
    and a touch of the game's colour. */
+import { assets } from '../games/assets/index.js';
 import { poster } from './posters.js';
 import { Scene } from '../games/pop-party-scene.js';
 import { bearHead } from '../games/sleepy-bear.js';
@@ -76,10 +77,9 @@ const ART = {
     const s = new Scene(); s.step(1 / 60, { t: 3, p: 0.35, storm: false, wind: 0, joy: 1, look: 0.5, rainbow: true });
     s.drawBack(c, W, H); s.drawFront(c, W, H);
     c.textAlign = 'center'; c.textBaseline = 'middle';
-    const font = (k) => `${Math.round(H * k)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
-    c.font = font(0.5); c.fillText('\u{1F992}', W * 0.58, H * 0.46);
-    c.font = font(0.22); c.fillText('\u{1F430}', W * 0.8, H * 0.7); c.fillText('\u{1F438}', W * 0.36, H * 0.74);
-    c.font = font(0.18); c.fillText('\u{1F418}', W * 0.2, H * 0.5); c.fillText('\u{1F427}', W * 0.9, H * 0.46);
+    assets.draw(c, 'giraffe', W * 0.58, H * 0.46, H * 0.5);
+    assets.draw(c, 'bunny', W * 0.8, H * 0.7, H * 0.22); assets.draw(c, 'frog', W * 0.36, H * 0.74, H * 0.22);
+    assets.draw(c, 'elephant', W * 0.2, H * 0.5, H * 0.18); assets.draw(c, 'penguin', W * 0.9, H * 0.46, H * 0.18);
     c.fillStyle = '#fff6c8';
     for (const [x, y, r] of [[0.7, 0.14, 0.03], [0.4, 0.2, 0.02], [0.86, 0.3, 0.02]]){
       c.beginPath(); for (let k = 0; k < 8; k++){ const a = k * Math.PI / 4, q = k % 2 ? r * 0.35 : r; c.lineTo(W * x + Math.cos(a) * q * H, H * y + Math.sin(a) * q * H); } c.closePath(); c.fill();
@@ -112,9 +112,8 @@ const ART = {
     for (let i = 0; i <= 12; i++) c.lineTo(i * W / 12, H * (0.46 + hash(i, 7) * 0.1)); c.lineTo(W, H * 0.62); c.closePath(); c.fill();
     const gg = c.createLinearGradient(0, H * 0.6, 0, H); gg.addColorStop(0, '#a9c98c'); gg.addColorStop(1, '#4f9a5c'); c.fillStyle = gg; c.fillRect(0, H * 0.6, W, H * 0.4);
     c.textAlign = 'center'; c.textBaseline = 'bottom';
-    const font = (k) => `${Math.round(H * k)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
-    c.font = font(0.3); c.fillText('\u{1F30B}', W * 0.78, H * 0.78);
-    c.font = font(0.2); c.fillText('\u{1F334}', W * 0.12, H * 0.9); c.fillText('\u{1F332}', W * 0.3, H * 0.86); c.fillText('\u{1F995}', W * 0.5, H * 0.88);
+    assets.draw(c, 'volcano', W * 0.78, H * 0.63, H * 0.3);
+    assets.draw(c, 'palm', W * 0.12, H * 0.8, H * 0.2); assets.draw(c, 'pinetree', W * 0.3, H * 0.76, H * 0.2); assets.draw(c, 'dinosaur', W * 0.5, H * 0.78, H * 0.2);
     /* the pterodactyl, big, from behind, over it all */
     c.save(); c.translate(W * 0.5, H * 0.42); c.rotate(-0.12);
     const span = W * 0.3;
@@ -309,7 +308,7 @@ export function previewCover(canvas, { name = 'Your game', cols = ['#8b7cff', '#
   const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, cols[0]); g.addColorStop(1, cols[1]); c.fillStyle = g; c.fillRect(0, 0, W, H);
   c.fillStyle = 'rgba(255,255,255,.16)';
   for (const [x, y, r] of [[0.15, 0.25, 0.22], [0.82, 0.18, 0.16], [0.7, 0.78, 0.28], [0.3, 0.9, 0.12]]){ c.beginPath(); c.arc(W * x, H * y, H * r, 0, TAU); c.fill(); }
-  if (glyph){ c.save(); c.font = `${H * 0.42}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.globalAlpha = 0.95; c.fillText(glyph, W * 0.68, H * 0.42); c.restore(); }
+  if (glyph){ c.save(); c.globalAlpha = 0.95; assets.draw(c, glyph, W * 0.68, H * 0.42, H * 0.46); c.restore(); }
   TITLES.tilt(c, W, H, String(name || 'Your game').slice(0, 40), cols[1]);
 }
 
@@ -340,7 +339,7 @@ export function buildingCoverUrl({ name = 'Your game', cols = ['#8b7cff', '#4cc3
   if (buildingMade.has(key)) return buildingMade.get(key);
   const W = 960, H = 540, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const c = cv.getContext && cv.getContext('2d'); if (!c) return null;
-  try { previewCover(cv, { name, cols, glyph: '\u{1F6A7}' }); } catch (e){ return null; }
+  try { previewCover(cv, { name, cols, glyph: 'sign' }); } catch (e){ return null; }
   c.save(); c.globalAlpha = 0.11; c.fillStyle = '#000';
   for (let x = -H; x < W + H; x += 84){ c.beginPath(); c.moveTo(x, H); c.lineTo(x + 42, H); c.lineTo(x + 42 + H, 0); c.lineTo(x + H, 0); c.closePath(); c.fill(); }
   c.restore();

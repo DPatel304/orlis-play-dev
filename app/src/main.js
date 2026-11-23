@@ -7,7 +7,7 @@ import { pose } from './tracking/pose.js';
 import { appMode } from './ui/mode.js';
 import { watchTests } from './ui/tvwatch.js';
 import { hud, drawShellHud } from './games/hud.js';
-import { figureCard, MOTION } from './games/figure.js';
+import { figureCard, cardTucker } from './games/figure.js';
 import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
 import { menu, toggleFullscreen, openSettings, played as playedLately, BLURB } from './ui/menu.js';
@@ -284,19 +284,11 @@ const INTRO_CARD = 0.9, INTRO = INTRO_CARD + 3;
 let introLeft = 0, introN = 0, veilIntro = false;   /* (veilIntro: the card and the countdown are on the launch cover, not drawn over the game) */
 /* The move card: a game says which move to show (inst.card(), or null for none) and the shell draws it, the same way
    for every game: it slides in when the move changes and out when there is none. */
-const moveCard = { pose: null, age: 0, out: -1, last: null, hold: 0, shown: new Set() };
-/* It tucks away by itself (ui-review item 10): a move shown for the first time this round stays for 6 s (long enough to learn it), the same move
-   asked again for 3 s, and then the card slides out and stays out until the game asks for a different move (or asks again after none). */
-const CARD_FIRST = 6, CARD_AGAIN = 3;
+const moveCard = cardTucker();
 function drawMoveCard(c, W, H, dt){
   const want = !hud.quiet && inst && inst.card ? inst.card() : null;
-  if (!paused && introLeft <= 0){ moveCard.age += dt; if (moveCard.out >= 0) moveCard.out += dt; }
-  if (want && want !== moveCard.last){ moveCard.pose = want; moveCard.age = 0; moveCard.out = -1; moveCard.hold = moveCard.shown.has(want) ? CARD_AGAIN : CARD_FIRST; moveCard.shown.add(want); }
-  moveCard.last = want;
-  if (moveCard.pose && moveCard.out < 0 && (!want || moveCard.age > moveCard.hold)) moveCard.out = 0;
-  if (!moveCard.pose) return;
-  if (moveCard.out > MOTION.slideOut){ moveCard.pose = null; return; }
-  figureCard(c, W, H, moveCard.pose, moveCard.age, { age: moveCard.age, left: moveCard.out < 0 ? Infinity : MOTION.slideOut - moveCard.out });
+  const k = moveCard.step(want, !paused && introLeft <= 0 ? dt : 0);
+  if (k) figureCard(c, W, H, k.pose, k.age, { age: k.age, left: k.left });
 }
 /* How smoothly a round ran: every frame's time, kept for the owner's results line (the real games and the experiments, side by side). */
 const frameMs = [];
@@ -311,7 +303,7 @@ function startRound(){
   joined = new Set();
   hud.quiet = false;
   veilIntro = !!launch.el && launch.el.classList.contains('hascard') && !game.passive;
-  introLeft = 0; introN = 0;      /* (no countdown: the cover goes and the game's on) */ moveCard.pose = null; moveCard.last = null; moveCard.shown.clear(); hud.resetPieces(); hud.introText = null; hud.spoken = false;
+  introLeft = 0; introN = 0;      /* (no countdown: the cover goes and the game's on) */ moveCard.reset(); hud.resetPieces(); hud.introText = null; hud.spoken = false;
   if (roundPads){ roundPads.dispose(); roundPads = null; }
   inst = game.create(players, usesPads(game) && padsRt ? { pads: (roundPads = padsRt.forRound()) } : undefined);
   /* A game where squatting is a move keeps players who crouch or sit. */
@@ -363,7 +355,7 @@ function showResults(){
   /* told to the family's server, for this week's challenges (not a game
      being tried out - from Create, or waiting for the owner's OK) */
   if (!game.back && !game.trial && !game.passive) week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) })
-    .then((done) => done.forEach((c, i) => setTimeout(() => { sfx.gold?.(); toast(`\u2605 Star earned: ${c.title}`, { ms: 6000 }); }, 900 + i * 1200)), () => {});
+    .then((done) => done.forEach((c, i) => setTimeout(() => { sfx.gold?.(); toast(`Star earned: ${c.title}`, { ms: 6000, icon: 'glowstar' }); }, 900 + i * 1200)), () => {});
   /* (a game being tried goes back where it came from: Create) */
   go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'Home', summary));
 }

@@ -19,6 +19,7 @@ import { slot, block, gridOf, SLOTS } from './grid.js';
 import { portrait } from '../ui/avatar-art.js';
 import { assets } from './assets/index.js';
 import { color as pal, alpha as palAlpha } from './assets/palette.js';
+import { iconOf, splitHint } from './assets/legacy-emoji.js';
 export const hud = { quiet: false };
 
 const FONT = 'Fredoka, ui-rounded, "Segoe UI", system-ui, sans-serif';
@@ -51,17 +52,17 @@ const bounce = (bump) => 1 + 0.18 * Math.sin(Math.min(1, Math.max(0, bump)) * Ma
 const scaled = (c, x, y, w, h, bump) => { c.translate(x + w / 2, y + h / 2); const k = bounce(bump); c.scale(k, k); c.translate(-w / 2, -h / 2); };
 /* a painted icon by id, centred. An unknown id draws nothing (the library would draw a "?" box, which has no place on a HUD). */
 const iconAt = (c, id, x, y, size, o) => { if (id && assets.has(id)) assets.draw(c, id, x, y, size, o); };
-/* an old emoji a game or a made game may still hand over, as the library icon that says the same (anything else is simply not drawn) */
-const EMOJI_ICON = { '⭐': 'glowstar', '\u{1F31F}': 'glowstar', '\u{1F48E}': 'gem', '✨': 'sparkles', '❤': 'heartfull', '\u{1F388}': 'balloon', '\u{1F3D0}': 'volleyball', '\u{1F342}': 'fallenleaf', '\u{1F995}': 'dinosaur', '\u{1F34E}': 'apple', '\u{1F3B2}': 'dice', '\u{1F9F1}': 'block', '\u{1F483}': 'musicnote', '❄': 'snowflake', '\u{1F389}': 'confetti' };
-export const iconOf = (v) => { if (!v) return ''; const k = String(v).replace(/️/g, ''); return EMOJI_ICON[k] || k; };
+export { iconOf };
 const fit = (c, text, font, maxW, size) => { c.font = font(size); const w = c.measureText(text).width; return w > maxW ? Math.max(8, size * maxW / w) : size; };
 
 /* ---------- the hint words (a fixed anchor) ---------- */
 
 /* icon: a library icon id (or none). text: the words. t: seconds since they changed (they ease in). x, y: where, as a share of the screen. until: seconds
    after which they ease away (a hint that has done its job). The first words of a round arrive big and dock. */
-export function sayBubble(c, W, H, { icon = '', text, t = 1, x = null, y = null, until = Infinity, row = 2 }){
-  if (hud.quiet || !text) return;
+export function sayBubble(c, W, H, { icon = '', text: raw, t = 1, x = null, y = null, until = Infinity, row = 2 }){
+  if (hud.quiet || !raw) return;
+  const old = splitHint(raw), text = old.text; if (!icon) icon = old.icon;   /* (a hint from an older game may still start with an emoji: it becomes the icon that says the same) */
+  if (!text) return;
   const C = unit(W, H), ws = slot(W, H, 'words'), rowShift = row === 2 ? 0 : (2 - row) * C;
   if (x === null) x = ws.cx / W; if (y === null) y = (ws.cy - rowShift) / H;   /* the words' place in the grid (a game can still nudge it) */
   const id = iconOf(icon);

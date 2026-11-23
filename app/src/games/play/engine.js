@@ -23,7 +23,7 @@ class PlayRound {
     });
     this.score = Array.from({ length: env.max }, () => 0); this.total = 0;
     this.things = []; this.fx = []; this.texts = [];
-    this.t = 0; this.over = false; this.hint = spec.hint || null; this.hintT = 0; this.goalDone = false; this.endIn = -1; this.cheering = 0;
+    this.t = 0; this.over = false; this.hint = spec.hint || null; this.hintIcon = spec.hintIcon || ''; this.hintT = 0; this.goalDone = false; this.endIn = -1; this.cheering = 0;
     /* what's there from the start */
     this.defs.forEach((d, k) => { if (!d.appears){ const c = d.count ?? 1; for (let i = 0; i < c; i++) this._make(d, d.at ? { ...d.at } : c === 1 ? { x: 0.5, y: d.move === 'bounce' ? 0.4 : 0.5 } : { x: 0.15 + this.rnd() * 0.7, y: 0.3 + this.rnd() * 0.3 }); } });
   }
@@ -149,7 +149,7 @@ class PlayRound {
         case 'grow': th.sz = clamp(th.sz * (v ?? 1.3), 0.02, 0.4); break;
         case 'become': th.piece = v; break;
         case 'sound': this.env.sfx[v] && this.env.sfx[v](); break;
-        case 'say': this.hint = v; this.hintT = 0; break;
+        case 'say': if (v && typeof v === 'object'){ this.hint = v.text; this.hintIcon = v.icon || ''; } else { this.hint = v; this.hintIcon = ''; } this.hintT = 0; break;
         case 'spawn': { const d = this.defs.find(x => x.name === v); if (d) this._make(d, { x: th.x, y: th.y }); break; }
         case 'kickUp':
           th.vy = -(0.62 + clamp(-((hand && hand.vy) || 0) * 0.15, 0, 0.2)); th.vx = clamp(th.vx * 0.3 + ((hand && hand.vx) || 0) * 0.5, -0.45, 0.45); th.spin = th.vx * 8 + (this.rnd() - 0.5) * 4; break;
@@ -173,7 +173,7 @@ class PlayRound {
     for (const f of this.fx) if (f.age >= 0) A.draw(c, f.kind, f.x * W, f.y * H, f.big ? H * 0.28 : f.size * H, { color: f.color, t: f.age / 0.6 });
     for (const x of this.texts) A.text(c, x.text, x.x * W, x.y * H, H * 0.05, { color: '#fff', outline: x.color, alpha: 1 });
     const hf = this.spec.hintFor ?? 8;
-    if (this.hint) this.env.ui.say(c, W, H, { text: this.hint, t: this.hintT, until: hf });
+    if (this.hint) this.env.ui.say(c, W, H, { icon: this.hintIcon, text: this.hint, t: this.hintT, until: hf });
     if (this.spec.goal) this.env.ui.goal(c, W, H, clamp(this.total / this.spec.goal.score, 0, 1));
     /* the players' hands, last, on top of everything */
     for (const { i, h } of this._hands()) A.draw(c, 'hand', h.x * W, h.y * H, H * 0.12, { color: this.env.colors[i] });

@@ -12,7 +12,7 @@ screen, how it moves, and what happens when a hand touches it. There is no code 
 ```js
 Orlis.play({
   "secs": 90, "scene": "meadow",
-  "hint": "\u2B50 Catch the stars!", "card": "reach", "cardFor": 8,
+  "hint": "Catch the stars!", "hintIcon": "glowstar", "card": "reach", "cardFor": 8,
   "goal": { "score": 40 },
   "things": [
     { "piece": "star", "size": 0.085, "appears": { "every": 1.3, "from": "top", "max": 9 }, "moves": "fall",
@@ -128,16 +128,38 @@ What's in the library:
 
 ## The shared screen (the engine fills it in)
 
-Every Orlis game has the same edges, so players learn them once. You don't draw any of it: say what goes there.
+Every Orlis game has the same edges, so players learn them once. You don't draw any of it: say what goes there. The screen is a
+grid with a few **fixed places** (always the same) and **docks** (where a game chooses what goes). You never give a position:
+name the dock and Orlis Play places, sizes and spaces the piece.
 
 ```
-hint words     under the clock      "hint": "\u{1F388} Pop the balloons!"   a picture and at most four words
-move card      bottom left          "card": "reach", "cardFor": 8           which move Cubo shows (reach, jump, squat, flap...)
-goal bar       under the clock      "goal": { "score": 40 }                 fills as points come in; three stars light up
-scores         top left             (automatic)                             a coloured pill for each player
+FIXED (same in every game)
+clock          top centre           (automatic)                             numbers and a thin ring that empties
+hint words     under the clock      "hint": "Pop the balloons!", "hintIcon": "balloon"   a painted icon and at most four words
+move card      bottom left          "card": "reach", "cardFor": 8           which move Cubo shows (reach, jump, squat, flap...); it tucks away by itself
+DOCKS (a game may use or leave empty)
+goal           under the clock      "goal": { "score": 40 }                 fills as points come in; three stars light up
+scores         top left (corner)    (automatic)                             a paper pill with each child's face, their colour as a ring
 ```
 
-Hint words are **a picture and at most four words**; many players can't read yet. The first words arrive big in the middle,
+A hand-written game (`Orlis.run`) can ask for more docks from `hud()`; the pieces are always one of six kinds (score pill, chip,
+bar, meter, badge, portrait with a notice), and the icon in each is a library icon, never an emoji:
+
+```
+hud(){ return { score: this.score,                          // the corner's first row: a pill per player (the shell draws it)
+  goal: 0.4,                                                // the goal dock, 0 to 1
+  words: { icon: 'balloon', text: 'Pop them!', t: this.t }, // the hint words
+  corner: [ { icon: 'gem', value: 5 }, { icon: 'glowstar', fill: 0.6, color: 'gold' } ],   // chips (two to a row) and bars, under the scores
+  top: { badges: [ { icon: 'crown', value: 2 } ] },         // up to three badges, or { portrait: 'cubo', notice: 'Over here!' }
+  left: { icon: 'heartfull', fill: 0.75, color: 'rose' },   // one tall meter (right: the same)
+  bottom: { icon: 'glowstar', fill: 0.35, color: 'gold' },  // one wide bar, or { faces: true }
+  badge: { icon: 'firework', value: 3 } }; }                    // one badge, bottom right
+```
+
+Bar colours are `gold`, `rose` or `indigo` (never a player's colour). Pieces that sit still for 3 seconds fade a little and come back when
+they change. Nothing a player has to touch goes under a dock that is in use (`Orlis.ui.zones(W, H, hud)` and `Orlis.ui.under(W, H, x, y, hud)`).
+
+Hint words are **a painted icon and at most four words**; many players can't read yet. The first words arrive big in the middle,
 shrink into place and are said aloud once. Colours mean one thing: a player's colour is always theirs, and orange arrows (the
 move card's) always mean "move this way".
 

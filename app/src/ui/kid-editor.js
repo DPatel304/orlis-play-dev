@@ -6,6 +6,7 @@
    The account's maker is the head of the household and a grown-up; everyone
    else is a family member, taken to be under 18. There's no second grown-up to
    invite. Nothing else is kept about a child: a name and a picture. */
+import { iconHTML } from './icons.js';
 import { button, onPick } from './cursor.js';
 import { screen, h } from './screens.js';
 import { sfx } from '../audio/sound.js';
@@ -48,7 +49,7 @@ function pictures(pick, onChoose){
   const grid = h('div', 'avatars');
   const mark = () => [...grid.children].forEach(b => b.classList.toggle('chosen', b.dataset.av === pick));
   for (const [id, em] of Object.entries(AVATARS)){
-    const b = onPick(button(em, 'av'), () => { pick = id; mark(); onChoose(id); }); b.type = 'button'; b.dataset.av = id; grid.appendChild(b);
+    const b = onPick(button(iconHTML(em, 128), 'av'), () => { pick = id; mark(); onChoose(id); }); b.type = 'button'; b.dataset.av = id; grid.appendChild(b);
   }
   mark();
   return grid;

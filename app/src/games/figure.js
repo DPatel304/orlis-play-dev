@@ -121,3 +121,24 @@ export function figureCard(c, W, H, pose, t, { alpha = 1, age = Infinity, left =
   const into = 1 - easeOut(Math.min(1, Math.max(0, age / MOTION.slideIn))), out = easeIn(Math.min(1, Math.max(0, 1 - left / MOTION.slideOut)));
   drawCard(c, pose, K, cx + away * Math.max(into, out), cy, Math.min(t, isFinite(age) ? age : t), alpha);
 }
+
+
+/* When the card shows, and when it tucks away (ui-review item 10). A game only says which move it wants (or none); this decides. A move shown for the
+   first time this round stays 6 s (long enough to learn it), the same move asked again 3 s; then the card slides out and stays out until the game asks
+   for a different move (or asks again after none). step(want, dt) returns what to draw ({ pose, age, left }, as figureCard takes) or null. */
+export const CARD_HOLD = { first: 6, again: 3 };
+export function cardTucker(){
+  const k = { pose: null, age: 0, out: -1, last: null, hold: 0, shown: new Set() };
+  return {
+    reset(){ k.pose = null; k.age = 0; k.out = -1; k.last = null; k.hold = 0; k.shown.clear(); },
+    step(want, dt){
+      k.age += dt; if (k.out >= 0) k.out += dt;
+      if (want && want !== k.last){ k.pose = want; k.age = 0; k.out = -1; k.hold = k.shown.has(want) ? CARD_HOLD.again : CARD_HOLD.first; k.shown.add(want); }
+      k.last = want || null;
+      if (k.pose && k.out < 0 && (!want || k.age > k.hold)) k.out = 0;
+      if (!k.pose) return null;
+      if (k.out > MOTION.slideOut){ k.pose = null; return null; }
+      return { pose: k.pose, age: k.age, left: k.out < 0 ? Infinity : MOTION.slideOut - k.out };
+    }
+  };
+}

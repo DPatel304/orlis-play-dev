@@ -12,6 +12,7 @@
    and the family's server - nobody else is in it (ui/tv.js).
 
    Everyone else sees what's coming. */
+import { iconHTML } from './icons.js';
 import { toast } from './toast.js';
 import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
@@ -380,7 +381,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     if (slots && slots.used >= slots.total){
       buildHost.innerHTML = '';
       const full = h('section', 'builder');
-      full.append(h('div', 'bq bsent', `<div class="bigemoji">\u{1F6A7}</div><h1 class="bh">No game slots left</h1><p class="bnote">All ${slots.total} are used. Ask the owner for more.</p>`));
+      full.append(h('div', 'bq bsent', `<div class="bigemoji">${iconHTML('sign', 256)}</div><h1 class="bh">No game slots left</h1><p class="bnote">All ${slots.total} are used. Ask the owner for more.</p>`));
       buildHost.appendChild(full);
       return;
     }
@@ -421,7 +422,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     if (pro && kit){
       const steps = h('div', 'psteps');
       const step = (n, cls, em, label, ...extra) => {
-        const c = h('div', `pstep ${cls}`, `<span class="pn">${n}</span><div class="pem">${em}</div><div class="plb">${label}</div>`);
+        const c = h('div', `pstep ${cls}`, `<span class="pn">${n}</span><div class="pem">${iconHTML(em, 128)}</div><div class="plb">${label}</div>`);
         const act = h('div', 'pact'); act.append(...extra); c.appendChild(act);
         return c;
       };
@@ -429,12 +430,12 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
       const chip = (text) => h('span', 'pchip', text);
       const ready = !!claudeOk || !making.available;
       steps.append(
-        ready ? step(1, 's1', '\u{1F517}', 'Connected', chip('\u2713 Claude is ready'))
-              : step(1, 's1 todo', '\u{1F511}', 'Connect Claude', pbtn('Connect', kitPop)),
-        step(2, 's2', '\u{1F6E0}\uFE0F', 'Build a game', pbtn('+ New game', () => (claudeOk && making.available ? newGamePop() : kitPop()))),
+        ready ? step(1, 's1', 'chain', 'Connected', chip('Claude is ready'))
+              : step(1, 's1 todo', 'key', 'Connect Claude', pbtn('Connect', kitPop)),
+        step(2, 's2', 'wrench', 'Build a game', pbtn('+ New game', () => (claudeOk && making.available ? newGamePop() : kitPop()))),
         mine.length
-          ? step(3, 's3', '\u{1F4FA}', 'Test it on the TV', pbtn(testing.size ? 'Test or publish' : 'Test a game', () => gamePop(mine.find(x => testing.has(x.manifest.id)) || mine[0])))
-          : step(3, 's3 lock', '\u{1F4FA}', 'Test it on the TV', chip('Build a game first')));
+          ? step(3, 's3', 'tv', 'Test it on the TV', pbtn(testing.size ? 'Test or publish' : 'Test a game', () => gamePop(mine.find(x => testing.has(x.manifest.id)) || mine[0])))
+          : step(3, 's3 lock', 'tv', 'Test it on the TV', chip('Build a game first')));
       body.appendChild(steps);
     }
 

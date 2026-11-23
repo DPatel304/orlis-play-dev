@@ -11,24 +11,25 @@
      gameBuilder({ host, store, send, onDone })  the builder, on the Create page
      changePop({ game, send, onDone })        Ask for a change to one of theirs
      sentence(recipe, { likeName })           the sum-up (the server's, too) */
+import { iconHTML } from './icons.js';
 import { button, onPick } from './cursor.js';
 import { screen, h } from './screens.js';
 import { sfx } from '../audio/sound.js';
 import { previewCover } from './covers.js';
 
 export const ACTIONS = {
-  pop:   { label: 'Pop',            short: 'Pop',   icon: '\u{1F388}', line: 'like Pop Party',              does: (t) => `pop ${t} by touching them`, things: ['soap bubbles', 'balloons', 'fireworks', 'popcorn', 'lollipops', 'jellybeans', 'confetti', 'party poppers', 'pumpkins', 'snowballs', 'stars', 'cupcakes'] },
-  steer: { label: 'Fly or steer',   short: 'Fly',   icon: '\u{1F681}', line: 'lean to steer something',     does: (t) => `lean to steer ${t}`, things: ['a plane', 'a sailboat', 'a dragon', 'a hot-air balloon', 'a fish', 'a rocket', 'a UFO', 'a kite', 'a helicopter', 'a whale', 'a bumblebee', 'a cloud'] },
-  copy:  { label: 'Copy the moves', short: 'Copy',  icon: '\u{1F483}', line: 'dance and follow the leader', does: (t) => `copy the moves of ${t}`, things: ['a dancing monkey', 'a robot', 'a penguin', 'a superhero', 'a frog', 'a dinosaur', 'a cat', 'a bear', 'a unicorn', 'a pirate', 'a ninja', 'an astronaut'] },
-  paint: { label: 'Paint',          short: 'Paint', icon: '\u{1F3A8}', line: 'like Sky Painter',            does: (t) => `paint the sky with ${t}`, things: ['rainbows', 'stars', 'colours', 'glitter', 'clouds', 'flowers', 'fireworks', 'raindrops', 'butterflies', 'sunsets', 'waves', 'snowflakes'] }
+  pop:   { label: 'Pop',            short: 'Pop',   icon: 'balloon', line: 'like Pop Party',              does: (t) => `pop ${t} by touching them`, things: ['soap bubbles', 'balloons', 'fireworks', 'popcorn', 'lollipops', 'jellybeans', 'confetti', 'party poppers', 'pumpkins', 'snowballs', 'stars', 'cupcakes'] },
+  steer: { label: 'Fly or steer',   short: 'Fly',   icon: 'helicopter', line: 'lean to steer something',     does: (t) => `lean to steer ${t}`, things: ['a plane', 'a sailboat', 'a dragon', 'a hot-air balloon', 'a fish', 'a rocket', 'a UFO', 'a kite', 'a helicopter', 'a whale', 'a bumblebee', 'a cloud'] },
+  copy:  { label: 'Copy the moves', short: 'Copy',  icon: 'musicnote', line: 'dance and follow the leader', does: (t) => `copy the moves of ${t}`, things: ['a dancing monkey', 'a robot', 'a penguin', 'a superhero', 'a frog', 'a dinosaur', 'a cat', 'a bear', 'a unicorn', 'a pirate', 'a ninja', 'an astronaut'] },
+  paint: { label: 'Paint',          short: 'Paint', icon: 'palette', line: 'like Sky Painter',            does: (t) => `paint the sky with ${t}`, things: ['rainbows', 'stars', 'colours', 'glitter', 'clouds', 'flowers', 'fireworks', 'raindrops', 'butterflies', 'sunsets', 'waves', 'snowflakes'] }
 };
-/* a picture for each thing on offer (an emoji: it's big on its card) */
+/* a picture for each thing on offer (a painted library icon, by id: it's big on its card) */
 const EMOJI = {
-  'soap bubbles': '\u{1F9FC}', balloons: '\u{1F388}', fireworks: '\u{1F386}', popcorn: '\u{1F37F}', lollipops: '\u{1F36D}', jellybeans: '\u{1F36C}', confetti: '\u{1F38A}', 'party poppers': '\u{1F389}', pumpkins: '\u{1F383}', snowballs: '☃️', stars: '⭐', cupcakes: '\u{1F9C1}',
-  'a plane': '✈️', 'a sailboat': '⛵', 'a dragon': '\u{1F409}', 'a hot-air balloon': '\u{1F388}', 'a fish': '\u{1F41F}', 'a rocket': '\u{1F680}', 'a UFO': '\u{1F6F8}', 'a kite': '\u{1FA81}', 'a helicopter': '\u{1F681}', 'a whale': '\u{1F40B}', 'a bumblebee': '\u{1F41D}', 'a cloud': '☁️',
-  'a dancing monkey': '\u{1F412}', 'a robot': '\u{1F916}', 'a penguin': '\u{1F427}', 'a superhero': '\u{1F9B8}', 'a frog': '\u{1F438}', 'a dinosaur': '\u{1F996}', 'a cat': '\u{1F431}', 'a bear': '\u{1F43B}', 'a unicorn': '\u{1F984}', 'a pirate': '\u{1F3F4}‍☠️', 'a ninja': '\u{1F977}', 'an astronaut': '\u{1F468}‍\u{1F680}',
-  rainbows: '\u{1F308}', colours: '\u{1F3A8}', glitter: '✨', clouds: '☁️', flowers: '\u{1F338}', raindrops: '\u{1F4A7}', butterflies: '\u{1F98B}', sunsets: '\u{1F305}', waves: '\u{1F30A}', snowflakes: '❄️',
-  fireflies: '✨', fish: '\u{1F41F}'
+  'soap bubbles': 'bubbles', balloons: 'balloon', fireworks: 'firework', popcorn: 'popcorn', lollipops: 'lollipop', jellybeans: 'jellybean', confetti: 'confetti', 'party poppers': 'confetti', pumpkins: 'pumpkin', snowballs: 'snowball', stars: 'glowstar', cupcakes: 'cupcake',
+  'a plane': 'airplane', 'a sailboat': 'sailboat', 'a dragon': 'dinosaur', 'a hot-air balloon': 'balloon', 'a fish': 'fish', 'a rocket': 'rocket', 'a UFO': 'ufo', 'a kite': 'kite', 'a helicopter': 'helicopter', 'a whale': 'whale', 'a bumblebee': 'bee', 'a cloud': 'cloudy',
+  'a dancing monkey': 'monkey', 'a robot': 'robot', 'a penguin': 'penguin', 'a superhero': 'superhero', 'a frog': 'frog', 'a dinosaur': 'dinosaur', 'a cat': 'cat', 'a bear': 'bear', 'a unicorn': 'unicorn', 'a pirate': 'pirate', 'a ninja': 'ninja', 'an astronaut': 'astronaut',
+  rainbows: 'rainbow', colours: 'palette', glitter: 'sparkles', clouds: 'cloudy', flowers: 'flower', raindrops: 'raindrop', butterflies: 'butterfly', sunsets: 'sunrise', waves: 'wave', snowflakes: 'snowflake',
+  fireflies: 'sparkles', fish: 'fish'
 };
 /* a game is short (about 3 minutes) or long (about 10); a name fits on its card */
 export const SHORT = 3, LONG = 10, NAME_MAX = 24;
@@ -37,12 +38,12 @@ export const LOOKS = { sunny: 'sunny and bright', cozy: 'warm and cozy', night: 
   forest: 'a green forest', space: 'outer space', rainbow: 'rainbow colours', snow: 'a snowy world', jungle: 'a jungle', sunset: 'a golden sunset', garden: 'a flower garden', party: 'a party' };
 const LOOK_COLS = { sunny: ['#ffd86b', '#ff9f6b'], cozy: ['#e8a36a', '#a45a3b'], night: ['#2a2a6b', '#7a5ad6'], candy: ['#ff8fc8', '#7fc8ff'], ocean: ['#3fc1d9', '#2f6fd8'],
   forest: ['#7be0a0', '#2f8f6a'], space: ['#1b1f5e', '#7a5ad6'], rainbow: ['#ff8fc8', '#6bc8ff'], snow: ['#cfe8ff', '#8fb6ff'], jungle: ['#6be0a0', '#3b8f4a'], sunset: ['#ff9f6b', '#c46bff'], garden: ['#ffb3d1', '#8fd6a0'], party: ['#ffd86b', '#ff6b8f'], none: ['#8b7cff', '#4cc3e8'] };
-const LOOK_ICON = { sunny: '\u2600\ufe0f', cozy: '\u{1F3E1}', night: '\u{1F319}', candy: '\u{1F36D}', ocean: '\u{1F30A}',
-  forest: '\u{1F332}', space: '\u{1F680}', rainbow: '\u{1F308}', snow: '❄️', jungle: '\u{1F99C}', sunset: '\u{1F305}', garden: '\u{1F338}', party: '\u{1F389}' };
+const LOOK_ICON = { sunny: 'sun', cozy: 'house', night: 'moon', candy: 'lollipop', ocean: 'wave',
+  forest: 'pinetree', space: 'rocket', rainbow: 'rainbow', snow: 'snowflake', jungle: 'palm', sunset: 'sunrise', garden: 'flower', party: 'confetti' };
 /* the colours and symbol a request's card has (Create's Your games uses it too) */
 export const looksOf = (recipe = {}) => ({
   cols: LOOK_COLS[recipe.look] || LOOK_COLS.none,
-  glyph: recipe.action && ACTIONS[recipe.action] ? ACTIONS[recipe.action].icon : (recipe.look ? LOOK_ICON[recipe.look] : '\u2728')
+  glyph: recipe.action && ACTIONS[recipe.action] ? ACTIONS[recipe.action].icon : (recipe.look ? LOOK_ICON[recipe.look] : 'sparkles')
 });
 export const CHIPS = { easier: 'Easier', harder: 'Harder', slower: 'Slower', faster: 'Faster', sillier: 'Sillier', longer: 'Longer', two: 'Add a second player', colours: 'Different colours' };
 const CHIP_SAYS = { easier: 'make it easier', harder: 'make it harder', slower: 'make it slower', faster: 'make it faster', sillier: 'make it sillier', longer: 'make it last longer', two: 'add a second player', colours: 'use different colours' };
@@ -104,7 +105,7 @@ export function nameIdeas(r){
 }
 
 /* A picture for a thing (a big emoji on the card); what you do's own icon for one they typed. */
-export const artOf = (thing, action) => EMOJI[thing] || (action && ACTIONS[action] ? ACTIONS[action].icon : '✨');
+export const artOf = (thing, action) => EMOJI[thing] || (action && ACTIONS[action] ? ACTIONS[action].icon : 'sparkles');
 /* the colours behind a card, one pair per place in the row */
 const HUES = [['#7be0a0', '#2fa8d8'], ['#6bc8ff', '#3b6fe0'], ['#ffb86b', '#ff6b8f'], ['#c79bff', '#6b7bff'], ['#ffd86b', '#ff9f6b'], ['#6be0d0', '#3b8fe0']];
 /* a short word for each look, for the little chips at the top */
@@ -143,18 +144,18 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     : s === 'words' ? 'Anything else?'
     : 'Ready?';
   const chipOf = (s) => ({
-    action: [r.action ? ACTIONS[r.action].icon : '\u{1F3AF}', r.action ? ACTIONS[r.action].short : 'Same'],
-    thing: [r.thing.trim() ? artOf(r.thing, r.action) : '✏️', r.thing.trim() ? titled(r.thing).slice(0, 14) : 'Anything'],
-    look: [r.look ? LOOK_ICON[r.look] : '\u{1F3A8}', r.look ? LOOK_WORD[r.look] : (r.lookText || '').trim() ? r.lookText.trim().slice(0, 14) : 'Surprise'],
-    name: ['\u{1F3F7}️', r.name.trim() ? r.name.trim().slice(0, 14) : 'Any name'],
-    words: ['\u{1F4AC}', r.words.trim() ? 'Notes' : 'No notes'],
-    review: ['\u{1F680}', 'Ready']
+    action: [r.action ? ACTIONS[r.action].icon : 'pointer', r.action ? ACTIONS[r.action].short : 'Same'],
+    thing: [r.thing.trim() ? artOf(r.thing, r.action) : 'pencil', r.thing.trim() ? titled(r.thing).slice(0, 14) : 'Anything'],
+    look: [r.look ? LOOK_ICON[r.look] : 'palette', r.look ? LOOK_WORD[r.look] : (r.lookText || '').trim() ? r.lookText.trim().slice(0, 14) : 'Surprise'],
+    name: ['tag', r.name.trim() ? r.name.trim().slice(0, 14) : 'Any name'],
+    words: ['speech', r.words.trim() ? 'Notes' : 'No notes'],
+    review: ['rocket', 'Ready']
   }[s]);
 
   const lookCols = () => LOOK_COLS[r.look] || (r.action ? HUES[Object.keys(ACTIONS).indexOf(r.action) % HUES.length] : LOOK_COLS.none);
   /* a picture card: art on a colour, one or two words */
   const card = (cls, art, label, cols, fn) => {
-    const t = tile(`<span class="bart">${art}</span><span class="blb">${esc(label)}</span>`, 'bcard ' + cls, (e) => fn(e && e.currentTarget ? e.currentTarget : t));
+    const t = tile(`<span class="bart">${iconHTML(art, 192)}</span><span class="blb">${esc(label)}</span>`, 'bcard ' + cls, (e) => fn(e && e.currentTarget ? e.currentTarget : t));
     t.style.setProperty('--c1', cols[0]); t.style.setProperty('--c2', cols[1]);
     return t;
   };
@@ -162,7 +163,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   const coverCanvas = (name, cls = '') => {
     const cv = document.createElement('canvas'); cv.width = 720; cv.height = 720; cv.className = 'bcover ' + cls;
     const cols = lookCols();
-    try { previewCover(cv, { name: name || 'Your game', cols, glyph: r.action ? artOf(r.thing, r.action) : '✨' }); } catch (e){}
+    try { previewCover(cv, { name: name || 'Your game', cols, glyph: r.action ? artOf(r.thing, r.action) : 'sparkles' }); } catch (e){}
     return cv;
   };
 
@@ -189,7 +190,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
       const cols = lookCols();
       try { previewCover(cv, { name: r.name.trim() || 'Your game', cols, glyph: artOf(r.thing, r.action) }); } catch (e){}
       wrap.appendChild(cv);
-    } else wrap.append(h('div', 'bgridbg'), h('span', 'bcrane', '\u{1F3D7}️'));
+    } else wrap.append(h('div', 'bgridbg'), h('span', 'bcrane', iconHTML('crane', 192)));
     wrap.appendChild(h('span', 'bbadge', step === 'review' ? 'Ready!' : `Step ${o.indexOf(step) + 1} of ${o.length}`));
     return wrap;
   };
@@ -208,7 +209,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
       const state = s === step ? 'now' : k <= reach && k < i ? 'ok' : k <= reach ? 'ok' : 'todo';
       const [ico] = chipOf(s);
       const done = state === 'ok';
-      const row = button(`<span class="bdot" style="${done ? `background:${BRICK[k % BRICK.length]}` : ''}">${ico}</span><span class="bt">${esc(STEP_TITLE(s))}<small>${s === step ? 'building…' : done ? esc(ANSWER(s)) : ''}</small></span>`, 'bst ' + state + (landed === s ? ' land' : ''));
+      const row = button(`<span class="bdot" style="${done ? `background:${BRICK[k % BRICK.length]}` : ''}">${iconHTML(ico, 96)}</span><span class="bt">${esc(STEP_TITLE(s))}<small>${s === step ? 'building…' : done ? esc(ANSWER(s)) : ''}</small></span>`, 'bst ' + state + (landed === s ? ' land' : ''));
       if (done) onPick(row, () => { if (!busy) go(s); });
       else row.tabIndex = -1;
       list.appendChild(row);
@@ -253,8 +254,8 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
     /* (a refresh redraws just the ideas: no rising, and the game on the right stays as it is) */
     const body = h('div', 'bq' + (was && !keepSide ? ' in' : ''));
     main.appendChild(body);
-    const pic = step === 'action' ? '\u{1F938}' : step === 'thing' ? (ACTIONS[r.action] ? ACTIONS[r.action].icon : '❔') : step === 'look' ? '\u{1F3A8}' : null;
-    const head = h('h1', 'bh' + (pic ? ' bicon' : ''), pic ? `<span class="bpic">${pic}</span><span class="bq-mark">?</span>` : esc(question(step)));
+    const pic = step === 'action' ? 'acrobat' : step === 'thing' ? (ACTIONS[r.action] ? ACTIONS[r.action].icon : 'sparkles') : step === 'look' ? 'palette' : null;
+    const head = h('h1', 'bh' + (pic ? ' bicon' : ''), pic ? `<span class="bpic">${iconHTML(pic, 192)}</span><span class="bq-mark">?</span>` : esc(question(step)));
     head.dataset.q = question(step); if (pic) head.setAttribute('aria-label', question(step));
     body.append(head);
     root.append(main, side || panel());
@@ -370,7 +371,7 @@ export function gameBuilder({ host, store = async () => [], send, onDone = () =>
   function sent(){
     root.innerHTML = '';
     const done = h('div', 'bq bsent');
-    done.append(h('div', 'bigemoji', '\u{1F6A7}'), h('h1', 'bh', 'On its way!'), h('p', 'bnote', onPlay ? 'You’ll find it under construction on Play.' : 'You’ll find it under construction, below.'));
+    done.append(h('div', 'bigemoji', iconHTML('sign', 256)), h('h1', 'bh', 'On its way!'), h('p', 'bnote', onPlay ? 'You’ll find it under construction on Play.' : 'You’ll find it under construction, below.'));
     const row = h('div', 'bbtns');
     const again = button('Make another', 'bpill go'); onPick(again, () => { sfx.select?.(); close(); });
     row.appendChild(again);

@@ -475,3 +475,14 @@ def('sleep', 'Sleepy', 'thing', (c, s) => {
 def('heartfull', 'Heart', 'thing love', (c, s) => {
   part(c, s, pal('touch.bubblegum'), () => { const k = s / 2.2; c.beginPath(); c.moveTo(0, k * 0.9); c.bezierCurveTo(-k * 1.7, -k * 0.2, -k * 0.7, -k * 1.3, 0, -k * 0.5); c.bezierCurveTo(k * 0.7, -k * 1.3, k * 1.7, -k * 0.2, 0, k * 0.9); c.closePath(); });
 });
+def('butterfly', 'Butterfly', 'animal fly garden', (c, s) => {
+  for (const sx of [-1, 1]){ part(c, s, pal('touch.grape'), ell(c, sx * s * 0.2, -s * 0.12, s * 0.2, s * 0.26, sx * 0.5)); part(c, s, pal('touch.bubblegum'), ell(c, sx * s * 0.16, s * 0.18, s * 0.14, s * 0.16, -sx * 0.4)); dot(c, sx * s * 0.22, -s * 0.14, s * 0.05, SNOW); }
+  part(c, s, pal('fur.charcoal'), ell(c, 0, s * 0.02, s * 0.05, s * 0.3));
+  c.beginPath(); c.moveTo(-s * 0.02, -s * 0.26); c.quadraticCurveTo(-s * 0.1, -s * 0.42, -s * 0.16, -s * 0.4); c.moveTo(s * 0.02, -s * 0.26); c.quadraticCurveTo(s * 0.1, -s * 0.42, s * 0.16, -s * 0.4); line(c, s, 0.03);
+});
+def('house', 'House', 'place', (c, s) => {
+  part(c, s, pal('earth.sand'), rrect(c, -s * 0.34, -s * 0.04, s * 0.68, s * 0.46, s * 0.03));
+  part(c, s, pal('earth.brick'), poly(c, [[-s * 0.44, -s * 0.02], [0, -s * 0.42], [s * 0.44, -s * 0.02]]));
+  part(c, s, pal('earth.bark'), rrect(c, -s * 0.07, s * 0.2, s * 0.14, s * 0.22, s * 0.02), { shade: false });
+  part(c, s, pal('sea.sunlit'), rrect(c, s * 0.14, s * 0.08, s * 0.14, s * 0.12, s * 0.02), { shade: false, w: 0.03 });
+});
