@@ -189,12 +189,14 @@ function person(x, { size = 0.2, sit = false, knees = true, y = 0.5 } = {}){
   lm.forEach(k => { k.visibility = k.v; });
   return lm;
 }
-let frame = 10;
+let frame = 10, FAKE_T = 1000;
+pose.clock = () => FAKE_T;      /* (the camera's pictures come every 50ms here, as far as the smoothing knows) */
 function see(people, dt = 0.05){
   pose.ready = true; pose.on = true; pose.mouse.active = false;
   pose.video = { readyState: 2, currentTime: ++frame };
   pose.lm = { detectForVideo: () => ({ landmarks: people }) };
-  pose.update(frame * 50, dt);
+  FAKE_T += 50; pose.update(frame * 50, dt);
+  FAKE_T += 50; pose.at();       /* (a sample interval on: drawn all the way at the new sample) */
 }
 const screenX = (p) => (p.lm[L.L_HIP].x + p.lm[L.R_HIP].x) / 2;
 /* People walk in and stay a moment, long enough to join. */

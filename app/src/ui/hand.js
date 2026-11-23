@@ -6,7 +6,7 @@
      This file gives it the mapping (cursor.map) and the one driver (cursor.gate).
    - One driver: whoever raises a hand first drives, with the cursor in their colour; others take over by waving.
    - The row-edge strip: pointing at the bottom (or top) edge of the screen, held, moves between rows - no swipes, no stretching.
-   - Light: one look at about 10 a second while someone is in view, one a second while nobody is (pose.lite), only at home.
+   - Light: about 10 looks a second while someone is in view with hands down, 2 while nobody is, the full rate while a hand is pointing (pose.lite, pose.pointing), only at home.
 
    Pure functions here are tested without a DOM (test/hand.test.mjs). */
 import { L } from '../tracking/pose-shared.js';
@@ -15,7 +15,9 @@ import { L } from '../tracking/pose-shared.js';
 export const REACH = { halfW: 1.5, up: 0.6, down: 0.95 };
 /* a hand lower than the belly by this much is hanging at the child's side: not pointing */
 export const HANG = 0.2;
-export const LOOKS = { hz: 10, idleHz: 1 };       /* the camera's looks a second at home: someone in view, and nobody */
+/* the camera's looks a second at home: someone in view with hands down, and nobody. (While a hand is up and pointing it looks at the
+   full rate, as in a game: home.js sets pose.pointing, and the cursor is drawn between looks, so it moves smoothly.) */
+export const LOOKS = { hz: 10, idleHz: 2 };
 const ASPECT = 16 / 9;                            /* the camera's picture (CAM: 640 x 360) */
 
 /* The reach box for one body, in the camera's (mirrored, 0 to 1) coordinates; null when the shoulders aren't seen. */

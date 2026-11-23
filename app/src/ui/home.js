@@ -177,8 +177,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const edgeDown = h('div', 'hedge down', `${icon('down')}<span></span>`), edgeUp = h('div', 'hedge up', `${icon('up')}<span></span>`);
   const say = h('div', 'hsay'), sayFace = h('span', 'sface'), sayText = h('span', 'stext');
   say.append(sayFace, sayText);
-  const dot = h('div', 'hcur', '<i class="rg"></i><i class="dot"></i>');
-  s.append(edgeUp, edgeDown, say, dot);
+  s.append(edgeUp, edgeDown, say);
 
   /* ---------- focus ---------- */
   let pos = startFocus(rows, { session: sessionPick && sessionPick.id, last: remembered() });
@@ -311,8 +310,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     s.classList.add('hand'); layout();
   };
   const stopHand = () => {
-    handActive = false; cursor.map = null; cursor.gate = null; cursor.skin = false; driver.who = null;
-    s.classList.remove('hand'); dot.classList.remove('show'); say.classList.remove('show'); edgeDown.hidden = edgeUp.hidden = true;
+    handActive = false; pose.pointing = false; cursor.map = null; cursor.gate = null; cursor.skin = false; driver.who = null;
+    s.classList.remove('hand'); say.classList.remove('show'); edgeDown.hidden = edgeUp.hidden = true;
   };
   /* whoever drives gets their own colour and face: their place's colour, and the profile that's lined up there (else the signed-in one) */
   const faceFor = (i) => { const p = crew.profileOf(i) || account.current || {}; return faceOf(p, 96); };
@@ -324,16 +323,13 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     if (!handActive) return;
     /* who has a hand up in the box (the driver's cursor ring is in cursor.rings) */
     const active = pose.players.map(p => !!(p.present && p.lm && mapHand(p, pose.cursorHand(p))));
+    pose.pointing = active.some(Boolean);
     driver.update(dt, active, pose.players.map(p => p.present));
     const ring = cursor.rings.find(r => r.id === driver.who) || null;
     cursor.enabled = !sheet && !going;
-    /* the cursor in the driver's colour */
-    const overButton = !!document.querySelector('.hot');
-    if (ring && !overButton && !(edgeDown.classList.contains('lit') || edgeUp.classList.contains('lit'))){
-      dot.classList.add('show');
-      dot.style.left = `${ring.x * 100}%`; dot.style.top = `${ring.y * 100}%`;
-      s.style.setProperty('--c', ring.color); dot.style.setProperty('--k', `${Math.round(ring.progress * 100)}%`);
-    } else dot.classList.remove('show');
+    /* No cursor on screen at home, whichever way the games show hands: the tile pointed at lifts and lights in the child's colour,
+       and the wave runs round its edge (cursor.js fills it); the row-edge strip lights when pointed at. */
+    if (ring) s.style.setProperty('--c', ring.color);
     /* the lit one: a tile (or the Play button or the profile face) the cursor has settled on */
     const hot = [...items.map(t => t.el), play, me].find(el => el.classList.contains('hot')) || null;
     document.querySelectorAll('.htile, .hplay, .hme').forEach(el => { if (el !== hot) el.classList.remove('lit'); });

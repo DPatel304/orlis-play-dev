@@ -74,14 +74,7 @@ body.remote .htile.kfocus{ outline:none; }
 .htile.getting .gotbar{ opacity:1; } .htile.getting .getpill{ display:none; }
 .htile.getting::after{ content:attr(data-got); position:absolute; right:calc(var(--u)*1.4); top:calc(var(--u)*1.2); padding:calc(var(--u)*.5) calc(var(--u)*1.6); border-radius:var(--pill); background:#fff; color:var(--ink); font:700 calc(var(--u)*2.6) var(--ui); }
 
-/* hand mode: the cursor in the pointing child's colour, "Wave to play" with their face, and the row-edge strip */
-.hcur{ position:fixed; z-index:7; width:calc(var(--u)*14); height:calc(var(--u)*14); margin:calc(var(--u)*-7) 0 0 calc(var(--u)*-7); pointer-events:none; display:none; }
-.hcur.show{ display:block; }
-.hcur .rg{ position:absolute; inset:0; border-radius:50%; border:calc(var(--u)*1.3) solid transparent;
-  background:conic-gradient(var(--c,var(--blue)) var(--k,0%), color-mix(in srgb, var(--c,var(--blue)) 24%, transparent) 0) border-box;
-  -webkit-mask:linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); mask:linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); }
-.hcur .dot{ position:absolute; left:50%; top:50%; width:calc(var(--u)*7); height:calc(var(--u)*7); margin:calc(var(--u)*-3.5) 0 0 calc(var(--u)*-3.5); border-radius:50%;
-  background:radial-gradient(circle,#fff 0 34%,var(--c,var(--blue)) 36% 64%,color-mix(in srgb, var(--c,var(--blue)) 25%, transparent) 66%); box-shadow:0 0 calc(var(--u)*3) color-mix(in srgb, var(--c,var(--blue)) 60%, transparent); }
+/* hand mode: no cursor - the tile lights in the pointing child's colour; "Wave to play" with their face, and the row-edge strip */
 .hsay{ position:fixed; z-index:7; transform:translateX(-50%); display:none; align-items:center; gap:calc(var(--u)*1.4); padding:calc(var(--u)*.8) calc(var(--u)*3.2) calc(var(--u)*.8) calc(var(--u)*.8); border-radius:var(--pill); background:#fff; color:var(--ink); box-shadow:var(--soft); font:700 calc(var(--u)*4) var(--ui); white-space:nowrap; pointer-events:none; }
 .hsay.show{ display:flex; }
 .sface{ display:block; width:calc(var(--u)*6.6); height:calc(var(--u)*6.6); border-radius:30%; box-shadow:0 0 0 calc(var(--u)*.5) var(--c,var(--blue)); overflow:hidden; background:var(--paper); } .sface canvas{ width:100%; height:100%; display:block; }

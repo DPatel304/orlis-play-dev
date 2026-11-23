@@ -14,12 +14,25 @@ export { L, BONES, MAX_PLAYERS, PLAYING, PLAYER_COLORS };
 export const MIN_CUTOFF = 0.7, BETA = 6, D_CUTOFF = 0.4;
 const alpha = (cutoff, dt) => { const tau = 1 / (2 * Math.PI * cutoff); return 1 / (1 + tau / Math.max(dt, 1e-3)); };
 /* One coordinate through the filter: f holds { x, dx } between frames. */
-export function oneEuro(f, x, dt){
+export function oneEuro(f, x, dt, minCutoff = MIN_CUTOFF, beta = BETA){
   if (f.x == null){ f.x = x; f.dx = 0; return x; }
   const dx = (x - f.x) / Math.max(dt, 1e-3);
   f.dx += (dx - f.dx) * alpha(D_CUTOFF, dt);
-  f.x += (x - f.x) * alpha(MIN_CUTOFF + BETA * Math.abs(f.dx), dt);
+  f.x += (x - f.x) * alpha(minCutoff + beta * Math.abs(f.dx), dt);
   return f.x;
+}
+/* Drawing between samples. The camera gives a new picture of the body 10 to 30 times a second but the screen draws at up to 165,
+   so a hand drawn straight from the last sample holds still, then jumps. Instead each landmark keeps its last two filtered samples
+   and is drawn on the line between them, one sample interval behind the newest, so the motion is continuous. When a sample is
+   late it carries on at the same speed, but never for more than LEAD_MAX seconds, and when the next one comes the drawing
+   continues from where it was and eases to it (it never steps back to the older sample). */
+export const LEAD_MAX = 0.03, IV_MIN = 0.008, IV_MAX = 0.25;
+/* One coordinate drawn: the stretch from a (where it was drawn when the sample came) to b takes iv seconds; after that it goes on
+   at b's own speed, (b - before) / iv, for at most LEAD_MAX. */
+export function between(a, b, before, iv, since){
+  const u = since / iv;
+  if (u <= 1) return a + (b - a) * Math.max(0, u);
+  return b + (b - before) / iv * Math.min(since - iv, LEAD_MAX);
 }
 /* The hand that drives the cursor only changes when the other one is
    clearly better seen - not back and forth every frame. */
@@ -145,6 +158,8 @@ export const pose = {
      is slow; look only now and then when nobody is there; not at all while the
      pause screen is up. `wanted` is how many people to look for. */
   skip:1, paused:false, wanted:SEEN_MAX, _n:0, _acc:0, _emptyFor:0, _idleAt:0,
+  pointing:false,            /* at home: a hand is up and pointing, so look at the full rate, as in a game (lite is the rest of the time) */
+  clock:() => performance.now(),   /* (ms; a test can set its own) */
   lite:null,                 /* { hz, idleHz }: look this often (someone in view, nobody) instead of every picture - the home screen's light mode */
   worker:null, _wbusy:false, _wres:null,
   look(players){
@@ -247,7 +262,7 @@ export const pose = {
     this._close();
     for (const p of this.players){ p.lm = null; p.present = false; p.lostFor = 99; }
     this.personCount = 0; this.seenCount = 0; this.fps = 0;
-    this.skip = 1; this._n = 0; this._acc = 0; this._emptyFor = 0; this._wbusy = false;
+    this.skip = 1; this._n = 0; this._acc = 0; this._emptyFor = 0; this._wbusy = false; this.pointing = false;
   },
   /* Settings can ask for the sharper (and costlier) picture, or for the
      tracker to work off the main thread. Kept as plain flags so nothing here
@@ -342,6 +357,11 @@ export const pose = {
   /* Called once per animation frame. Detection runs only when the video has a
      new frame, so games keep their own smooth cadence even if pose dips. */
   update(nowMs, dt){
+    const r = this._update(nowMs, dt);
+    this.at();
+    return r;
+  },
+  _update(nowMs, dt){
     if (this.mouse.active) return this._mouseUpdate(dt);
     if (!this.ready || !this.on) return;
     const v = this.video;
@@ -370,12 +390,12 @@ export const pose = {
     this._acc += dt;
     /* Looking lightly (the home screen, hand.js LOOKS): a fixed few looks a second - more with someone in view, fewer with
        nobody - however many pictures the camera makes. */
-    if (this.lite){
+    if (this.lite && !this.pointing){
       const gap = 1000 / (this.personCount > 0 ? this.lite.hz : this.lite.idleHz);
       if (wall - (this._liteAt || 0) < gap) return;
       this._liteAt = wall;
     } else
-    if (isIdle(this._emptyFor)){
+    if (!this.lite && isIdle(this._emptyFor)){
       if (wall - this._idleAt < IDLE_EVERY_MS){ return; }
       this._idleAt = wall;
     } else if (this.skip > 1 && (++this._n % this.skip) !== 0){
@@ -533,8 +553,16 @@ export const pose = {
   },
 
   _apply(p, lm, dt){
-    if (!p.lm){ p.lm = lm.map(k => ({...k})); p.filt = null; }
-    else {
+    const now = this.clock(), n = lm.length;
+    const fresh = !p.lm;
+    if (fresh){ p.lm = lm.map(k => ({...k})); p.filt = null; }
+    const sg = p.seg && p.seg.lm === p.lm && p.seg.n === n ? p.seg : null;
+    /* where it is drawn right now (the start of the next stretch), before the new sample lands */
+    if (sg){
+      const since = Math.max(0, (now - sg.t1) / 1000);
+      for (let j = 0; j < n * 3; j++) sg.a[j] = between(sg.a[j], sg.b[j], sg.before[j], sg.iv, since);
+    }
+    if (!fresh){
       for (let i = 0; i < lm.length; i++){
         const f = (p.filt ||= [])[i] ||= { x: {}, y: {}, z: {} };
         p.lm[i].x = oneEuro(f.x, lm[i].x, dt);
@@ -545,6 +573,41 @@ export const pose = {
         p.lm[i].v  = lm[i].v;
       }
     }
+    if (sg){
+      sg.before.set(sg.b);
+      const meas = Math.min(IV_MAX, Math.max(IV_MIN, (now - sg.t1) / 1000));
+      sg.iv = Math.min(IV_MAX, Math.max(IV_MIN, sg.iv * 0.75 + meas * 0.25));
+    } else {
+      p.seg = { lm: p.lm, n, t1: 0, iv: 1 / 30, a: new Float64Array(n * 3), b: new Float64Array(n * 3), before: new Float64Array(n * 3) };
+    }
+    const g = p.seg;
+    for (let i = 0; i < n; i++){ const k = p.lm[i], j = i * 3; g.b[j] = k.x; g.b[j+1] = k.y; g.b[j+2] = k.z ?? 0; }
+    if (!sg){ g.a.set(g.b); g.before.set(g.b); }
+    g.t1 = now;
+    this._body(p, dt);
+  },
+
+  /* Everything drawn from a body (the landmarks, the hands, the centre and size) as it is at this moment: between the last two
+     samples, as above. Called once a frame after the looking; the games read p.lm, p.hands, p.centre and p.scale as ever. */
+  at(now = this.clock()){
+    if (this.mouse.active) return;
+    for (const p of this.players){
+      const g = p.seg;
+      if (!p.present || !p.lm || !g || g.lm !== p.lm) continue;
+      const since = Math.max(0, (now - g.t1) / 1000);
+      for (let i = 0; i < g.n; i++){
+        const k = p.lm[i], j = i * 3;
+        k.x = between(g.a[j], g.b[j], g.before[j], g.iv, since);
+        k.y = between(g.a[j+1], g.b[j+1], g.before[j+1], g.iv, since);
+        k.z = between(g.a[j+2], g.b[j+2], g.before[j+2], g.iv, since);
+      }
+      this._body(p, 0);
+    }
+  },
+
+  /* The centre and size, and the hands, from the landmarks as they are. A new sample (dt > 0) gives the hands' speed; drawing
+     between samples (dt 0) only moves them. */
+  _body(p, dt){
     const hip = { x:(p.lm[L.L_HIP].x + p.lm[L.R_HIP].x)/2, y:(p.lm[L.L_HIP].y + p.lm[L.R_HIP].y)/2 };
     const sh  = { x:(p.lm[L.L_SHOULDER].x + p.lm[L.R_SHOULDER].x)/2,
                   y:(p.lm[L.L_SHOULDER].y + p.lm[L.R_SHOULDER].y)/2 };
@@ -559,9 +622,13 @@ export const pose = {
      screen-widths per second rather than pixels: the same swing scores the
      same on any size of television. */
   _hand(h, k, dt){
-    const nx = k.x, ny = k.y, d = Math.max(dt, 1/120);
-    h.vx = (nx - h.x) / d; h.vy = (ny - h.y) / d;
-    h.speed = Math.hypot(h.vx, h.vy);
+    const nx = k.x, ny = k.y;
+    if (dt > 0){
+      const d = Math.max(dt, 1/120), px = h.px ?? h.x, py = h.py ?? h.y;
+      h.vx = (nx - px) / d; h.vy = (ny - py) / d;
+      h.speed = Math.hypot(h.vx, h.vy);
+      h.px = nx; h.py = ny;
+    }
     h.x = nx; h.y = ny;
   },
 

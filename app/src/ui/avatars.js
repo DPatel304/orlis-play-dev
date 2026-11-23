@@ -1,5 +1,6 @@
 import { pose, L, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { figure } from './avatar-art.js';
+import { handsMode } from './handshow.js';
 
 /* The players, in the picture. Two layers, drawn by the game at different
    depths:
@@ -121,14 +122,22 @@ export class Avatars {
     } catch (e){ this.layer = false; return null; }
   }
 
-  drawMitts(c, W, H, players){
+  /* the sparkles a quick hand throws (a trail), a little fainter by `fade` */
+  _drawSparks(c, W, H, fade){
     for (const s of this.sparks){
       const k = s.age / s.life, r = H * 0.009 * s.s * (1 - k * 0.5);
-      c.globalAlpha = 1 - k;
+      c.globalAlpha = (1 - k) * fade;
       c.fillStyle = s.hue == null ? PLAYER_COLORS[s.who] : `hsl(${s.hue} 95% 65%)`;
       star(c, s.x * W, s.y * H, r);
     }
     c.globalAlpha = 1;
+  }
+
+  drawMitts(c, W, H, players){
+    /* (Settings > Testing > Hands on screen: only what is drawn changes) */
+    const way = handsMode();
+    if (way !== 'rings') return this._drawOtherWay(c, W, H, players, way);
+    this._drawSparks(c, W, H, 1);
 
     for (const [i, h] of this._hands(players)){
       const x = h.x * W, y = h.y * H, col = PLAYER_COLORS[i];
@@ -150,6 +159,22 @@ export class Avatars {
     }
   }
 }
+
+/* ---------- the other ways to show hands (handshow.js) ---------- */
+Avatars.prototype._drawOtherWay = function(c, W, H, players, way){
+  /* body: a faint outline of each player, on top but so see-through that the game still shows through it */
+  if (way === 'body') this.drawBodies(c, W, H, players, [], 0.25);
+  /* glow: the sparkle trail when a hand is quick; body: just a brighter glow */
+  if (way === 'glow') this._drawSparks(c, W, H, 0.9);
+  for (const [i, h] of this._hands(players)){
+    const x = h.x * W, y = h.y * H, col = PLAYER_COLORS[i];
+    const r = H * (way === 'body' ? 0.07 : 0.06) * (1 + this.glow[i] * 0.25 + this.flash[i] * 0.3);
+    const g = c.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, hexA(col, way === 'body' ? 0.7 : 0.6)); g.addColorStop(0.45, hexA(col, way === 'body' ? 0.32 : 0.26)); g.addColorStop(1, hexA(col, 0));
+    c.fillStyle = g;
+    c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.fill();
+  }
+};
 
 export function silhouette(c, lm, W, H, col, alpha){
   const P = (i) => [lm[i].x * W, lm[i].y * H];
