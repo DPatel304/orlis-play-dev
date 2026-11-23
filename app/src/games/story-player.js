@@ -232,7 +232,7 @@ class Story {
     if (b && b.card && !(this.age > 0.2)) pose = 'freeze';
     const x = CUBO_AT * vw + (b && b.wobble ? Math.sin(this.t * 14) * 3 * this.wob : 0), h = 210;
     const about = !!(b && b.t && voice.speaking && !/^[“"]/.test(b.t) && /\b(Cubo|he|He|his|him)\b/.test(b.t));
-    cuboFigure(c, x, GROUND + 22, h, pose, this.t, b && b.face || null, { look: moving ? [1, 0] : null, talk: about });
+    cuboFigure(c, x, GROUND + 22, h, pose, this.t, b && b.face || null, { look: moving ? [1, 0] : null, talk: about, arrows: !!(b && b.card) });
   }
   house(c, cam, vw, dusk){
     const hx = PLACES.home + 400 - cam; if (hx < -400 || hx > vw + 400) return;

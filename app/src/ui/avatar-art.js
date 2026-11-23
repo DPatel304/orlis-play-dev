@@ -180,6 +180,15 @@ function limb(x, S, px, py, a1, a2, reach, elbow, top, w, fill, end, seamsTop){
   if (Math.abs(a1 - a2) < 0.5) block(x, S, px, py, a1, -top, reach, w, fill, end, [...seamsTop, elbow, reach - end.len]);
   else { block(x, S, ex, ey, a2, -S * 0.03, reach - elbow, w, fill, end, [reach - elbow - end.len]); block(x, S, px, py, a1, -top, elbow + S * 0.02, w, fill, null, seamsTop); }
 }
+/* a bold motion arrow (the ink colour, rounded; the paper edge goes round it with the rest): from (px, py) along th, len long */
+function motionArrow(x, S, px, py, th, len){
+  const dx = Math.sin(th * DEG), dy = Math.cos(th * DEG), head = S * 0.085, hw = S * 0.1, tx = px + dx * len, ty = py + dy * len;
+  x.save(); x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = x.fillStyle = INK();
+  x.lineWidth = S * 0.05; x.beginPath(); x.moveTo(px, py); x.lineTo(tx - dx * head * 0.6, ty - dy * head * 0.6); x.stroke();
+  x.beginPath(); x.moveTo(tx, ty); x.lineTo(tx - dx * head - dy * hw / 2, ty - dy * head + dx * hw / 2); x.lineTo(tx - dx * head + dy * hw / 2, ty - dy * head - dx * hw / 2); x.closePath(); x.fill();
+  x.lineWidth = S * 0.02; x.stroke();
+  x.restore();
+}
 /* a leg, hanging from the hip joint (hx, hy) at the bottom edge of the torso; s shortens it (a squat, a lifted foot); a1 the thigh, a2 the shin */
 function drawLeg(x, a, S, hx, hy, a1, a2, s = 1){
   const L = S * BODY.legLen * s, w = S * BODY.legW;
@@ -314,7 +323,9 @@ function idleRig(t){
   return rig({ k: 1 - 0.01 * b / BODY.legLen, arms: [AR(sway(-1)), AR(sway(1))] });
 }
 
-export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false, face: alive = null, still = false } = {}){
+/* opts.arrows: he is showing a move to copy (a move card, a story beat that says "do this"): a bold arrow off each straight, stretched-out hand
+   (freeze, the arms-up V, a cheer, a reach) makes the reach read bigger than the stubby arms. Acting in a story beat has none. */
+export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false, face: alive = null, still = false, arrows = false } = {}){
   const a = resolve(look), S = h, { hh, bw, bh } = SIZE(S);
   const rg = pose === 'stand' && !still && !back ? idleRig(t) : rigOf(pose, t);
   const hipY = -S * BODY.legLen * rg.k + rg.yo * S, torsoTop = hipY - bh, headTop = torsoTop + S * 0.015 - hh, rot = rg.rot || 0, dx = (rg.dx || 0) * S;
@@ -334,6 +345,10 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
     cc.save(); cc.translate(0, torsoTop); drawTorso(cc, a, S, bw, bh); cc.restore();
     if (rg.armsFront) arms();
     cc.save(); cc.translate(0, headTop); drawHead(cc, a, S, back, t); cc.restore();
+    if (arrows) [-1, 1].forEach((d, i) => { const r = rg.arms[i];
+      if (Math.abs(r.a1 - r.a2) > 1 || Math.abs(r.a1) < 55) return;
+      const reach = S * BODY.armLen - S * BODY.armW / 2, th = r.a1 * DEG, pulse = still ? 1 : 1 + 0.18 * Math.sin(t * Math.PI * 2 * 1.6), gap = reach + S * 0.04;
+      motionArrow(cc, S, d * ax + Math.sin(th) * gap, ay + Math.cos(th) * gap, r.a1, S * 0.14 * pulse); });
     cc.restore();
   });
   live = null;
@@ -353,11 +368,11 @@ export function blinkAt(t){
   for (let k = 1; at < u && k < 400; k++){ const next = at + 3 + rand(k) * 2; if (u < at + 0.11) return true; at = next; if (u < at) return false; }
   return u >= at && u < at + 0.11;
 }
-/* opts.look: which way his eyes glance ([x, y], -1..1); opts.talk: true while the voice reads about him */
-export function cuboFigure(c, x, base, h, pose = 'stand', t = 0, face = null, { look = null, talk = false } = {}){
+/* opts.look: which way his eyes glance ([x, y], -1..1); opts.talk: true while the voice reads about him; opts.arrows: he is showing a move to copy (see body) */
+export function cuboFigure(c, x, base, h, pose = 'stand', t = 0, face = null, { look = null, talk = false, arrows = false } = {}){
   const f = face || (pose === 'squat' ? 'grin' : FRAMES[pose] ? frameAt(pose, t).face : 'smile');
   const m = talk ? 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * 2.4 + Math.sin(t * 1.7) * 1.5) : null;
-  body(c, x, base, h, CUBO_LOOKS[f] || CUBO_LOOKS.smile, t, pose, { face: { blink: blinkAt(t), look, talk: m } });
+  body(c, x, base, h, CUBO_LOOKS[f] || CUBO_LOOKS.smile, t, pose, { face: { blink: blinkAt(t), look, talk: m }, arrows });
 }
 
 /* ---------- a portrait: for tiles and name chips ---------- */
