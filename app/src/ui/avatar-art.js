@@ -123,9 +123,9 @@ const toneRaw = (a, which) => color(a.c2n, which);
 const toneT = (a, which) => color(a.t2n, which);
 
 /* ---------- the body parts, in the character's own proportions ---------- */
-/* the Chibi body (the owner's choice): the cube head is about 1.25 times the body's width, a boxy torso, short chunky legs with small rounded
-   feet, arms a little away from the body with round mitten hands. All numbers are fractions of the head's size S; tot is the whole height. */
-const BODY = { tot: 0.88, bw: 0.37, bh: 0.28, r: 0.075, legW: 0.14, armW: 0.1, out: 0.075, armLen: 0.8, hand: 0.058 };
+/* the Chibi body (the owner's choice, decision 0042): the cube head is about 1.25 times the body's width, a short boxy torso with no neck, and
+   straight block arms and legs (see the limbs below). All numbers are fractions of the head's size S; tot is the whole height. */
+const BODY = { tot: 0.875, bw: 0.37, bh: 0.28, r: 0.075, legLen: 0.19, legW: 0.17, legGap: 0.03, armLen: 0.255, armW: 0.11, armGap: 0.025, hand: 0.07, foot: 0.05, blockR: 0.03 };
 const SIZE = (S) => ({ hw: S * 0.46, hh: S * 0.42, bw: S * BODY.bw, bh: S * BODY.bh });
 
 /* the torso: origin at the middle of its top edge, bw wide, bh tall (it stretches to a player's real body in figure) */
@@ -151,23 +151,45 @@ function drawCape(x, a, S, bw, bh){
   x.fillStyle = toneT(a, 'shade'); x.beginPath(); x.moveTo(-bw * 0.55, S * 0.02); x.lineTo(bw * 0.55, S * 0.02); x.lineTo(bw * 0.8, bh * 1.35); x.lineTo(-bw * 0.8, bh * 1.35); x.closePath(); x.fill();
   x.strokeStyle = INK(); x.lineWidth = S * 0.016; x.lineJoin = 'round'; x.stroke();
 }
-/* a leg: points down from the hip; the foot is an ink pill */
-function drawLeg(x, a, S, pts, thick = false){
-  x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
-  line(x, pts, S * (thick ? 0.16 : BODY.legW) + S * 0.032, INK());
-  line(x, pts, S * (thick ? 0.16 : BODY.legW), a.fit === 'overalls' ? toneRaw(a, 'shade') : a.shade);
+/* ---------- the arms and legs: straight blocks ----------
+   An arm is a block 0.11 wide and 0.255 long hanging beside the torso with a small gap, ending in a light square hand; a leg is a block 0.17
+   wide and 0.19 long with a slim gap between the two, ending in a dark square foot. Faint seams show the shoulder, elbow and wrist, and the
+   hip and knee. Where a pose needs it a limb bends at its elbow or knee seam and is drawn as two blocks. Angles are in degrees: 0 is straight
+   down, plus is towards the right of the picture (so for the left arm, plus is inwards, over the body). */
+const DEG = Math.PI / 180;
+const SEAM = () => alpha('shade.ink', 0.28);
+/* one block: its top (y0) and bottom (y1) along its own length from the joint (px, py), rotated by th; w wide; `end` paints the hand or foot;
+   `seams` are the distances of the faint seams along it */
+function block(x, S, px, py, th, y0, y1, w, fill, end, seams){
+  const r = Math.min(S * BODY.blockR, (y1 - y0) / 2, w / 2);
+  x.save(); x.translate(px, py); x.rotate(-th * DEG);
+  rr(x, -w / 2, y0, w, y1 - y0, r); x.fillStyle = fill; x.fill();
+  x.save(); rr(x, -w / 2, y0, w, y1 - y0, r); x.clip();
+  if (end){ x.fillStyle = end.col; x.fillRect(-w / 2 - 1, y1 - end.len, w + 2, end.len + 1); }
+  x.strokeStyle = SEAM(); x.lineWidth = S * 0.008; x.lineCap = 'butt';
+  for (const q of seams || []){ x.beginPath(); x.moveTo(-w / 2, q); x.lineTo(w / 2, q); x.stroke(); }
+  x.restore();
+  x.strokeStyle = INK(); x.lineWidth = S * 0.016; x.lineJoin = 'round'; rr(x, -w / 2, y0, w, y1 - y0, r); x.stroke();
   x.restore();
 }
-/* a small rounded foot, ink-dark, a little wider than the leg, peeking out under it: px is its middle, py the ground under it */
-function drawFoot(x, S, px, py, big = false){ const k = big ? 1.3 : 1, w = S * 0.17 * k, h = S * 0.06 * k; x.fillStyle = INK(); rr(x, px - w / 2, py - h, w, h, h * 0.5); x.fill(); }
-/* an arm: a sleeve along the points, a hand at the end; the left one is in shade */
-function drawArm(x, a, S, pts, left, thick = false){
-  x.save(); x.lineJoin = 'round'; x.lineCap = 'round';
+/* a limb of two blocks: it is one straight block (with its seam) when both angles are the same, and bends at the seam when they are not.
+   (px, py) is its joint at the body, `reach` its length from there, `elbow` the seam's distance from the joint, `top` how far the first block
+   reaches up behind the body. */
+function limb(x, S, px, py, a1, a2, reach, elbow, top, w, fill, end, seamsTop){
+  const ex = px + Math.sin(a1 * DEG) * elbow, ey = py + Math.cos(a1 * DEG) * elbow;
+  if (Math.abs(a1 - a2) < 0.5) block(x, S, px, py, a1, -top, reach, w, fill, end, [...seamsTop, elbow, reach - end.len]);
+  else { block(x, S, ex, ey, a2, -S * 0.03, reach - elbow, w, fill, end, [reach - elbow - end.len]); block(x, S, px, py, a1, -top, elbow + S * 0.02, w, fill, null, seamsTop); }
+}
+/* a leg, hanging from the hip joint (hx, hy) at the bottom edge of the torso; s shortens it (a squat, a lifted foot); a1 the thigh, a2 the shin */
+function drawLeg(x, a, S, hx, hy, a1, a2, s = 1){
+  const L = S * BODY.legLen * s, w = S * BODY.legW;
+  limb(x, S, hx, hy, a1, a2, L, L / 2, S * 0.03, w, a.fit === 'overalls' ? toneRaw(a, 'shade') : a.shade, { col: INK(), len: Math.min(S * BODY.foot, L * 0.4) }, L > S * 0.15 ? [S * 0.045] : []);
+}
+/* an arm, hanging from the shoulder joint (sx, sy) (the middle of its top square); the left one is in shade */
+function drawArm(x, a, S, sx, sy, a1, a2, left){
+  const w = S * BODY.armW, reach = S * BODY.armLen - w / 2, hand = S * BODY.hand, elbow = (S * BODY.armLen - hand) / 2 + S * 0.03 - w / 2;
   const sleeve = a.fit === 'hoodie' ? a.c2 : a.c;
-  line(x, pts, S * (thick ? 0.13 : BODY.armW) + S * 0.032, INK());
-  line(x, pts, S * (thick ? 0.13 : BODY.armW), left ? (a.fit === 'hoodie' ? toneRaw(a, 'shade') : a.shade) : sleeve);
-  x.fillStyle = a.light; const e = pts[pts.length - 1]; dot(x, e[0], e[1], S * (thick ? 0.062 : BODY.hand)); x.fill(); x.strokeStyle = INK(); x.lineWidth = S * 0.016; x.stroke();
-  x.restore();
+  limb(x, S, sx, sy, a1, a2, reach, elbow, w / 2, w, left ? (a.fit === 'hoodie' ? toneRaw(a, 'shade') : a.shade) : sleeve, { col: a.light, len: hand }, [S * 0.01]);
 }
 
 /* ---------- the edge around everything drawn ----------
@@ -202,120 +224,116 @@ export function head(c, x, y, r, look, t = 0, { back = false } = {}){
   c.restore();
 }
 
-/* ---------- the whole character, standing ---------- */
+/* ---------- the whole character ----------
+   A pose is a rig, in units of the character's size S (y is down, 0 is the floor line), angles in degrees (see the limbs above):
+   { yo: the body lifted (up is minus), k: how long the legs are (1 = standing, a squat is simply shorter legs), squash, rot: lean (radians),
+     dx: sideways shiver, armsFront: arms drawn over the torso, legs: [left, right] of { a1: thigh, a2: shin, s: this leg's own length },
+     arms: [left, right] of { a1: upper arm, a2: forearm } } */
+const LG = (a1 = 0, a2 = a1, s = 1) => ({ a1, a2, s });
+const AR = (a1 = 0, a2 = a1) => ({ a1, a2 });
+const rig = (o) => ({ yo: 0, k: 1, legs: [LG(), LG()], arms: [AR(), AR()], ...o });
+/* the same pose the other way round */
+const mirror = (m) => ({ ...m, rot: m.rot && -m.rot, legs: [m.legs[1], m.legs[0]].map(l => ({ ...l, a1: -l.a1, a2: -l.a2 })), arms: [m.arms[1], m.arms[0]].map(r => ({ a1: -r.a1, a2: -r.a2 })) });
+/* the moves with a hand-held arm (wave, cheer, reach): [left arm, right arm], null = hanging */
 const ARMS = {
   stand: () => null,
-  wave: (d, S, bw, by, t) => d < 0 ? [-bw * 0.5 - S * 0.17, by - S * 0.1 + Math.sin(t * 10) * S * 0.02] : null,
-  cheer: (d, S, bw, by) => [d * (bw * 0.5 + S * 0.14), by - S * 0.3],
-  reach: (d, S, bw, by) => [d * (bw * 0.5 + S * 0.09), by - S * 0.42]
+  wave: (d, t) => d < 0 ? AR(-152 + Math.sin(t * 10) * 9) : null,
+  cheer: (d) => AR(d * 142),
+  reach: (d) => AR(d * 168)
 };
-/* the story's moves, drawn for this body (units of the character's height S, y up from the feet's line as negative numbers). A move is four
-   stills that repeat, like the move cards': { yo: body lift, rot: lean (radians), dx: sideways shiver, legs: [[knee|null, foot], left, right],
-   arms: [points after the shoulder, left, right] } */
-const mirror = (m) => ({ ...m, legs: [m.legs[1], m.legs[0]].map(([k, f]) => [k && [-k[0], k[1]], [-f[0], f[1]]]), arms: [m.arms[1], m.arms[0]].map(pts => pts.map(([px, py]) => [-px, py])) });
+/* the story's moves, drawn for this body: four stills that repeat, like the move cards' */
 const MOVES = {
-  /* a clear stride, seen from the side: one foot forward and planted, one back, the arms swinging against the legs, a small bob */
+  /* a clear stride, seen from the front: one foot out and planted, the other stepping through, the arms swinging against the legs */
   march: (i) => {
-    const A = { yo: 0, legs: [[null, [-0.17, -0.02]], [null, [0.19, 0]]], arms: [[[-0.31, -0.22]], [[0.27, -0.17]]] };
-    const B = { yo: -0.012, legs: [[null, [-0.06, 0]], [null, [0.09, -0.05]]], arms: [[[-0.27, -0.19]], [[0.27, -0.19]]] };
+    const A = rig({ legs: [LG(-9), LG(9)], arms: [AR(-24), AR(8)] });
+    const B = rig({ legs: [LG(-3), LG(6, 6, 0.72)], arms: [AR(-8), AR(12)] });
     return [A, B, mirror(A), mirror(B)][i % 4];
   },
-  /* a longer stride, leaving the ground between steps, leaning into it */
-  /* a run, in four stills (each ~0.2 s): in the air with the front knee up and the foot under it, the back leg pushing off diagonally; then
-     landing low on the front foot with the other leg trailing; then the same on the other side. The torso and head stay fully upright (no lean at all; the speed is
-     in the legs, the arms and the bob), the arms are bent and pump close to the body against the legs, and the body bobs up and down between the stills. */
+  /* a run, in four stills (each ~0.2 s): in the air with the front knee up and out and the foot under it, the back leg pushing off
+     diagonally; then landing low on the front foot with the other leg trailing; then the same on the other side. The torso and head stay fully
+     upright (no lean at all; the speed is in the legs, the arms and the bob), the arms are bent at the elbow seam and pump close to the body
+     against the legs, and the body bobs up and down between the stills. */
   run: (i) => {
-    const hip = (side, yo) => [side * 0.104, -0.135 + yo];
-    const front = (side, yo, air) => { const [hx, hy] = hip(side, yo); return air ? [[hx + 0.086, hy + 0.025], [hx + 0.076, hy + 0.16]] : [[hx + 0.046, hy + 0.01], [hx + 0.026, hy + 0.135]]; };
-    const back = (side, yo, air) => { const [hx, hy] = hip(side, yo); return air ? [[hx - 0.046, hy + 0.045], [hx - 0.096, hy + 0.17]] : [[hx - 0.026, hy + 0.035], [hx - 0.066, hy + 0.135]]; };
-    const arm = (side, yo, ph) => { const x = side * 0.255, up = ph === 'fwd', mid = ph === 'mid'; return [[x, -0.31 + yo * 0.5], [x + side * 0.02, (up ? -0.41 : mid ? -0.33 : -0.235) + yo * 0.5]]; };
-    const k = i % 4, air = k % 2 === 0, yo = air ? -0.04 : 0, rightFront = k < 2, f = rightFront ? 1 : -1;
-    return { yo, legs: [f > 0 ? back(-1, yo, air) : front(-1, yo, air), f > 0 ? front(1, yo, air) : back(1, yo, air)],
-      arms: [arm(-1, yo, air ? (f > 0 ? 'fwd' : 'back') : 'mid'), arm(1, yo, air ? (f > 0 ? 'back' : 'fwd') : 'mid')] };
+    const k = i % 4, air = k % 2 === 0, f = k < 2 ? 1 : -1;
+    const legOf = (side) => { const front = side === f;
+      return air ? (front ? LG(side * 68, side * -12) : LG(side * 25, side * 45)) : (front ? LG(side * 12) : LG(side * 30, side * 50)); };
+    const armOf = (side) => { const fwd = side === -f;
+      return air ? (fwd ? AR(side * 10, side * 68) : AR(side * 30, side * 22)) : AR(side * 20, side * 80); };
+    return rig({ yo: air ? -0.04 : 0.004, legs: [legOf(-1), legOf(1)], arms: [armOf(-1), armOf(1)] });
   },
-  /* off the ground, in four stills: the landing squash (the whole body squashes, feet apart), the take-off (legs stretched down, toes pointed,
-     arms up), the top (knees tucked out to the sides, arms high), the way down (legs reaching for the ground). The shadow stays on the grass. */
+  /* off the ground, in four stills: the landing squash (the whole body squashes, feet apart), the take-off (legs stretched down together,
+     arms up), the top (legs together, arms up in a V), the way down (legs reaching for the ground). The shadow stays on the grass. */
   jump: (i) => {
-    const arms = (up, k) => [[[-0.31 - k * 0.04, -0.52 - up], [-0.3 - k * 0.07, -0.68 - up]], [[0.31 + k * 0.04, -0.52 - up], [0.3 + k * 0.07, -0.68 - up]]];
-    if (i % 4 === 0) return { yo: 0.02, squash: 0.09, legs: [[null, [-0.15, 0]], [null, [0.15, 0]]], arms: [[[-0.34, -0.17]], [[0.34, -0.17]]] };
-    if (i % 4 === 1) return { yo: -0.2, legs: [[null, [-0.07, -0.2 + 0.03]], [null, [0.07, -0.2 + 0.03]]], arms: arms(0.2, 0) };
-    if (i % 4 === 2) return { yo: -0.32, legs: [[[-0.115, -0.32 - 0.1], [-0.085, -0.32 + 0.02]], [[0.115, -0.32 - 0.1], [0.085, -0.32 + 0.02]]], arms: arms(0.32, 1) };
-    return { yo: -0.17, legs: [[null, [-0.1, -0.17 + 0.02]], [null, [0.1, -0.17 + 0.02]]], arms: arms(0.17, 0.5) };
+    if (i % 4 === 0) return rig({ yo: 0, k: 0.85, squash: 0.09, legs: [LG(-12), LG(12)], arms: [AR(-38), AR(38)] });
+    if (i % 4 === 1) return rig({ yo: -0.2, legs: [LG(-2), LG(2)], arms: [AR(-150), AR(150)] });
+    if (i % 4 === 2) return rig({ yo: -0.32, legs: [LG(-8, 4), LG(8, -4)], arms: [AR(-148), AR(148)] });
+    return rig({ yo: -0.17, legs: [LG(-5), LG(5)], arms: [AR(-128), AR(128)] });
   },
-  /* a squat, from the front, in four stills (down, down, hold, hold): he sinks about a fifth of his height - the legs simply get shorter (the
-     same straight legs and small feet as when he stands, the feet a touch wider apart, flat on the floor), the torso squashes a little shorter
-     and wider with the head on top, and the arms come forward, slightly apart, the mittens over the torso */
+  /* a squat, from the front, in four stills (down, down, hold, hold): the legs simply get shorter (0.65 of their length at the bottom; the
+     same straight blocks and feet, a touch wider apart), the torso comes down with them, and the arms come forward, slightly apart, over it */
   squat: (i) => {
-    const p = [0.4, 0.8, 1, 1][i % 4], yo = 0.035 * p, ex = 0.28 * 0.393 * p, top = -0.445 + yo + ex;
-    const leg = (side) => [null, [side * (0.104 + 0.012 * p), 0]];
-    return { yo, torsoK: 1 - 0.393 * p, torsoW: 1 + 0.1 * p, armsFront: true, legs: [leg(-1), leg(1)],
-      arms: [-1, 1].map((d) => [[d * (0.215 + 0.01 * p), top + 0.04 + 0.055 * p], [d * (0.215 - 0.065 * p), top + 0.05 + 0.06 * p]]) };
+    const p = [0.4, 0.8, 1, 1][i % 4];
+    return rig({ k: 1 - 0.35 * p, armsFront: true, legs: [LG(-4 * p), LG(4 * p)], arms: [AR(36 * p), AR(-36 * p)] });
   },
   /* frozen: arms out, shivering */
-  freeze: (i) => ({ yo: 0, dx: (i % 2 ? 1 : -1) * 0.009, arms: [[[-0.4, -0.29]], [[0.4, -0.29]]] })
+  freeze: (i) => rig({ dx: (i % 2 ? 1 : -1) * 0.009, arms: [AR(-80), AR(80)] })
 };
-/* the move cards' drawings were made for taller legs and arms: this carries one over to the short Chibi body (legs scaled about the ground,
-   arms about the shoulder) */
-function chibiFit(mv){
-  const sx = BODY.bw / 2 + 0.03, sy = -BODY.tot + 0.42 + 0.015 + 0.06;
-  return { ...mv, yo: mv.yo * 0.43,
-    legs: mv.legs && mv.legs.map(([k, f]) => [k && [k[0] * 0.8, k[1] * 0.43], [f[0] * 0.8, f[1] * 0.43]]),
-    arms: mv.arms.map((ar, i) => ar.map(([px, py]) => { const d = i ? 1 : -1; return [d * sx + (px - d * sx) * 0.8, sy + (py - sy) * 0.8]; })) };
-}
-export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false, face: alive = null, still = false } = {}){
-  const a = resolve(look), S = h, { hh, bw, bh } = SIZE(S), by = -S * BODY.tot + hh + S * 0.015, legH = S - (by + S) - bh + S * 0.02;
-  /* the other moves (squat, lean, flap, dance ...) come from the move cards' drawings (figure.js POSES), carried over to this body */
-  let mv = null;
-  if (!(pose in ARMS)){
-    const i = frameAt(pose, t).i;
-    if (MOVES[pose]){ mv = MOVES[pose](i); }
-    else if (POSES[pose]){
-      const q = POSES[pose](frameAt(pose, t).p), U = S * 0.5, V = S * 0.435, sy1 = by + S * 0.06;
-      const fx = (px) => px * U / S, fy = (py) => (py * V - V * 0.7) / S;
-      mv = { yo: (q.yOff || 0) * V / S, rot: (q.lean || 0) * 0.35,
-        legs: q.legs ? q.legs.map(([k, f]) => [[fx(k[0]), fy(k[1])], [fx(f[0]), fy(f[1])]]) : null,
-        arms: q.arms.map(ar => ar.map(([px, py]) => [fx(px), (sy1 + (py + 0.6) * V) / S])) };
-      mv = chibiFit(mv);
-    }
+/* the other move cards (flap, clap, hug, lean, duck, dance, side) are drawn from the cards' own drawings (figure.js POSES): their arm and leg
+   points give the angles of the blocks (the lengths are always the blocks' own) */
+const aim = (p, q) => Math.atan2(q[0] - p[0], q[1] - p[1]) / DEG;
+function fromCard(pose, p){
+  const q = POSES[pose](p), U = 0.5, V = 0.435, sx = 0.215, sy = -0.385;
+  const fx = (px) => px * U, fy = (py) => py * V - V * 0.7;
+  const arms = q.arms.map((ar, i) => { const d = i ? 1 : -1, o = [d * sx, sy];
+    const pts = ar.map(([px, py]) => [d * sx + (px * U - d * sx) * 0.8, sy + (sy + (py + 0.6) * V - sy) * 0.8]);
+    return AR(aim(o, pts[0]), pts[1] ? aim(pts[0], pts[1]) : aim(o, pts[0])); });
+  const m = rig({ rot: (q.lean || 0) * 0.35, arms, yo: (q.yOff || 0) * V * 0.43 });
+  if (q.legs){
+    const L = BODY.legLen, reach = [];
+    m.legs = q.legs.map(([kn, ft], i) => { const d = i ? 1 : -1, hip = [d * 0.1, -0.135 + m.yo], k = [fx(kn[0]) * 0.8, fy(kn[1]) * 0.43], f = [fx(ft[0]) * 0.8, fy(ft[1]) * 0.43];
+      const l = LG(aim(hip, k), aim(k, f)); reach.push((Math.cos(l.a1 * DEG) + Math.cos(l.a2 * DEG)) * L / 2); return l; });
+    /* the legs' own length decides how low the body sits: the lower foot is on the floor */
+    m.yo = L - Math.max(...reach);
   }
-  /* standing still he breathes: a gentle bob (about 2% of his height, every 2.5 s) and a slight sway of the arms (not for the small portraits) */
-  const idle = pose === 'stand' && !mv && !still && !back, breath = idle ? Math.sin(t * Math.PI * 2 / 2.5) : 0;
-  const yo = mv ? mv.yo * S : breath * S * 0.01, rot = mv && mv.rot || 0, dx = mv && mv.dx ? mv.dx * S : 0;
-  const sy0 = by + S * 0.06;
-  const tk = mv && mv.torsoK || 1, tw = mv && mv.torsoW || 1, bhE = bh * tk;
+  return m;
+}
+function rigOf(pose, t, idle){
+  if (pose in ARMS){
+    const f = ARMS[pose];
+    return rig({ arms: [f(-1, t) || AR(), f(1, t) || AR()] });
+  }
+  const i = frameAt(pose, t).i;
+  if (MOVES[pose]) return MOVES[pose](i);
+  if (POSES[pose]) return fromCard(pose, frameAt(pose, t).p);
+  return rig({});
+}
+/* standing still he breathes: a gentle bob (about 2% of his height, every 2.5 s - the legs lengthen and shorten a little, the feet stay put)
+   and a slight sway of the arms (not for the small portraits) */
+function idleRig(t){
+  const b = Math.sin(t * Math.PI * 2 / 2.5), sway = (d) => d * (1.5 + 2.2 * Math.sin(t * Math.PI * 2 / 2.5 + 1.3 + d));
+  return rig({ k: 1 - 0.01 * b / BODY.legLen, arms: [AR(sway(-1)), AR(sway(1))] });
+}
+
+export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false, face: alive = null, still = false } = {}){
+  const a = resolve(look), S = h, { hh, bw, bh } = SIZE(S);
+  const rg = pose === 'stand' && !still && !back ? idleRig(t) : rigOf(pose, t);
+  const hipY = -S * BODY.legLen * rg.k + rg.yo * S, torsoTop = hipY - bh, headTop = torsoTop + S * 0.015 - hh, rot = rg.rot || 0, dx = (rg.dx || 0) * S;
+  const lx = S * (BODY.legGap + BODY.legW) / 2, ax = bw / 2 + S * (BODY.armGap + BODY.armW / 2), ay = torsoTop + S * BODY.armW / 2;
   /* their shadow on the ground (outside the cut: it has no paper edge) */
   c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x, base, S * 0.3, S * 0.04, 0, 0, Math.PI * 2); c.fill();
   c.save(); c.translate(x + dx, base);
-  const sq = mv && mv.squash || 0; if (sq) c.scale(1 + sq * 0.7, 1 - sq);
+  const sq = rg.squash || 0; if (sq) c.scale(1 + sq * 0.7, 1 - sq);
   live = alive;
   paper(c, [-S * 0.75, -S * 1.3, S * 1.5, S * 1.34], S, (cc) => {
-    const ly = by + bh - S * 0.02;
-    const lean = () => { if (rot){ cc.translate(0, ly); cc.rotate(rot); cc.translate(0, -ly); } };
-    cc.save(); lean(); cc.save(); cc.translate(0, by + yo); drawCape(cc, a, S, bw, bh); cc.restore(); cc.restore();
-    if (mv && mv.legs){
-      mv.legs.forEach(([kn, ft], i) => {
-        const d = i ? 1 : -1, hip = [d * bw * 0.28, ly + yo + S * 0.05], fp = [ft[0] * S, ft[1] * S], drop = ft[2] != null ? ft[2] : 0.07;
-        const end = [fp[0], Math.max(fp[1] - S * drop, hip[1] + S * 0.02)];
-        drawLeg(cc, a, S, kn ? [hip, [kn[0] * S, kn[1] * S], end] : [hip, end]);
-        drawFoot(cc, S, fp[0], fp[1]);
-      });
-    } else {
-      for (const d of [-1, 1]){ drawLeg(cc, a, S, [[d * bw * 0.28, ly + yo + S * 0.05], [d * bw * 0.28, ly + legH - S * 0.07]]); }
-      drawFoot(cc, S, -bw * 0.28, 0); drawFoot(cc, S, bw * 0.28, 0);
-    }
+    const lean = () => { if (rot){ cc.translate(0, hipY); cc.rotate(rot); cc.translate(0, -hipY); } };
+    cc.save(); lean(); cc.save(); cc.translate(0, torsoTop); drawCape(cc, a, S, bw, bh); cc.restore(); cc.restore();
+    [-1, 1].forEach((d, i) => { const l = rg.legs[i]; drawLeg(cc, a, S, d * lx, hipY, l.a1, l.a2, l.s * rg.k); });
     cc.save(); lean();
-    const reach = ARMS[pose] || ARMS.stand;
-    const armsDraw = () => { for (const d of [-1, 1]){
-      const sx = d * (bw * 0.5 + S * 0.03), sy = sy0 + yo + (bh - bhE);
-      let pts;
-      if (mv && mv.arms){ pts = [[sx, sy], ...mv.arms[d < 0 ? 0 : 1].map(([px, py]) => [px * S, py * S])]; }
-      else { const up = reach(d, S, bw, by, t); pts = up ? [[sx, sy], [(sx + up[0]) / 2 + d * S * 0.02, (sy + up[1]) / 2], up] : [[sx, sy], [sx + d * S * BODY.out + (idle ? Math.sin(t * Math.PI * 2 / 2.5 + 1.3 + d) * S * 0.008 : 0), sy + (by + bh * 0.88 - sy) * BODY.armLen]]; }
-      drawArm(cc, a, S, pts, d < 0);
-    } };
-    if (!(mv && mv.armsFront)) armsDraw();
-    cc.save(); cc.translate(0, by + yo + (bh - bhE)); drawTorso(cc, a, S, bw * tw, bhE); cc.restore();
-    if (mv && mv.armsFront) armsDraw();
-    cc.save(); cc.translate(0, -S * BODY.tot + yo + (bh - bhE) + hh / 2); if (mv && mv.headUp) cc.rotate(-rot * mv.headUp); cc.translate(0, -hh / 2); drawHead(cc, a, S, back, t); cc.restore();
+    const arms = () => [-1, 1].forEach((d, i) => drawArm(cc, a, S, d * ax, ay, rg.arms[i].a1, rg.arms[i].a2, d < 0));
+    if (!rg.armsFront) arms();
+    cc.save(); cc.translate(0, torsoTop); drawTorso(cc, a, S, bw, bh); cc.restore();
+    if (rg.armsFront) arms();
+    cc.save(); cc.translate(0, headTop); drawHead(cc, a, S, back, t); cc.restore();
     cc.restore();
   });
   live = null;
@@ -357,10 +375,10 @@ export function portrait(c, x, y, s, look, t = 0){
 /* ---------- the character as a player: posed by the camera ----------
    The character drawn where a player is, as a mirror: it takes only the DIRECTIONS of the player's limbs from the camera (the angles of
    their upper arms, forearms, thighs and shins, how much their torso leans, how their head tilts), never their lengths. It is always the
-   Chibi character with its own fixed proportions, sized from the player's head-to-hip span, standing on the floor line under the player
-   (the lower ankle - so it lifts when they jump), with its hips over theirs. Arms and legs are two short chunky segments each, with mitten
-   hands and rounded feet; a straight, reaching arm stretches up to 1.3 times. Only the drawing is done here: games use the real landmarks
-   for hit points, and this changes none of that. lm: the pose landmarks (0..1, mirrored); lift: how far up to draw them (px). */
+   Chibi character with its own fixed proportions (the same block arms and legs, which bend at their elbow and knee seams), sized from the
+   player's head-to-hip span, standing on the floor line under the player (the lower ankle - so it lifts when they jump), with its hips over
+   theirs. Only the drawing is done here: games use the real landmarks for hit points, and this changes none of that.
+   lm: the pose landmarks (0..1, mirrored); lift: how far up to draw them (px). */
 const NOSE = 0, L_EYE = 2, R_EYE = 5, L_SH = 11, R_SH = 12, L_EL = 13, R_EL = 14,
   L_WR = 15, R_WR = 16, L_HIP = 23, R_HIP = 24, L_KN = 25, R_KN = 26, L_AN = 27, R_AN = 28;
 export function figure(c, lm, W, H, look, t = 0, { lift = 0 } = {}){
@@ -374,38 +392,34 @@ export function figure(c, lm, W, H, look, t = 0, { lift = 0 } = {}){
   const hipOf = (i, sh) => (seen(i) ? P(i) : [sh[0], sh[1] + sw * 1.5]);
   const lh = hipOf(L_HIP, ls), rh = hipOf(R_HIP, rs), mh = [(lh[0] + rh[0]) / 2, (lh[1] + rh[1]) / 2];
   const lean = Math.max(-0.5, Math.min(0.5, Math.atan2(-(mh[0] - ms[0]), mh[1] - ms[1])));
-  /* the size: from their head-to-hip span (the chibi's head centre to hip line is 0.505 of its head size) */
+  /* the size: from their head-to-hip span (the character's head centre to the bottom of its torso is 0.475 of its head size) */
   const nose = seen(NOSE) ? P(NOSE) : [ms[0], ms[1] - sw * 0.8];
   const D = Math.max(sw * 1.6, Math.min(sw * 4, Math.hypot(nose[0] - mh[0], nose[1] - mh[1])));
-  const S = D / (0.5 + 0.005), { hh, bw, bh } = SIZE(S);
+  const S = D / 0.475, { hh, bw, bh } = SIZE(S);
   const a = resolve(look);
   /* which of their sides is on the left of the picture */
   const sl = ls[0] <= rs[0] ? -1 : 1;
   const cs = Math.cos(lean), sn = Math.sin(lean);
   const rot = (px, py) => [px * cs - py * sn, px * sn + py * cs];               /* the torso's own frame -> the picture (origin: the middle of the torso's bottom edge) */
   const dir = (p, q, fb) => { const dx = q[0] - p[0], dy = q[1] - p[1], d = Math.hypot(dx, dy); return d > 1e-6 ? [dx / d, dy / d] : fb; };
-  /* the legs: two short segments each, pointing the way their thigh and shin do; the hips go where they must for the feet to be on the floor */
-  const DOWN = [0, 1], hipJ = (side) => rot(side * bw * 0.28 / 1, S * 0.03);
+  const ang = (u) => Math.atan2(u[0], u[1]) / DEG;
+  /* the legs: two blocks each, pointing the way their thigh and shin do; the hips go where they must for the feet to be on the floor */
+  const DOWN = [0, 1], LL = S * BODY.legLen, lw = S * (BODY.legGap + BODY.legW) / 2;
   const legs = [[L_HIP, L_KN, L_AN, lh, true], [R_HIP, R_KN, R_AN, rh, false]].map(([hi, ki, ai, h0, left]) => {
-    const side = left ? sl : -sl, j = hipJ(side), kn = seen(ki) ? P(ki) : null, an = seen(ai) ? P(ai) : null;
-    const u = kn ? dir(h0, kn, DOWN) : DOWN, v = kn && an ? dir(kn, an, u) : u, L = S * 0.07;
-    const k = [j[0] + u[0] * L, j[1] + u[1] * L], e = [k[0] + v[0] * L, k[1] + v[1] * L];
-    return { j, k, e, left, foot: e[1] + S * 0.07 };
+    const side = left ? sl : -sl, j = rot(side * lw, 0), kn = seen(ki) ? P(ki) : null, an = seen(ai) ? P(ai) : null;
+    const u = kn ? dir(h0, kn, DOWN) : DOWN, v = kn && an ? dir(kn, an, u) : u, a1 = ang(u), a2 = ang(v);
+    return { j, a1, a2, left, foot: j[1] + (Math.cos(a1 * DEG) + Math.cos(a2 * DEG)) * LL / 2 };
   });
   /* the floor line: their lower ankle (a little under their hips if the camera can't see their feet) */
   const ank = [L_AN, R_AN].filter(seen).map(i => P(i)[1]);
   const floor = ank.length ? Math.max(...ank) : mh[1] + D * 1.1;
   const ox = mh[0], oy = floor - Math.max(legs[0].foot, legs[1].foot);
-  /* the arms: an upper arm and a forearm of fixed length along their angles; straight arms reach (up to 1.3x) */
-  const sj = (side) => rot(side * (bw / 2 + S * 0.03), -bh + S * 0.06);
+  /* the arms: an upper arm and a forearm along their angles, always the blocks' own length (the shoulder is at the top corner of the torso) */
+  const sj = (side) => rot(side * (bw / 2 + S * (BODY.armGap + BODY.armW / 2)), -bh + S * BODY.armW / 2);
   const arms = [[L_SH, L_EL, L_WR, ls, true], [R_SH, R_EL, R_WR, rs, false]].map(([si, ei, wi, s0, left]) => {
     const side = left ? sl : -sl, j = sj(side), el = seen(ei) ? P(ei) : null, wr = seen(wi) ? P(wi) : null;
     const u = el ? dir(s0, el, DOWN) : wr ? dir(s0, wr, DOWN) : DOWN, v = el && wr ? dir(el, wr, u) : u;
-    let reach = 0;
-    if (el && wr){ const real = Math.hypot(el[0] - s0[0], el[1] - s0[1]) + Math.hypot(wr[0] - el[0], wr[1] - el[1]); reach = real > 1e-6 ? Math.max(0, Math.min(1, (Math.hypot(wr[0] - s0[0], wr[1] - s0[1]) / real - 0.7) / 0.3)) : 0; }
-    else if (wr) reach = 1;
-    const L = S * 0.1 * (1 + 0.3 * reach), e = [j[0] + u[0] * L, j[1] + u[1] * L], h2 = [e[0] + v[0] * L, e[1] + v[1] * L];
-    return { pts: [j, e, h2], left };
+    return { j, a1: ang(u), a2: ang(v), left };
   });
   const tilt = seen(L_EYE) && seen(R_EYE) ? Math.atan2(P(R_EYE)[1] - P(L_EYE)[1], P(R_EYE)[0] - P(L_EYE)[0]) : 0;
   const tip = Math.abs(tilt) > Math.PI / 2 ? tilt - Math.sign(tilt) * Math.PI : tilt;
@@ -413,8 +427,8 @@ export function figure(c, lm, W, H, look, t = 0, { lift = 0 } = {}){
     cc.save(); cc.translate(ox, oy);
     /* the cape, then the legs and feet, the arms, the torso, the head */
     cc.save(); cc.rotate(lean); cc.translate(0, -bh); drawCape(cc, a, S, bw, bh); cc.restore();
-    for (const l of legs){ drawLeg(cc, a, S, [l.j, l.k, l.e]); drawFoot(cc, S, l.e[0], l.e[1] + S * 0.07); }
-    for (const ar of arms) drawArm(cc, a, S, ar.pts, ar.left);
+    for (const l of legs) drawLeg(cc, a, S, l.j[0], l.j[1], l.a1, l.a2);
+    for (const ar of arms) drawArm(cc, a, S, ar.j[0], ar.j[1], ar.a1, ar.a2, ar.left);
     cc.save(); cc.rotate(lean); cc.translate(0, -bh); drawTorso(cc, a, S, bw, bh); cc.restore();
     cc.save(); cc.rotate(lean); cc.translate(0, -bh - hh / 2 + S * 0.015); cc.rotate(tip * 0.8); cc.translate(0, -hh / 2); drawHead(cc, a, S, false, t); cc.restore();
     cc.restore();
