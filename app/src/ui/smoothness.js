@@ -7,3 +7,14 @@ export function smoothness(ms, mode){
   const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))];
   return `Smoothness: ${Math.round(1000 / avg)} frames a second on average, the slowest 5% over ${Math.round(p95)} ms${mode ? ` (${mode})` : ''}`;
 }
+
+/* Sentences strung into one results line: each ends in one full stop (or its own ! or ?), never "..". */
+export function joinLine(...parts){
+  let out = '';
+  for (const p of parts){
+    const t = String(p == null ? '' : p).trim();
+    if (!t) continue;
+    out = out ? out + (/[.!?…]$/.test(out) ? ' ' : '. ') + t : t;
+  }
+  return out.replace(/(?<!\.)\.\.(?!\.)/g, '.');
+}

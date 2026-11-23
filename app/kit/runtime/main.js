@@ -4,16 +4,18 @@
    the app's - and talks to the app only through these messages:
 
      app -> game   create { n }                  start a round for n players
-                   frame  { dt, W, H, pose, step, outro }
+                   frame  { dt, W, H, pose, hands, step, outro }
                                                  (step it,) draw it, send it back
      game -> app   ready  { meta }               its name, round length, music...
                    frame  { bitmap, state }      the picture, and its score etc.
                    sound  { bank, name, args }   a sound it'd like played
+                   key    { key }              H, if this frame has the keyboard
                    error  { message }
 
    The picture is drawn on a canvas of its own and handed over whole, so the
    app puts it on screen - the game never touches the app's screen. */
 import { applyPose } from './pose.js';
+import { setHandsMode } from '../../src/ui/handsmode.js';
 
 const plain = (v, depth = 0) => {
   if (v == null || typeof v === 'number' || typeof v === 'string' || typeof v === 'boolean') return v;
@@ -44,9 +46,10 @@ export function run(game){
     if (e.source !== parent) return;
     const m = e.data || {};
     try {
-      if (m.t === 'create'){ inst = game.create(m.n); outroDone = false; return; }
+      if (m.t === 'create'){ if (m.hands) setHandsMode(m.hands); inst = game.create(m.n); outroDone = false; return; }
       if (m.t === 'frame' && inst){
         applyPose(m.pose);
+        if (m.hands) setHandsMode(m.hands);        /* (how the app shows hands: this frame has no storage to read it from) */
         const W = Math.max(1, Math.min(4096, m.W | 0)), H = Math.max(1, Math.min(4096, m.H | 0));
         if (!canvas || canvas.width !== W || canvas.height !== H){ canvas = new OffscreenCanvas(W, H); ctx = canvas.getContext('2d'); }
         if (m.step) inst.step(m.dt, W, H);
@@ -58,5 +61,7 @@ export function run(game){
       }
     } catch (err){ post({ t: 'error', message: String(err && err.message || err).slice(0, 300) }); }
   });
+  /* the app's owner keys (H) still work if this frame has the keyboard: passed up, the app decides */
+  addEventListener('keydown', (e) => { if ((e.key === 'h' || e.key === 'H') && !e.ctrlKey && !e.metaKey && !e.altKey) post({ t: 'key', key: e.key }); });
   post({ t: 'ready', meta });
 }

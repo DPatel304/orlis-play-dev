@@ -56,3 +56,14 @@ test('the cursor follows a hand across the screen almost at once', () => {
   for (let i = 0; i < 33; i++) p = easeCursor(f, 0.2 + 0.4 * (i / 33), 0.5, 1 / 165);   /* 0.2 s at 2 screens/s */
   assert.ok(0.2 + 0.4 - p.x < 0.04, 'within 4% of the screen of a fast hand: ' + (0.6 - p.x));
 });
+
+test('the results line strings its sentences with one full stop between, never ".."', async () => {
+  const { joinLine } = await import('../src/ui/smoothness.js');
+  assert.equal(joinLine('You saved the whole harvest together!', 'Smoothness: 60'), 'You saved the whole harvest together! Smoothness: 60');
+  assert.equal(joinLine('Your best run: 4 in a row.', 'Smoothness: 60'), 'Your best run: 4 in a row. Smoothness: 60');
+  assert.equal(joinLine('You got 3 stars', 'Smoothness: 60 (3D stage)', 'per frame: 1 ms'), 'You got 3 stars. Smoothness: 60 (3D stage). per frame: 1 ms');
+  assert.equal(joinLine(null, '', 'Only this.'), 'Only this.');
+  assert.equal(joinLine('', 'Smoothness: 60', ''), 'Smoothness: 60');
+  assert.ok(!joinLine('A..', 'B.', 'C').includes('..'));
+  assert.equal(joinLine('Wait...', 'ok'), 'Wait... ok', 'a real ellipsis stays');
+});

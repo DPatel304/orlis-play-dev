@@ -27,8 +27,8 @@ export const BLURB = {
   'animal-gym': 'Move like the animals: stretch, hop, flap, squat and stomp',
   'keep-it-up': 'Keep the big beach ball floating up together',
   'ptero-flight': 'Spread your arms like wings and glide over a world of dinosaurs',
-  'save-the-harvest': 'Everyone moves together to pick the fruit before the cheeky raven arrives',
-  'cubions-long-way-home': 'Sit back and listen: a funny story about a little cube who comes to Earth to learn how to move'
+  'save-the-harvest': 'Pick the fruit before the cheeky raven gets it!',
+  'cubions-long-way-home': 'A funny story about a little cube learning to move.'
 };
 /* Each game's icon, in the cube's style: a rounded square in two colours,
    a simple white picture on it. */

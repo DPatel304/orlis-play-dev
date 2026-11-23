@@ -2,24 +2,13 @@
    Only the drawing changes: what a hand points at, a wave, and picking work the same in every way.
    - rings: the glowing mitts in games and the ring cursor on menus (the way it has been)
    - body: a faint, see-through outline of each player, with a soft glow at each hand; no ring cursor
-   - glow: no ring and no body, just a soft glow at each hand, and a short sparkle trail when it moves fast */
-export const HANDS = [['rings', 'Rings'], ['body', 'Body outline'], ['glow', 'Glow']];
+   - glow: no ring and no body, just a soft glow at each hand, and a short sparkle trail when it moves fast
+   The choice itself lives in handsmode.js (which games in the sandbox carry too); this is the app's side, which remembers it. */
+import { HANDS, handsMode, setHandsMode, useHandsStore } from './handsmode.js';
+export { HANDS, handsMode, setHandsMode };
 const KEY = 'orlis_handsmode';
-let now = null;
+useHandsStore({ read: () => localStorage.getItem(KEY), write: (m) => localStorage.setItem(KEY, m) });
 
-export function handsMode(){
-  if (now) return now;
-  let v = null;
-  try { v = localStorage.getItem(KEY); } catch (e){ /* (no storage: the usual way) */ }
-  now = HANDS.some(([k]) => k === v) ? v : 'rings';
-  return now;
-}
-export function setHandsMode(m){
-  if (!HANDS.some(([k]) => k === m)) return handsMode();
-  now = m;
-  try { localStorage.setItem(KEY, m); } catch (e){ /* (kept for this visit only) */ }
-  return m;
-}
 /* the next way, for the H key; gives its name */
 export function cycleHands(){
   const i = HANDS.findIndex(([k]) => k === handsMode());

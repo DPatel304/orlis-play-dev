@@ -20,6 +20,7 @@ import { pose, PLAYER_COLORS } from '../tracking/pose.js';
 import { POSE_NAMES } from '../games/figure.js';
 import { voice } from '../audio/voice.js';
 import { sfx, music, ambience, isQuiet } from '../audio/sound.js';
+import { handsMode } from './handsmode.js';
 
 const POLICY = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:";
 const BANKS = { sfx, music, ambience };
@@ -79,7 +80,7 @@ class Round {
     this.started = false; this.n = n;
   }
   _hear(m){
-    if (m.t === 'ready' && !this.started){ this.started = true; this.box.send({ t: 'create', n: this.n }); }
+    if (m.t === 'ready' && !this.started){ this.started = true; this.box.send({ t: 'create', n: this.n, hands: handsMode() }); }
     else if (m.t === 'frame'){
       this.waiting = false;
       if (this.bitmap && this.bitmap.close) this.bitmap.close();
@@ -87,6 +88,8 @@ class Round {
       this.state = m.state || this.state;
     }
     else if (m.t === 'sound') play(m, this.quiet);
+    /* (H, pressed while the game's frame has the keyboard: handed on as if pressed in the app - the app decides who may use it) */
+    else if (m.t === 'key'){ if (m.key === 'h' || m.key === 'H'){ try { dispatchEvent(new KeyboardEvent('keydown', { key: m.key })); } catch {} } }
     else if (m.t === 'say'){ if (!this.quiet && typeof m.text === 'string' && m.text.length <= 80) voice.say(m.text); }      /* (the game's first words, said once: already through the words check) */
     else if (m.t === 'error'){ this.failed = m.message; this.waiting = false; }
   }
@@ -94,7 +97,7 @@ class Round {
     this.dt += dt;
     if (!this.started || this.waiting) return;            /* still busy with the last one: it gets the time next */
     this.waiting = true;
-    this.box.send({ t: 'frame', dt: this.dt, W, H, pose: snapshot(this.fake), step: kind === 'step', outro: kind === 'outro' });
+    this.box.send({ t: 'frame', dt: this.dt, W, H, pose: snapshot(this.fake), hands: handsMode(), step: kind === 'step', outro: kind === 'outro' });
     this.dt = 0;
   }
   step(dt, W, H){ this._ask(dt, W, H, 'step'); }

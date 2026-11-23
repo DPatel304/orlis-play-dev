@@ -16,7 +16,7 @@ import { menu } from './ui/home.js';
 import { PAPER } from './ui/boot.js';
 import { remote, typing } from './ui/remote.js';
 import { account, welcome, AVATARS } from './ui/account.js';
-import { smoothness } from './ui/smoothness.js';
+import { smoothness, joinLine } from './ui/smoothness.js';
 import { buildReport, gpuName } from './ui/perfreport.js';
 import { installTitlebar, titlebarPlaying } from './ui/titlebar.js';
 import { library } from './ui/library.js';
@@ -34,7 +34,7 @@ import { crew } from './ui/crew.js';
 import { lineUp, whoRow, namePop } from './ui/lineup.js';
 import { MAKING } from './ui/avatar-maker.js';
 import { countText } from './ui/units.js';
-import { usesPads, createPads, padHub, peopleFrom } from './session/pads.js';
+import { usesPads, createPads, padHub, peopleFrom, skipJoinCard } from './session/pads.js';
 import { joinCard } from './ui/join-card.js';
 import { padWaitPill } from './ui/pause-pill.js';
 import { normalizeLook } from './ui/look.js';
@@ -231,7 +231,12 @@ function lineUpThenPlay(){
   go('lineup', () => lineUp({ profiles: crew.profiles, onDone: () => { if (mode === 'lineup') afterLineUp(); } }));
 }
 /* A game that uses phones shows the join card first (QR, the three pictures, who has joined, Start); any other starts at once. */
-function afterLineUp(){ if (usesPads(game) && padsRt) toJoin(); else startRound(); }
+function afterLineUp(){
+  if (!(usesPads(game) && padsRt)){ startRound(); return; }
+  /* play again: the same phones are already in, so a new round starts at once (the join card is for a fresh start from home) */
+  if (skipJoinCard(padsRt, padsAgain, trackedSeats)){ startRound(); return; }
+  toJoin();
+}
 function toJoin(){
   launch.release();
   padsRt.setTracked(trackedSeats());
@@ -249,8 +254,10 @@ function trackedSeats(){
 }
 /* ---------- phones (S1) ---------- */
 const PADS_KEEP = new Set(['starting', 'lineup', 'join', 'play', 'outro', 'results']);
+let padsAgain = false;                                 /* (true when this round is a play again with the phones already joined) */
 function preparePads(g){
-  if (padsRt && padsRt.game === g) return;             /* (play again: the same phones, the same session) */
+  if (padsRt && padsRt.game === g){ padsAgain = true; return; }             /* (play again: the same phones, the same session) */
+  padsAgain = false;
   stopPads();
   /* the app's hub; in the browser dev build (or for the owner) the Node hub, with ?padhub=<port>:<key> */
   const config = padHub({ search: location.search, allowDev: DEV || account.role === 'owner' });
@@ -352,8 +359,8 @@ function showResults(){
   lastReport = makeReport();
   /* the owner also sees how smoothly it ran, to compare games and machines without any tools */
   if (account.role === 'owner' && !game.passive){
-    const smooth = smoothness(frameMs, inst.stage ? (inst.stage.mode === 'gl' ? '3D stage' : 'stage, painted on the canvas') : '') + (inst.stage && inst.stage.perfLine ? '. ' + inst.stage.perfLine() : '');
-    if (smooth) summary = { line: summary ? `${summary.line}. ${smooth}` : smooth, best: summary && summary.best };
+    const smooth = joinLine(smoothness(frameMs, inst.stage ? (inst.stage.mode === 'gl' ? '3D stage' : 'stage, painted on the canvas') : ''), inst.stage && inst.stage.perfLine ? inst.stage.perfLine() : '');
+    if (smooth) summary = { line: joinLine(summary && summary.line, smooth), best: summary && summary.best };
   }
   /* told to the family's server, for this week's challenges (not a game
      being tried out - from Create, or waiting for the owner's OK) */
