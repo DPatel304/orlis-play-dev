@@ -323,8 +323,8 @@ function idleRig(t){
   return rig({ k: 1 - 0.01 * b / BODY.legLen, arms: [AR(sway(-1)), AR(sway(1))] });
 }
 
-/* opts.arrows: he is showing a move to copy (a move card, a story beat that says "do this"): a bold arrow off each straight, stretched-out hand
-   (freeze, the arms-up V, a cheer, a reach) makes the reach read bigger than the stubby arms. Acting in a story beat has none. */
+/* opts.arrows: he is showing a move to copy (a move card, a story beat that says "do this"): a bold arrow beside each straight, stretched-out arm
+   (freeze, the arms-up V, a cheer, a reach, a flap), parallel to it, makes the reach read bigger than the stubby arms. Acting in a story beat has none. */
 export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false, face: alive = null, still = false, arrows = false } = {}){
   const a = resolve(look), S = h, { hh, bw, bh } = SIZE(S);
   const rg = pose === 'stand' && !still && !back ? idleRig(t) : rigOf(pose, t);
@@ -347,8 +347,13 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
     cc.save(); cc.translate(0, headTop); drawHead(cc, a, S, back, t); cc.restore();
     if (arrows) [-1, 1].forEach((d, i) => { const r = rg.arms[i];
       if (Math.abs(r.a1 - r.a2) > 1 || Math.abs(r.a1) < 55) return;
-      const reach = S * BODY.armLen - S * BODY.armW / 2, th = r.a1 * DEG, pulse = still ? 1 : 1 + 0.18 * Math.sin(t * Math.PI * 2 * 1.6), gap = reach + S * 0.04;
-      motionArrow(cc, S, d * ax + Math.sin(th) * gap, ay + Math.cos(th) * gap, r.a1, S * 0.14 * pulse); });
+      /* beside the arm, not on its end: parallel to it, on its outer side (the upper side when it points straight out), one arm-width and a clear gap
+         away, about the arm's own length, pointing the way the arm goes */
+      const th = r.a1 * DEG, ux = Math.sin(th), uy = Math.cos(th);
+      let px = Math.cos(th), py = -Math.sin(th);
+      if (Math.abs(px) < 0.45 ? py > 0 : px * d < 0){ px = -px; py = -py; }
+      const off = S * (BODY.armW / 2 + 0.04 + 0.05), pulse = still ? 1 : 1 + 0.15 * Math.sin(t * Math.PI * 2 * 1.6);
+      motionArrow(cc, S, d * ax + px * off, ay + py * off, r.a1, S * BODY.armLen * pulse); });
     cc.restore();
   });
   live = null;
