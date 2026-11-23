@@ -177,3 +177,25 @@ test('sign-in, Who\'s playing? and Settings are in the clean look at TV size', (
   assert.ok(!/body\.bigpicture \.screen\.account \.acctcard/.test(read('style.css')), 'no old desktop-size overrides left');
   assert.ok(read('ui/account.js').includes("card.classList.add('whoscreen')"));
 });
+
+test('going into a game shows one loading screen at once: no tile opening up first, the card on it from the start', async () => {
+  const { launch } = await import('../src/ui/launch.js');
+  launch.begin({ url: 'data:x', name: 'Pop Party', blurb: 'Reach up' });
+  assert.ok(launch.el.querySelector('.loadhop'), 'the loading screen is up straight away');
+  assert.ok(launch.el.querySelector('.loadcard'), 'with the game\'s name card');
+  assert.ok(!launch.el.querySelector('.launchname'), 'no first screen (the tile\'s own cover and name)');
+  assert.ok(!launch.el.style.backgroundImage, 'no cover painted over the screen');
+  launch.card({ title: 'Pop Party' });
+  assert.equal(launch.el.querySelectorAll('.loadhop').length, 1, 'asking for the card again adds no second one');
+  launch.release(true);
+  assert.ok(!/rect|launchname|launchdots/.test(read('ui/launch.js').replace(/\/\*[\s\S]*?\*\//g, '')), 'no tile-opening code left');
+  assert.ok(!/rect:/.test(read('ui/home.js').match(/launch\.begin\([^)]*\)/)[0]), 'home does not pass the tile\'s place');
+});
+
+test('a game\'s picture is never empty: the loading card falls back to its cover art when no shot is saved', async () => {
+  const shots = await import('../src/ui/shots.js');
+  assert.equal(typeof shots.coverOf, 'function');
+  assert.ok(/coverOf\(g\)/.test(read('ui/home.js').match(/launch\.begin\([^)]*\)/)[0]), 'the launch uses coverOf, not the saved shot alone');
+  const src = read('ui/shots.js').match(/export function coverOf[\s\S]*?\n}\n/)[0];
+  assert.ok(src.includes('shotOf(g)') && src.includes('makeCover(g)') && src.includes('generatedArt'), 'saved shot, else its own art, else a generated one');
+});

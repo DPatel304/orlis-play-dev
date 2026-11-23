@@ -23,7 +23,7 @@ import { library } from './library.js';
 import { toast } from './toast.js';
 import { splashWanted, showChallenges, challengePill } from './challenges.js';
 import { launch } from './launch.js';
-import { shotOf, shotImage, makeShots } from './shots.js';
+import { shotOf, coverOf, shotImage, makeShots } from './shots.js';
 import { makeCover, generatedArt, hasArt } from './covers.js';
 import { testingRow } from './building.js';
 import { logo, icon, propIcon } from './brand.js';
@@ -32,7 +32,7 @@ import { BLURB, iconOf, HIDDEN, openProfileSheet } from './menu.js';
 import { homeRows, makeFor, startFocus, step, heroOf, bigHero } from './home-model.js';
 import { color } from '../games/assets/palette.js';
 
-const LAUNCH = launch.OPEN;    /* seconds of going in (the tile opening up) */
+const LAUNCH = 0.2;    /* seconds of going in (the loading screen fading in) */
 const WORLD = { w: 1280, h: 720 };
 
 /* The pick made this session ({ id }): coming back (from a game, or another page) it's still the one. */
@@ -243,8 +243,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       getting = false; t.el.classList.remove('getting');
     }
     going = { t: 0, g };
-    /* the tile opens up to fill the screen (its cover, title and all) and stays while the game gets ready */
-    launch.begin({ rect: t.el.getBoundingClientRect(), url: shotOf(g), accent: iconOf(it.g).cols[0], name: g.name });
+    /* straight to the loading screen (a quick fade); it stays while the game gets ready */
+    launch.begin({ url: coverOf(g), name: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '' });
   }
   /* a creator's game on this TV to try: a grown-up answers the Publish question here */
   const tryDraft = async (d) => {

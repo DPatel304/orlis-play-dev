@@ -13,9 +13,23 @@ let saved = null;
 const load = () => { if (saved) return saved; try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { saved = {}; } return saved; };
 const keep = () => { try { const ks = Object.keys(saved); while (ks.length > MAX) delete saved[ks.shift()]; localStorage.setItem(KEY, JSON.stringify(saved)); } catch {} };
 const images = new Map();
+const looks = (g) => (g.store && g.store.icon && g.store.icon.cols) || [g.accent || '#8b7cff', '#4cc3e8'];
 
 /* the cover (title on), as a data: URL, if there is one yet */
 export function shotOf(g){ const s = load()[keyOf(g)]; return (s && s.cover) || null; }
+/* A cover for a game, always: its saved one, else one made now (a built-in game's own art, or a generated one in its
+   look's colours), so a picture never comes up empty. Only a built-in game's is kept; a creator's real cover is made
+   later (makeShots), and a generated stand-in must not block it. */
+export function coverOf(g){
+  const had = shotOf(g); if (had) return had;
+  try {
+    const art = hasArt(g.id);
+    const made = art ? makeCover(g) : makeCover(g, { art: generatedArt(looks(g)), accent: g.accent });
+    if (!made) return null;
+    if (art && put(g, made, true)) return shotOf(g);
+    return made.cover.toDataURL('image/jpeg', 0.8);
+  } catch { return null; }
+}
 /* the art alone, as an image, for painting a banner */
 export function shotImage(g){
   const s = load()[keyOf(g)], url = s && s.art; if (!url) return null;
@@ -80,7 +94,7 @@ export function makeShots(games, onShot){
       });
       return;
     }
-    const made = hasArt(g.id) ? makeCover(g) : plain(g) ? makeCover(g, { art: generatedArt((g.store && g.store.icon && g.store.icon.cols) || [g.accent || '#8b7cff', '#4cc3e8']), accent: g.accent }) : (() => { const s = still(g); return s && makeCover(g, { still: s, accent: g.accent }); })();
+    const made = hasArt(g.id) ? makeCover(g) : plain(g) ? makeCover(g, { art: generatedArt(looks(g)), accent: g.accent }) : (() => { const s = still(g); return s && makeCover(g, { still: s, accent: g.accent }); })();
     if (made && put(g, made, true)) onShot(g);
     setTimeout(next, 120);
   };
