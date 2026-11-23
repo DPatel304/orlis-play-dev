@@ -52,9 +52,10 @@ test('at rest the first game is focused: its name, one line and the players as f
   assert.deepEqual(lit(s), [first.name]);
   assert.ok(txt(q(s, '.hblurb')).length > 3, 'one line');
   assert.ok(!q(s, '.ht') && qa(s, '.chip').length === 0, 'no hero title and no chips');
-  const pl = q(s, '.hplayers');
-  assert.ok(pl && txt(pl) === '' && /^(\d player|\d to \d players|\d players)/.test(pl.getAttribute('aria-label')), 'players: figures by the description, no number');
-  assert.ok(qa(pl, '.oicon').length >= 1 && qa(pl, '.oicon').length <= 4, 'one figure per player, up to 4');
+  const pl = q(s, '.hhow.hh-players');
+  assert.ok(pl && /^(\d player|\d to \d players|\d players)/.test(pl.getAttribute('aria-label')), 'players: the people icon and the number, on the how-you-play row');
+  assert.ok(/^\d([–]\d)?$/.test(txt(pl)), 'the number: 2 or 1–2');
+  assert.ok(qa(pl, '.oicon').length === 1 && q(s, '.hhows') && !q(s, '.hplayers'), 'one icon; the row is its own element');
   assert.ok(!/min|sec/.test(txt(q(s, '.hinfo'))), 'no time');
   assert.equal(q(s, '.htile.on').getAttribute('aria-label'), 'Play ' + first.name);
   assert.ok(!q(s, '.hplay'), 'no Play button');
