@@ -29,7 +29,7 @@ function build(extra = {}){
   const page = menu({ onPlay: (g) => calls.push('play:' + g.id), onRecalibrate(){}, onWho: () => calls.push('who'), nav, ...extra });
   return { ui, page, calls, s: q(ui, '.home') };
 }
-const hero = (s) => (q(s, '.hplay').getAttribute('aria-label') || '').replace(/^\S+ /, '');   /* no title any more: the Play button names the game */
+const hero = (s) => (q(s, '.htile.on').getAttribute('aria-label') || '').replace(/^\S+ /, '');   /* no title and no Play button: the lit tile names the game */
 const layersOn = (s) => qa(s, '.hbg').filter(l => l.classList.contains('on')).map(l => l.style.backgroundImage);
 const lit = (s) => qa(s, '.htile').filter(t => t.classList.contains('on')).map(t => txt(t.querySelector('.hname')));
 
@@ -44,7 +44,7 @@ test('one page, three rows: Your games, New to try, Make a game - and no tabs', 
   page.leave();
 });
 
-test('at rest the first game is focused: its name, one line, players and time, and one big Play; its world is the backdrop', () => {
+test('at rest the first game is focused: its name, one line and the players as figures (no Play button); its world is the backdrop', () => {
   const { s, page } = build();
   assert.ok(s.classList.contains('rest') && !s.classList.contains('scrolled'));
   const first = page.items[0].item.g;
@@ -52,10 +52,12 @@ test('at rest the first game is focused: its name, one line, players and time, a
   assert.deepEqual(lit(s), [first.name]);
   assert.ok(txt(q(s, '.hblurb')).length > 3, 'one line');
   assert.ok(!q(s, '.ht') && qa(s, '.chip').length === 0, 'no hero title and no chips');
-  assert.ok(q(s, '.hplayers') && /^\d(-\d)?$/.test(txt(q(s, '.hplayers'))), 'players: an icon and a number by the description');
+  const pl = q(s, '.hplayers');
+  assert.ok(pl && txt(pl) === '' && /^(\d player|\d to \d players|\d players)/.test(pl.getAttribute('aria-label')), 'players: figures by the description, no number');
+  assert.equal(qa(pl, '.oicon').length, pl.classList.contains('two') ? 2 : 1);
   assert.ok(!/min|sec/.test(txt(q(s, '.hinfo'))), 'no time');
-  assert.equal(q(s, '.hplay').getAttribute('aria-label'), 'Play ' + first.name);
-  assert.ok(txt(q(s, '.hplay')).includes('Play'));
+  assert.equal(q(s, '.htile.on').getAttribute('aria-label'), 'Play ' + first.name);
+  assert.ok(!q(s, '.hplay'), 'no Play button');
   assert.deepEqual(layersOn(s), [`url(world:${first.id})`], 'the focused game\'s world fills the screen');
   page.leave();
 });
@@ -75,7 +77,7 @@ test('moving focus changes the title and crossfades the backdrop (the other laye
   page.leave();
 });
 
-test('down moves to the next row and shrinks the hero to a banner; up grows it back; up from the first row is the Play button', () => {
+test('down moves to the next row and shrinks the hero to a banner; up grows it back; up from the first row stays put', () => {
   const { s, page } = build();
   page.focusAt({ row: 0, col: 0 });
   press('ArrowDown');
@@ -90,14 +92,11 @@ test('down moves to the next row and shrinks the hero to a banner; up grows it b
   assert.ok(s.classList.contains('rest'), 'back to the big hero');
   assert.ok(!qa(s, '.hsec')[0].classList.contains('away'));
   press('ArrowUp');
-  assert.equal(page.pos, 'top');
-  assert.ok(q(s, '.hplay').classList.contains('on'), 'the Play button');
-  press('ArrowDown');
-  assert.deepEqual(page.pos, { row: 0, col: 0 });
+  assert.deepEqual(page.pos, { row: 0, col: 0 }, 'nowhere above the first row');
   page.leave();
 });
 
-test('what each tile opens: a game plays; More to try, Ask for a game and Your requests go to their pages; Play plays the focused one', async () => {
+test('what each tile opens: a game plays; More to try, Ask for a game and Your requests go to their pages; a game goes through the launch', async () => {
   const { s, page, calls } = build();
   const tile = (name) => qa(s, '.htile').find(t => txt(t.querySelector('.hname')) === name);
   tile('More to try').dispatchEvent(new CustomEvent('pick'));
@@ -105,7 +104,7 @@ test('what each tile opens: a game plays; More to try, Ask for a game and Your r
   tile('Your requests').dispatchEvent(new CustomEvent('pick'));
   assert.deepEqual(calls, ['store', 'create', 'requests']);
   page.focusAt({ row: 0, col: 0 });
-  q(s, '.hplay').dispatchEvent(new CustomEvent('pick'));
+  qa(s, '.htile')[0].dispatchEvent(new CustomEvent('pick'));
   assert.deepEqual(calls, ['store', 'create', 'requests'], 'a game goes through the launch (its tile opening up), not at once');
   page.leave();
 });
@@ -135,7 +134,7 @@ test('New to try has the games to get, with Get on each tile; a download shows i
     assert.ok(gets.every(t => q(t, '.getpill') && q(t, '.gotbar')), 'a Get pill and a progress bar on each');
     page.focusAt({ row: 1, col: 0 });
     assert.equal(hero(s), 'Comet Catch');
-    assert.ok(txt(q(s, '.hplay')).includes('Get'), 'the big button says Get');
+    assert.equal(q(s, '.htile.on').getAttribute('aria-label'), 'Get Comet Catch');
     page.leave();
   } finally { week.store = was; }
 });
