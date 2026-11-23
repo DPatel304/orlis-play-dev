@@ -1,35 +1,52 @@
-/* The home page's rows and focus, with no DOM (so they can be tested): decision 0045, "Home: one page, no tabs".
+/* The home page's rows and focus, with no DOM (so they can be tested): decision 0055 (after 0045's one page).
 
-   Three rows, top to bottom:
-     games  "Your games"     the games on this PC
-     new    "New to try"     what Discover was: games to get (with Get and download progress on their tiles), then "More to try"
-     make   "Make a game"    Ask for a game, Your requests, and Create Pro (grown-ups, and Creator mode)
-   A fourth, "Testing", comes only while a creator has put a game on this TV to try.
+   Play has two rows, top to bottom:
+     featured  "Featured"     this week's featured games not on this PC yet (with Get and download progress on their tiles, at most three),
+                              then the Discover tile, which opens the Discover page
+     games     "Your games"   the games on this PC
+   A third, "Testing", comes only while a creator has put a game on this TV to try.
+   The top tabs (Play, Create) are not rows: tabsFor() says whether they show, and the page keeps their focus.
+   The Discover page (0055) uses the same rows and tiles: a row per category, from discoverRows().
 
    Focus is { row, col }. Left and right stay in the row; up and down change row, landing on the column last used there
-   (clamped to the row's length). Up from the first row goes nowhere: the tiles themselves start the game (0046), there is no Play button. */
+   (clamped to the row's length). Up from the first row goes to the tabs (home.js), when there are tabs. */
 
-export const TITLES = { games: 'Your games', new: 'New to try', make: 'Make a game', testing: 'Testing' };
+export const TITLES = { featured: 'Featured', games: 'Your games', testing: 'Testing', updates: 'Updates' };
+export const FEATURED_MAX = 3;
+/* how many rows keep the big hero (Play's two; Discover keeps it for its first row only) */
+export const PLAY_BIG = 2;
 
-/* the Make a game tiles: what each opens, and whether only grown-ups see it */
+/* the Make a game tiles (kept for the Create page's wording): what each opens, and whether only grown-ups see it */
 export const MAKE = [
   { id: 'ask', name: 'Ask for a game', line: 'Tell us the game you imagine', prop: 'sparkle', tone: 'm1' },
   { id: 'requests', name: 'Your requests', line: 'Games being made for you', prop: 'chest', tone: 'm2' },
   { id: 'pro', name: 'Create Pro', line: 'Build games with Claude Code', prop: 'block', tone: 'm3', tag: 'Grown-ups' }
 ];
 
-/* pool: the games on this PC (shown in the order given); toGet: Discover games not on this PC yet (stand-ins that know their entry);
-   make: which Make tiles to show (ids), [] for none (a child); more: whether Discover has a page to open ("More to try");
-   testing: games a creator is trying on this TV. */
-export function homeRows({ pool = [], toGet = [], make = [], more = false, testing = [] } = {}){
+/* pool: the games on this PC (shown in the order given); featured: this week's featured Discover games not on this PC yet (stand-ins that
+   know their entry); discover: whether Discover has a page to open (the Discover tile); testing: games a creator is trying on this TV. */
+export function homeRows({ pool = [], featured = [], discover = false, testing = [] } = {}){
   const rows = [];
+  const fresh = featured.slice(0, FEATURED_MAX).map(g => ({ kind: 'get', g }));
+  if (fresh.length || discover) rows.push({ id: 'featured', title: TITLES.featured, items: [...fresh, ...(discover ? [{ kind: 'discover' }] : [])] });
   if (pool.length) rows.push({ id: 'games', title: TITLES.games, items: pool.map(g => ({ kind: 'game', g })) });
-  const fresh = toGet.slice(0, 6).map(g => ({ kind: 'get', g }));
-  if (fresh.length || (more && pool.length)) rows.push({ id: 'new', title: TITLES.new, items: [...fresh, ...(more ? [{ kind: 'more' }] : [])] });
-  const tiles = MAKE.filter(m => make.includes(m.id)).map(m => ({ kind: 'make', ...m }));
-  if (tiles.length) rows.push({ id: 'make', title: TITLES.make, items: tiles });
   if (testing.length) rows.push({ id: 'testing', title: TITLES.testing, items: testing.map(d => ({ kind: 'test', d })) });
   return rows;
+}
+
+/* The Discover page's rows: games to update first, then a row per category (store.js layout()'s rows: { name, sub, list }). Every tile is a "get". */
+export function discoverRows({ updates = [], rows = [] } = {}){
+  const out = [];
+  if (updates.length) out.push({ id: 'updates', title: TITLES.updates, items: updates.map(g => ({ kind: 'get', g, update: true })) });
+  for (const r of rows) if (r.list && r.list.length) out.push({ id: 'cat:' + r.name, title: r.name, items: r.list.map(g => ({ kind: 'get', g })) });
+  return out;
+}
+
+/* Which tabs show along the top (decision 0055): Play and Create, for a grown-up in the Player app; none for a child (children don't make games),
+   for a profile still waiting to be let in, or in the Creator app. modeTabs: appMode.tabs(). */
+export function tabsFor({ kid = false, waiting = false, creatorApp = false, modeTabs = ['home', 'store', 'create'] } = {}){
+  if (kid || waiting || creatorApp || !modeTabs.includes('create') || !modeTabs.includes('home')) return [];
+  return ['play', 'create'];
 }
 
 /* which Make tiles a person sees: a child none; a grown-up Ask and Requests; a creator (or the owner) Create Pro as well;
@@ -40,10 +57,12 @@ export function makeFor({ kid = false, creator = false, creatorApp = false } = {
   return creator ? ['ask', 'requests', 'pro'] : ['ask', 'requests'];
 }
 
-/* where focus starts: the game picked this session, else the one played last, else the first tile of the first row */
+/* where focus starts: the game picked this session, else the one played last, else the first of "Your games" (families mostly replay
+   their games), else the first tile of the first row */
 export function startFocus(rows, { session = null, last = null } = {}){
-  const find = (id) => { for (let r = 0; r < rows.length; r++){ const c = rows[r].items.findIndex(it => it.g && it.g.id === id); if (c >= 0) return { row: r, col: c }; } return null; };
-  return (session && find(session)) || (last && find(last)) || { row: 0, col: 0 };
+  const find = (id) => { for (let r = 0; r < rows.length; r++){ const c = rows[r].items.findIndex(it => it.kind === 'game' && it.g && it.g.id === id); if (c >= 0) return { row: r, col: c }; } return null; };
+  const mine = rows.findIndex(r => r.id === 'games');
+  return (session && find(session)) || (last && find(last)) || (mine >= 0 ? { row: mine, col: 0 } : { row: 0, col: 0 });
 }
 
 /* One step of focus. mem: the column last used in each row (kept by the caller). Returns { row, col } or null (nowhere to go). */
@@ -65,16 +84,15 @@ export function heroOf(item, { blurb = '', cap = 4 } = {}){
   if (item.kind === 'game' || item.kind === 'get'){
     const g = item.g, lo = Math.min(g.minPlayers || 1, cap), hi = Math.min(g.maxPlayers || 4, cap);
     const players = g.passive ? null : { lo, hi };
-    return { name: g.name, line: blurb || (g.passive ? "A story" : ""), players, cta: item.kind === 'get' ? { label: 'Get', icon: 'get' } : { label: 'Play', icon: 'play' } };
+    return { name: g.name, line: blurb || (g.passive ? "A story" : ""), players, cta: item.kind === 'get' ? { label: item.update ? 'Update' : 'Get', icon: 'get' } : { label: 'Play', icon: 'play' } };
   }
-  if (item.kind === 'more') return { name: 'More to try', line: 'Every game the family can get', players: null, cta: { label: 'Open', icon: 'play' } };
-  if (item.kind === 'make') return { name: item.name, line: item.tag ? `${item.line}, for grown-ups` : item.line, players: null, cta: { label: item.id === 'requests' ? 'Open' : item.id === 'pro' ? 'Open' : 'Ask', icon: 'play' } };
+  if (item.kind === 'discover') return { name: 'Discover', line: 'Every game your family can get', players: null, cta: { label: 'Open', icon: 'play' } };
   if (item.kind === 'test') return { name: item.d.name, line: item.d.asking ? 'On this TV, asking to publish' : 'On this TV to try', players: null, cta: { label: 'Try it', icon: 'play' } };
   return none;
 }
 
-/* Is the hero big (the page at rest) or a banner (scrolled)? Only the first row keeps it big. */
-export const bigHero = (pos, rows) => !rows.length || pos.row === 0;
+/* Is the hero big (the page at rest) or a banner (scrolled)? Only the first `big` rows keep it big (Play: its two; Discover: the first). */
+export const bigHero = (pos, rows, big = 1) => !rows.length || pos.row < big;
 
 /* The "how you play" row (decisions 0052, trimmed by the owner 2026-11-23): only the players (people icon and number) and, when a tablet
    plays a part, PlayPad / PlayPad optional (0054). A story (`passive`) shows no row. Read from `seats` ({ pads: [lo, hi] }), `requiredPads`, and the counts. */

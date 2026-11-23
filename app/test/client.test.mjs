@@ -158,7 +158,7 @@ test('one app, modes by install: Player has Play, Discover and Create; Creator h
   assert.equal(appMode.get(), 'player', 'unset is the Player app');
   assert.equal(appMode.canSwitch(), true, 'a testing build (no mode told, no release label) can be switched');
   const home = readFileSync(new URL('../src/ui/home.js', import.meta.url), 'utf8');
-  assert.ok(home.includes("appMode.tabs().includes('create')") && home.includes('appMode.creator()'), 'the rows follow the mode');
+  assert.ok(home.includes('tabsFor(') && home.includes('appMode.tabs()') && home.includes('appMode.creator()'), 'the tabs and rows follow the mode');
   const menu = readFileSync(new URL('../src/ui/menu.js', import.meta.url), 'utf8');
   assert.ok(menu.includes("row('Mode'") && menu.includes('appMode.canSwitch()'), 'testing builds can switch in Settings; a build told its mode cannot');
   const rust = readFileSync(new URL('../client/src-tauri/src/main.rs', import.meta.url), 'utf8');

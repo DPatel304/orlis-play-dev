@@ -1,9 +1,11 @@
-/* Home: one page, no tabs (decisions 0045 to 0049; the approved mockup is docs/screens-mockup.html).
+/* Home (Play) and Discover, one page builder (decisions 0045 to 0049, 0055; the approved mockup is docs/screens-mockup.html).
 
-   The focused game's painted world fills the screen, with its name in big plain outlined letters, one line and how many play
-   (figures). Under it, three rows: "Your games", "New to try" (what Discover was, with Get and download progress on its tiles) and
-   "Make a game" (Create: Ask for a game, Your requests, Create Pro). Moving to another row (down) shrinks the hero to a banner. The
-   profile face, top right, opens Profile, Settings and Sign out.
+   The focused game's painted world fills the screen, with its one line and how many play (figures; the tile names the game). Under it,
+   Play's two rows: "Featured" (this week's featured games to get, then the Discover tile) and "Your games". The Play and Create tabs
+   sit beside the logo (grown-ups only); up from the first row reaches them, left and right move between them, OK picks, down goes back.
+   The Discover page is the same page with a row per category (rows, tiles and hero are the very same) and a Home button instead of the
+   tabs. Moving to a row below the big ones (down) shrinks the hero to a banner. The profile face, top right, opens Profile, Settings and
+   Sign out.
 
    Home is driven by the remote, keyboard and mouse only (arrows move, OK picks, a click plays). No hand mode: no pointing, no waving
    and no camera here (decision 0049); the cursor is off on this page.
@@ -26,12 +28,14 @@ import { launch } from './launch.js';
 import { shotOf, coverOf, shotImage, makeShots } from './shots.js';
 import { makeCover, generatedArt, hasArt } from './covers.js';
 import { testingRow } from './building.js';
-import { logo, icon, propIcon } from './brand.js';
+import { icon, homeButton, twoSquares } from './brand.js';
 import { iconEl } from './icons.js';
 import { BLURB, iconOf, HIDDEN, openProfileSheet } from './menu.js';
 import { startIdleFace } from './cubo-idle.js';
 import { reduced } from './chkit.js';
-import { homeRows, makeFor, startFocus, step, heroOf, bigHero, howYouPlay, needsTablet } from './home-model.js';
+import { homeRows, discoverRows, tabsFor, startFocus, step, heroOf, bigHero, howYouPlay, needsTablet, PLAY_BIG } from './home-model.js';
+import { layout as storeLayout, newer } from './store.js';
+import { brandBar } from './tabs.js';
 import { color } from '../games/assets/palette.js';
 
 const LAUNCH = 0.2;    /* seconds of going in (the loading screen fading in) */
@@ -61,10 +65,15 @@ export function worldOf(g){
   return url;
 }
 
-/* nav: { home(), store(), create(), pro(), requests() } */
-export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh = null }){
+/* nav: { home(), store(), create() } */
+export const menu = (opts) => build(opts, 'play');
+/* the Discover page (the app store): what's not on this PC yet, by category */
+export const discoverPage = (opts) => build(opts, 'discover');
+
+function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh = null }, kind){
+  const discovering = kind === 'discover';
   clearUI();
-  const s = screen('home rest' + (arrive ? ' arrive' : ''));
+  const s = screen('home rest' + (discovering ? ' discover' : '') + (arrive ? ' arrive' : ''));
 
   /* ---------- what's here ---------- */
   const waiting = account.waiting;
@@ -75,10 +84,24 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const standIn = (e) => ({ id: e.id, name: e.name, accent: (e.icon && e.icon.cols && e.icon.cols[0]) || color('fav.purple'), store: { icon: e.icon, blurb: e.blurb, version: e.version, cover: e.cover || '' }, discover: e });
   const games = waiting ? [] : ((week.store && week.store.games) || []);
   const featured = waiting ? [] : week.featured();
-  const toGet = [...featured, ...games].filter((e, i, all) => !library.installed.has(e.id) && all.indexOf(e) === i).map(standIn);
-  const creator = account.signedIn && ['creator', 'owner'].includes(account.role);
-  const make = !appMode.tabs().includes('create') && !appMode.creator() ? [] : waiting ? ['ask'] : makeFor({ kid: account.isKid, creator, creatorApp: appMode.creator() }).filter(id => id !== 'pro' || nav.pro).filter(id => id !== 'requests' || nav.requests);
-  const rows = homeRows({ pool, toGet, make, more: !!nav.store && !waiting && !appMode.creator(), testing: waiting ? [] : (week.drafts || []) });
+  const notHere = (e) => !library.installed.has(e.id);
+  const toGet = featured.filter(notHere).map(standIn);
+  /* the tabs (Play, Create): grown-ups in the Player app only */
+  const tabIds = discovering ? [] : tabsFor({ kid: account.isKid, waiting, creatorApp: appMode.creator(), modeTabs: appMode.tabs() });
+  let rows, nothing = '';
+  if (discovering){
+    const have = library.installed;
+    const upd = games.filter(e => have.has(e.id) && newer(e.version, have.get(e.id))).map(e => ({ ...standIn(e), update: true }));
+    const fresh = games.filter(notHere);
+    const cats = storeLayout(fresh).rows;
+    /* (a game that fits no category still shows: the last row) */
+    const placed = new Set(cats.flatMap(r => r.list.map(e => e.id)));
+    const rest = fresh.filter(e => !placed.has(e.id));
+    if (rest.length && cats.length) cats.push({ name: 'More games', list: rest });
+    rows = discoverRows({ updates: upd, rows: cats.map(r => ({ ...r, list: r.list.map(standIn) })) });
+    nothing = !account.signedIn ? 'Sign in to see Discover.' : (week.store ? (games.length ? 'You have every game in Discover. New ones show up here as your family adds them.' : 'Nothing in Discover yet. Games the family adds to the Orlis server show up here.') : 'Loading Discover…');
+  } else rows = homeRows({ pool, featured: toGet, discover: !!nav.store && !waiting && !appMode.creator(), testing: waiting ? [] : (week.drafts || []) });
+  const bigRows = discovering ? 1 : PLAY_BIG;
 
   /* ---------- the page ---------- */
   const bgwrap = h('div', 'hbgwrap');
@@ -86,11 +109,13 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   bgwrap.append(...layers, h('div', 'hscrim'));
   const box = h('div', 'hbox');
   const top = h('div', 'htop');
-  top.appendChild(logo({ size: 'calc(var(--u)*4.4)', light: true }));
+  const tabEls = [];
+  if (discovering) top.appendChild(homeButton(() => nav.home && nav.home()));
+  else { const bar = brandBar({ tabs: tabIds, current: 'play', nav: { play: nav.home, create: nav.create }, light: true }); top.appendChild(bar.el); tabEls.push(...bar.tabs); }
   const sys = h('div', 'hsys');
   /* this week's challenges, as a small pill beside the profile face */
   const ch = week.challenges;
-  const pill = !appMode.creator() && account.signedIn && !waiting && ch && ch.challenges && ch.challenges.length ? challengePill(ch) : null;
+  const pill = !discovering && !appMode.creator() && account.signedIn && !waiting && ch && ch.challenges && ch.challenges.length ? challengePill(ch) : null;
   if (pill) sys.appendChild(pill);
   const who = account.current;
   const me = button('', 'hme');
@@ -109,7 +134,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   };
   onPick(me, () => { sfx.select(); openMe(); });
   sys.appendChild(me);
-  top.appendChild(sys);
+  if (!discovering) top.appendChild(sys);
 
   const info = h('div', 'hinfo');
   const blurb = h('div', 'hblurb'), how = h('div', 'hhows'), meta = h('div', 'hmeta');
@@ -118,14 +143,15 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   box.append(top, info, rowsEl);
   s.append(bgwrap, box);
 
-  /* no games yet (nothing on this PC and nothing to get): a way to Discover */
+  /* nothing to show: a way to Discover (Play), or why (Discover) */
   const empty = !rows.length;
   if (empty){
-    blurb.textContent = 'Get your first game: Pop Party is waiting for you in Discover.';
-    if (nav.store){   /* the one button on Home */
+    blurb.textContent = discovering ? nothing : 'Get your first game: Pop Party is waiting for you in Discover.';
+    if (!discovering && nav.store){   /* the one button on Home */
       const open = button('', 'hplay ringed');
       open.querySelector('.lbl').innerHTML = `${icon('play')}<span>Open Discover</span>`; onPick(open, () => { sfx.select(); nav.store(); }); meta.appendChild(open);
     }
+    if (discovering && onFresh) week.refresh({ force: true }).then(changed => { if (changed && s.isConnected) onFresh(); }, () => {});
     ambience.start();
     return { focus: 0, tick(){}, draw(){}, leave(){ idleFace.stop(); if (DEV_HOOK) delete window.__cuboFace; } };
   }
@@ -149,13 +175,9 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       el.querySelector('.hname').textContent = item.g.name;
       paintTile(t);
       if (needsTablet(item.g)){ const b = h('span', 'tabmark'); b.setAttribute('role', 'img'); b.setAttribute('aria-label', 'Needs an Orlis PlayPad'); b.appendChild(iconEl('tabletgrip', 96, color('shade.ink'))); el.appendChild(b); }
-      if (item.kind === 'get') el.insertAdjacentHTML('beforeend', `<span class="getpill">${icon('get')}Get</span><span class="gotbar"><i></i></span>`);
-    } else if (item.kind === 'more'){
-      el.classList.add('mk', 'm4'); el.appendChild(propIcon('star')); el.querySelector('.hname').textContent = 'More to try';
-    } else if (item.kind === 'make'){
-      el.classList.add('mk', item.tone); el.appendChild(propIcon(item.prop));
-      if (item.tag) el.insertAdjacentHTML('beforeend', `<span class="gu">${item.tag}</span>`);
-      el.querySelector('.hname').textContent = item.name;
+      if (item.kind === 'get') el.insertAdjacentHTML('beforeend', `<span class="getpill">${icon('get')}${item.update ? 'Update' : 'Get'}</span><span class="gotbar"><i></i></span>`);
+    } else if (item.kind === 'discover'){
+      el.classList.add('disc'); el.insertAdjacentHTML('beforeend', twoSquares('dm')); el.querySelector('.hname').textContent = 'Discover';
     } else if (item.kind === 'test'){
       el.classList.add('mk', 'm3'); el.querySelector('.hname').textContent = item.d.name;
       if (item.d.asking) el.insertAdjacentHTML('beforeend', '<span class="gu">Publish?</span>');
@@ -164,8 +186,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   };
   rows.forEach((r, ri) => {
     const sec = h('section', 'hsec'), lab = h('div', 'hlab'), row = h('div', 'hrow');
-    /* (owner, 2026-11-23: no "Your games" label - the first row speaks for itself; the rows below keep theirs) */
-    lab.textContent = r.title; if (r.id === 'games') lab.classList.add('quiet'); sec.append(lab, row); rowsEl.appendChild(sec);
+    lab.textContent = r.title; sec.append(lab, row); rowsEl.appendChild(sec);
     tiles[ri] = r.items.map((item, ci) => {
       const t = makeTile(item); t.row = ri; t.col = ci; t.sec = sec; t.rowEl = row;
       onPick(t.el, () => activate(t));
@@ -205,12 +226,12 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     setWorld(it.g ? worldOf(it.g) : null);
   }
   function layout(){
-    const big = bigHero(pos, rows), r = pos.row;
+    const big = bigHero(pos, rows, bigRows), r = pos.row;
     s.classList.toggle('rest', big); s.classList.toggle('scrolled', !big);
-    /* the rows: at rest the first sits low with the next one's label peeking; scrolled, the lit row and the one after fill the page */
-    const first = big ? 0 : Math.max(1, r - 1);
+    /* the rows: at rest only the current one shows (its label above it); scrolled, the lit row and the one after fill the page */
+    const first = big ? r : Math.max(1, r - 1);
     rowsEl.style.setProperty('--first', first);
-    tiles.forEach((rowTiles, k) => rowTiles[0].sec.classList.toggle('away', k < first || (!big && k === 0)));
+    tiles.forEach((rowTiles, k) => rowTiles[0].sec.classList.toggle('away', big ? k !== r : k < first));
   }
   function slide(t){
     if (!t) return;
@@ -235,8 +256,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     const it = t.item;
     focusAt({ row: t.row, col: t.col }, { quiet: true });
     sfx.select();
-    if (it.kind === 'more') return nav.store && nav.store();
-    if (it.kind === 'make') return it.id === 'ask' ? nav.create && nav.create() : it.id === 'requests' ? nav.requests && nav.requests() : nav.pro && nav.pro();
+    if (it.kind === 'discover') return nav.store && nav.store();
     if (it.kind === 'test') return tryDraft(it.d);
     let g = it.g;
     /* one from Discover is got first, with its progress on the tile */
@@ -262,14 +282,31 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   };
 
   /* ---------- the remote's up and down (left and right are remote.js's: the nearest tile that way) ---------- */
-  const ARROWS = { ArrowUp: 'up', ArrowDown: 'down' };
+  const ARROWS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+  const inTop = () => !!remote.cur && !!remote.cur.closest && remote.cur.closest('.htop') === top;
+  const toTabs = () => {
+    const t = tabEls.find(b => b.classList.contains('cur')) || tabEls[0];
+    items.forEach(x => x.el.classList.remove('on'));
+    remote.mark(t); sfx.nav();
+  };
   const keys = (e) => {
     const dir = ARROWS[e.key];
     if (!dir || !s.isConnected || sheet || going || document.querySelector('.dim:not(.lost)')) return;
+    const stop = () => { e.preventDefault(); e.stopImmediatePropagation(); document.body.classList.add('remote'); remote.lastKey++; };
+    /* on the top bar: Left and Right go from tab to tab (past the last, the remote's own nearest-button takes over: the profile face),
+       Down goes back into the page, Up stays */
+    if (inTop()){
+      const i = tabEls.indexOf(remote.cur);
+      if (dir === 'down'){ stop(); focusAt(pos, { remote: true, quiet: true }); }
+      else if (dir === 'up') stop();
+      else if (i >= 0 && (dir === 'left' || i < tabEls.length - 1)){ stop(); const to = tabEls[i + (dir === 'left' ? -1 : 1)]; if (to){ remote.mark(to); sfx.nav(); } }
+      return;
+    }
+    if (dir === 'left' || dir === 'right') return;   /* (remote.js: the nearest tile that way) */
     const to = step(rows, pos, dir, mem);
-    e.preventDefault(); e.stopImmediatePropagation();
-    document.body.classList.add('remote'); remote.lastKey++;
+    stop();
     if (to) focusAt(to, { remote: true });
+    else if (dir === 'up' && tabEls.length) toTabs();
   };
   addEventListener('keydown', keys, true);
 
@@ -283,7 +320,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const stopShots = makeShots([...new Map(items.filter(t => t.item.g).map(t => [t.item.g.id, t.item.g])).values()], (g) => items.forEach(t => { if (t.item.g && t.item.g.id === g.id) paintTile(t); }));
   /* this week's challenge cards, on arriving (only the first time in a new challenge week, 0051) */
   let holdArrive = false;
-  if (!waiting && ch && ch.challenges && ch.challenges.length && splashWanted(ch)){
+  if (!discovering && !waiting && ch && ch.challenges && ch.challenges.length && splashWanted(ch)){
     holdArrive = true;
     showChallenges(ch, { auto: true, first: true, from: pill, onLeave: () => { holdArrive = false; } });
   }
@@ -295,7 +332,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     get focus(){ return items.indexOf(current()); },
     get pos(){ return pos; },
     /* (for the tests and the pictures) */
-    focusAt, rows, items,
+    focusAt, rows, items, tabs: tabEls, toTabs,
     tick(dt){
       if (going){
         going.t += dt;

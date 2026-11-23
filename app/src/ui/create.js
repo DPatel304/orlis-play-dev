@@ -30,6 +30,7 @@ import { library } from './library.js';
 import { PAPER } from './boot.js';
 import { week } from './week.js';
 import { appMode } from './mode.js';
+import { tabsFor } from './home-model.js';
 import { buildingRow } from './building.js';
 import { gameBuilder, changePop, looksOf } from './request.js';
 import { previewCover } from './covers.js';
@@ -58,7 +59,8 @@ let firstFolder = null;
 export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, pro = false, view = '' }){
   clearUI();
   const s = screen('tvhome createpage onhero');
-  const bar = topBar(pro ? 'pro' : 'create', nav, { onWho, onRecalibrate });
+  /* the Play and Create tabs (0055), for a grown-up in the Player app; else the Home button */
+  const bar = topBar(pro ? 'pro' : 'create', nav, { onWho, onRecalibrate, tabs: pro ? null : tabsFor({ kid: account.isKid, waiting: account.waiting, creatorApp: appMode.creator(), modeTabs: appMode.tabs() }) });
   s.appendChild(bar.el);
   const scroll = h('div', 'sscroll');
   s.appendChild(scroll);

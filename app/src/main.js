@@ -13,7 +13,7 @@ import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
 import { cycleHands, handsName } from './ui/handshow.js';
 import { toggleFullscreen, openSettings, played as playedLately, BLURB } from './ui/menu.js';
-import { menu } from './ui/home.js';
+import { menu, discoverPage } from './ui/home.js';
 import { PAPER } from './ui/boot.js';
 import { remote, typing } from './ui/remote.js';
 import { account, welcome, AVATARS } from './ui/account.js';
@@ -21,7 +21,6 @@ import { smoothness, joinLine } from './ui/smoothness.js';
 import { buildReport, gpuName } from './ui/perfreport.js';
 import { installTitlebar, titlebarPlaying } from './ui/titlebar.js';
 import { library } from './ui/library.js';
-import { storePage } from './ui/store.js';
 import { createPage } from './ui/create.js';
 import { boot as bootShow } from './ui/boot.js';
 import { calibration, results, pauseOverlay, lostOverlay,
@@ -130,12 +129,13 @@ function toMenu(arrive = false){
     /* (this week's featured games and challenges came in, or changed: shown) */
     onFresh: () => { if (mode === 'menu') toMenu(false); } }));
 }
-/* The tabs along the top: Home, the Store, Create. */
+/* Where the Play and Create tabs, the Discover tile and the pages' Home buttons go. */
 function tabs(){ return { home: () => toMenu(false), store: toStore, create: () => toCreate(), requests: () => toCreate('requests'), pro: toPro }; }
 function toStore(){
   if (appMode.creator()) return toStart();
   music.stop(); voice.hush();
-  go('store', () => storePage({ nav: tabs(), onPlay: toGame, onChange: () => {}, onWho: () => toWho(false), onRecalibrate: toCalibration }));
+  /* Discover: the app store, in Home's own look (0055) */
+  go('store', () => discoverPage({ onPlay: toGame, onRecalibrate: toCalibration, onWho: () => toWho(false), nav: tabs(), onFresh: () => { if (mode === 'store') toStore(); } }));
 }
 /* Waiting to be let in (playing the starter games meanwhile): every so
    often, are they in yet? Once they are, it says so, and on a page with
@@ -411,7 +411,7 @@ function openPause(){
    the scores or the camera check, home. */
 remote.install(() => {
   if (mode === 'play' && !lost){ if (paused){ paused.remove(); paused = null; cursor.reset(); } else openPause(); }
-  else if (mode === 'results' || mode === 'calibrate' || mode === 'join') toMenu();
+  else if (mode === 'results' || mode === 'calibrate' || mode === 'join' || mode === 'store') toMenu();
 });
 
 /* The game waits only when the room is empty - everybody gone for a couple

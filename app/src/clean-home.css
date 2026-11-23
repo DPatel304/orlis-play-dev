@@ -23,7 +23,7 @@
 .home.scrolled .hscrim{ background:linear-gradient(180deg,rgba(29,27,46,.55),rgba(29,27,46,0) 34%); }
 .hbox{ position:absolute; left:50%; top:0; width:calc(var(--u)*177.78); height:calc(var(--u)*100); transform:translateX(-50%); }
 .home .htop{ position:absolute; left:0; right:0; top:0; height:calc(var(--u)*15); z-index:5; }
-.home .htop > .lg{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*3.6); }
+.hbrand{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*2.6); display:flex; align-items:center; gap:calc(var(--u)*4.2); z-index:6; }
 .hsys{ position:absolute; right:calc(var(--u)*5); top:calc(var(--u)*2.6); display:flex; align-items:center; gap:calc(var(--u)*2); }
 .btn.hme{ width:calc(var(--u)*10.4); height:calc(var(--u)*10.4); padding:0; border:0; border-radius:28%; background:transparent; box-shadow:none; overflow:visible; filter:drop-shadow(0 calc(var(--u)*.6) calc(var(--u)*1.2) rgba(20,18,40,.35)); transition:transform var(--t-fast) var(--ease-pop), width var(--t-base) var(--ease), height var(--t-base) var(--ease); }
 .btn.hme .lbl,.hface{ display:block; width:100%; height:100%; } .hface canvas,.hface .avface{ width:100%; height:100%; display:block; }
@@ -32,8 +32,7 @@
 
 /* the focused game: one line, wrapped in the plain dark area on the left (the picture starts at 38%), with the players as figures right after the last word.
    No Play button and no title: the lit tile is the way in (0046). */
-.hinfo{ position:absolute; left:calc(var(--u)*5); bottom:calc(var(--u)*32); width:calc(var(--u)*58); z-index:4; transition:bottom var(--t-slow) var(--ease); }
-.hlab.quiet{ visibility:hidden; }
+.hinfo{ position:absolute; left:calc(var(--u)*5); bottom:calc(var(--u)*36); width:calc(var(--u)*58); z-index:4; transition:bottom var(--t-slow) var(--ease); }
 .home.scrolled .hinfo{ bottom:calc(var(--u)*58); }
 .hblurb{ font:500 calc(var(--u)*4.6)/1.3 var(--ui); color:#fff; opacity:.9; text-shadow:0 calc(var(--u)*.3) calc(var(--u)*1) rgba(0,0,0,.5); margin:0; transition:font-size var(--t-base) var(--ease); }
 /* the "how you play" row: its own line under the description, quiet white, an icon and one or two words each, no boxes (0052) */
@@ -58,12 +57,10 @@
 .home.scrolled .hblurb{ font-size:calc(var(--u)*3.2); }
 
 /* the rows */
-.hrows{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*67.8); width:calc(var(--u)*172); transition:top var(--t-slow) var(--ease); z-index:3; }
+.hrows{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*(67.8 - 25.2 * var(--first,0))); width:calc(var(--u)*172); transition:top var(--t-slow) var(--ease); z-index:3; }
 .home.scrolled .hrows{ top:calc(var(--u)*(46.8 - 25.2 * var(--first,1))); }
 .home.arrive .hrows{ animation:hrise .7s var(--ease) both; } @keyframes hrise{ from{ opacity:0; transform:translateY(calc(var(--u)*4)); } }
 .hsec{ height:calc(var(--u)*25.2); transition:opacity var(--t-base) var(--ease); } .hsec.away{ opacity:0; pointer-events:none; }
-/* at rest only the current row shows; the next does not peek in (0046) */
-.home.rest .hsec:not(:first-child){ opacity:0; pointer-events:none; }
 .hlab{ height:calc(var(--u)*6.2); font:700 var(--tv-label)/1 var(--ui); color:#fff; text-shadow:0 calc(var(--u)*.3) calc(var(--u)*1) rgba(0,0,0,.5); transition:color var(--t-base) var(--ease); }
 .home.scrolled .hlab{ color:var(--ink); text-shadow:none; }
 .hrow{ display:flex; gap:calc(var(--u)*2.2); width:max-content; transition:transform var(--t-base) var(--ease); padding:calc(var(--u)*2.4) calc(var(--u)*1.6); margin:calc(var(--u)*-2.4) calc(var(--u)*-1.6); }
@@ -102,3 +99,27 @@ body.remote .htile.kfocus{ outline:none; }
 .btn.sheetitem .fill{ background:var(--grad); opacity:.18; }
 .btn.sheetitem:hover,.btn.sheetitem.hot,body.remote .btn.sheetitem.kfocus{ background:#fff; box-shadow:0 0 0 calc(var(--u)*.5) var(--who,var(--blue)); transform:none; }
 .hsfoot{ margin:calc(var(--u)*2) calc(var(--u)*.6) 0; font-size:calc(var(--u)*2.4); color:var(--ink-soft); text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* the Play and Create tabs, beside the logo (0055): the current one a white pill with its icon, the other quiet; Outfit 600, the logo text's size */
+.ptabs{ display:flex; align-items:center; gap:calc(var(--u)*1.2); }
+.btn.ptab{ display:inline-flex; align-items:center; padding:calc(var(--u)*1.1) calc(var(--u)*2.8) calc(var(--u)*1.1) calc(var(--u)*2.2); border:0; border-radius:var(--pill); background:transparent; box-shadow:none; color:rgba(255,255,255,.8); font:600 calc(var(--u)*4.4)/1 var(--ui); white-space:nowrap; transition:transform var(--t-fast) var(--ease-pop), background var(--t-base) var(--ease), color var(--t-base) var(--ease); }
+.btn.ptab .fill{ display:none; }
+.btn.ptab .lbl{ display:inline-flex; align-items:center; gap:calc(var(--u)*1.2); }
+.btn.ptab svg.i{ width:calc(var(--u)*4); height:calc(var(--u)*4); }
+.btn.ptab.cur{ background:#fff; color:var(--ink); box-shadow:0 calc(var(--u)*.4) calc(var(--u)*1.4) rgba(20,18,40,.28); }
+.btn.ptab:hover,.btn.ptab.hot{ transform:scale(1.05); }
+.btn.ptab:not(.cur):hover,.btn.ptab:not(.cur).hot{ color:#fff; }
+.btn.ptab:focus-visible,body.remote .btn.ptab.kfocus{ outline:none; box-shadow:0 0 0 calc(var(--u)*.6) #fff, 0 0 0 calc(var(--u)*1.3) var(--blue), 0 calc(var(--u)*.6) calc(var(--u)*1.6) rgba(20,18,40,.35); transform:scale(1.05); }
+/* on paper (the Create page): the quiet tab is ink */
+.hbrand:not(.light) .btn.ptab:not(.cur){ color:rgba(29,27,46,.62); }
+.hbrand:not(.light) .btn.ptab:not(.cur):hover,.hbrand:not(.light) .btn.ptab:not(.cur).hot{ color:var(--ink); }
+.hbrand:not(.light) .btn.ptab.cur{ box-shadow:var(--soft); }
+.ctop .hbrand{ top:calc(var(--u)*2.6); }
+
+/* the Discover tile in Featured: the brand gradient with the two squares, the same size as the game tiles */
+.btn.htile.disc{ background:var(--grad); }
+.htile.disc .dm{ position:absolute; right:calc(var(--u)*2.2); top:calc(var(--u)*1.8); width:calc(var(--u)*8.4); height:calc(var(--u)*8.4); filter:drop-shadow(0 calc(var(--u)*.4) calc(var(--u)*.8) rgba(20,18,40,.25)); }
+.htile.disc .dm .sq-b{ fill:#fff; } .htile.disc .dm .sq-v{ fill:rgba(255,255,255,.55); stroke:none; }
+.htile.disc .hname{ font-size:calc(var(--u)*4.6); }
+/* the Discover page: the home look, no profile face (the Home button is where the logo sits) */
+.home.discover .htop > .btn.homebtn{ z-index:6; }

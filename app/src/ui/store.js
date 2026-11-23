@@ -1,4 +1,8 @@
-/* The Store: the games on the family's Orlis server, as a page of its own,
+/* NOTE (decision 0055): the Discover page is now home.js's discoverPage() (Home's own hero and rows). main.js no longer opens storePage();
+   what is still used from here is layout() / ROWS (the categories) and newer(). storePage() below is the old page, kept for its owner-only
+   "Waiting for your OK" Try-it flow and the game detail page until they are moved over.
+
+   The Store: the games on the family's Orlis server, as a page of its own,
    like the Apple TV's App Store. At the top, a big banner that turns through
    the featured games - each one playing itself; below it, rows of games
    ("New for your family", "Great for little kids"...), scrolled down
