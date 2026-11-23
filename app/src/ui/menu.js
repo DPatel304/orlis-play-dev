@@ -28,6 +28,7 @@ export const BLURB = {
   'keep-it-up': 'Keep the big beach ball floating up together',
   'ptero-flight': 'Spread your arms like wings and glide over a world of dinosaurs',
   'save-the-harvest': 'Pick the fruit before the cheeky raven gets it!',
+  'peekaboo': 'One hides with the tablet, the rest hunt with a lantern!',
   'cubions-long-way-home': 'A funny story about a little cube learning to move.'
 };
 /* Each game's icon, in the cube's style: a rounded square in two colours,
