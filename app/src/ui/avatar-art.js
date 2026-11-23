@@ -240,6 +240,7 @@ export function head(c, x, y, r, look, t = 0, { back = false } = {}){
      arms: [left, right] of { a1: upper arm, a2: forearm } } */
 const LG = (a1 = 0, a2 = a1, s = 1) => ({ a1, a2, s });
 const AR = (a1 = 0, a2 = a1) => ({ a1, a2 });
+const Lp = (a, b, p) => a + (b - a) * p, P = (name, i) => FRAMES[name][i % 4][0];
 const rig = (o) => ({ yo: 0, k: 1, legs: [LG(), LG()], arms: [AR(), AR()], ...o });
 /* the same pose the other way round */
 const mirror = (m) => ({ ...m, rot: m.rot && -m.rot, legs: [m.legs[1], m.legs[0]].map(l => ({ ...l, a1: -l.a1, a2: -l.a2 })), arms: [m.arms[1], m.arms[0]].map(r => ({ a1: -r.a1, a2: -r.a2 })) });
@@ -284,6 +285,15 @@ const MOVES = {
     const p = [0.4, 0.8, 1, 1][i % 4];
     return rig({ k: 1 - 0.35 * p, armsFront: true, legs: [LG(-4 * p), LG(4 * p)], arms: [AR(36 * p), AR(-36 * p)] });
   },
+  /* a clap: the hands come in over the chest until the hand ends touch, with a small burst over them */
+  clap: (i) => { const p = P('clap', i); return rig({ sho: { x: Lp(0.265, 0.19, p), y: Lp(0.055, 0.1, p) }, armsFront: true, mark: p > 0.99 ? 'burst' : null, arms: [AR(Lp(-40, 55, p)), AR(Lp(40, -55, p))] }); },
+  /* a hug: the arms come in and cross over the body, one over the other */
+  hug: (i) => { const p = P('hug', i); return rig({ sho: { x: Lp(0.265, 0.1, p), y: Lp(0.055, 0.11, p) }, armsFront: true, arms: [AR(Lp(-50, 72, p)), AR(Lp(50, -72, p))] }); },
+  /* a duck: the legs get shorter (as in the squat) so he drops low, the head sinks between the shoulders, both hands go up on his head (the arms
+     bend at the elbow seam; his arms are short, so they reach the sides of his head), and a small arrow points down over him */
+  duck: (i) => { const p = P('duck', i); return rig({ k: Lp(1, 0.55, p), headDrop: Lp(0, 0.16, p), armsOver: true, mark: 'down', arms: [AR(Lp(0, -150, p), Lp(0, 150, p)), AR(Lp(0, 150, p), Lp(0, -150, p))] }); },
+  /* a step sideways: one leg straight down, the other straight out at an angle, the arms out, and an arrow beside the leg that goes out */
+  side: (i) => { const p = P('side', i); return rig({ rot: Lp(0, 0.05, p), mark: 'step', legs: [LG(0), LG(Lp(0, 30, p))], arms: [AR(-Lp(10, 74, p)), AR(Lp(10, 74, p))] }); },
   /* frozen: arms out, shivering */
   freeze: (i) => rig({ dx: (i % 2 ? 1 : -1) * 0.009, arms: [AR(-80), AR(80)] })
 };
@@ -328,8 +338,10 @@ function idleRig(t){
 export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false, face: alive = null, still = false, arrows = false } = {}){
   const a = resolve(look), S = h, { hh, bw, bh } = SIZE(S);
   const rg = pose === 'stand' && !still && !back ? idleRig(t) : rigOf(pose, t);
-  const hipY = -S * BODY.legLen * rg.k + rg.yo * S, torsoTop = hipY - bh, headTop = torsoTop + S * 0.015 - hh, rot = rg.rot || 0, dx = (rg.dx || 0) * S;
+  const hipY = -S * BODY.legLen * rg.k + rg.yo * S, torsoTop = hipY - bh, headTop = torsoTop + S * 0.015 - hh + (rg.headDrop || 0) * S, rot = rg.rot || 0, dx = (rg.dx || 0) * S;
   const lx = S * (BODY.legGap + BODY.legW) / 2, ax = bw / 2 + S * (BODY.armGap + BODY.armW / 2), ay = torsoTop + S * BODY.armW / 2;
+  /* where the arms hang from: the torso's top corners, or (clap, hug) further in over the chest */
+  const shx = rg.sho ? rg.sho.x * S : ax, shy = rg.sho ? torsoTop + rg.sho.y * S : ay;
   /* their shadow on the ground (outside the cut: it has no paper edge) */
   c.fillStyle = alpha('shade.shadow', 0.2); c.beginPath(); c.ellipse(x, base, S * 0.3, S * 0.04, 0, 0, Math.PI * 2); c.fill();
   c.save(); c.translate(x + dx, base);
@@ -340,13 +352,14 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
     cc.save(); lean(); cc.save(); cc.translate(0, torsoTop); drawCape(cc, a, S, bw, bh); cc.restore(); cc.restore();
     [-1, 1].forEach((d, i) => { const l = rg.legs[i]; drawLeg(cc, a, S, d * lx, hipY, l.a1, l.a2, l.s * rg.k); });
     cc.save(); lean();
-    const arms = () => [-1, 1].forEach((d, i) => drawArm(cc, a, S, d * ax, ay, rg.arms[i].a1, rg.arms[i].a2, d < 0));
-    if (!rg.armsFront) arms();
+    const arms = () => [-1, 1].forEach((d, i) => drawArm(cc, a, S, d * shx, shy, rg.arms[i].a1, rg.arms[i].a2, d < 0));
+    if (!rg.armsFront && !rg.armsOver) arms();
     cc.save(); cc.translate(0, torsoTop); drawTorso(cc, a, S, bw, bh); cc.restore();
     if (rg.armsFront) arms();
     cc.save(); cc.translate(0, headTop); drawHead(cc, a, S, back, t); cc.restore();
+    if (rg.armsOver) arms();
     if (arrows) [-1, 1].forEach((d, i) => { const r = rg.arms[i];
-      if (Math.abs(r.a1 - r.a2) > 1 || Math.abs(r.a1) < 55) return;
+      if (rg.sho || Math.abs(r.a1 - r.a2) > 1 || Math.abs(r.a1) < 55) return;
       /* beside the arm, not on its end: parallel to it, on its outer side (the upper side when it points straight out), one arm-width and a clear gap
          away, about the arm's own length, pointing the way the arm goes */
       const th = r.a1 * DEG, ux = Math.sin(th), uy = Math.cos(th);
@@ -354,6 +367,16 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
       if (Math.abs(px) < 0.45 ? py > 0 : px * d < 0){ px = -px; py = -py; }
       const off = S * (BODY.armW / 2 + 0.04 + 0.05), pulse = still ? 1 : 1 + 0.15 * Math.sin(t * Math.PI * 2 * 1.6);
       motionArrow(cc, S, d * ax + px * off, ay + py * off, r.a1, S * BODY.armLen * pulse); });
+    /* the move's own marks: a small burst over the clapping hands, a down arrow over a ducking head, a step arrow beside the leg that goes out */
+    if (arrows && rg.mark){
+      const pulse = still ? 1 : 1 + 0.15 * Math.sin(t * Math.PI * 2 * 1.6);
+      if (rg.mark === 'burst'){ cc.save(); cc.strokeStyle = INK(); cc.lineWidth = S * 0.025; cc.lineCap = 'round';
+        for (const an of [-150, -120, -90, -60, -30]){ const u = [Math.cos(an * DEG), Math.sin(an * DEG)], r0 = S * 0.04 * pulse, r1 = S * (an === -90 ? 0.1 : 0.08) * pulse;
+          cc.beginPath(); cc.moveTo(u[0] * r0, torsoTop + S * 0.12 + u[1] * r0); cc.lineTo(u[0] * r1, torsoTop + S * 0.12 + u[1] * r1); cc.stroke(); }
+        cc.restore(); }
+      if (rg.mark === 'down') motionArrow(cc, S, 0, headTop - S * 0.24, 0, S * 0.14 * pulse);
+      if (rg.mark === 'step') motionArrow(cc, S, lx + S * BODY.legLen * Math.sin(rg.legs[1].a1 * DEG) + S * 0.17, -S * 0.07, 90, S * 0.16 * pulse);
+    }
     cc.restore();
   });
   live = null;
