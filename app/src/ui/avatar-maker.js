@@ -26,12 +26,13 @@ function pic(size, fn, cls = 'avpic'){
   const k = Math.min(2, (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1);
   cv.width = cv.height = Math.round(size * k);
   const c = cv.getContext && cv.getContext('2d');
-  if (c){ c.scale(k, k); fn(c, size); }
+  if (c){ c.scale(k, k); fn(c, size); cv.redraw = (...a) => { c.clearRect(0, 0, size, size); fn(c, size, ...a); }; }
   return cv;
 }
 
-export function faceOf(profile, size = 48, { tile = true } = {}){
-  if (MAKING && profile) return pic(size, (c, s) => portrait(c, s / 2, s / 2, tile ? s : s * 1.2, normalizeLook(profile.look), 1.3, { tile }), 'avface');
+/* opts.bare: no cream paper edge, only the black outline. The canvas has redraw(face) to show an expression (see avatar-art.js head), redraw() for the rest face. */
+export function faceOf(profile, size = 48, { tile = true, bare = false } = {}){
+  if (MAKING && profile) return pic(size, (c, s, face = null) => portrait(c, s / 2, s / 2, tile ? s : s * 1.2, normalizeLook(profile.look), 1.3, { tile, bare, face }), 'avface');
   const span = document.createElement('span'); span.className = 'av';
   span.innerHTML = iconHTML(AVATARS[profile && profile.avatar] || AVATARS.cube, 128);
   return span;

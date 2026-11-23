@@ -214,9 +214,9 @@ let depth = 0;
 let cutter = null;
 export function setPaperCut(fn){ cutter = fn; }
 function plain(c, draw){ depth++; try { draw(c); } finally { depth--; } }
-function paper(c, box, S, draw){
+function paper(c, box, S, draw, bare = false){
   const m = depth === 0 && c.getTransform ? c.getTransform() : null;
-  if (!m || typeof m.a !== 'number') return plain(c, draw);
+  if (!m || typeof m.a !== 'number' || bare) return plain(c, draw);
   const sc = Math.hypot(m.a, m.b) || 1, flat = (cc) => plain(cc, draw);
   if (cutter) return cutter(c, box, S, flat, sc);
   /* the plain outline: the figure drawn again and again around itself, each time with an ink shadow that has no blur */
@@ -230,11 +230,20 @@ function paper(c, box, S, draw){
 }
 
 /* ---------- the head ---------- */
-export function head(c, x, y, r, look, t = 0, { back = false } = {}){
-  const a = resolve(look), S = r * 2 / 0.46, { hw, hh } = SIZE(S);
-  c.save(); c.translate(x, y - hh / 2);
-  paper(c, [-hw / 2 - S * 0.03, -S * 0.2, hw + S * 0.06, S * 0.2 + hh + S * 0.03], S, (cc) => drawHead(cc, a, S, back, t));
-  c.restore();
+/* opts.bare: no cream paper edge or shadow around it - just the black outline (the profile head on Home, owner 2026-11-23).
+   opts.face: what is moving in the face right now, over the look's own: { blink, look: [x, y], eyes, mouth, brow } (see cubo-idle.js) */
+export function head(c, x, y, r, look, t = 0, { back = false, bare = false, face = null } = {}){
+  let a = resolve(look); const S = r * 2 / 0.46, { hw, hh } = SIZE(S);
+  if (face){
+    const o = {}; for (const k of ['eyes', 'mouth', 'brow']) if (face[k] !== undefined) o[k] = face[k];
+    a = { ...a, ...o };
+  }
+  const was = live; if (face) live = { blink: !!face.blink, look: face.look || [0, 0], talk: null };
+  try {
+    c.save(); c.translate(x, y - hh / 2);
+    paper(c, [-hw / 2 - S * 0.03, -S * 0.2, hw + S * 0.06, S * 0.2 + hh + S * 0.03], S, (cc) => drawHead(cc, a, S, back, t), bare);
+    c.restore();
+  } finally { live = was; }
 }
 
 /* ---------- the whole character ----------
@@ -460,7 +469,7 @@ export function cuboFigure(c, x, base, h, pose = 'stand', t = 0, face = null, { 
 }
 
 /* ---------- a portrait: for tiles and name chips ---------- */
-export function portrait(c, x, y, s, look, t = 0, { tile = true } = {}){
+export function portrait(c, x, y, s, look, t = 0, { tile = true, bare = false, face = null } = {}){
   const a = resolve(look);
   c.save();
   if (tile){
@@ -468,7 +477,7 @@ export function portrait(c, x, y, s, look, t = 0, { tile = true } = {}){
     c.fillStyle = a.light; c.fill(); c.clip();
   }
   /* just the cube head, floating (owner, 2026-11-23: no shoulders peeking in at the bottom) */
-  head(c, x, y, s * 0.4, look, t);
+  head(c, x, y, s * 0.4, look, t, { bare, face });
   c.restore();
 }
 

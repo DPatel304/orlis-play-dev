@@ -29,6 +29,8 @@ import { testingRow } from './building.js';
 import { logo, icon, propIcon } from './brand.js';
 import { iconEl } from './icons.js';
 import { BLURB, iconOf, HIDDEN, openProfileSheet } from './menu.js';
+import { startIdleFace } from './cubo-idle.js';
+import { reduced } from './chkit.js';
 import { homeRows, makeFor, startFocus, step, heroOf, bigHero, howYouPlay, needsTablet } from './home-model.js';
 import { color } from '../games/assets/palette.js';
 
@@ -93,7 +95,12 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const who = account.current;
   const me = button('', 'hme');
   me.querySelector('.lbl').replaceWith(h('span', 'hface'));
-  me.querySelector('.hface').appendChild(faceOf(who || {}, 160, { tile: false }));   /* a floating head, no tile (owner) */
+  const faceCv = faceOf(who || {}, 160, { tile: false, bare: true });   /* a floating head, no tile and no cream edge, only the black outline (owner) */
+  me.querySelector('.hface').appendChild(faceCv);
+  /* Cubo's head makes a small face now and then while nobody touches anything (it redraws only while one plays) */
+  const idleFace = startIdleFace({ redraw: (f) => faceCv.redraw && faceCv.redraw(f), reduced: reduced() });
+  const DEV_HOOK = typeof window !== 'undefined' && !!(import.meta.env && import.meta.env.DEV);
+  if (DEV_HOOK) window.__cuboFace = (name) => name === 'rest' ? faceCv.redraw() : idleFace.play(name);   /* dev only: force an expression */
   me.setAttribute('aria-label', who ? `${who.name}: profile, settings` : 'Menu');
   let sheet = null;
   const openMe = () => {
@@ -120,7 +127,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       open.querySelector('.lbl').innerHTML = `${icon('play')}<span>Open Discover</span>`; onPick(open, () => { sfx.select(); nav.store(); }); meta.appendChild(open);
     }
     ambience.start();
-    return { focus: 0, tick(){}, draw(){}, leave(){} };
+    return { focus: 0, tick(){}, draw(){}, leave(){ idleFace.stop(); if (DEV_HOOK) delete window.__cuboFace; } };
   }
 
   /* ---------- tiles ---------- */
@@ -187,7 +194,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   function paintHero(t){
     const it = t.item, hero = heroOf(it, { blurb: it.g ? (BLURB[it.g.id] || (it.g.store && it.g.store.blurb) || '') : '', cap: pose.cap });
     blurb.textContent = hero.line;
-    /* the "how you play" row on its own line: players (the people icon and the number), then Move / Tablet / Phones / Sit back (0052) */
+    /* the "how you play" row on its own line: players (the people icon and the number), then Tablet (0052) */
     how.textContent = '';
     for (const x of it.g ? howYouPlay(it.g, { cap: pose.cap }) : []){
       const e = h('span', 'hhow hh-' + x.id); e.appendChild(iconEl(x.icon, 64)); e.append(x.text);
@@ -284,7 +291,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   if (beta) s.appendChild(h('div', 'buildstamp', typeof __BUILD__ === 'string' ? __BUILD__ : 'dev'));
 
   return {
-    leave(){ stopShots(); removeEventListener('keydown', keys, true); },
+    leave(){ stopShots(); idleFace.stop(); if (DEV_HOOK) delete window.__cuboFace; removeEventListener('keydown', keys, true); },
     get focus(){ return items.indexOf(current()); },
     get pos(){ return pos; },
     /* (for the tests and the pictures) */
