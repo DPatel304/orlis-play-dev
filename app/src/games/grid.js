@@ -32,9 +32,9 @@ export function cell(W, H, col, row, cs = 1, rs = 1){
 
 /* where the pieces the shell draws always go: [column, row, columns wide, rows tall] */
 export const SLOTS = {
-  clock: [8, 0, 4, 1],      /* the time, top centre */
-  goal:  [8, 1, 4, 1],      /* the goal bar, the clock's width, under it (a dock: a game with no goal gives the row back) */
-  words: [6, 2, 8, 1],      /* the hint words, under the goal bar (row 1 when there is no goal); drawn at most 6 cells wide, centred */
+  clock: [16, 0, 4, 1],     /* the time, top right (0046): no pill, the numbers end at the right margin (the last cell) */
+  goal:  [8, 0, 4, 1],      /* the goal bar, in row 0 at the centre (a dock: a game with no goal gives the row back) */
+  words: [6, 1, 8, 1],      /* the hint words, under the goal bar (row 0 when there is no goal); drawn at most 6 cells wide, centred; they ease away after the start */
   card:  [1, 7, 3, 3],      /* the move card, bottom left (it slides in from the left edge) */
   badge: [14, 9, 5, 1],     /* the game's one badge, bottom right, lined up with the right-hand end of the slot */
   panel: [1, 0, 6, 4],      /* the game's own corner, top left: scores in the first row, then chips and bars */

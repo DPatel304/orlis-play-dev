@@ -25,7 +25,8 @@ test('the first words of a round arrive big and dock; later words do not', () =>
 
 test('underHud says where a target must not go', () => {
   const W = 1600, H = 900, pt = (name, fx = 0.5, fy = 0.5) => { const r = hudZones(W, H)[name]; return [r.x + r.w * fx, r.y + r.h * fy]; };
-  assert.ok(underHud(W, H, ...pt('top')), 'under the clock and words');
+  assert.ok(underHud(W, H, ...pt('top')), 'under the goal bar and words');
+  assert.ok(underHud(W, H, ...pt('clock')), 'under the clock');
   assert.ok(underHud(W, H, ...pt('score')), 'under the corner');
   assert.ok(underHud(W, H, ...pt('card')), 'under the move card');
   assert.ok(underHud(W, H, ...pt('badge')), 'under the badge');
@@ -45,11 +46,12 @@ test('the grid: square cells that fit, the same pieces in the same cells, at any
     const { C, s } = gridOf(W, H);
     assert.ok(COLS * C <= W - 2 * s + 0.01 && (ROWS) * C <= H - 2 * s + 0.01, `${COLS} x ${ROWS} cells fit at ${W}x${H}`);
     for (const [name, spec] of Object.entries(SLOTS)){ const b = block(W, H, ...spec); assert.ok(b.x >= -0.01 && b.y >= -0.01 && b.x + b.w <= W + 0.01 && b.y + b.h <= H + 0.01, `${name} is on screen at ${W}x${H}`); }
-    const clock = block(W, H, ...SLOTS.clock); assert.ok(Math.abs(clock.x + clock.w / 2 - W / 2) < 1, `the clock is in the middle at ${W}x${H}`);
+    const clock = block(W, H, ...SLOTS.clock); assert.ok(Math.abs(clock.x + clock.w - (W - s)) < 1, `the clock ends at the right margin at ${W}x${H}`);
+    const goal = block(W, H, ...SLOTS.goal); assert.ok(Math.abs(goal.x + goal.w / 2 - W / 2) < 1 && goal.y < clock.y + 1, `the goal bar is in the top row, in the middle at ${W}x${H}`);
     const card = block(W, H, ...SLOTS.card); assert.ok(Math.abs(card.x - (s + C)) < 1, `the card hangs from the left edge at ${W}x${H}`); assert.ok(Math.abs(H - s - card.y - card.h - C) < 1, `the card sits above the bottom row at ${W}x${H}`);
     const first = cell(W, H, 1, 0), last = cell(W, H, 1, 3);
     assert.ok(last.y + last.h < block(W, H, 0, 4).y + 1, `the corner's four rows stay in the top band at ${W}x${H}`);
-    assert.ok(first.x + first.w * 5 < clock.x, `the scores' row leaves the clock alone at ${W}x${H}`);
+    assert.ok(first.x + first.w * 6 < goal.x, `the scores' row leaves the goal bar alone at ${W}x${H}`);
   }
 });
 

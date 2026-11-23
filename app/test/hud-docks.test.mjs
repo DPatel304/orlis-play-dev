@@ -1,9 +1,9 @@
 /* U3: the shared HUD (decision 0034): the docks, their caps, the kit look's pieces, dimming, the tucking move card, and every built-in game asking by dock. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { layoutDocks, drawShellHud, pieceState, hud, CAPS, DOCKS, IDLE_SECS, IDLE_ALPHA, scorePill, hudZones } from '../src/games/hud.js';
+import { layoutDocks, drawShellHud, pieceState, hud, CAPS, DOCKS, IDLE_SECS, IDLE_ALPHA, scorePill, hudZones, sayBubble, clockPill, HINT_SECS } from '../src/games/hud.js';
 import { cardTucker, CARD_HOLD, MOTION } from '../src/games/figure.js';
-import { block } from '../src/games/grid.js';
+import { block, slotBlock, gridOf } from '../src/games/grid.js';
 import { assets } from '../src/games/assets/index.js';
 import { normalizeLook } from '../src/ui/look.js';
 
@@ -51,10 +51,66 @@ test('a game that gives a dock back gets its cells back: only what is asked for 
   assert.ok(z.left && !z.right && !z.bottom && !z.topright, 'the keep-clear zones come only from what is drawn');
 });
 
-test('with no goal the hint words move up into the goal\'s row; with a goal they sit under it', () => {
+test('with no goal the hint words move up into the goal\'s row (row 0); with a goal they sit under it (row 1), and the goal is in row 0 at the centre', () => {
   const y = (spec) => layoutDocks(1920, 1080, spec, {}).find(p => p.kind === 'words').row;
-  assert.equal(y({ words: { text: 'Hi', t: 1 } }), 1);
-  assert.equal(y({ goal: 0.2, words: { text: 'Hi', t: 1 } }), 2);
+  assert.equal(y({ words: { text: 'Hi', t: 1 } }), 0);
+  assert.equal(y({ goal: 0.2, words: { text: 'Hi', t: 1 } }), 1);
+  for (const [W, H] of SIZES){
+    const goal = layoutDocks(W, H, { goal: 0.2, words: { text: 'Hi', t: 1 } }, {}).find(p => p.kind === 'goal').rect, top = block(W, H, 8, 0, 4, 1);
+    assert.ok(goal.y >= top.y - 1 && goal.y + goal.h <= top.y + top.h + 1, `the goal bar is in the top row at ${W}x${H}`);
+    assert.ok(Math.abs(goal.x + goal.w / 2 - W / 2) < 1, `and in the middle at ${W}x${H}`);
+  }
+});
+
+test('the clock is top right, and nothing laid out in the docks overlaps it (or the goal and words column)', () => {
+  const rectOf = (W, H, b) => { const r = block(W, H, ...b); return { x: r.x, y: r.y, w: r.w, h: r.h }; };
+  for (const [W, H] of SIZES){
+    const clock = slotBlock(W, H, 'clock'), { s } = gridOf(W, H);
+    assert.ok(Math.abs(clock.x + clock.w - (W - s)) < 1, `the clock ends at the right margin at ${W}x${H}`);
+    assert.ok(clock.y < H * 0.2, 'in the top row');
+    const spec = { ...BUSY, top: { portrait: 'cubo', pose: 'wave', notice: 'Look!' } };
+    for (const sp of [BUSY, spec, { ...BUSY, top: { badges: BUSY.top.badges } }]){
+      for (const p of layoutDocks(W, H, sp, { players: [0, 1, 2, 3] }).filter(q => q.rect)) assert.ok(!overlap(p.rect, clock), `${p.key} stays off the clock at ${W}x${H}`);
+    }
+    const z = hudZones(W, H, { top: {} });
+    assert.ok(!overlap(z.topright, z.clock) && !overlap(z.top, z.clock), `the keep-clear zones agree at ${W}x${H}`);
+    assert.ok(overlap(rectOf(W, H, [16, 0, 4, 1]), z.clock), 'the clock zone is the clock slot');
+  }
+});
+
+test('the clock has no pill: only the ring and the numbers, with a soft glow, cherry under 10 s', () => {
+  const log = []; const c = new Proxy({}, { get: (_, k) => k === 'measureText' ? () => ({ width: 60 }) : (...a) => { log.push([k, a]); }, set: (_, k, v) => { log.push(['set:' + k, v]); return true; } });
+  clockPill(c, 1920, 1080, 90, 120);
+  assert.ok(!log.some(([k]) => k === 'roundRect'), 'no paper pill behind it');
+  assert.ok(log.some(([k]) => k === 'arc') && log.some(([k]) => k === 'fillText'), 'the ring and the numbers');
+  assert.ok(log.some(([k, v]) => k === 'set:shadowColor' && /^#ffffff/i.test(v)) && log.some(([k, v]) => k === 'set:shadowBlur' && v > 0), 'a soft white glow');
+  assert.ok(log.some(([k, v]) => k === 'set:textAlign' && v === 'right'), 'the numbers are right-aligned to the margin');
+  const ink = log.filter(([k]) => k === 'set:fillStyle').pop()[1]; log.length = 0;
+  clockPill(c, 1920, 1080, 8, 120);
+  assert.notEqual(log.filter(([k]) => k === 'set:fillStyle').pop()[1], ink, 'under 10 s the numbers change colour');
+});
+
+test('hint words with no until of their own ease away a few seconds after the start, and come back (not big) only when the text changes; a game\'s own until is kept', () => {
+  const alphaOf = (text, t, extra = {}) => { const log = []; const c = new Proxy({}, { get: (_, k) => k === 'measureText' ? () => ({ width: 100 }) : (...a) => { log.push([k, a]); }, set: (_, k, v) => { log.push(['set:' + k, v]); return true; } });
+    sayBubble(c, 1920, 1080, { icon: 'balloon', text, t, ...extra }); const a = log.find(([k]) => k === 'set:globalAlpha'), sc = log.find(([k]) => k === 'scale'); return { alpha: a ? a[1] : 0, scale: sc ? sc[1][0] : null }; };
+  const said = []; hud.quiet = false; hud.introText = null; hud.spoken = false; hud.introDone = false; hud.speak = (t) => said.push(t);
+  assert.ok(HINT_SECS > 0 && HINT_SECS <= 6);
+  assert.equal(alphaOf('Pop them!', 1).alpha > 0, true, 'up at the start');
+  assert.ok(alphaOf('Pop them!', 1).scale > 1.5, 'big at first');
+  assert.equal(alphaOf('Pop them!', 2.55 + HINT_SECS - 1).alpha, 1, 'still up shortly before the end of its time');
+  assert.ok(alphaOf('Pop them!', 2.55 + HINT_SECS - 0.25).alpha < 1, 'easing away');
+  assert.equal(alphaOf('Pop them!', 2.55 + HINT_SECS + 0.1).alpha, 0, 'gone a few seconds after it docked');
+  assert.equal(alphaOf('Pop them!', 60).alpha, 0, 'and stays gone');
+  /* it comes back when the text changes: the normal ease-in, never the big arrival, and fades again */
+  const back = alphaOf('Higher!', 0.1); assert.ok(back.alpha > 0 && back.scale <= 1.001, 'a new text is back, small');
+  assert.ok(alphaOf('Higher!', HINT_SECS - 1).alpha === 1 && alphaOf('Higher!', HINT_SECS + 0.1).alpha === 0, 'and goes after HINT_SECS');
+  /* the first words again, later (the game reset the timer): not the big arrival again, and said only once */
+  const again = alphaOf('Pop them!', 0.3); assert.ok(again.alpha > 0 && again.scale <= 1.001, 'the same words returning are not big');
+  assert.deepEqual(said, ['Pop them!'], 'spoken once');
+  /* a game with its own until keeps it */
+  assert.equal(alphaOf('Look!', 5, { until: 9 }).alpha, 1); assert.equal(alphaOf('Look!', 9.1, { until: 9 }).alpha, 0);
+  assert.equal(alphaOf('Look!', 500, { until: Infinity }).alpha, 1, 'Infinity keeps them up');
+  hud.speak = null; hud.introText = null; hud.spoken = false; hud.introDone = false;
 });
 
 test('anchors never dim; dock pieces dim to 70% after 3 s without a change and come back when they change', () => {

@@ -729,9 +729,9 @@ class PopParty {
   /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds, then get out of the way of the balloons) */
   card(){ return this.t < 8 ? 'reach' : null; }
   hud(){
-    /* no winner: the faces-only row (who is playing, and whether the camera sees them), and in the first seconds what to do (then it eases away) */
+    /* no winner: the faces-only row (who is playing, and whether the camera sees them), and in the first seconds what to do (the shell eases them away a few seconds after the start) */
     return { score: this.score, showLives: false, hideScore: true, scoreStyle: 'faces',
-      words: this.out ? null : { icon: 'balloon', text: 'Pop the balloons!', t: this.t, until: 7 } };
+      words: this.out ? null : { icon: 'balloon', text: 'Pop the balloons!', t: this.t } };
   }
   /* No pausing by gesture: reaching up with both hands is how you pop the
      high ones. The game waits by itself when everyone steps out of view,

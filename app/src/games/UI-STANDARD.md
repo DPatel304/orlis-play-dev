@@ -16,7 +16,7 @@ changes and dims what has been still. Code: `grid.js` (the cells and the anchors
 One invisible table over the whole screen: **20 columns by 11 rows of square cells** (`grid.js`). The cells are sized to fit
 the screen, inset **5%** from every edge (TVs can crop the edges). Columns on the left half hang from the left edge, columns on
 the right half from the right edge, and anything that crosses the middle is centred; rows in the top half hang from the top and
-rows in the bottom half from the bottom. So on a very wide screen the HUD stays at the edges and the clock stays in the middle.
+rows in the bottom half from the bottom. So on a very wide screen the HUD stays at the edges and the goal bar and words stay in the middle.
 
 A game gives back any dock it does not use: those cells are its world, and the keep-clear zones (`hudZones(W, H, hud())`) come
 only from what is drawn.
@@ -40,17 +40,17 @@ A game may give an anchor back (no clock) but never move it. Anchors never dim.
 
 | Anchor | Cells (col, row, wide, tall) | What a game does |
 |---|---|---|
-| Clock | 8, 0, 4, 1 | nothing: set the round length (`secs`); `hideClock: true` to give it back. Numbers beside a thin sun-coloured ring that empties. |
-| Hint words | 6, 2, 8, 1 (row 1 when there is no goal); drawn at most 6 cells wide, centred | `words: { icon, text, t, until }`: a painted icon and at most four words, e.g. `{ icon: 'balloon', text: 'Pop the balloons!' }`. The first words of a round arrive big, dock, and are said aloud once; they fade after about 7 s. |
+| Clock | 16, 0, 4, 1 (top right, 0046) | nothing: set the round length (`secs`); `hideClock: true` to give it back. No pill: a thin sun-coloured ring that empties and the numbers (cherry under 10 s), right-aligned to the margin, with a soft white glow. |
+| Hint words | 6, 1, 8, 1 (row 0 when there is no goal); drawn at most 6 cells wide, centred | `words: { icon, text, t, until }`: a painted icon and at most four words, e.g. `{ icon: 'balloon', text: 'Pop the balloons!' }`. The first words of a round arrive big, dock, and are said aloud once; with no `until` of their own they ease away about 4 s after they dock (`HINT_SECS`) and come back (small) only when the text changes. |
 | Move card | 1, 7, 3, 3 | answer `card()` with a move name, or `null`. A paper card with the strongest ink border and the block-limb Cubo. It tucks away by itself: the first time a move is asked it stays 6 s, the same move asked again 3 s, and it comes back only for a different move. |
 
 ## Docks (a game chooses what goes; each has a cap)
 
 | Dock | Cells | Holds | `hud()` key |
 |---|---|---|---|
-| Goal | 8, 1, 4, 1 | one bar with three stars (the clock's width) | `goal: 0..1` |
+| Goal | 8, 0, 4, 1 | one bar with three stars, row 0 at the centre | `goal: 0..1` |
 | Corner | 1, 0, 6, 4 | score pills, two to a row (one row for 1 to 2 players, two rows for 3 to 4), then chips (two to a row) and bars (a row each) in the rows left of the four | `score` (the shell draws the pills), `corner: [...]` |
-| Top right | 13, 0, 6, 3 | up to three badges, or one portrait with a notice (3 x 3 while it talks, 2 x 2 when quiet) | `top: { badges: [...] }` or `top: { portrait, pose, notice }` |
+| Top right | 13, 1, 6, 3 (a row down: the clock is above it) | up to three badges, or one portrait with a notice (3 x 3 while it talks, 2 x 2 when quiet) | `top: { badges: [...] }` or `top: { portrait, pose, notice }` |
 | Left rail, right rail | 0, 4, 1, 3 and 19, 4, 1, 3 | one tall meter each (three cells tall, a gap above the move card) | `left`, `right`: `{ icon, fill, color }` |
 | Bottom rail | 5, 10, 10, 1 | one wide bar, or the players' faces | `bottom: { icon, fill, color }` or `{ faces: true }` |
 | Badge | 14, 9, 5, 1 | one badge, right-aligned, as wide as its contents | `badge: { icon, value, bump }` |
@@ -119,7 +119,7 @@ An old-style hint that starts with an emoji still shows: `assets/legacy-emoji.js
    screen's height; not under 20%).
 7. **Dock caps are the guard against clutter.** The busiest allowed screen is in `docs/hud-grid.html`; do not ask for more than a dock holds.
 8. **Same motion.** Things slide in in about 0.45 s and out in about 0.3 s. Numbers bounce when they go up. Nothing flashes
-   or strobes. Pop-up messages ("Star earned") drop in at the top right (the toast), never over the clock or the hint words.
+   or strobes. Pop-up messages ("Star earned") drop in below the clock, never over it or the hint words.
 9. **Same sounds.** The same cheer, tick and whoosh for the same events everywhere.
 10. **The cover, pause and results show Cubo.** The cover that opens from the tile carries the how-to card and counts 3, 2, 1
     once the camera is ready (Cubo marches while it starts); pause shows him frozen; results show him cheering (`ui/cubo.js`).
