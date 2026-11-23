@@ -1,0 +1,96 @@
+<title>Orlis Tablet Icons</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&display=swap">
+<style>
+/* Layout: each option is a row - the icon big, then as it would sit in the home's row on the dark hero, then on a game tile's badge. */
+:root{
+  --bg:#f4f5f9; --card:#ffffff; --ink:#1d1b2e; --muted:#6b6a82; --line:#e2e4ee; --hero:#1d1b2e; --blue:#3da9ff; --violet:#8b5cf6;
+  --ui:"Outfit",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#14131f; --card:#1f1d2e; --ink:#f1f0f7; --muted:#a9a6bd; --line:#2e2b42; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#14131f; --card:#1f1d2e; --ink:#f1f0f7; --muted:#a9a6bd; --line:#2e2b42; color-scheme:dark; }
+body{ background:var(--bg); color:var(--ink); font:400 16px/1.5 var(--ui); }
+.wrap{ max-width:1100px; margin:0 auto; padding-block:28px 48px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:grid; gap:18px; }
+h1{ margin:0; font-weight:700; font-size:clamp(26px,4vw,34px); }
+.lede{ margin:0; color:var(--muted); max-width:66ch; }
+.opt{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; display:grid; grid-template-columns:150px minmax(0,1fr) 200px; gap:18px; align-items:center; }
+@media (max-width:760px){ .opt{ grid-template-columns:1fr; } }
+.big{ display:grid; gap:6px; justify-items:start; }
+.big .n{ font-weight:700; font-size:18px; display:flex; gap:8px; align-items:center; }
+.big .n i{ font-style:normal; width:26px; height:26px; border-radius:8px; display:grid; place-items:center; background:linear-gradient(135deg,var(--blue),var(--violet)); color:#fff; font-size:14px; }
+.big svg{ width:120px; height:120px; color:var(--ink); }
+.big p{ margin:0; color:var(--muted); font-size:13px; }
+/* the home hero, as on the TV */
+.hero{ background:radial-gradient(120% 140% at 100% 0%, #3b6a4a 0%, #1d1b2e 55%); border-radius:12px; padding:22px 22px 20px; color:#fff; min-width:0; }
+.hero .d{ font-weight:500; font-size:22px; line-height:1.3; max-width:24ch; }
+.hero .row{ margin-top:12px; display:flex; gap:22px; align-items:center; font-size:18px; opacity:.88; flex-wrap:wrap; }
+.hero .row span{ display:inline-flex; align-items:center; gap:8px; }
+.hero .row svg{ width:1.45em; height:1.45em; color:#fff; }
+/* a game tile with the badge */
+.tile{ position:relative; aspect-ratio:16/10; max-width:100%; border-radius:12px; overflow:hidden; background:linear-gradient(160deg,#9fd8ff 0%,#bfe7c6 55%,#5fae5a 100%); box-shadow:0 6px 16px rgba(29,27,46,.25); }
+.tile b{ position:absolute; left:12px; bottom:8px; color:#fff; font-weight:700; font-size:20px; text-shadow:0 2px 6px rgba(0,0,0,.45); }
+.badge{ position:absolute; right:8px; top:8px; width:42px; height:42px; border-radius:50%; background:#fff; display:grid; place-items:center; box-shadow:0 3px 8px rgba(29,27,46,.3); }
+.badge svg{ width:28px; height:28px; color:#1d1b2e; }
+.people{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; display:flex; gap:28px; flex-wrap:wrap; align-items:center; }
+.people figure{ margin:0; display:grid; gap:6px; justify-items:center; }
+.people svg{ width:90px; height:90px; color:var(--ink); }
+.people figcaption{ color:var(--muted); font-size:13px; }
+h2{ margin:10px 0 0; font-size:20px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Tablet icon options</h1>
+    <p class="lede">A tablet held in a controller grip, drawn flat and in one colour like the rest of the menus: no coloured buttons. Each option is shown big, in the home screen's row on the dark hero (the size you'd see from the sofa), and on a tile's corner badge.</p>
+  </header>
+  <div id="opts" style="display:grid; gap:14px;"></div>
+  <h2>People icon, to match</h2>
+  <div class="people" id="people"></div>
+</div>
+
+<!-- the icons: all drawn in currentColor, so they are white on the hero and ink on the badge -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 1 Outline: a line drawing, round ends -->
+    <symbol id="t1" viewBox="0 0 48 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 6 H36 C38 6 39 7 39.5 8.5 L44 22 C45.5 27 41 29.5 38 26.5 L35 23.5 H13 L10 26.5 C7 29.5 2.5 27 4 22 L8.5 8.5 C9 7 10 6 12 6 Z"/>
+      <rect x="15" y="9.5" width="18" height="11" rx="2"/>
+      <circle cx="10" cy="15" r="1.6"/><circle cx="38" cy="15" r="1.6"/></g></symbol>
+    <!-- 2 Solid: one filled shape, the screen cut out -->
+    <symbol id="t2" viewBox="0 0 48 32"><path fill="currentColor" fill-rule="evenodd" d="M12 5 H36 C38.6 5 40 6.4 40.6 8.2 L45.2 22 C47 28 41 31 37.4 27.4 L34.6 24.5 H13.4 L10.6 27.4 C7 31 1 28 2.8 22 L7.4 8.2 C8 6.4 9.4 5 12 5 Z M16 9 H32 A2 2 0 0 1 34 11 V19 A2 2 0 0 1 32 21 H16 A2 2 0 0 1 14 19 V11 A2 2 0 0 1 16 9 Z M9.5 13 a2 2 0 1 0 0.01 0 Z M38.5 13 a2 2 0 1 0 0.01 0 Z"/></symbol>
+    <!-- 3 Two-tone: grips solid, the screen a lighter panel -->
+    <symbol id="t3" viewBox="0 0 48 32"><path fill="currentColor" d="M14 7 L9 7 C7.4 7 6.6 8 6.2 9.4 L2.6 22.4 C1.4 27 6 29.6 9 26.6 L12.6 23 H14 Z M34 7 L39 7 C40.6 7 41.4 8 41.8 9.4 L45.4 22.4 C46.6 27 42 29.6 39 26.6 L35.4 23 H34 Z"/>
+      <rect x="13" y="5" width="22" height="19" rx="3" fill="currentColor" opacity=".45"/><rect x="15.5" y="7.5" width="17" height="14" rx="1.6" fill="currentColor"/></symbol>
+    <!-- 4 Minimal: screen and two pill grips, no controls -->
+    <symbol id="t4" viewBox="0 0 48 32"><g fill="currentColor"><rect x="12" y="6" width="24" height="18" rx="3.5"/><rect x="2.5" y="8" width="11" height="20" rx="5.5" transform="rotate(-12 8 18)"/><rect x="34.5" y="8" width="11" height="20" rx="5.5" transform="rotate(12 40 18)"/></g>
+      <rect x="15" y="9" width="18" height="12" rx="1.8" fill="#fff" opacity=".0"/></symbol>
+    <!-- 5 Chunky: rounder, friendlier, screen cut out, a stick on each grip -->
+    <symbol id="t5" viewBox="0 0 48 32"><path fill="currentColor" fill-rule="evenodd" d="M10 6 H38 C42 6 44 8.5 45 12 L46.4 20 C47.6 26.5 41.6 29.6 37.6 26 L35 23.6 H13 L10.4 26 C6.4 29.6 0.4 26.5 1.6 20 L3 12 C4 8.5 6 6 10 6 Z M17 9.5 H31 A2.5 2.5 0 0 1 33.5 12 V18.5 A2.5 2.5 0 0 1 31 21 H17 A2.5 2.5 0 0 1 14.5 18.5 V12 A2.5 2.5 0 0 1 17 9.5 Z M8.6 12.2 a2.6 2.6 0 1 0 0.01 0 Z M39.4 12.2 a2.6 2.6 0 1 0 0.01 0 Z"/></symbol>
+    <!-- people options -->
+    <symbol id="p1" viewBox="0 0 32 32"><g fill="currentColor"><circle cx="20.5" cy="10" r="4.6" opacity=".55"/><path d="M12.5 27 c0-5.6 3.6-9.4 8-9.4 s8 3.8 8 9.4 z" opacity=".55"/><circle cx="12" cy="11.5" r="5"/><path d="M2.5 28.5 c0-6.2 4.2-10.4 9.5-10.4 s9.5 4.2 9.5 10.4 z"/></g></symbol>
+    <symbol id="p2" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="11.5" r="4.6"/><path d="M3.5 27.5 c0-5.6 3.8-9 8.5-9 s8.5 3.4 8.5 9"/><path d="M19.5 7.4 a4.4 4.4 0 0 1 0 8.4"/><path d="M23 18.8 c3.6 1 5.8 4.2 5.8 8.7"/></g></symbol>
+  </defs>
+</svg>
+
+<script>
+const OPTS = [
+  { id: 't1', name: 'Outline', what: 'A clean line drawing, like the menu icons (home, gear). Light and modern; the thinnest from far away.' },
+  { id: 't2', name: 'Solid', what: 'One filled shape with the screen cut out and a dot for each stick. Reads best from the sofa.' },
+  { id: 't3', name: 'Two-tone', what: 'Solid grips with the screen as a lighter panel, so the tablet and the grip read as two parts.' },
+  { id: 't4', name: 'Minimal', what: 'Just the screen and two rounded grips, no controls at all. The simplest; may read as a generic gadget.' },
+  { id: 't5', name: 'Chunky', what: 'Rounder and friendlier, the screen cut out and a stick on each grip. Closest to the painted game style.' }
+];
+const use = (id) => `<svg viewBox="0 0 48 32" aria-hidden="true"><use href="#${id}"/></svg>`;
+const pp = (id) => `<svg viewBox="0 0 32 32" aria-hidden="true"><use href="#${id}"/></svg>`;
+const opts = document.getElementById('opts');
+OPTS.forEach((o, i) => {
+  const el = document.createElement('section'); el.className = 'opt';
+  el.innerHTML = `<div class="big"><span class="n"><i>${i + 1}</i>${o.name}</span>${use(o.id)}<p>${o.what}</p></div>
+    <div class="hero"><div class="d">One hides with the tablet, the rest hunt with a lantern!</div>
+      <div class="row"><span>${pp('p1')}1–2</span><span>${use(o.id)}Tablet</span></div></div>
+    <div class="tile"><span class="badge">${use(o.id)}</span><b>Peekaboo Garden</b></div>`;
+  opts.appendChild(el);
+});
+document.getElementById('people').innerHTML = [['p1', 'A: solid, the one behind lighter'], ['p2', 'B: outline']]
+  .map(([id, c]) => `<figure>${pp(id)}<figcaption>${c}</figcaption></figure>`).join('');
+</script>
