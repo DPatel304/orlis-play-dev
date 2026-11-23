@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orlis Screens Mockup</title>
+<style>
+/*FONT*/
+/* Orlis screens (U5 and U7): home, home in hand mode, pause, results, loading. Tokens, borders, shadows and type are the UI kit's
+   (docs/ui-kit.html); everything inside a frame is sized in container units, like the real 16:9 screen. The art is the real art,
+   rendered from app/src by tools/screens-mockup.mjs. */
+:root{
+  --paper:#faf6ec; --paper-2:#f3ecdc; --card:#fffdf8; --ink:#2f2b45; --ink-soft:#6b6680; --line:#e6dcc7;
+  --shade:rgba(52,40,96,.18); --edge:#fffdf6;
+  --go:#e85d8a; --go-ink:#fff; --gold:#f5c542; --sky:#bfdff2; --meadow:#8cb07b;
+  --p1:#3da9ff; --p2:#ff8a3d; --p3:#3fcf7f; --p4:#c46bff;
+  --r-s:12px; --r-m:20px; --r-l:28px; --pill:999px;
+  --t-fast:.2s; --t-base:.4s; --t-slow:.65s; --ease:cubic-bezier(.2,.8,.25,1); --ease-pop:cubic-bezier(.2,.9,.3,1.3);
+  --display:"Fredoka",ui-rounded,system-ui,sans-serif; --text:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --paper:#1b1a22; --paper-2:#24222d; --card:#2a2834; --ink:#efedf6; --ink-soft:#aaa5bd; --line:#3a3746; color-scheme:dark; } }
+:root[data-theme="dark"]{ --paper:#1b1a22; --paper-2:#24222d; --card:#2a2834; --ink:#efedf6; --ink-soft:#aaa5bd; --line:#3a3746; color-scheme:dark; }
+*{ box-sizing:border-box; } body{ margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 var(--text); }
+main{ max-width:1180px; margin:0 auto; padding:28px 16px 64px; }
+h1{ font:600 34px/1.1 var(--display); margin:0 0 6px; } h2{ font:600 24px var(--display); margin:44px 0 6px; } .sub{ color:var(--ink-soft); max-width:780px; margin:0 0 8px; }
+.note{ color:var(--ink-soft); font-size:14px; max-width:820px; margin:8px 0 0; }
+.fr{ margin:16px 0 0; } .fr figcaption{ color:var(--ink-soft); font-size:14px; margin:8px 0 0; max-width:820px; } .fr figcaption b{ color:var(--ink); font-family:var(--display); font-weight:600; }
+.rules{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin:16px 0 0; }
+.rules div{ background:var(--card); border:1px solid var(--line); border-radius:var(--r-m); padding:12px 14px; } .rules b{ font:600 16px var(--display); display:block; }
+.q{ background:var(--card); border:1px solid var(--line); border-radius:var(--r-m); padding:12px 16px 12px 36px; max-width:820px; } .q li{ margin:6px 0; } .q b{ font-family:var(--display); font-weight:600; }
+.today{ display:flex; align-items:center; gap:12px; margin:12px 0 0; color:var(--ink-soft); font-size:13px; } .today img{ width:240px; max-width:45%; border-radius:12px; border:5px solid #1d1c22; display:block; }
+.pair{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,420px); gap:16px; align-items:start; } @media (max-width:820px){ .pair{ grid-template-columns:1fr; } }
+
+/* ---- the TV frame (kit) ---- */
+.tv{ position:relative; aspect-ratio:16/9; border-radius:18px; overflow:hidden; border:10px solid #1d1c22; background:#1d1c22; container-type:size; font-family:var(--display); color:#2f2b45; }
+.tv.small{ max-width:520px; }
+.tv .scene{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.dim{ position:absolute; inset:0; background:rgba(47,43,69,.28); }
+.home{ position:absolute; inset:0; background:var(--paper); } .home .grain{ position:absolute; inset:0; opacity:.35; background-image:radial-gradient(rgba(120,100,60,.08) 1px, transparent 1px); background-size:.9cqh .9cqh; }
+.sym{ width:0; height:0; position:absolute; }
+svg.i{ width:1em; height:1em; display:block; flex:none; }
+
+/* ---- HUD piece (kit): paper white, one ink border, one soft shadow ---- */
+.hud{ position:absolute; font-family:var(--display); color:#2f2b45; }
+.piece{ background:#fffdf8; border:.45cqh solid #2f2b45; box-shadow:0 1cqh 0 var(--shade); border-radius:var(--pill); }
+
+/* ---- the top of Home: brand, three big tabs, small things ---- */
+.brand{ position:absolute; left:5cqh; top:3.4cqh; display:flex; align-items:center; gap:1.4cqh; font:700 6.6cqh/1 var(--display); color:#2f2b45; }
+.brand img{ width:12.5cqh; height:12.5cqh; display:block; }
+.tabs{ position:absolute; top:4.6cqh; left:50%; transform:translateX(-50%); display:flex; gap:.8cqh; padding:.8cqh; border-radius:var(--pill); background:#fffdf8; border:.35cqh solid rgba(47,43,69,.14); box-shadow:0 .6cqh 0 var(--shade); font:600 5.6cqh/1.1 var(--display); }
+.tabs span{ padding:1.5cqh 4.4cqh; border-radius:var(--pill); color:#6b6680; white-space:nowrap; } .tabs span.on{ background:#2f2b45; color:#fff; }
+.mini{ position:absolute; right:5cqh; top:5.4cqh; display:flex; gap:2cqh; }
+.mini i, .mini img{ width:9.4cqh; height:9.4cqh; border-radius:50%; background:#fffdf8; border:.35cqh solid rgba(47,43,69,.14); box-shadow:0 .6cqh 0 var(--shade); display:flex; align-items:center; justify-content:center; font-size:5.6cqh; color:#2f2b45; }
+.mini img{ border:.5cqh solid var(--p1); border-radius:30%; background:var(--paper-2); object-fit:cover; padding:0; }
+
+/* ---- buttons (kit): big, rounded; the ring fills while a hand stays ---- */
+.btnrow{ display:flex; gap:3cqh; }
+.btn{ position:relative; white-space:nowrap; display:flex; align-items:center; gap:2cqh; padding:2.6cqh 5cqh; border-radius:var(--pill); font:600 5cqh var(--display); border:.4cqh solid rgba(47,43,69,.14); box-shadow:0 .8cqh 0 var(--shade); }
+.btn.go{ background:var(--go); color:#fff; } .btn.calm{ background:#fffdf8; color:#2f2b45; } .btn svg.i{ width:6cqh; height:6cqh; }
+.dwell{ position:absolute; inset:-1.4cqh; border-radius:var(--pill); border:1cqh solid transparent; background:conic-gradient(var(--c,#fff) var(--k,0%), color-mix(in srgb, var(--c,#fff) 22%, transparent) 0) border-box; -webkit-mask:linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); mask:linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); --k:62%; animation:dwell 1.6s linear infinite; animation-delay:-.8s; }
+@property --k{ syntax:'<percentage>'; inherits:false; initial-value:0%; }
+@keyframes dwell{ from{ --k:0% } 80%{ --k:100% } to{ --k:100% } }
+
+/* ---- the tile row (kit tiles: painted art, the paper edge, Fredoka title) ---- */
+.row{ position:absolute; left:7cqh; right:7cqh; top:28cqh; height:44cqh; display:flex; gap:3cqh; }
+.row.hand{ left:19cqh; right:19cqh; top:34cqh; height:40cqh; }
+.tile{ position:relative; flex:1; min-width:0; border-radius:var(--r-m); box-shadow:0 1cqh 0 var(--shade); background:#bfdff2; transition:transform var(--t-fast) var(--ease-pop); }
+.tile .art{ position:absolute; inset:0; border-radius:var(--r-m); overflow:hidden; border:.8cqh solid var(--edge); background:#bfdff2; }
+.tile .art img{ width:100%; height:100%; object-fit:cover; display:block; }
+.tile b{ position:absolute; left:2cqh; right:2cqh; bottom:1.4cqh; font:700 4.8cqh/.98 var(--display); color:#fff; -webkit-text-stroke:.9cqh #2f2b45; paint-order:stroke fill; letter-spacing:.02em; }
+.tile.on{ transform:scale(1.06); outline:1cqh solid #fff; box-shadow:0 0 0 1.6cqh var(--p1), 0 1.4cqh 0 var(--shade); z-index:2; }
+.tile.lit{ transform:translateY(-2.6cqh) scale(1.05); outline:1cqh solid #fff; box-shadow:0 0 0 1.5cqh var(--c), 0 3cqh 0 var(--shade); z-index:2; }
+.blurb{ position:absolute; left:0; right:0; top:79cqh; text-align:center; font:500 4cqh var(--display); color:#6b6680; }
+.dots{ position:absolute; left:0; right:0; bottom:5.5cqh; display:flex; justify-content:center; gap:1.6cqh; } .dots i{ width:2.2cqh; height:2.2cqh; border-radius:50%; background:#d9cfb8; } .dots i.on{ background:#2f2b45; }
+
+/* ---- hand mode: the cursor in the child's colour, the ring that fills, "wave to play" ---- */
+.cur{ position:absolute; z-index:6; left:72%; top:30%; width:14cqh; height:14cqh; margin:-7cqh 0 0 -7cqh; pointer-events:none; }
+.cur .rg{ position:absolute; inset:0; border-radius:50%; border:1.3cqh solid transparent; background:conic-gradient(var(--c) var(--k), color-mix(in srgb, var(--c) 24%, transparent) 0) border-box; -webkit-mask:linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); mask:linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); --k:62%; animation:dwell 1.6s linear infinite; animation-delay:-.8s; }
+.cur .dot{ position:absolute; left:50%; top:50%; width:7cqh; height:7cqh; margin:-3.5cqh 0 0 -3.5cqh; border-radius:50%; background:radial-gradient(circle,#fff 0 34%,var(--c) 36% 64%,color-mix(in srgb, var(--c) 25%, transparent) 66%); box-shadow:0 0 3cqh color-mix(in srgb, var(--c) 60%, transparent); }
+.say{ left:50%; top:-11cqh; transform:translateX(-50%); display:flex; align-items:center; gap:1.4cqh; padding:.8cqh 3.2cqh .8cqh .8cqh; font-weight:600; font-size:4.2cqh; white-space:nowrap; animation:pop var(--t-base) var(--ease-pop) both; }
+.say img{ width:6.6cqh; height:6.6cqh; border-radius:30%; background:var(--paper-2); border:.5cqh solid var(--c); display:block; }
+@keyframes pop{ from{ transform:translateX(-50%) scale(.85); opacity:0; } to{ transform:translateX(-50%) scale(1); opacity:1; } }
+.homebtn{ position:absolute; left:4.5cqh; top:4cqh; padding:1.9cqh 4.4cqh 1.9cqh 3.4cqh; gap:1.6cqh; font-size:5.2cqh; }
+.homebtn.here{ color:#6b6680; box-shadow:0 .4cqh 0 var(--shade); background:var(--paper-2); }
+.cubobtn{ z-index:5; position:absolute; right:4.5cqh; top:2.6cqh; width:15cqh; height:15cqh; border-radius:50%; background:#fffdf8; border:.4cqh solid rgba(47,43,69,.14); box-shadow:0 .8cqh 0 var(--shade); display:flex; align-items:center; justify-content:center; }
+.cubobtn img{ width:12cqh; height:12cqh; display:block; }
+.cubobtn.lit{ transform:scale(1.08); box-shadow:0 0 0 1.4cqh var(--c), 0 1.6cqh 0 var(--shade); }
+.pg{ position:absolute; top:43cqh; width:11cqh; height:22cqh; border-radius:var(--r-l); background:#fffdf8; border:.4cqh solid rgba(47,43,69,.14); box-shadow:0 .8cqh 0 var(--shade); display:flex; align-items:center; justify-content:center; font-size:8cqh; color:#2f2b45; }
+.pg.l{ left:4cqh; } .pg.r{ right:4cqh; } .pg.off{ opacity:.35; box-shadow:0 .3cqh 0 var(--shade); }
+.pg.lit{ transform:scale(1.1); box-shadow:0 0 0 1.5cqh var(--c), 0 2cqh 0 var(--shade); }
+.pgsay{ left:auto; right:4cqh; top:73cqh; transform:none; animation:none; font-size:3.8cqh; padding:1cqh 3cqh; }
+.sheet{ position:absolute; right:4.5cqh; top:19.5cqh; width:62cqh; padding:3cqh 3.6cqh 3.4cqh; background:#fffdf8; border-radius:var(--r-l); border:.5cqh solid var(--edge); box-shadow:0 1.2cqh 0 var(--shade), 0 0 0 .3cqh rgba(47,43,69,.12); z-index:4; }
+.sheet .k{ font-size:2.8cqh; letter-spacing:.12em; text-transform:uppercase; color:#8a8499; font-weight:600; margin-bottom:1.2cqh; }
+.sheet .it{ display:flex; align-items:center; gap:2cqh; padding:1.3cqh 2cqh; border-radius:var(--r-m); background:var(--paper-2); font:600 3.8cqh var(--display); margin-top:1.1cqh; } .sheet .it svg.i{ width:4.6cqh; height:4.6cqh; }
+.sheet .it img{ width:5.4cqh; height:5.4cqh; border-radius:30%; border:.4cqh solid var(--p1); background:#fff; }
+.sheet p{ margin:1.8cqh 0 0; font:500 2.8cqh var(--display); color:#6b6680; }
+
+/* ---- panels: pause and results (kit) ---- */
+.panel{ position:absolute; padding:4cqh 5cqh 5cqh; background:#fffdf8; border-radius:var(--r-l); border:.5cqh solid var(--edge); box-shadow:0 1.2cqh 0 var(--shade), 0 0 0 .3cqh rgba(47,43,69,.12); color:#2f2b45; font-family:var(--display); }
+.panel .k{ font-size:2.8cqh; letter-spacing:.12em; text-transform:uppercase; color:#8a8499; font-weight:600; } .panel h3{ margin:.4cqh 0 .6cqh; font-size:9cqh; line-height:1; font-weight:600; } .panel p{ margin:0 0 2.6cqh; font-size:3.6cqh; color:#6b6680; }
+.who{ display:flex; gap:2cqh; margin:0 0 3.4cqh; flex-wrap:nowrap; } .who div{ display:flex; align-items:center; gap:1cqh; padding:.6cqh 2.2cqh .6cqh .6cqh; border-radius:var(--pill); background:var(--paper-2); font-size:3.8cqh; font-weight:600; white-space:nowrap; }
+.who img{ width:6.8cqh; height:6.8cqh; border-radius:30%; background:#fff; border:.4cqh solid var(--c); display:block; }
+.kq{ font-size:2.8cqh; letter-spacing:.12em; text-transform:uppercase; color:#8a8499; font-weight:600; margin:0 0 1.2cqh; }
+.pause{ left:7cqh; top:50%; transform:translateY(-50%); width:102cqh; }
+.stand{ position:absolute; display:block; }
+.card{ left:5cqh; top:50%; transform:translateY(-50%); width:79cqh; padding:4cqh 5cqh 5.4cqh; }
+.card h3{ font-size:7.4cqh; margin:.6cqh 0 0; } .card .btn{ font-size:4.4cqh; padding:2.2cqh 4.2cqh; } .card .btn svg.i{ width:5cqh; height:5cqh; }
+.big{ display:flex; align-items:center; gap:2.4cqh; margin:1.6cqh 0 3.6cqh; } .big b{ font:700 19cqh/.9 var(--display); color:#2f2b45; } .big img.ic{ width:17cqh; height:17cqh; display:block; margin-right:.4cqh; } .big span{ font-size:4.8cqh; line-height:1.1; color:#6b6680; font-weight:500; }
+.best{ display:inline-flex; align-items:center; gap:1cqh; margin-left:1.6cqh; padding:.5cqh 2cqh .5cqh .8cqh; border-radius:var(--pill); border:.45cqh solid #2f2b45; background:#fffdf8; font:600 3.2cqh var(--display); letter-spacing:0; text-transform:none; color:#2f2b45; vertical-align:middle; } .best img{ width:4.4cqh; height:4.4cqh; display:block; }
+.crew{ position:absolute; top:0; bottom:0; display:flex; justify-content:space-around; }
+.col{ position:relative; height:100%; }
+.col .kd{ position:absolute; left:50%; transform:translateX(-50%); bottom:9cqh; display:block; }
+.col .bq{ position:absolute; left:50%; transform:translateX(-50%); display:block; }
+.col .chip{ position:absolute; left:50%; transform:translateX(-50%); bottom:2cqh; display:flex; align-items:center; gap:1cqh; padding:.5cqh 2.6cqh .5cqh .5cqh; font-weight:600; font-size:4.2cqh; white-space:nowrap; border-radius:var(--pill); background:#fffdf8; border:.45cqh solid #2f2b45; box-shadow:0 .8cqh 0 var(--shade); }
+.col .chip img{ width:7cqh; height:7cqh; border-radius:30%; background:var(--paper-2); border:.5cqh solid var(--c); display:block; } .col .chip b{ font-weight:700; }
+
+/* ---- loading: the twirling painted head and the name card ---- */
+.load{ position:absolute; inset:0; background:var(--paper); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:3cqh; }
+.load img.hd{ width:34cqh; height:34cqh; display:block; animation:twirl 1.6s var(--ease) infinite; animation-delay:-1.1s; }
+@keyframes twirl{ 0%{ transform:rotateY(0) translateY(0); } 35%{ transform:rotateY(360deg) translateY(-2cqh); } 50%,100%{ transform:rotateY(360deg) translateY(0); } }
+.load .nm{ position:relative; display:flex; align-items:center; gap:3cqh; padding:2cqh 4cqh 2cqh 2cqh; background:#fffdf8; border-radius:var(--r-l); border:.5cqh solid var(--edge); box-shadow:0 1.2cqh 0 var(--shade), 0 0 0 .3cqh rgba(47,43,69,.12); }
+.load .nm .art{ flex:none; width:26cqh; aspect-ratio:16/10; border-radius:var(--r-m); overflow:hidden; border:.8cqh solid var(--edge); box-shadow:0 .8cqh 0 var(--shade); } .load .nm .art img{ width:100%; height:100%; object-fit:cover; display:block; }
+.load .nm b{ display:block; font:700 8.4cqh/1 var(--display); } .load .nm span{ font:500 4.2cqh var(--display); color:#6b6680; }
+
+/* ---- the reach box inset ---- */
+.reach{ background:var(--card); border:1px solid var(--line); border-radius:var(--r-m); padding:14px; container-type:inline-size; }
+.reach .row2{ display:grid; grid-template-columns:minmax(0,1fr) 14cqw minmax(0,1.25fr); align-items:center; gap:2cqw; }
+.reach .cam{ position:relative; aspect-ratio:560/600; border-radius:14px; background:var(--sky); overflow:hidden; border:3px solid var(--edge); box-shadow:0 4px 0 var(--shade), 0 0 0 1px rgba(47,43,69,.1); }
+.reach .cam img{ position:absolute; left:-10%; bottom:-4%; width:120%; display:block; }
+.reach .box{ position:absolute; left:4%; right:4%; top:30%; height:46%; border:3px dashed var(--p1); border-radius:14px; background:rgba(255,255,255,.28); }
+.reach .box i{ position:absolute; left:80%; top:22%; width:11%; aspect-ratio:1; margin:-5.5% 0 0 -5.5%; border-radius:50%; background:radial-gradient(circle,#fff 0 34%,var(--p1) 36% 64%,rgba(61,169,255,.25) 66%); box-shadow:0 0 12px rgba(61,169,255,.6); }
+.reach .tvm{ position:relative; aspect-ratio:16/9; border-radius:10px; border:5px solid #1d1c22; background:var(--paper); overflow:hidden; }
+.reach .tvm .r{ position:absolute; left:6%; right:6%; top:34%; height:40%; display:flex; gap:4%; } .reach .tvm .r u{ flex:1; border-radius:4px; background:#bfdff2; border:2px solid var(--edge); box-shadow:0 2px 0 var(--shade); text-decoration:none; } .reach .tvm .r u.on{ outline:2px solid var(--p1); transform:translateY(-3px); }
+.reach .tvm .t{ position:absolute; left:30%; right:30%; top:8%; height:12%; border-radius:99px; background:#fffdf8; border:1.5px solid rgba(47,43,69,.2); }
+.reach .tvm i{ position:absolute; left:80%; top:34%; width:9%; aspect-ratio:1; margin:-4.5% 0 0 -4.5%; border-radius:50%; background:radial-gradient(circle,#fff 0 34%,var(--p1) 36% 64%,rgba(61,169,255,.25) 66%); box-shadow:0 0 10px rgba(61,169,255,.6); }
+.reach svg.arr{ width:100%; height:auto; color:var(--ink-soft); display:block; }
+.reach .lab{ display:flex; justify-content:space-between; gap:8px; margin:8px 0 0; font:600 13px var(--display); color:var(--ink-soft); } .reach p{ margin:10px 0 0; font-size:14px; color:var(--ink-soft); }
+@media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
+</style>
+</head>
+<body>
+<svg class="sym" aria-hidden="true"><defs>
+  <symbol id="i-house" viewBox="0 0 24 24"><path d="M3.4 11.6 12 4l8.6 7.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10.4V19a1 1 0 0 0 1 1h3.4v-5h3.2v5H17a1 1 0 0 0 1-1v-8.6" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7.2 4.6v14.8L19 12z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></symbol>
+  <symbol id="i-again" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.1-5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><path d="M19.6 3.6v4.8h-4.8" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15.5 4 7.5 12l8 8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M8.5 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5.6" fill="none" stroke="currentColor" stroke-width="2.6"/><g stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M5.4 18.6l1.5-1.5M17.1 6.9l1.5-1.5"/></g></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="12" r="4.4" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M12.4 12H21M18 12v3.4M21 12v2.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+</defs></svg>
+<main>
+<h1>Orlis screens: home, pause, results</h1>
+<p class="sub">The mockups for U5 (home, pause and results on the kit, plus the celebration card) and U7 (hand mode on the home screen). Every frame is 16:9 and follows the UI kit (<code>docs/ui-kit.html</code>): its tokens, borders, shadows and Fredoka. The characters, kids, covers, balloons and the sky are the real art, drawn from the app's own code. Nothing here is built yet.</p>
+<div class="rules">
+  <div><b>One brand mark</b>The painted Cubo head. No glossy 3D cube anywhere.</div>
+  <div><b>Big and few</b>Five tiles, three tabs. In hand mode the small things hide behind one Cubo button.</div>
+  <div><b>A colour is a child</b>The cursor, the ring and the face chip are in the colour of whoever is pointing.</div>
+  <div><b>Nobody wins</b>Results show everyone's bunch and count, in seat order, never a ranking.</div>
+</div>
+
+<h2>1. Home (Big Picture)</h2>
+<p class="note">Replaces the grey banner-and-rows home. One row of big painted tiles, three big tabs, warm paper. The profile and settings are small, for the mouse and remote.</p>
+<figure class="fr"><div class="tv"><div class="home"><div class="grain"></div>
+  <div class="brand"><img src="{{art:head-cubo}}" alt="">Orlis</div>
+  <div class="tabs"><span class="on">Play</span><span>Discover</span><span>Create</span></div>
+  <div class="mini"><img src="{{art:face-mia}}" alt=""><i><svg class="i"><use href="#i-gear"/></svg></i></div>
+  {{tiles:plain:0}}
+  <div class="blurb">Reach up and pop the balloons</div>
+  <div class="dots"><i class="on"></i><i></i></div>
+</div></div>
+<figcaption><b>Mouse or remote on a tile.</b> The tile grows and gets the kit's focus ring. The words sit on the painted cover with the kit's outlined Fredoka, so they are always readable (no text on a fade).</figcaption></figure>
+<div class="today"><img src="{{file:home.jpg}}" alt="Home today"><span>Today: a glossy 3D cube, system type, a dark banner and a grey page.</span></div>
+
+<h2>2. Home in hand mode</h2>
+<p class="note">The camera is on at home. A child points, a wave chooses. Holding still never starts anything. Whoever raises a hand first drives, in their colour.</p>
+<figure class="fr"><div class="tv"><div class="home"><div class="grain"></div>
+  <div class="btn calm homebtn here"><svg class="i"><use href="#i-house"/></svg>Home</div>
+  <div class="tabs"><span class="on">Play</span><span>Discover</span><span>Create</span></div>
+  <div class="cubobtn"><img src="{{art:head-cubo}}" alt=""></div>
+  <div class="pg l off"><svg class="i"><use href="#i-left"/></svg></div><div class="pg r"><svg class="i"><use href="#i-right"/></svg></div>
+  {{tiles:hand:2:p1:mia}}
+  <div class="dots"><i class="on"></i><i></i></div>
+</div></div>
+<figcaption><b>Pointing.</b> Mia's cursor is blue, the tile she is on lifts and gets a blue ring, and "Wave to play" shows her face. The ring around the cursor fills while she waves; when it closes, the game starts.</figcaption></figure>
+
+<figure class="fr"><div class="tv"><div class="home"><div class="grain"></div>
+  <div class="btn calm homebtn here"><svg class="i"><use href="#i-house"/></svg>Home</div>
+  <div class="tabs"><span class="on">Play</span><span>Discover</span><span>Create</span></div>
+  <div class="cubobtn"><img src="{{art:head-cubo}}" alt=""></div>
+  <div class="pg l off"><svg class="i"><use href="#i-left"/></svg></div><div class="pg r lit" style="--c:var(--p2)"><svg class="i"><use href="#i-right"/></svg><div class="cur" style="left:50%;top:84%;--c:var(--p2)"><i class="rg"></i><i class="dot"></i></div></div>
+  <div class="hud piece say pgsay"><span>Keep pointing: more games</span></div>
+  {{tiles:hand:-1}}
+  <div class="dots"><i class="on"></i><i></i></div>
+</div></div>
+<figcaption><b>Paging.</b> Big paper arrows sit at the row's ends, outside the tiles. Leo points at one and the row pages every second while he stays. No swipes. The left arrow fades on the first page.</figcaption></figure>
+<figure class="fr" style="max-width:600px"><div class="reach"><div class="row2">
+  <div class="cam"><img src="{{art:mia-stand}}" alt=""><div class="box"><i></i></div></div>
+  <svg class="arr" viewBox="0 0 60 30" aria-hidden="true"><path d="M4 15h46M40 6l10 9-10 9" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="tvm"><div class="t"></div><div class="r"><u></u><u></u><u></u><u class="on"></u><u></u></div><i></i></div>
+</div>
+<div class="lab"><span>The camera sees you</span><span>Your box is the whole screen</span></div>
+<p><b style="font-family:var(--display);font-weight:600;color:var(--ink)">The reach box.</b> A box in front of your own shoulders (about chin to belly, a little wider than your arms) maps to the whole screen, so a child points at every tile without stretching or walking.</p></div></figure>
+
+<figure class="fr"><div class="tv"><div class="home"><div class="grain"></div>
+  <div class="btn calm homebtn"><svg class="i"><use href="#i-house"/></svg>Home</div>
+  <div class="tabs"><span class="on">Play</span><span>Discover</span><span>Create</span></div>
+  <div class="cubobtn lit" style="--c:var(--p3)"><img src="{{art:head-cubo}}" alt=""></div>
+  <div class="pg l off"><svg class="i"><use href="#i-left"/></svg></div><div class="pg r"><svg class="i"><use href="#i-right"/></svg></div>
+  {{tiles:hand:-1}}
+  <div class="dim"></div>
+  <div class="sheet"><div class="k">Grown-up things</div>
+    <div class="it"><img src="{{art:face-mia}}" alt="">Profile</div><div class="it"><svg class="i"><use href="#i-gear"/></svg>Settings</div><div class="it"><svg class="i"><use href="#i-key"/></svg>Sign in</div>
+    <p>Small on purpose: for the mouse or remote. Wave anywhere to close.</p></div>
+  <div class="cur" style="left:91.5%;top:15.5%;--c:var(--p3)"><i class="rg"></i><i class="dot"></i></div>
+</div></div>
+<figcaption><b>Two big buttons, everything else behind one.</b> Home is always top left. The single Cubo button at top right holds the small stuff (profile, settings, sign-in); a child waving at it opens this sheet, and it stays small because it is for grown-ups. On the home screen itself the Home button is softened ("you are here").</figcaption></figure>
+
+<h2>3. Pause</h2>
+<p class="note">Kit paper panel, Fredoka, the painted block-limb Cubo holding still, and the same two big buttons with the hand-hover ring. When there are profiles, "Who's who?" shows each player's face in their colour.</p>
+<figure class="fr"><div class="tv"><img class="scene" src="{{art:sky-play}}" alt=""><div class="dim"></div>
+  <div class="panel pause"><div class="k">Paused</div><h3>Pop Party</h3><p>1:43 left</p>
+    <div class="kq">Who's who?</div>
+    <div class="who"><div style="--c:var(--p1)"><img src="{{art:face-mia}}" alt="">Mia</div><div style="--c:var(--p2)"><img src="{{art:face-leo}}" alt="">Leo</div><div style="--c:var(--p3)"><img src="{{art:face-ava}}" alt="">Ava</div></div>
+    <div class="btnrow"><div class="btn go" style="--c:var(--p1)"><svg class="i"><use href="#i-play"/></svg>Keep playing<div class="dwell"></div></div><div class="btn calm"><svg class="i"><use href="#i-house"/></svg>Home</div></div>
+  </div>
+  <img class="stand" src="{{art:cubo-freeze}}" alt="" style="right:12cqh;bottom:3cqh;height:66cqh">
+  <div class="cur" style="left:31.5%;top:72.5%;--c:var(--p1)"><i class="rg" style="display:none"></i><i class="dot"></i></div>
+</div>
+<figcaption><b>Keep playing</b> is the big rose button; a white ring fills while a hand stays over it. <b>Home</b> is calm paper. Cubo freezes with his arms a little out, as in the game.</figcaption></figure>
+<div class="today"><img src="{{file:pause.jpg}}" alt="Pause today"><span>Today: blurred game, plain white text, system icons, a corner Cubo.</span></div>
+
+<h2>4. Results: the celebration card</h2>
+<p class="note">The game's count, big, with its own painted icon; everyone's avatar and count; each player's bouquet (the balloons they popped, as Pop Party's ending gathers them); then the buttons. The card stays on the sky behind it.</p>
+<figure class="fr"><div class="tv"><img class="scene" src="{{art:sky-end}}" alt="">
+  <div class="panel card"><div class="k">Well played!<span class="best"><img src="{{art:icon-star}}" alt="">New best!</span></div>
+    <div class="big"><img class="ic" src="{{art:icon-balloon}}" alt=""><b>21</b><span>balloons<br>popped</span></div>
+    <div class="btnrow"><div class="btn go" style="--c:var(--p1)"><svg class="i"><use href="#i-again"/></svg>Play again<div class="dwell"></div></div><div class="btn calm"><svg class="i"><use href="#i-house"/></svg>Home</div></div></div>
+  <div class="crew" style="left:90cqh;right:4cqh"><div class="col" style="width:60cqh">
+    <img class="bq" src="{{art:bouquet-21}}" alt="" style="width:34cqh;bottom:50cqh"><img class="kd" src="{{art:mia-jump}}" alt="" style="height:60cqh">
+    <div class="chip" style="--c:var(--p1)"><img src="{{art:face-mia}}" alt="">Mia <b>21</b></div></div></div>
+  <div class="cur" style="left:25.5%;top:67%;--c:var(--p1)"><i class="rg" style="display:none"></i><i class="dot"></i></div>
+</div>
+<figcaption><b>One player.</b> "21 balloons popped" (the unit reads "1 balloon" at one). A new best gets a gold star chip. The bouquet floats above Mia's raised hands.</figcaption></figure>
+
+<figure class="fr"><div class="tv"><img class="scene" src="{{art:sky-end}}" alt="">
+  <div class="panel card"><div class="k">Well played!</div>
+    <div class="big"><img class="ic" src="{{art:icon-balloon}}" alt=""><b>38</b><span>balloons<br>popped</span></div>
+    <div class="btnrow"><div class="btn go"><svg class="i"><use href="#i-again"/></svg>Play again</div><div class="btn calm" style="--c:var(--p2)"><svg class="i"><use href="#i-house"/></svg>Home<div class="dwell"></div></div></div></div>
+  <div class="crew" style="left:88cqh;right:3cqh">
+    <div class="col" style="width:29cqh"><img class="bq" src="{{art:bouquet-12}}" alt="" style="width:25cqh;bottom:41cqh"><img class="kd" src="{{art:mia-jump}}" alt="" style="height:44cqh"><div class="chip" style="--c:var(--p1)"><img src="{{art:face-mia}}" alt="">Mia <b>12</b></div></div>
+    <div class="col" style="width:29cqh"><img class="bq" src="{{art:bouquet-9}}" alt="" style="width:23cqh;bottom:41cqh"><img class="kd" src="{{art:leo-dance}}" alt="" style="height:44cqh"><div class="chip" style="--c:var(--p2)"><img src="{{art:face-leo}}" alt="">Leo <b>9</b></div></div>
+    <div class="col" style="width:29cqh"><img class="bq" src="{{art:bouquet-17}}" alt="" style="width:28cqh;bottom:41cqh"><img class="kd" src="{{art:ava-wave}}" alt="" style="height:44cqh"><div class="chip" style="--c:var(--p3)"><img src="{{art:face-ava}}" alt="">Ava <b>17</b></div></div>
+  </div>
+  <div class="cur" style="left:41%;top:66%;--c:var(--p2)"><i class="rg" style="display:none"></i><i class="dot"></i></div>
+</div>
+<figcaption><b>Three players.</b> The big number is everyone's together (12 + 9 + 17). Each child gets their own bunch, face and count, in seat order. Leo's cursor is on Home.</figcaption></figure>
+
+<h2>5. Loading</h2>
+<p class="note">The one wait pattern everywhere: the twirling painted Cubo head and the game's name card, while the game starts underneath. It replaces plain "Planting the garden..." text, spinners and countdowns.</p>
+<figure class="fr"><div class="tv small"><div class="load"><img class="hd" src="{{art:head-cubo-joy}}" alt="">
+  <div class="nm"><div class="art"><img src="{{art:cover-pop-party}}" alt=""></div><div><b>Pop Party</b><span>Reach up and pop the balloons</span></div></div></div></div>
+<figcaption>The head twirls (a spin and a small hop) and rests with a grin, then the game takes over.</figcaption></figure>
+
+<h2>Open questions</h2>
+<ol class="q">
+  <li><b>Tile titles.</b> Outlined Fredoka painted on the cover (as the kit has it, and as shown), or a paper label under each picture? The painted title is bolder at TV distance; the label is calmer and never covers the art.</li>
+  <li><b>Home button on Home.</b> It is shown softened ("you are here") so the screen's corners never change in hand mode. Hide it on Home instead?</li>
+  <li><b>New painted icons.</b> The library has no painted house, play, again, gear, key or arrow icons (the old house was an emoji). Here they are simple paper-cut shapes; do we paint them into the asset library (U5 would add six)?</li>
+  <li><b>Results total.</b> With several players the big number is everyone's together; each child's own count sits under their bunch. Keep both, or only the per-child counts?</li>
+</ol>
+</main>
+</body>
+</html>
