@@ -497,7 +497,7 @@ def('player', 'Player', 'person people', (c, s) => {
   part(c, s, SNOW, circ(c, 0, -s * 0.22, s * 0.2));
 });
 
-/* ---------- how you play (decision 0052): people, move, tablet in a grip, phone, sofa ---------- */
+/* ---------- how you play (decision 0052): people and tablet in a grip ---------- */
 const bust = (c, s, x, y, k, col) => {
   part(c, s, col, () => { c.beginPath(); c.moveTo(x - s * 0.3 * k, y + s * 0.36 * k); c.quadraticCurveTo(x - s * 0.3 * k, y + s * 0.02 * k, x, y + s * 0.02 * k); c.quadraticCurveTo(x + s * 0.3 * k, y + s * 0.02 * k, x + s * 0.3 * k, y + s * 0.36 * k); c.closePath(); });
   part(c, s, col, circ(c, x, y - s * 0.19 * k, s * 0.17 * k));
@@ -505,20 +505,6 @@ const bust = (c, s, x, y, k, col) => {
 def('people', 'People', 'person players', (c, s) => {
   bust(c, s, s * 0.2, -s * 0.06, 0.9, pal('shade.light'));
   bust(c, s, -s * 0.12, s * 0.06, 1.05, SNOW);
-});
-def('move', 'Move', 'body camera jump', (c, s) => {
-  const limb = (x1, y1, x2, y2, w = 0.11) => { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = s * (w + 0.07); c.stroke(); c.strokeStyle = SNOW; c.lineWidth = s * w; c.stroke(); };
-  limb(0, 0, -s * 0.3, -s * 0.3); limb(0, 0, s * 0.3, -s * 0.3);                                  /* arms up */
-  limb(-s * 0.02, s * 0.1, -s * 0.24, s * 0.22); limb(-s * 0.24, s * 0.22, -s * 0.16, s * 0.4);   /* legs bent mid-jump */
-  limb(s * 0.02, s * 0.1, s * 0.26, s * 0.2); limb(s * 0.26, s * 0.2, s * 0.3, s * 0.4);
-  part(c, s, SNOW, rrect(c, -s * 0.11, -s * 0.12, s * 0.22, s * 0.3, s * 0.1));
-  part(c, s, SNOW, circ(c, 0, -s * 0.26, s * 0.13));
-});
-def('phone', 'Phone', 'thing controller', (c, s) => {
-  part(c, s, pal('fur.charcoal'), rrect(c, -s * 0.2, -s * 0.42, s * 0.4, s * 0.84, s * 0.08));
-  const g = c.createLinearGradient(0, -s * 0.36, 0, s * 0.32); g.addColorStop(0, pal('touch.skyBlue', 'light')); g.addColorStop(1, pal('touch.grape', 'light'));
-  rrect(c, -s * 0.16, -s * 0.36, s * 0.32, s * 0.68, s * 0.04)(); c.fillStyle = g; c.fill();
-  dot(c, 0, s * 0.37, s * 0.03, SNOW);
 });
 def('tabletgrip', 'Tablet in a grip', 'thing controller tablet', (c, s) => {
   const dark = pal('fur.charcoal'), mid = pal('shade.mid');
@@ -533,11 +519,4 @@ def('tabletgrip', 'Tablet in a grip', 'thing controller tablet', (c, s) => {
   part(c, s, dark, rrect(c, -s * 0.27, -s * 0.3, s * 0.54, s * 0.6, s * 0.05), { shade: false });
   rrect(c, -s * 0.23, -s * 0.26, s * 0.46, s * 0.52, s * 0.025)(); c.fillStyle = g; c.fill();
   c.beginPath(); c.ellipse(-s * 0.08, -s * 0.12, s * 0.16, s * 0.05, -0.5, 0, 7); wash(c, SNOW, 0.45);
-});
-def('sofa', 'Sofa', 'thing sit back', (c, s) => {
-  const col = pal('touch.grape');
-  part(c, s, col, rrect(c, -s * 0.34, -s * 0.3, s * 0.68, s * 0.4, s * 0.12));
-  part(c, s, pal('touch.grape', 'light'), rrect(c, -s * 0.28, -s * 0.02, s * 0.56, s * 0.22, s * 0.06));
-  for (const sx of [-1, 1]) part(c, s, col, rrect(c, sx > 0 ? s * 0.26 : -s * 0.48, -s * 0.06, s * 0.22, s * 0.34, s * 0.09));
-  for (const sx of [-1, 1]){ c.beginPath(); c.moveTo(sx * s * 0.3, s * 0.28); c.lineTo(sx * s * 0.3, s * 0.4); c.lineCap = 'round'; c.lineWidth = s * 0.08; c.strokeStyle = INK; c.stroke(); }
 });
