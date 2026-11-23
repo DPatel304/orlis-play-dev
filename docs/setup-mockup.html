@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orlis setup mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{ --paper:#f4f5f9; --ink:#1d1b2e; --blue:#3da9ff; --violet:#8b5cf6; --mute:#6b6a80; --line:#e3e4ee; --card:#fff; --ok:#22a06b; --bad:#d6455d; }
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Outfit',system-ui,sans-serif; line-height:1.4; }
+main{ max-width:1180px; margin:0 auto; padding:32px 16px 64px; }
+h1{ font-size:30px; margin:0 0 4px; }
+.sub{ color:var(--mute); margin:0 0 28px; max-width:70ch; }
+h2{ font-size:18px; margin:40px 0 4px; }
+h2 span{ color:var(--violet); margin-right:6px; }
+.note{ color:var(--mute); font-size:15px; margin:0 0 14px; max-width:70ch; }
+.row{ display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start; }
+
+/* frames: a TV is 16:9; a phone is tall. Sizes use a unit so type scales with the frame. */
+.tv{ --u:6.4px; width:640px; aspect-ratio:16/9; border-radius:14px; background:linear-gradient(135deg,#dbe9ff,#ece3ff 55%,#fde9f3); position:relative; overflow:hidden; border:8px solid #15131f; box-shadow:0 10px 30px rgba(29,27,46,.18); }
+.phone{ --u:4.4px; width:290px; aspect-ratio:9/18; border-radius:34px; background:var(--paper); position:relative; overflow:hidden; border:9px solid #15131f; box-shadow:0 10px 30px rgba(29,27,46,.18); display:flex; flex-direction:column; }
+.logo{ width:calc(var(--u)*5); height:calc(var(--u)*5); }
+.tv .top{ position:absolute; z-index:1; left:calc(var(--u)*3); top:calc(var(--u)*2.4); display:flex; align-items:center; gap:calc(var(--u)*1.2); font-weight:700; font-size:calc(var(--u)*3); }
+.tv .top b{ background:linear-gradient(90deg,var(--blue),var(--violet)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.tv .card{ position:absolute; inset:calc(var(--u)*8) calc(var(--u)*5) calc(var(--u)*3.5); background:rgba(255,255,255,.92); border-radius:calc(var(--u)*2.4); box-shadow:0 8px 28px rgba(29,27,46,.12); padding:calc(var(--u)*3) calc(var(--u)*4); display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:calc(var(--u)*1.6); }
+.tv h3{ margin:0; font-size:calc(var(--u)*3.9); font-weight:700; letter-spacing:-.01em; }
+.tv p{ margin:0; font-size:calc(var(--u)*2.4); color:#3b3950; }
+.tv .small{ font-size:calc(var(--u)*2.1); color:var(--mute); }
+.dots i{ display:inline-block; width:calc(var(--u)*1.1); height:calc(var(--u)*1.1); border-radius:50%; background:var(--violet); margin:0 calc(var(--u)*.4); animation:b 1.2s infinite ease-in-out; }
+.dots i:nth-child(2){ animation-delay:.15s; background:var(--blue); } .dots i:nth-child(3){ animation-delay:.3s; }
+@keyframes b{ 0%,80%,100%{ transform:translateY(0); opacity:.5; } 40%{ transform:translateY(calc(var(--u)*-.9)); opacity:1; } }
+.big{ display:inline-block; font-weight:700; font-size:calc(var(--u)*4.6); white-space:nowrap; letter-spacing:.1em; padding:calc(var(--u)*.6) calc(var(--u)*2.4); background:#fff; border:2px solid var(--line); border-radius:calc(var(--u)*1.6); }
+.box{ display:inline-flex; align-items:center; justify-content:center; min-width:calc(var(--u)*5); height:calc(var(--u)*5.6); padding:0 calc(var(--u)*1.4); border:2px solid var(--line); border-radius:calc(var(--u)*1.4); background:#fff; font-weight:700; font-size:calc(var(--u)*3.4); }
+.box.on{ border-color:var(--blue); box-shadow:0 0 0 calc(var(--u)*.5) rgba(61,169,255,.25); }
+.fields{ display:flex; flex-wrap:nowrap; white-space:nowrap; gap:calc(var(--u)*3); align-items:flex-end; }
+.fields label{ font-size:calc(var(--u)*2.1); color:var(--mute); display:block; text-align:left; margin-bottom:calc(var(--u)*.6); }
+.pre{ font-size:calc(var(--u)*3.2); color:var(--mute); font-weight:600; }
+.btn{ display:inline-block; font-weight:700; font-size:calc(var(--u)*3); color:#fff; padding:calc(var(--u)*1.5) calc(var(--u)*5); border-radius:calc(var(--u)*5); background:linear-gradient(90deg,var(--blue),var(--violet)); box-shadow:0 0 0 calc(var(--u)*.6) rgba(139,92,246,.25); }
+.btn.ghost{ background:#fff; color:var(--ink); box-shadow:none; border:2px solid var(--line); }
+.link{ font-size:calc(var(--u)*2.3); color:var(--violet); font-weight:600; }
+.qr{ background:#fff; padding:calc(var(--u)*1.2); border-radius:calc(var(--u)*1.2); border:2px solid var(--line); display:block; }
+.qr svg{ display:block; width:calc(var(--u)*13); height:calc(var(--u)*13); }
+.split{ display:flex; gap:calc(var(--u)*4); align-items:center; text-align:left; }
+.split>div{ display:flex; flex-direction:column; gap:calc(var(--u)*1.2); align-items:flex-start; }
+.check{ display:inline-block; background:#eef6ff; color:#1f6fb8; font-weight:700; font-size:calc(var(--u)*2.8); padding:calc(var(--u)*.5) calc(var(--u)*1.8); border-radius:calc(var(--u)*3); }
+.tick{ width:calc(var(--u)*9); height:calc(var(--u)*9); }
+
+/* phone */
+.phone .bar{ display:flex; align-items:center; gap:calc(var(--u)*2); padding:calc(var(--u)*5) calc(var(--u)*4) calc(var(--u)*2); font-weight:700; font-size:calc(var(--u)*4); }
+.phone .bar .logo{ width:calc(var(--u)*6); height:calc(var(--u)*6); }
+.phone .bar b{ background:linear-gradient(90deg,var(--blue),var(--violet)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.phone .body{ padding:calc(var(--u)*2) calc(var(--u)*4); display:flex; flex-direction:column; gap:calc(var(--u)*3); flex:1; }
+.phone h3{ margin:0; font-size:calc(var(--u)*6); }
+.phone p{ margin:0; font-size:calc(var(--u)*3.6); color:#3b3950; }
+.phone .in{ background:#fff; border:2px solid var(--line); border-radius:calc(var(--u)*2.4); padding:calc(var(--u)*3); font-size:calc(var(--u)*3.6); color:var(--mute); }
+.phone .in small{ display:block; font-size:calc(var(--u)*2.6); }
+.phone .btn{ text-align:center; font-size:calc(var(--u)*4); padding:calc(var(--u)*3.2); border-radius:calc(var(--u)*8); }
+.phone .tvcard{ background:#fff; border:2px solid var(--line); border-radius:calc(var(--u)*3); padding:calc(var(--u)*3.4); text-align:center; }
+.phone .tvcard .n{ font-size:calc(var(--u)*12); font-weight:700; letter-spacing:.04em; background:linear-gradient(90deg,var(--blue),var(--violet)); -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1.1; }
+.phone .warn{ font-size:calc(var(--u)*3); color:var(--mute); text-align:center; }
+
+/* the server page, as a browser window */
+.browser{ width:576px; border-radius:12px; overflow:hidden; border:1px solid var(--line); background:var(--paper); box-shadow:0 10px 30px rgba(29,27,46,.14); }
+.browser .chrome{ background:#e9eaf2; padding:8px 12px; font-size:13px; color:var(--mute); display:flex; gap:8px; align-items:center; }
+.browser .chrome i{ width:10px; height:10px; border-radius:50%; background:#c9cadb; display:inline-block; }
+.browser .chrome span{ margin-left:8px; background:#fff; border-radius:10px; padding:2px 12px; flex:1; }
+.srv{ padding:18px 22px 24px; display:flex; flex-direction:column; gap:14px; }
+.srv .head{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px; }
+.srv .head .logo{ width:30px; height:30px; } .srv .head b{ color:var(--violet); }
+.srv .tabs{ display:flex; gap:6px; font-size:14px; color:var(--mute); } .srv .tabs span{ padding:4px 10px; border-radius:14px; } .srv .tabs .on{ background:#fff; color:var(--ink); font-weight:600; }
+.srv .c{ background:#fff; border-radius:16px; padding:18px 20px; box-shadow:0 2px 10px rgba(29,27,46,.06); }
+.srv .c h4{ margin:0 0 2px; font-size:18px; } .srv .c .m{ color:var(--mute); font-size:14px; margin:0 0 12px; }
+.srv .codes{ display:flex; gap:22px; align-items:center; flex-wrap:wrap; }
+.srv .k{ font-size:12px; color:var(--mute); text-transform:uppercase; letter-spacing:.06em; }
+.srv .v{ font-size:34px; font-weight:700; letter-spacing:.1em; }
+.srv .count{ color:var(--ok); font-weight:600; font-size:14px; }
+.srv .qrs{ margin-left:auto; text-align:center; font-size:12px; color:var(--mute); } .srv .qrs svg{ width:92px; height:92px; display:block; margin:0 auto 4px; background:#fff; border:2px solid var(--line); border-radius:8px; padding:5px; }
+.srv .pill{ display:inline-block; font-size:13px; font-weight:600; padding:5px 12px; border-radius:16px; background:#eef6ff; color:#1f6fb8; }
+.srv .tray{ font-size:13px; color:var(--mute); }
+.cap{ margin:10px 0 0; font-size:14px; color:var(--mute); max-width:576px; }
+.cap b{ color:var(--ink); }
+.flow{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px; }
+.flow span{ background:#fff; border:1px solid var(--line); border-radius:20px; padding:4px 12px; font-size:14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Setting up Orlis: the new first-time flow</h1>
+  <p class="sub">A mockup for the owner (spec: <code>docs/specs/setup.md</code>). Same Wi-Fi only, no internet. Words and numbers are examples; the QR codes are pictures, not real.</p>
+  <div class="flow"><span>1 TV looks</span><span>2 can't find it? type the laptop's code</span><span>3 the laptop shows it</span><span>4 TV shows a QR to sign in</span><span>5 phone: sign in, say Yes</span><span>6 TV is in</span></div>
+
+  <h2><span>1</span>TV: finding your Orlis</h2>
+  <p class="note">Tries the remembered address and the Wi-Fi at once. Names the server it remembers. Most of the time this is all anyone sees.</p>
+  <div class="row"><div>
+    <div class="tv" data-tv>
+      <div class="top"><svg class="logo" data-logo></svg><span>Orlis <b>Play</b></span></div>
+      <div class="card"><h3>Finding the Patel house Orlis<span class="dots"><i></i><i></i><i></i></span></h3><p>This takes a few seconds.</p></div>
+    </div>
+  </div></div>
+
+  <h2><span>2</span>TV: can't find it, so enter the code</h2>
+  <p class="note">Replaces "Check this PC is online". Points at the right machine and the icon by the clock; the number and the code come from the laptop. "Type the whole address" stays as a small choice.</p>
+  <div class="row">
+    <div>
+      <div class="tv" data-tv>
+        <div class="top"><svg class="logo" data-logo></svg><span>Orlis <b>Play</b></span></div>
+        <div class="card">
+          <h3>Can't find your Orlis</h3>
+          <p>On the laptop, click the Orlis icon by the clock, then <b>Set up a TV</b>. Type what you see.</p>
+          <div class="fields">
+            <div><label>Server</label><span class="pre">192.168.</span> <span class="box">1</span><span class="pre"> . </span><span class="box">20</span></div>
+            <div><label>Code</label><span class="box on">4</span> <span class="box on">8</span> <span class="box on">2</span> <span class="box">&nbsp;</span></div>
+          </div>
+          <span class="btn">Connect</span>
+          <span class="link">Type the whole address</span>
+        </div>
+      </div>
+      <p class="cap"><b>If the code is wrong or old:</b> "That code has run out. Get a new one on the laptop."</p>
+    </div>
+  </div>
+
+  <h2><span>3</span>The laptop: "Set up a TV"</h2>
+  <p class="note">From the Orlis icon's menu, opening the server's page (on that laptop only). A phone on the Wi-Fi can open the same code by the link or QR, if a grown-up signs in there.</p>
+  <div class="row">
+    <div>
+      <div class="browser">
+        <div class="chrome"><i></i><i></i><i></i><span>Orlis Server: Overview</span></div>
+        <div class="srv">
+          <div class="head"><svg class="logo" data-logo></svg><span>Orlis <b>Server</b></span></div>
+          <div class="tabs"><span class="on">Overview</span><span>Approvals</span><span>Families</span><span>Discover</span><span>Backups</span><span>History</span></div>
+          <div class="c">
+            <h4>Set up a TV</h4>
+            <p class="m">On the TV, choose "Can't find it" and type these. Good for 10 minutes, once.</p>
+            <div class="codes">
+              <div><div class="k">Server</div><div class="v">1.20</div></div>
+              <div><div class="k">Code</div><div class="v">4821</div><div class="count">9:41 left</div></div>
+              <div class="qrs"><svg data-qr="110"></svg>Open on a phone</div>
+            </div>
+            <p class="m" style="margin:12px 0 0"><span class="pill">New code</span> &nbsp; Phone link: 192.168.1.20:47871/tv</p>
+          </div>
+          <div class="tray">The icon by the clock now has <b>Set up a TV</b> in its menu.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2><span>4</span>TV: sign in with your phone</h2>
+  <p class="note">Replaces typing an email and password. A new QR every five minutes. "Type it here instead" is today's form.</p>
+  <div class="row">
+    <div class="tv" data-tv>
+      <div class="top"><svg class="logo" data-logo></svg><span>Orlis <b>Play</b></span></div>
+      <div class="card">
+        <h3>Sign in with your phone</h3>
+        <div class="split">
+          <span class="qr"><svg data-qr="140"></svg></span>
+          <div>
+            <p>Point your phone's camera here.</p>
+            <p class="small">Or open <b>192.168.1.20:47871/tv</b><br>and type</p>
+            <span class="big">KP7-2MX</span>
+            <span class="check">Check number 58</span>
+          </div>
+        </div>
+        <span class="link">Type it here instead</span>
+      </div>
+    </div>
+  </div>
+
+  <h2><span>5</span>Phone: sign in, then say yes</h2>
+  <p class="note">A page the server serves on the Wi-Fi: no app to install. The phone's own password never goes to the TV. The check number is the safeguard against someone else's TV.</p>
+  <div class="row">
+    <div class="phone" data-phone-a>
+      <div class="bar"><svg class="logo" data-logo></svg><span>Orlis <b>Play</b></span></div>
+      <div class="body">
+        <h3>Sign in</h3>
+        <p>To the Patel house Orlis</p>
+        <div class="in"><small>Email</small>mum@example.com</div>
+        <div class="in"><small>Password</small>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</div>
+        <span class="btn">Continue</span>
+        <p class="warn">For grown-ups only.</p>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="bar"><svg class="logo" data-logo></svg><span>Orlis <b>Play</b></span></div>
+      <div class="body">
+        <h3>Sign in this TV?</h3>
+        <div class="tvcard"><p>Living room<br>Windows PC</p><div class="n">58</div><p>Is this number on your TV?</p></div>
+        <span class="btn">Yes, sign it in</span>
+        <span class="btn ghost" style="background:#fff;color:var(--ink);border:2px solid var(--line);box-shadow:none">No</span>
+        <p class="warn">Only say yes if it is on your own TV right now.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2><span>6</span>TV: you're in</h2>
+  <p class="note">Then the usual "Who's playing?".</p>
+  <div class="row">
+    <div class="tv" data-tv>
+      <div class="top"><svg class="logo" data-logo></svg><span>Orlis <b>Play</b></span></div>
+      <div class="card">
+        <svg class="tick" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#22a06b"/><path d="M28 52l16 16 30-34" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3>You're in</h3>
+        <p>Signed in as mum@example.com</p>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="bar"><svg class="logo" data-logo></svg><span>Orlis <b>Play</b></span></div>
+      <div class="body">
+        <h3>Done</h3>
+        <p>Your TV is signed in. You can close this.</p>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+const LOGO = '<rect fill="#3da9ff" x="4" y="40" width="56" height="56" rx="15"/><g transform="rotate(10 66 34)"><rect fill="#8b5cf6" stroke="#fff" stroke-width="3" x="40" y="8" width="52" height="52" rx="14"/></g>';
+document.querySelectorAll('svg[data-logo]').forEach(s => { s.setAttribute('viewBox', '0 0 100 100'); s.innerHTML = LOGO; });
+/* a QR-looking picture (not a real code) */
+document.querySelectorAll('svg[data-qr]').forEach(s => {
+  const n = 25; let seed = 7, out = '';
+  const r = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const finder = (x, y) => (x < 7 && y < 7) || (x >= n - 7 && y < 7) || (x < 7 && y >= n - 7);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++){
+    let on;
+    if (finder(x, y)){
+      const fx = x % (n - 7 >= 7 && x >= n - 7 ? n - 7 : 100), lx = x >= n - 7 ? x - (n - 7) : x, ly = y >= n - 7 ? y - (n - 7) : y;
+      on = lx === 0 || lx === 6 || ly === 0 || ly === 6 || (lx >= 2 && lx <= 4 && ly >= 2 && ly <= 4);
+    } else on = r() > .52;
+    if (on) out += `<rect x="${x}" y="${y}" width="1.02" height="1.02"/>`;
+  }
+  s.setAttribute('viewBox', `0 0 ${n} ${n}`); s.setAttribute('fill', '#1d1b2e'); s.innerHTML = out;
+});
+</script>
+</body>
+</html>
