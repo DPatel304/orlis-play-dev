@@ -311,7 +311,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     s.classList.add('hand'); layout();
   };
   const stopHand = () => {
-    handActive = false; cursor.map = null; cursor.gate = null; cursor.skin = false; driver.who = null;
+    handActive = false; pose.pointing = false; cursor.map = null; cursor.gate = null; cursor.skin = false; driver.who = null;
     s.classList.remove('hand'); dot.classList.remove('show'); say.classList.remove('show'); edgeDown.hidden = edgeUp.hidden = true;
   };
   /* whoever drives gets their own colour and face: their place's colour, and the profile that's lined up there (else the signed-in one) */
@@ -324,6 +324,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     if (!handActive) return;
     /* who has a hand up in the box (the driver's cursor ring is in cursor.rings) */
     const active = pose.players.map(p => !!(p.present && p.lm && mapHand(p, pose.cursorHand(p))));
+    pose.pointing = active.some(Boolean);
     driver.update(dt, active, pose.players.map(p => p.present));
     const ring = cursor.rings.find(r => r.id === driver.who) || null;
     cursor.enabled = !sheet && !going;

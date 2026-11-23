@@ -1,4 +1,4 @@
-import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
+import { pose, PLAYER_COLORS, MAX_PLAYERS, oneEuro } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 
 /* Point and wave. Every button in Orlis Play is a DOM .btn; the cursor
@@ -16,6 +16,15 @@ import { sfx } from '../audio/sound.js';
    points at it, however long - so nothing starts while someone's only
    looking. (With the mouse, a real click.) */
 export const STICK = 0.2, CLICK_TURNS = 3, WAVE_SWING = 0.025;
+/* What is drawn (the ring, the dot) is eased a little more, after the pose's own filter and the drawing between samples: at rest
+   it settles (the same One Euro filter, so it ends exactly where the hand is: no drift), and it follows a moving hand
+   almost at once. Only the drawing: what is pointed at is worked out from the hand itself. Units: screen widths. */
+export const DRAW_MIN = 5, DRAW_BETA = 60;
+export function easeCursor(f, x, y, dt){
+  f.x ||= {}; f.y ||= {};
+  return { x: oneEuroAt(f.x, x, dt), y: oneEuroAt(f.y, y, dt) };
+}
+const oneEuroAt = (f, v, dt) => oneEuro(f, v, dt, DRAW_MIN, DRAW_BETA);
 const STAY = 0.45;          /* how much further out the lit button reaches, of its size */
 const TURN_GAP = 0.08;      /* seconds: jitter can't turn faster than a hand */
 const WAVE_GONE = 0.6;      /* seconds without a turn and the wave's over */
@@ -67,12 +76,12 @@ export const cursor = {
 
     for (let i = 0; i < pose.players.length; i++){
       const p = pose.players[i], s = this._state[i];
-      if (!p.present){ s.el = null; s.t = 0; s.cand = null; s.turns = 0; continue; }
+      if (!p.present){ s.el = null; s.t = 0; s.cand = null; s.turns = 0; s.ease = null; continue; }
       const h = pose.cursorHand(p);
       /* Home (hand.js) maps the hand through the child's reach box to the screen, and says no (null) for a hand hanging at their side;
          everywhere else the hand is where it is. */
       const m = this.map ? this.map(p, h, i) : h;
-      if (!m){ s.el = null; s.t = 0; s.cand = null; s.turns = 0; s.dir = 0; continue; }
+      if (!m){ s.el = null; s.t = 0; s.cand = null; s.turns = 0; s.dir = 0; s.ease = null; continue; }
       const x = m.x, y = m.y;
       /* One driver, when there is a gate (home): the others only wave, to take over. */
       const driving = !this.gate || this.gate.driver() === i;
@@ -82,7 +91,8 @@ export const cursor = {
         if (s.turns >= CLICK_TURNS){ s.turns = 0; s.dir = 0; s.el = null; s.cool = COOLDOWN; this.gate.takeOver(i); }
         continue;
       }
-      this.rings.push({ x, y, color: PLAYER_COLORS[i], progress: 0, id: i, waving: 0 });
+      const e = easeCursor(s.ease || (s.ease = {}), x, y, dt);
+      this.rings.push({ x: e.x, y: e.y, color: PLAYER_COLORS[i], progress: 0, id: i, waving: 0 });
 
       if (s.cool > 0){
         s.cool -= dt;
@@ -196,7 +206,7 @@ export const cursor = {
 
 /* Buttons respond to a real click too, so a mouse or a touchscreen works and
    the whole thing stays testable. */
-function fresh(){ return { el:null, t:0, x:.5, y:.5, cool:0, cand:null, candT:0, turns:0, dir:0, far:.5, since:9, lit:null }; }
+function fresh(){ return { ease:null, el:null, t:0, x:.5, y:.5, cool:0, cand:null, candT:0, turns:0, dir:0, far:.5, since:9, lit:null }; }
 
 export function onPick(el, fn){
   el.addEventListener('pick', fn);

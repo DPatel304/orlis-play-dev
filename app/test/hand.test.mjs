@@ -188,6 +188,6 @@ test('the scripted pose picks a tile three times out of three', () => {
   done();
 });
 
-test('the camera looks lightly at home: ten a second with someone in view, one a second with nobody', () => {
-  assert.deepEqual(LOOKS, { hz: 10, idleHz: 1 });
+test('the camera looks lightly at home: ten a second with someone in view and hands down, two with nobody - the full rate while a hand points', () => {
+  assert.deepEqual(LOOKS, { hz: 10, idleHz: 2 });
 });
