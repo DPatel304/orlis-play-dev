@@ -13,11 +13,14 @@
 .screen.home{ display:block; padding:0; text-align:left; background:var(--paper); overflow:hidden; color:var(--ink); }
 .hbgwrap{ position:absolute; left:0; right:0; top:0; height:100%; overflow:hidden; background:var(--ink); transition:height var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease); }
 .home.scrolled .hbgwrap{ height:calc(var(--u)*44); box-shadow:0 calc(var(--u)*.8) calc(var(--u)*2.4) rgba(29,27,46,.22); }
-.hbg{ position:absolute; inset:0; background:center 38%/cover no-repeat; opacity:0; transition:opacity .4s var(--ease); }
-.hbg.on{ opacity:1; } .hbg.plain{ background:var(--grad); }
+.hbg{ position:absolute; top:0; bottom:0; left:38%; right:0; background:center 38%/cover no-repeat; opacity:0; transition:opacity .4s var(--ease);
+  -webkit-mask:linear-gradient(90deg,transparent,#000 35%); mask:linear-gradient(90deg,transparent,#000 35%); }
+.hbg.on{ opacity:1; }
+/* a hero with no picture keeps its gradient the full width */
+.hbg.plain{ left:0; background:var(--grad); -webkit-mask:none; mask:none; }
 .hscrim{ position:absolute; inset:0; transition:opacity var(--t-slow) var(--ease);
-  background:linear-gradient(90deg,rgba(29,27,46,.66),rgba(29,27,46,0) 62%), linear-gradient(0deg,rgba(29,27,46,.82),rgba(29,27,46,0) 58%), linear-gradient(180deg,rgba(29,27,46,.55),rgba(29,27,46,0) 22%); }
-.home.scrolled .hscrim{ background:linear-gradient(90deg,rgba(29,27,46,.7),rgba(29,27,46,0) 64%), linear-gradient(180deg,rgba(29,27,46,.55),rgba(29,27,46,0) 34%); }
+  background:linear-gradient(0deg,rgba(29,27,46,.95),rgba(29,27,46,0) 45%), linear-gradient(180deg,rgba(29,27,46,.55),rgba(29,27,46,0) 22%); }
+.home.scrolled .hscrim{ background:linear-gradient(180deg,rgba(29,27,46,.55),rgba(29,27,46,0) 34%); }
 .hbox{ position:absolute; left:50%; top:0; width:calc(var(--u)*177.78); height:calc(var(--u)*100); transform:translateX(-50%); }
 .home .htop{ position:absolute; left:0; right:0; top:0; height:calc(var(--u)*15); z-index:5; }
 .home .htop > .lg{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*3.6); }
@@ -28,28 +31,27 @@
 .btn.hme:hover,.btn.hme.hot,body.remote .btn.hme.kfocus{ transform:scale(1.1); }
 .btn.hme .fill{ display:none; }
 
-/* the focused game's name, one line, the chips and the one big Play */
+/* the focused game: one line (with how many play, an icon and a number, right after it) and the one big Play. No title: the lit tile shows the name (0046). */
 .hinfo{ position:absolute; left:calc(var(--u)*5); bottom:calc(var(--u)*33); display:flex; flex-direction:column; align-items:flex-start; max-width:calc(var(--u)*150); z-index:4; transition:bottom var(--t-slow) var(--ease); }
 .home.hand.rest .hinfo{ bottom:calc(var(--u)*40); }
 .home.scrolled .hinfo{ bottom:calc(var(--u)*58); }
-.ht{ font:700 var(--tv-title)/.95 var(--ui); text-transform:uppercase; color:#fff; -webkit-text-stroke:calc(var(--u)*1.5) var(--ink); paint-order:stroke fill; letter-spacing:.01em; transition:font-size var(--t-base) var(--ease); }
-.ht.long{ font-size:calc(var(--u)*9.4); }
-.hblurb{ font:400 var(--tv-line)/1.2 var(--ui); color:#fff; text-shadow:0 calc(var(--u)*.3) calc(var(--u)*1) rgba(0,0,0,.5); margin:calc(var(--u)*1.6) 0 calc(var(--u)*2.2); transition:font-size var(--t-base) var(--ease); }
+.hblurb{ font:400 calc(var(--u)*3.6)/1.2 var(--ui); color:#fff; opacity:.9; text-shadow:0 calc(var(--u)*.3) calc(var(--u)*1) rgba(0,0,0,.5); margin:calc(var(--u)*1.2) 0 calc(var(--u)*2.6); transition:font-size var(--t-base) var(--ease); }
+.hplayers{ display:inline-flex; align-items:center; gap:calc(var(--u)*.7); margin-left:calc(var(--u)*2); vertical-align:middle; font-weight:700; white-space:nowrap; }
+.hplayers .oicon{ width:1.25em; height:1.25em; display:block; }
 .hmeta{ display:flex; align-items:center; gap:calc(var(--u)*1.8); flex-wrap:nowrap; }
-.chip{ padding:calc(var(--u)*.9) calc(var(--u)*2.6); border-radius:var(--pill); background:#fff; color:var(--ink); font:700 var(--tv-chip) var(--ui); box-shadow:var(--soft); white-space:nowrap; }
-.btn.hplay{ display:inline-flex; align-items:center; justify-content:center; padding:calc(var(--u)*2.2) calc(var(--u)*5.4); border:0; border-radius:var(--pill); background:var(--ink); color:#fff; font:700 var(--tv-btn) var(--ui); box-shadow:var(--soft); white-space:nowrap; margin-left:calc(var(--u)*.2); }
+.btn.hplay{ display:inline-flex; align-items:center; justify-content:center; padding:calc(var(--u)*2.2) calc(var(--u)*5.4); border:0; border-radius:var(--pill); background:#fff; color:var(--ink); font:700 var(--tv-btn) var(--ui); box-shadow:var(--soft); white-space:nowrap; margin-left:calc(var(--u)*.2); }
 .btn.hplay .lbl{ display:inline-flex; align-items:center; gap:calc(var(--u)*1.8); } .btn.hplay svg.i{ width:calc(var(--u)*5); height:calc(var(--u)*5); }
 .btn.hplay:hover,body.remote .btn.hplay.kfocus,.btn.hplay.on{ transform:scale(1.04); box-shadow:0 0 0 calc(var(--u)*.6) #fff, 0 0 0 calc(var(--u)*1.3) var(--who,var(--blue)), var(--soft); }
-.home.scrolled .ht{ font-size:calc(var(--u)*8.6); -webkit-text-stroke-width:calc(var(--u)*1.1); } .home.scrolled .ht.long{ font-size:calc(var(--u)*6.8); }
 .home.scrolled .hblurb{ font-size:calc(var(--u)*3.4); margin:calc(var(--u)*1) 0 calc(var(--u)*1.6); }
 .home.scrolled .btn.hplay{ font-size:calc(var(--u)*3.8); padding:calc(var(--u)*1.5) calc(var(--u)*4); } .home.scrolled .btn.hplay svg.i{ width:calc(var(--u)*4); height:calc(var(--u)*4); }
-.home.scrolled .chip{ font-size:calc(var(--u)*2.9); padding:calc(var(--u)*.6) calc(var(--u)*2); }
 
 /* the rows */
 .hrows{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*67.8); width:calc(var(--u)*172); transition:top var(--t-slow) var(--ease); z-index:3; }
 .home.scrolled .hrows{ top:calc(var(--u)*(46.8 - 25.2 * var(--first,1))); }
 .home.arrive .hrows{ animation:hrise .7s var(--ease) both; } @keyframes hrise{ from{ opacity:0; transform:translateY(calc(var(--u)*4)); } }
 .hsec{ height:calc(var(--u)*25.2); transition:opacity var(--t-base) var(--ease); } .hsec.away{ opacity:0; pointer-events:none; }
+/* at rest only the current row shows; the next does not peek in (0046) */
+.home.rest .hsec:not(:first-child){ opacity:0; pointer-events:none; }
 .hlab{ height:calc(var(--u)*6.2); font:700 var(--tv-label)/1 var(--ui); color:#fff; text-shadow:0 calc(var(--u)*.3) calc(var(--u)*1) rgba(0,0,0,.5); transition:color var(--t-base) var(--ease); }
 .home.scrolled .hlab{ color:var(--ink); text-shadow:none; }
 .hrow{ display:flex; gap:calc(var(--u)*2.2); width:max-content; transition:transform var(--t-base) var(--ease); padding:calc(var(--u)*2.4) calc(var(--u)*1.6); margin:calc(var(--u)*-2.4) calc(var(--u)*-1.6); }

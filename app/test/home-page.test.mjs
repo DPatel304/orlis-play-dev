@@ -29,7 +29,7 @@ function build(extra = {}){
   const page = menu({ onPlay: (g) => calls.push('play:' + g.id), onRecalibrate(){}, onWho: () => calls.push('who'), nav, ...extra });
   return { ui, page, calls, s: q(ui, '.home') };
 }
-const hero = (s) => txt(q(s, '.ht'));
+const hero = (s) => (q(s, '.hplay').getAttribute('aria-label') || '').replace(/^\S+ /, '');   /* no title any more: the Play button names the game */
 const layersOn = (s) => qa(s, '.hbg').filter(l => l.classList.contains('on')).map(l => l.style.backgroundImage);
 const lit = (s) => qa(s, '.htile').filter(t => t.classList.contains('on')).map(t => txt(t.querySelector('.hname')));
 
@@ -51,7 +51,10 @@ test('at rest the first game is focused: its name, one line, players and time, a
   assert.equal(hero(s), first.name);
   assert.deepEqual(lit(s), [first.name]);
   assert.ok(txt(q(s, '.hblurb')).length > 3, 'one line');
-  assert.ok(qa(s, '.chip').length >= 2 && /player/.test(txt(qa(s, '.chip')[0])), 'players, then time');
+  assert.ok(!q(s, '.ht') && qa(s, '.chip').length === 0, 'no hero title and no chips');
+  assert.ok(q(s, '.hplayers') && /^\d(-\d)?$/.test(txt(q(s, '.hplayers'))), 'players: an icon and a number by the description');
+  assert.ok(!/min|sec/.test(txt(q(s, '.hinfo'))), 'no time');
+  assert.equal(q(s, '.hplay').getAttribute('aria-label'), 'Play ' + first.name);
   assert.ok(txt(q(s, '.hplay')).includes('Play'));
   assert.deepEqual(layersOn(s), [`url(world:${first.id})`], 'the focused game\'s world fills the screen');
   page.leave();

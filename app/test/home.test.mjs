@@ -66,15 +66,19 @@ test('up from the first row is the Play button at the top; down from it goes bac
   assert.equal(step(rows, 'top', 'up', {}), null);
 });
 
-test('the hero: a game says how many play and for how long, with Play; a game to get says Get; the rest say what they open', () => {
+test('the hero (0046): no title, one line, players as a number (no time), Play; a game to get says Get; the rest say what they open', () => {
   const pop = heroOf({ kind: 'game', g: { ...POOL[0], minPlayers: 1, maxPlayers: 4 } }, { blurb: 'Reach up and pop the balloons', cap: 4 });
-  assert.deepEqual(pop, { title: 'Pop Party', line: 'Reach up and pop the balloons', chips: ['1 to 4 players', '2 min'], cta: { label: 'Play', icon: 'play' } });
-  assert.deepEqual(heroOf({ kind: 'game', g: { ...POOL[0], minPlayers: 1, maxPlayers: 4 } }, { cap: 2 }).chips, ['1 to 2 players', '2 min'], 'as many as this PC can seat');
-  assert.deepEqual(heroOf({ kind: 'game', g: { name: 'Solo', minPlayers: 1, maxPlayers: 1, secs: 45 } }).chips, ['1 player', '45 sec']);
+  assert.deepEqual(pop, { name: 'Pop Party', line: 'Reach up and pop the balloons', players: '1-4', cta: { label: 'Play', icon: 'play' } });
+  assert.ok(!('title' in pop) && !('chips' in pop), 'no title, no chips');
+  assert.equal(heroOf({ kind: 'game', g: { ...POOL[0], minPlayers: 1, maxPlayers: 4 } }, { cap: 2 }).players, '1-2', 'as many as this PC can seat');
+  assert.equal(heroOf({ kind: 'game', g: { name: 'Solo', minPlayers: 1, maxPlayers: 1, secs: 45 } }).players, '1');
   assert.equal(heroOf({ kind: 'get', g: GET[0] }).cta.label, 'Get');
-  assert.deepEqual(heroOf({ kind: 'game', g: { name: 'Story', passive: true } }).chips, ['A story']);
-  assert.equal(heroOf({ kind: 'make', id: 'requests', name: 'Your requests', line: 'x' }).title, 'Your requests');
-  assert.equal(heroOf({ kind: 'more' }).title, 'More to try');
+  const story = heroOf({ kind: 'game', g: { name: 'Story', passive: true } });
+  assert.equal(story.players, ''); assert.match(story.line, /story/i);
+  assert.equal(heroOf({ kind: 'make', id: 'requests', name: 'Your requests', line: 'x' }).name, 'Your requests');
+  assert.match(heroOf({ kind: 'make', id: 'pro', name: 'Create Pro', line: 'Build', tag: 'Grown-ups' }).line, /grown-ups/);
+  assert.equal(heroOf({ kind: 'more' }).name, 'More to try');
+  assert.match(heroOf({ kind: 'more' }).line, /game/);
 });
 
 test('the hero is big only on the first row (and the top); further down it is a banner', () => {

@@ -492,3 +492,7 @@ def('house', 'House', 'place', (c, s) => {
   part(c, s, pal('earth.bark'), rrect(c, -s * 0.07, s * 0.2, s * 0.14, s * 0.22, s * 0.02), { shade: false });
   part(c, s, pal('sea.sunlit'), rrect(c, s * 0.14, s * 0.08, s * 0.14, s * 0.12, s * 0.02), { shade: false, w: 0.03 });
 });
+def('player', 'Player', 'person people', (c, s) => {
+  part(c, s, SNOW, () => { c.beginPath(); c.moveTo(-s * 0.36, s * 0.42); c.quadraticCurveTo(-s * 0.36, s * 0.06, 0, s * 0.06); c.quadraticCurveTo(s * 0.36, s * 0.06, s * 0.36, s * 0.42); c.closePath(); });
+  part(c, s, SNOW, circ(c, 0, -s * 0.22, s * 0.2));
+});

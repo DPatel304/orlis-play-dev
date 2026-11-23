@@ -59,19 +59,20 @@ export function step(rows, pos, dir, mem = {}){
   return null;
 }
 
-/* The big hero for whatever is focused: its title, one line, the chips and the one big button. cap: how many players this PC can seat. */
+/* The hero for whatever is focused (decision 0046): no title (the lit tile shows the name; `name` is for screen readers), one line, how many
+   play (`players`: "1-2", with an icon beside it; no time), and the one big button. cap: how many players this PC can seat. */
 export function heroOf(item, { blurb = '', cap = 4 } = {}){
-  if (!item) return { title: '', line: '', chips: [], cta: null };
+  const none = { name: '', line: '', players: '', cta: null };
+  if (!item) return none;
   if (item.kind === 'game' || item.kind === 'get'){
     const g = item.g, lo = Math.min(g.minPlayers || 1, cap), hi = Math.min(g.maxPlayers || 4, cap);
-    const players = g.passive ? 'A story' : lo === hi ? `${hi} player${hi > 1 ? 's' : ''}` : `${lo} to ${hi} players`;
-    const secs = g.secs, time = g.passive ? '' : g.endless || !secs ? 'No time limit' : secs >= 60 ? `${Math.round(secs / 60)} min` : `${secs} sec`;
-    return { title: g.name, line: blurb, chips: [players, time].filter(Boolean), cta: item.kind === 'get' ? { label: 'Get', icon: 'get' } : { label: 'Play', icon: 'play' } };
+    const players = g.passive ? '' : lo === hi ? String(hi) : `${lo}-${hi}`;
+    return { name: g.name, line: g.passive ? (blurb ? `${blurb} A story.` : 'A story') : blurb, players, cta: item.kind === 'get' ? { label: 'Get', icon: 'get' } : { label: 'Play', icon: 'play' } };
   }
-  if (item.kind === 'more') return { title: 'More to try', line: 'Every game the family can get', chips: [], cta: { label: 'Open', icon: 'play' } };
-  if (item.kind === 'make') return { title: item.name, line: item.line, chips: item.tag ? [item.tag] : [], cta: { label: item.id === 'requests' ? 'Open' : item.id === 'pro' ? 'Open' : 'Ask', icon: 'play' } };
-  if (item.kind === 'test') return { title: item.d.name, line: 'On this TV to try', chips: [item.d.asking ? 'Asking to publish' : 'Testing'], cta: { label: 'Try it', icon: 'play' } };
-  return { title: '', line: '', chips: [], cta: null };
+  if (item.kind === 'more') return { name: 'More to try', line: 'Every game the family can get', players: '', cta: { label: 'Open', icon: 'play' } };
+  if (item.kind === 'make') return { name: item.name, line: item.tag ? `${item.line}, for grown-ups` : item.line, players: '', cta: { label: item.id === 'requests' ? 'Open' : item.id === 'pro' ? 'Open' : 'Ask', icon: 'play' } };
+  if (item.kind === 'test') return { name: item.d.name, line: item.d.asking ? 'On this TV, asking to publish' : 'On this TV to try', players: '', cta: { label: 'Try it', icon: 'play' } };
+  return none;
 }
 
 /* Is the hero big (the page at rest) or a banner (scrolled)? Only the first row keeps it big. */

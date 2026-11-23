@@ -29,6 +29,7 @@ import { shotOf, shotImage, makeShots } from './shots.js';
 import { makeCover, generatedArt, hasArt } from './covers.js';
 import { testingRow } from './building.js';
 import { logo, icon, propIcon } from './brand.js';
+import { iconEl } from './icons.js';
 import { BLURB, iconOf, HIDDEN, openProfileSheet } from './menu.js';
 import { homeRows, makeFor, startFocus, step, heroOf, bigHero } from './home-model.js';
 import { Driver, EdgeHold, mapHand } from './hand.js';
@@ -112,9 +113,9 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   top.appendChild(sys);
 
   const info = h('div', 'hinfo');
-  const ht = h('div', 'ht'), blurb = h('div', 'hblurb'), meta = h('div', 'hmeta');
+  const blurb = h('div', 'hblurb'), meta = h('div', 'hmeta');
   const play = button('', 'hplay ringed');
-  info.append(ht, blurb, meta);
+  info.append(blurb, meta);
   const rowsEl = h('div', 'hrows');
   box.append(top, info, rowsEl);
   s.append(bgwrap, box);
@@ -122,7 +123,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   /* no games yet (nothing on this PC and nothing to get): a way to Discover */
   const empty = !rows.length;
   if (empty){
-    ht.textContent = 'Get your first game'; blurb.textContent = 'Pop Party is waiting for you in Discover.';
+    blurb.textContent = 'Get your first game: Pop Party is waiting for you in Discover.';
     if (nav.store){ play.querySelector('.lbl').innerHTML = `${icon('play')}<span>Open Discover</span>`; onPick(play, () => { sfx.select(); nav.store(); }); meta.appendChild(play); }
     ambience.start();
     return { focus: 0, tick(){}, draw(){}, leave(){} };
@@ -197,11 +198,11 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   };
   function paintHero(t){
     const it = t.item, hero = heroOf(it, { blurb: it.g ? (BLURB[it.g.id] || (it.g.store && it.g.store.blurb) || '') : '', cap: pose.cap });
-    ht.textContent = hero.title; blurb.textContent = hero.line;
+    blurb.textContent = hero.line;
+    if (hero.players){ const pl = h('span', 'hplayers'), n = h('span'); n.textContent = hero.players; pl.append(iconEl('player', 48), n); pl.setAttribute('aria-label', `${hero.players} players`); blurb.appendChild(pl); }
     meta.innerHTML = '';
-    for (const c of hero.chips){ const chip = h('span', 'chip'); chip.textContent = c; meta.appendChild(chip); }
+    play.setAttribute('aria-label', hero.cta ? `${hero.cta.label} ${hero.name}` : '');
     if (hero.cta){ play.querySelector('.lbl').innerHTML = `${icon(hero.cta.icon)}<span>${hero.cta.label}</span>`; meta.appendChild(play); }
-    ht.classList.toggle('long', hero.title.length > 16);
     s.style.setProperty('--accent', it.g ? iconOf(it.g).cols[0] : 'var(--blue)');
     setWorld(it.g ? worldOf(it.g) : null);
   }
