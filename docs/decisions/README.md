@@ -75,3 +75,4 @@ Date: YYYY-MM-DD
 | 0049 | Home is remote, keyboard and mouse only; no hand mode, no camera on home (replaces 0045's hand-mode line and the 2026-11-23 hand dot) | Accepted |
 | 0050 | The intro sound is "soft bloom" (a warm chord, a soft landing note, two sparkles for the name); no wink ding; the name comes in at 1.6 s | Accepted |
 | 0051 | Weekly challenges: shown by themselves only once a new week; the star pill glows for news; progress and stars on the results screen; a bolder, animated screen with sounds | Accepted |
+| 0052 | Home: players as an icon and a number; a "how you play" row (Move, Tablet, Phones, Sit back); the tablet icon is a tablet in a controller grip; a tablet mark on tiles (replaces 0048's figures) | Accepted |
