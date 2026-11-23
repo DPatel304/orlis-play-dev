@@ -53,6 +53,8 @@ Status: draft for implementation. Changes after it is built need a version bump 
   `start({ send, onState, onEvent, rtt, connected, seat, colour, who, game, need, root })`: `send(obj)` sends `in` with a `seq`; `onState(fn)` gets each
   `state` (and the latest at once); `onEvent(fn)` gets `ev`, plus `pause`/`resume` as `{ e: 'pause'|'resume', why }`; `root` is the element to draw into.
   If it throws or there is no `pad`, the page shows "Look at the TV!".
+  The same object also carries `kit` (K5): `loadThree()` (three.js, loaded on first call as its own chunk), `color(name, tone)` (the master palette),
+  `assets` (the painted pieces), `garden` (Peekaboo's world and rules numbers) and `character(look)` (the block-limb character in one atlas canvas). See `app/pad/kit.js`.
 - After a drop the page shows a grey layer and a "Joining again" pill and rejoins with the same token; close 4001 resets to "Start Orlis on the TV"
   (the phone must tap "I'm ready" again when the host is back); 4003 / `reject full` shows "This game is full" and retries every 8 s.
 
