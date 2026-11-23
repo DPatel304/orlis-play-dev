@@ -42,7 +42,15 @@ const tiles = (mode, lit, who, face) => {
   }).join('');
   return `<div class="row ${mode}">${inner}</div>`;
 };
+/* the home options: tiles by game order. {{otiles:A:3}} = the one-row version with focus on game 3; {{otiles:B1:0}}, {{otiles:B2:-1}}, {{otiles:B3:-1}} = rows */
+const OG = ['pop-party', 'sky-painter', 'leaf-pile', 'sleepy-bear', 'stack-it-high', 'animal-gym', 'keep-it-up', 'ptero-flight'];
+const ON = { 'pop-party': 'POP PARTY', 'sky-painter': 'SKY PAINTER', 'leaf-pile': 'LEAF PILE', 'sleepy-bear': 'SLEEPY BEAR', 'stack-it-high': 'STACK IT HIGH', 'animal-gym': 'ANIMAL GYM', 'keep-it-up': 'KEEP IT UP!', 'ptero-flight': 'PTERRY FLIGHT' };
+const ORDER = { A: [0, 1, 2, 3, 4, 5, 6], B1: [0, 1, 2, 3, 4, 5, 6, 7], B2: [5, 6, 7, 2, 0, 1, 3, 4], B3: [4, 3, 1, 0, 7, 5, 2, 6] };
+const otiles = (v, f) => `<div class="o-row ${v[0] === 'A' ? 'ra' : 'rb'}">` + ORDER[v].map((g, i) => `<div class="o-t${i === +f ? ' on' : ''}"><div class="o-art g-${OG[g]}"></div><b>${ON[OG[g]]}</b></div>`).join('') + '</div>';
+const bgcss = OG.map((id) => `.g-${id}{background-image:url({{art:bg-${id}}})}`).join('\n');
 let html = readFileSync(join(root, 'tools/screens-mockup.src.html'), 'utf8').replace('/*FONT*/', () => font[0]);
+html = html.replace('/*BGCSS*/', () => bgcss);
+html = html.replace(/\{\{otiles:([AB]\d?):(-?\d)\}\}/g, (_, v, f) => otiles(v, f));
 html = html.replace(/\{\{tiles:(plain|hand):(-?\d)(?::(p\d):([a-z]+))?\}\}/g, (_, m, l, who, face) => tiles(m, l, who, face));
 html = html.replace(/\{\{file:([a-z]+\.jpg)\}\}/g, (_, f) => 'data:image/jpeg;base64,' + readFileSync(join(root, 'tools/screens-mockup-today', f)).toString('base64'));
 html = html.replace(/\{\{art:([a-z0-9-]+)\}\}/g, (_, k) => { if (!art[k]) throw new Error('missing art: ' + k); return art[k]; });

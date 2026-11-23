@@ -52,6 +52,19 @@ window.renderAll = async () => {
     items.sort((a, b) => a.y - b.y).forEach((b) => assets.draw(x, 'balloon', b.x, b.y, r * 2.2, { color: color(HUES[(b.k * 3) % HUES.length]) }));
   });
   bouquet('bouquet-21', 21); bouquet('bouquet-12', 12, 440); bouquet('bouquet-9', 9, 420); bouquet('bouquet-17', 17, 480);
+  /* wide painted backdrops (16:9) for the home options: the covers' own art, composed at the wide size */
+  for (const id of ['pop-party', 'sky-painter', 'leaf-pile', 'sleepy-bear', 'stack-it-high', 'animal-gym', 'keep-it-up', 'ptero-flight']){
+    const r = makeCover({ id, name: id }, { w: 1280, h: 720 }); if (!r) throw new Error('no wide art for ' + id);
+    jpg('bg-' + id, 1280, 720, (x, w, h) => x.drawImage(r.art, 0, 0, w, h), 0.78);
+  }
+  /* logo parts: Cubo waving, his head peeking (eyes only), a painted app tile with his cube face */
+  fig('cubo-wave', CUBO, 'wave');
+  png('head-peek', 360, 318, (x) => head(x, 180, 190, 150, CUBO, 0));
+  png('app-tile', 360, 360, (x) => {
+    x.fillStyle = color('ui.gold'); x.strokeStyle = color('shade.ink'); x.lineWidth = 12; x.beginPath(); x.roundRect(14, 14, 332, 332, 84); x.fill();
+    x.save(); x.clip(); x.fillStyle = 'rgba(255,255,255,.32)'; x.fillRect(0, 0, 360, 120); x.restore();
+    x.beginPath(); x.roundRect(14, 14, 332, 332, 84); x.stroke(); head(x, 180, 200, 118, CUBO, 0);
+  });
   /* the Pop Party sky: the paused moment, and the end with the rainbow */
   const sky = (name, p, rainbow, balloons) => jpg(name, 1280, 720, (x, W, H) => {
     const s = new Scene();
