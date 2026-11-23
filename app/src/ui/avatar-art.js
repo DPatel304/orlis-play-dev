@@ -287,11 +287,11 @@ function fromCard(pose, p){
   const arms = q.arms.map((ar, i) => { const d = i ? 1 : -1, o = [d * sx, sy];
     const pts = ar.map(([px, py]) => [d * sx + (px * U - d * sx) * 0.8, sy + (sy + (py + 0.6) * V - sy) * 0.8]);
     return AR(aim(o, pts[0]), pts[1] ? aim(pts[0], pts[1]) : aim(o, pts[0])); });
-  const m = rig({ rot: (q.lean || 0) * 0.35, arms, yo: (q.yOff || 0) * V * 0.43 });
+  const m = rig({ rot: (q.lean || 0) * 0.35, arms, yo: (q.yOff || 0) * V * 0.43, armsFront: pose === 'clap' || pose === 'hug' || pose === 'duck' || pose === 'side' });
   if (q.legs){
     const L = BODY.legLen, reach = [];
     m.legs = q.legs.map(([kn, ft], i) => { const d = i ? 1 : -1, hip = [d * 0.1, -0.135 + m.yo], k = [fx(kn[0]) * 0.8, fy(kn[1]) * 0.43], f = [fx(ft[0]) * 0.8, fy(ft[1]) * 0.43];
-      const l = LG(aim(hip, k), aim(k, f)); reach.push((Math.cos(l.a1 * DEG) + Math.cos(l.a2 * DEG)) * L / 2); return l; });
+      const cl = (v) => Math.max(-50, Math.min(50, v)), l = LG(cl(aim(hip, k)), cl(aim(k, f))); reach.push((Math.cos(l.a1 * DEG) + Math.cos(l.a2 * DEG)) * L / 2); return l; });
     /* the legs' own length decides how low the body sits: the lower foot is on the floor */
     m.yo = L - Math.max(...reach);
   }
