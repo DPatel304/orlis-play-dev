@@ -13,7 +13,7 @@ import { frontScene } from './front.js';
 import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
-import { openMaker, withFace, MAKING } from './avatar-maker.js';
+import { withFace } from './avatar-maker.js';
 import { editProfile, renameFamily } from './kid-editor.js';
 import { setup } from './setup.js';
 import { claudeChecklist } from './connect-claude.js';

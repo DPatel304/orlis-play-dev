@@ -2,7 +2,7 @@
    starts and how it moves; what the hero says; the Discover page's rows. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { homeRows, discoverRows, tabsFor, makeFor, startFocus, step, heroOf, bigHero, MAKE, PLAY_BIG } from '../src/ui/home-model.js';
+import { homeRows, discoverRows, tabsFor, startFocus, step, heroOf, bigHero, PLAY_BIG } from '../src/ui/home-model.js';
 
 const g = (id, name, more = {}) => ({ id, name, ...more });
 const POOL = [g('pop-party', 'Pop Party', { secs: 120 }), g('sky-painter', 'Sky Painter', { secs: 120 }), g('leaf-pile', 'Leaf Pile', { secs: 120 }), g('sleepy-bear', 'Sleepy Bear', { secs: 180 })];
@@ -36,14 +36,6 @@ test('the tabs (0055): Play and Create for a grown-up in the Player app; none fo
   assert.deepEqual(tabsFor({ waiting: true }), []);
   assert.deepEqual(tabsFor({ creatorApp: true, modeTabs: ['create', 'pro'] }), []);
   assert.deepEqual(tabsFor({ modeTabs: ['create', 'pro'] }), []);
-});
-
-test('who sees Make a game tiles (kept for Create): a child nothing; a grown-up Ask and Requests; a creator Create Pro too; the Creator app only Create Pro', () => {
-  assert.deepEqual(makeFor({ kid: true, creator: true }), []);
-  assert.deepEqual(makeFor({}), ['ask', 'requests']);
-  assert.deepEqual(makeFor({ creator: true }), ['ask', 'requests', 'pro']);
-  assert.deepEqual(makeFor({ creator: true, creatorApp: true }), ['pro']);
-  assert.deepEqual(MAKE.map(m => m.id), ['ask', 'requests', 'pro']);
 });
 
 test('focus starts on the pick made this session, else the one played last, else the first of Your games, else the first featured', () => {

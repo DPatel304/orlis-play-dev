@@ -18,8 +18,6 @@ import { POSES, FRAMES, frameAt } from '../games/figure.js';
 
 export { PARTS };
 export const surprise = randomLook;
-/* (kept so older callers compile: there is one style now) */
-export function setStyle(){}
 
 /* ---------- the colours of one look ---------- */
 /* two more mouths for Cubo's story faces (an open grin, a gasp); they are not in the creator's choices (look.js PARTS) */
@@ -49,7 +47,6 @@ const frost = (a) => { let f = frosted.get(a); if (!f){ const ice = color('sea.s
 
 const rr = (x, a, b, w, h, q) => { x.beginPath(); x.moveTo(a + q, b); x.arcTo(a + w, b, a + w, b + h, q); x.arcTo(a + w, b + h, a, b + h, q); x.arcTo(a, b + h, a, b, q); x.arcTo(a, b, a + w, b, q); x.closePath(); };
 const dot = (x, px, py, r) => { x.beginPath(); x.arc(px, py, Math.max(0.1, r), 0, Math.PI * 2); };
-const line = (x, pts, w, col) => { x.strokeStyle = col; x.lineWidth = w; x.beginPath(); pts.forEach(([px, py], k) => (k ? x.lineTo(px, py) : x.moveTo(px, py))); x.stroke(); };
 
 /* ---------- the head: origin at the middle of its top edge; S is the character's height ---------- */
 function drawHead(x, a, S, back, t){

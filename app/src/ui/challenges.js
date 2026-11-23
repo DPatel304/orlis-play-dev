@@ -17,7 +17,7 @@ import { screen, h } from './screens.js';
 import { button, onPick } from './cursor.js';
 import { sfx } from '../audio/sound.js';
 import { account } from './account.js';
-import { keeper, STAR, esc, reduced, iconFor, idOf, hasNews, markOpened, markSplash, splashWanted, blocksEl, fillBlocks, setBlocks, weekEl, stampEl } from './chkit.js';
+import { keeper, STAR, esc, reduced, iconFor, hasNews, markOpened, markSplash, splashWanted, blocksEl, fillBlocks, setBlocks, weekEl, stampEl } from './chkit.js';
 
 keeper.who = () => { const s = account.state || {}; return `${(s.household && s.household.id) || ''}.${s.current || ''}`; };
 export { STAR, splashWanted };

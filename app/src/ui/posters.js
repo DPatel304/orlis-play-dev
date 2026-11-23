@@ -5,8 +5,6 @@
    you get, with a few of the game's things moving in front: balloons bobbing
    for Pop Party and the castle. A game without a poster gets a soft wash of its accent colour. */
 import { Scene } from '../games/pop-party-scene.js';
-import { glow } from './backdrop.js';
-import { drawKid, KID_SKINS } from './kids.js';
 import { P as lkpP, RUN as LKP_RUN, drawCorridor, drawBeam, drawCrystal, drawCrew as drawSpaceCrew, setPalette as setLkpPalette } from '../games/lkp-art.js';
 import { LEVELS } from '../games/lkp-levels.js';
 import { finish as finishLkp } from '../games/lkp-world.js';

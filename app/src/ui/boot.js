@@ -101,5 +101,3 @@ function drawBoot(c, W, H, t){
 /* The two squares as a little picture, for a corner or a title bar: an SVG (the same one the logo uses). */
 export const mark = () => twoSquares('lm');
 
-/* the name, for places that need it as plain words */
-export const NAME_A = 'Orlis', NAME_B = 'Play', TAGLINE = 'Get up. Get together.';
