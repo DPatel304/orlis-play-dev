@@ -33,7 +33,7 @@ h1{ font-weight:700; font-size:clamp(26px,4vw,36px); margin:0; text-wrap:balance
 <div class="wrap">
   <header>
     <h1>Orlis intro sounds</h1>
-    <p class="lede">Each one plays in time with the two-squares intro, the way it opens the app. Turn the sound up, then tap a card. None of them has the extra ding at the end.</p>
+    <p class="lede">Round two: every option ends with the two sparkles you liked as the name comes in; only the beginning changes. Each plays in time with the two-squares intro. Turn the sound up, then tap a card.</p>
   </header>
   <div class="stage"><canvas id="cv" width="1600" height="700"></canvas><div class="now" id="now">Tap a sound to play it</div></div>
   <div class="grid" id="grid"></div>
@@ -111,17 +111,33 @@ function thud(t, gain = 0.35){ const o = AC.createOscillator(), g = AC.createGai
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.25); }
 
 /* t0 = when the animation starts; land = when the violet square lands (0.95 s) */
+/* the two sparkles as the name comes in (the owner's pick from round one, option 5) - every option below ends with them */
+const sparkles = (t0) => { bell(91, t0 + NAME + 0.05, 0.05, 0.6); bell(96, t0 + NAME + 0.2, 0.04, 0.6); };
+function pop(t, f = 520, gain = 0.22){ const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine';
+  o.frequency.setValueAtTime(f * 1.9, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.05);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+  o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.15); }
+function boing(t, dur, f0, f1, gain = 0.07){ const o = AC.createOscillator(), g = AC.createGain(), l = AC.createOscillator(), lg = AC.createGain(); o.type = 'sine';
+  o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); l.frequency.value = 14; lg.gain.value = f1 * 0.04;
+  l.connect(lg); lg.connect(o.frequency); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(out); o.start(t); l.start(t); o.stop(t + dur + 0.05); l.stop(t + dur + 0.05); }
+function pad(t, ms, dur, gain = 0.05){ for (const m of ms){ const o = AC.createOscillator(), g = AC.createGain(); o.type = 'triangle'; o.frequency.value = hz(m);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + dur * 0.85); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.9);
+  const w = AC.createGain(); w.gain.value = 0.5; o.connect(g); g.connect(out); g.connect(w); w.connect(verb); o.start(t); o.stop(t + dur + 1); } }
+
 const SOUNDS = [
-  { name: 'Two notes', what: 'A soft wooden tap as the blue square appears, then a warm two-note lift as the violet one lands. The quietest.',
-    play(t0){ pluck(67, t0 + 0.04, 0.14); marimba(67, t0 + MERGE, 0.22); marimba(72, t0 + MERGE + 0.11, 0.24); } },
-  { name: 'Kalimba hop', what: 'Today’s do-mi-sol, but timed to the hop so the last note is the landing. Nothing after it.',
-    play(t0){ kalimba(72, t0 + ARRIVE, 0.2); kalimba(76, t0 + ARRIVE + 0.25, 0.2); kalimba(79, t0 + MERGE, 0.26); } },
-  { name: 'Marimba chord', what: 'A soft breath of air during the hop and one rounded marimba chord on the landing. Warm and simple.',
-    play(t0){ air(t0 + ARRIVE, MERGE - ARRIVE + 0.05, { gain: 0.035, from: 500, to: 2400 }); [60, 64, 67, 72].forEach((m, i) => marimba(m, t0 + MERGE + i * 0.018, 0.16)); } },
-  { name: 'Glass bell', what: 'A rising shimmer, then one bright, open bell chord that rings out under the name. The most “TV app”.',
-    play(t0){ air(t0 + 0.2, MERGE - 0.15, { gain: 0.03, from: 1200, to: 6000, q: 0.6 }); [72, 76, 79, 86].forEach((m, i) => bell(m, t0 + MERGE + i * 0.012, 0.09)); } },
-  { name: 'Bouncy', what: 'A little whistle that follows the violet square’s arc, a soft bump when it lands, and two sparkles as the name comes in. The most playful.',
-    play(t0){ slide(t0 + ARRIVE, MERGE - ARRIVE, 420, 900, 0.06); thud(t0 + MERGE, 0.28); pluck(79, t0 + MERGE, 0.12, 0.3); bell(91, t0 + NAME + 0.05, 0.05, 0.6); bell(96, t0 + NAME + 0.2, 0.04, 0.6); } }
+  { n: 5, name: 'Bouncy (your pick)', what: 'Round one’s option 5 as it was: the whistle along the arc, a soft bump on landing, then the two sparkles.',
+    play(t0){ slide(t0 + ARRIVE, MERGE - ARRIVE, 420, 900, 0.06); thud(t0 + MERGE, 0.28); pluck(79, t0 + MERGE, 0.12, 0.3); sparkles(t0); } },
+  { n: 6, name: 'Bubble pops', what: 'A round bubble pop as each square appears, a gentle plop as they meet, then the sparkles. Light and friendly.',
+    play(t0){ pop(t0 + 0.05, 440, 0.2); pop(t0 + ARRIVE * 0.6, 620, 0.16); pop(t0 + MERGE, 360, 0.18); sparkles(t0); } },
+  { n: 7, name: 'Wooden steps', what: 'One wooden note for the blue square, a higher one as the violet lands on it, like stepping up a stair, then the sparkles.',
+    play(t0){ marimba(72, t0 + 0.05, 0.2); marimba(79, t0 + MERGE, 0.24); sparkles(t0); } },
+  { n: 8, name: 'Swoosh and click', what: 'An airy swoosh that follows the hop and a soft click when it lands, then the sparkles. Clean and modern.',
+    play(t0){ air(t0 + ARRIVE - 0.05, MERGE - ARRIVE + 0.08, { gain: 0.06, from: 500, to: 3200, q: 0.7 }); pluck(84, t0 + MERGE, 0.1, 0.1); thud(t0 + MERGE, 0.12); sparkles(t0); } },
+  { n: 9, name: 'Soft bloom', what: 'A warm chord that slowly swells as the squares come together and settles as they land, then the sparkles. Calm and dreamy.',
+    play(t0){ pad(t0, [60, 64, 67, 71], MERGE, 0.035); marimba(72, t0 + MERGE, 0.12, 0.4); sparkles(t0); } },
+  { n: 10, name: 'Spring hop', what: 'A springy boing as the violet square takes off, a little plop when it lands, then the sparkles. Cartoon fun.',
+    play(t0){ pop(t0 + 0.05, 400, 0.14); boing(t0 + ARRIVE, MERGE - ARRIVE, 300, 760, 0.07); pop(t0 + MERGE, 300, 0.2); sparkles(t0); } }
 ];
 const OLD = { name: 'Today', play(t0){ [72, 76, 79].forEach((m, i) => kalimba(m, t0 + MERGE + i * 0.13, 0.3)); kalimba(84, t0 + MERGE + 0.39, 0.22); kalimba(88, t0 + WINK, 0.12); } };
 
@@ -133,8 +149,8 @@ function go(snd, el){
   now.textContent = snd === OLD ? 'Playing: today’s intro' : `Playing: ${snd.name}`;
 }
 SOUNDS.forEach((snd, i) => {
-  const b = document.createElement('button'); b.className = 'opt'; b.id = 'opt' + (i + 1);
-  b.innerHTML = `<span class="n"><i>${i + 1}</i>${snd.name}</span><p>${snd.what}</p><span class="play">Play</span>`;
+  const b = document.createElement('button'); b.className = 'opt'; b.id = 'opt' + snd.n;
+  b.innerHTML = `<span class="n"><i>${snd.n}</i>${snd.name}</span><p>${snd.what}</p><span class="play">Play</span>`;
   b.addEventListener('click', () => go(snd, b)); grid.appendChild(b);
 });
 document.getElementById('old').addEventListener('click', (e) => go(OLD, e.currentTarget));
