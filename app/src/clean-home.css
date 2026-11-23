@@ -96,7 +96,7 @@ body.remote .htile.kfocus{ outline:none; }
 .home.rest .buildstamp{ color:#fff; }
 
 /* the profile sheet, behind the profile face */
-.screen.dim.hsheetwrap{ background:rgba(29,27,46,.35); display:block; padding:0; }
+.screen.dim.hsheetwrap{ background:rgba(29,27,46,.35); display:block; padding:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
 .hsheet{ position:absolute; right:calc(var(--u)*5); top:calc(var(--u)*16); width:calc(var(--u)*56); padding:calc(var(--u)*2.6); background:var(--surface); border-radius:calc(var(--u)*3); box-shadow:var(--soft); text-align:left; animation:popin var(--t-base) var(--ease) both; }
 .hshead{ display:flex; align-items:center; gap:calc(var(--u)*2); padding:calc(var(--u)*.6) calc(var(--u)*.6) calc(var(--u)*2); }
 .hsface{ display:block; width:calc(var(--u)*9); height:calc(var(--u)*9); border-radius:28%; overflow:hidden; background:var(--paper); flex:none; } .hsface canvas{ width:100%; height:100%; display:block; }

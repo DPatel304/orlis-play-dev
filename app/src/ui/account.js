@@ -18,6 +18,7 @@ import { editProfile, renameFamily } from './kid-editor.js';
 import { setup } from './setup.js';
 import { claudeChecklist } from './connect-claude.js';
 import { HOME_SERVER } from './home-server.js';
+import { logo, homeButton, icon } from './brand.js';
 
 const KEY = 'orlis.account';
 export const AVATARS = {
@@ -151,14 +152,16 @@ async function hello(url){
 export function welcome(done, { auto = true, glide = false, onBack = null } = {}){
   clearUI();
   const s = screen('dim account');
-  /* the cube resting on the left (drawn behind - front.js), and everything
-     else on one card on the right */
+  /* the logo top left (or, asked for from inside the app, the big Home button where it sits), a painted world softly blurred behind
+     (front.js), and everything else on one white card in the middle */
   const card = h('div', 'acctcard' + (glide ? ' glide' : ''));
-  s.append(card);
+  let top = logo({ size: 'calc(var(--u)*6.4)', light: true });
+  if (onBack){ top = homeButton(() => { sfx.back?.(); onBack(); }); top.classList.add('close'); }      /* (the remote's Back presses it) */
+  s.append(top, card);
   /* (a screen that keeps checking - the setup checklist - stops when another's shown) */
   let watching = null;
   const stopWatching = () => { if (watching){ clearTimeout(watching); watching = null; } };
-  const show = (...nodes) => { stopWatching(); card.innerHTML = ''; card.append(...nodes); card.scrollTop = 0; };
+  const show = (...nodes) => { stopWatching(); card.innerHTML = ''; card.classList.remove('whoscreen'); card.append(...nodes); card.scrollTop = 0; };
   const msg = h('p', 'lede formmsg', '');
   const say = (t, bad) => { msg.textContent = t || ''; msg.classList.toggle('bad', !!bad); };
 
@@ -319,16 +322,16 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
         return r.exists ? signIn(sv, email.trim()) : join(sv, email.trim());
       });
     f.classList.add('getin');
-    show(f, msg);
+    show(h('h2', '', 'Sign in'), h('p', 'lede', `To ${esc(sv.name || 'your Orlis')} on your Wi-Fi`), f, msg);
   }
   /* the card's corner icons: back (top-left), help (top-right) - small, so
      the form is what you see */
   const corner = (label, cls, title, fn) => { const b = onPick(button(label, 'cardicon ' + cls), fn); b.title = title; b.setAttribute('aria-label', title); return b; };
-  const another = (sv, email) => corner('←', 'back', 'Use a different email', () => { sfx.back?.(); getIn(sv, email); });
+  const another = (sv, email) => corner(icon('back'), 'back', 'Use a different email', () => { sfx.back?.(); getIn(sv, email); });
   function signIn(sv, email){
-    show(h('h2', '', 'Welcome back'), h('p', 'lede', esc(email)),
+    show(h('h2', '', 'Sign in'), h('p', 'lede', `To ${esc(sv.name || 'your Orlis')} on your Wi-Fi`),
       form([
-        ['email', '', 'email', 'username', { value: email, hidden: true }],
+        ['email', 'Email', 'email', 'username', { value: email }],
         ['password', 'Password', 'password', 'current-password']
       ], 'Sign in', async (v) => finish(await call(sv.url, 'POST', '/api/signin', { ...v, device: device() }))),
       msg,
@@ -340,7 +343,7 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
     show(h('h2', '', 'Forgot your password?'),
       h('p', 'lede', 'Ask whoever runs your Orlis server to give you a new one.'),
       h('p', 'lede small', 'If that’s you: on the server’s laptop, right-click the Orlis cube by the clock, then <b>Manage Orlis Server</b> › Families › <b>New password</b>.'),
-      corner('←', 'back', 'Back to sign in', () => { sfx.back?.(); signIn(sv, email); }));
+      corner(icon('back'), 'back', 'Back to sign in', () => { sfx.back?.(); signIn(sv, email); }));
   }
   function join(sv, email){
     const free = sv.invite === false;
@@ -390,22 +393,22 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
         sfx.select(); account.set({ current: p.id }); done(p);
       }), p, 220));
       /* (a grown-up looks after the family right here: a pencil on each) */
-      if (grown){ const pen = onPick(button('✏️', 'whoedit'), () => { sfx.select(); editProfile(p, { self: p === head, onDone: changed }); }); pen.title = 'Change'; pen.setAttribute('aria-label', `Change ${p.name}`); cell.appendChild(pen); }
+      if (grown){ const pen = onPick(button(icon('pencil'), 'whoedit'), () => { sfx.select(); editProfile(p, { self: p === head, onDone: changed }); }); pen.title = 'Change'; pen.setAttribute('aria-label', `Change ${p.name}`); cell.appendChild(pen); }
       tiles.appendChild(cell);
     }
-    if (grown && (account.state.profiles || []).length < 8) tiles.appendChild(onPick(button('<span class="av">+</span><span class="nm">Add a child</span>', 'who add'), () => { sfx.select(); editProfile(null, { onDone: changed }); }));
+    if (grown && (account.state.profiles || []).length < 8) tiles.appendChild(onPick(button(`<span class="av">${icon('plus')}</span><span class="nm">Add</span>`, 'who add'), () => { sfx.select(); editProfile(null, { onDone: changed }); }));
     /* the family's name is the title (no "Who's playing?": the faces say it) */
     const fam = account.state.household && account.state.household.name;
     const title = h('h2', 'whotitle', esc(fam || 'Who\u2019s playing?'));
-    if (grown){ const pen = onPick(button('✏️', 'whoedit title'), () => { sfx.select(); renameFamily({ onDone: changed }); }); pen.title = 'The family’s name'; pen.setAttribute('aria-label', 'Change the family’s name'); title.appendChild(pen); }
+    if (grown){ const pen = onPick(button(icon('pencil'), 'whoedit title'), () => { sfx.select(); renameFamily({ onDone: changed }); }); pen.title = 'The family’s name'; pen.setAttribute('aria-label', 'Change the family’s name'); title.appendChild(pen); }
     const nodes = [
       /* opened from inside the app: a way back (Escape does it too, through the Back key) */
-      onBack ? corner('←', 'back close', 'Back', () => { sfx.back?.(); onBack(); }) : null,
-      title, tiles,
+      title, fam ? h('p', 'whosub', 'Who\u2019s playing?') : null, tiles,
       /* signing out lives here, with the family (a child playing doesn't see it) */
       grown && account.signedIn ? onPick(button('Sign out', 'link famlink'), () => { sfx.back?.(); account.signOut(); location.reload(); }) : null,
       msg].filter(Boolean);
     show(...nodes);
+    card.classList.add('whoscreen');                 /* (big faces across the screen: no card) */
   }
   /* (still waiting: straight on to the starter games - it lets them know when they're in) */
   if (account.signedIn) who(); else find();

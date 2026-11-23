@@ -1322,13 +1322,6 @@ canvas.avface{ display:block; border-radius:22%; }
 .cend .btn{ font-size:.8em; padding:.4em 1em; }
 
 /* ---------- Big Picture: the front door from across the room ---------- */
-body.bigpicture .screen.account .acctcard{ width:min(50vw, 980px); padding:5vh 4.4vh 4.4vh; border-radius:4vh; }
-body.bigpicture .acctcard .acctform{ font-size:3.2vh; gap:2vh; }
-body.bigpicture .acctcard h2{ font-size:6vh; }
-body.bigpicture .acctcard .lede{ font-size:3vh; max-width:none; }
-body.bigpicture .acctcard .btn.cardicon{ width:7vh; height:7vh; font-size:3.6vh; }
-body.bigpicture .acctcard .formmsg, body.bigpicture .toast{ font-size:2.8vh; }
-body.bigpicture .finding{ font-size:3.6vh; }
 /* the remote's highlight on a box or the tick */
 body.remote .acctform input.kfocus{ border-color:#6d5efc; }
 body.remote .acctform label.check input.kfocus{ box-shadow:0 0 0 .25em rgba(109,94,252,.35); }
@@ -1337,7 +1330,6 @@ body.remote .acctform label.check input.kfocus{ box-shadow:0 0 0 .25em rgba(109,
 .acctform label.check input{ font-size:inherit; }
 /* the grown-ups line, under the button */
 .acctcard .grownups{ margin:-.6vh 0 0; color:#8a8ea0; font-size:clamp(12px, 1.8vh, 20px); }
-body.bigpicture .acctcard .grownups{ font-size:2.6vh; }
 
 /* ---------- Play: a shorter banner, then rows - Jump back in, Featured, All ---------- */
 .homepage .shero{ height:44vh; }

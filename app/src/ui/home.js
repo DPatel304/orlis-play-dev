@@ -48,7 +48,10 @@ const remember = (id) => { try { localStorage.setItem(LAST, id); } catch {} };
 /* ---------- the worlds: each game's wide painted picture, made once ---------- */
 const worlds = new Map();
 const jpeg = (cv) => { try { return cv.toDataURL('image/jpeg', 0.78); } catch { return null; } };
+/* (the pictures can be stood in for, in the tests: hooks.world) */
+export const hooks = { world: null };
 export function worldOf(g){
+  if (hooks.world) return hooks.world(g);
   if (worlds.has(g.id)) return worlds.get(g.id);
   let url = null;
   try {
@@ -79,7 +82,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const featured = waiting ? [] : week.featured();
   const toGet = [...featured, ...games].filter((e, i, all) => !library.installed.has(e.id) && all.indexOf(e) === i).map(standIn);
   const creator = account.signedIn && ['creator', 'owner'].includes(account.role);
-  const make = waiting || !appMode.tabs().includes('create') && !appMode.creator() ? [] : makeFor({ kid: account.isKid, creator, creatorApp: appMode.creator() }).filter(id => id !== 'pro' || nav.pro).filter(id => id !== 'requests' || nav.requests);
+  const make = !appMode.tabs().includes('create') && !appMode.creator() ? [] : waiting ? ['ask'] : makeFor({ kid: account.isKid, creator, creatorApp: appMode.creator() }).filter(id => id !== 'pro' || nav.pro).filter(id => id !== 'requests' || nav.requests);
   const rows = homeRows({ pool, toGet, make, more: !!nav.store && !waiting && !appMode.creator(), testing: waiting ? [] : (week.drafts || []) });
 
   /* ---------- the page ---------- */

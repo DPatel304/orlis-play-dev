@@ -1,0 +1,47 @@
+/* ---------- Create, Create Pro, Discover's pages: the clean look, with the big Home button where the logo sits ---------- */
+.screen.tvhome.createpage,.screen.tvhome.storepage{ background:transparent; color:var(--ink); font-family:var(--ui); }
+.ctop{ position:absolute; left:0; top:0; z-index:8; }
+.createpage .sscroll,.storepage .sscroll{ padding-top:0; }
+/* a plain notice: a picture, a title, a line or two (Pending approval, Making games is for grown-ups, Your requests) */
+.cnotice{ position:relative; max-width:calc(var(--u)*128); margin:0 auto; padding:calc(var(--u)*20) calc(var(--u)*5) calc(var(--u)*6); text-align:left; color:var(--ink); }
+.cnotice h1{ margin:0 0 calc(var(--u)*2); font:700 calc(var(--u)*9)/1 var(--ui); color:var(--ink); letter-spacing:-.01em; }
+.cnotice p{ margin:0 0 calc(var(--u)*1.6); max-width:calc(var(--u)*100); font:400 calc(var(--u)*4)/1.3 var(--ui); color:var(--ink-soft); }
+.cnotice .snote{ font-weight:700; color:var(--ink); }
+.cnico,.bigicon{ display:grid; place-items:center; width:calc(var(--u)*17); height:calc(var(--u)*17); margin:0 0 calc(var(--u)*3); border-radius:28%; background:var(--grad); color:#fff; box-shadow:var(--soft); }
+.cnico svg.i,.bigicon svg.i{ width:calc(var(--u)*9.5); height:calc(var(--u)*9.5); }
+.cnotice.requests .cbtn{ margin:calc(var(--u)*2) 0 calc(var(--u)*3); }
+.cnotice.requests .shelf{ margin-top:calc(var(--u)*2); } .cnotice.requests .shelf h3{ font:700 var(--tv-label)/1 var(--ui); margin:0 0 calc(var(--u)*2); color:var(--ink); }
+.cnotice .shelfrow{ display:flex; gap:calc(var(--u)*2.2); flex-wrap:wrap; }
+.cnotice .btn.slock.buildingtile{ width:calc(var(--u)*30); aspect-ratio:16/10; padding:0; border:0; border-radius:calc(var(--u)*2.2); background:center/cover no-repeat; box-shadow:var(--soft); overflow:hidden; }
+.cnotice .btn.slock .sthumb{ position:absolute; inset:0; background:center/cover no-repeat; } .cnotice .btn.slock .smeta{ display:none; } .cnotice .btn.slock .fill{ display:none; }
+.cnotice .cempty{ font-size:calc(var(--u)*3.6); }
+/* "No game slots": a painted picture and one line */
+.builder .bsent{ display:flex; flex-direction:column; align-items:flex-start; text-align:left; padding-top:calc(var(--u)*6); }
+.builder .bsent .bh{ font:700 calc(var(--u)*9)/1 var(--ui); margin:0 0 calc(var(--u)*2); } .builder .bsent .bnote{ font:400 calc(var(--u)*4)/1.3 var(--ui); color:var(--ink-soft); margin:0; }
+/* Create Pro: a gradient band, then the three steps */
+.createpage .shero.prohero{ height:calc(var(--u)*40); }
+.createpage .shero.prohero .sheroart{ background:var(--grad) !important; }
+.createpage .shero.prohero .shshade{ display:none; }
+.createpage .shero.prohero .shtext{ left:calc(var(--u)*5); bottom:auto; top:calc(var(--u)*17); max-width:calc(var(--u)*150); }
+.createpage .shero .skicker{ font:700 calc(var(--u)*2.9) var(--ui); letter-spacing:.14em; text-transform:uppercase; color:#fff; opacity:.9; }
+.createpage .shero h1{ font:700 calc(var(--u)*9)/1 var(--ui); color:#fff; margin:calc(var(--u)*1) 0 0; text-shadow:none; letter-spacing:-.01em; }
+.psteps{ gap:calc(var(--u)*2.4); padding:0 calc(var(--u)*5); margin-top:calc(var(--u)*-6); }
+.pstep{ height:calc(var(--u)*38); border-radius:calc(var(--u)*3); box-shadow:var(--soft); }
+.pstep:before{ display:none; }
+.pstep .pn{ right:calc(var(--u)*2.4); top:calc(var(--u)*2.4); width:calc(var(--u)*6); height:calc(var(--u)*6); font:700 calc(var(--u)*3) var(--ui); background:rgba(255,255,255,.28); }
+.pstep .pem{ top:calc(var(--u)*5); font-size:inherit; display:flex; justify-content:center; filter:none; color:#fff; }
+.pstep .pem svg.i{ width:calc(var(--u)*12); height:calc(var(--u)*12); }
+.pstep .plb{ bottom:calc(var(--u)*11); font:700 calc(var(--u)*4.2) var(--ui); text-shadow:none; }
+.pstep .pact{ bottom:calc(var(--u)*3); }
+.pstep.s1{ background:linear-gradient(145deg,var(--p3),var(--blue)); } .pstep.s2{ background:var(--grad); } .pstep.s3{ background:linear-gradient(145deg,var(--ink),#4b4580); }
+.pstep.todo{ background:linear-gradient(145deg,var(--blue),var(--violet)); } .pstep.lock{ filter:none; opacity:.55; }
+.btn.pbtn{ font-family:var(--ui); border:0; border-radius:var(--pill); background:#fff; color:var(--ink); font-weight:700; font-size:calc(var(--u)*3.4); padding:calc(var(--u)*1.2) calc(var(--u)*3.6); box-shadow:var(--soft); }
+.btn.pbtn .fill{ background:var(--grad); opacity:.18; } .btn.pbtn:hover,.btn.pbtn.hot{ transform:scale(1.05); }
+.pchip{ display:inline-block; padding:calc(var(--u)*1) calc(var(--u)*3); border-radius:var(--pill); background:rgba(255,255,255,.28); font:700 calc(var(--u)*3) var(--ui); color:#fff; }
+/* your games and the rows under the steps */
+.createpage .srow h3{ font:700 var(--tv-label)/1 var(--ui); color:var(--ink); } .createpage .srow{ padding:0 calc(var(--u)*5); }
+.createpage .btn.slock .nm{ font-family:var(--ui); color:var(--ink); }
+/* Make a game (the request builder): clean type and a flat surface under it */
+.createpage.flow .cbuild{ transform:translateY(calc(var(--u)*8)); }
+.builder{ font-family:var(--ui); color:var(--ink); }
+.builder h1,.builder .bh{ font-family:var(--ui); color:var(--ink); }

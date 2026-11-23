@@ -340,7 +340,7 @@ export function buildingCoverUrl({ name = 'Your game', cols = ['#8b7cff', '#4cc3
   if (buildingMade.has(key)) return buildingMade.get(key);
   const W = 960, H = 540, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const c = cv.getContext && cv.getContext('2d'); if (!c) return null;
-  try { previewCover(cv, { name, cols, glyph: '\u{1F6A7}' }); } catch (e){ return null; }
+  try { previewCover(cv, { name, cols, glyph: '' }); } catch (e){ return null; }       /* (the stripes say it: no emoji) */
   c.save(); c.globalAlpha = 0.11; c.fillStyle = '#000';
   for (let x = -H; x < W + H; x += 84){ c.beginPath(); c.moveTo(x, H); c.lineTo(x + 42, H); c.lineTo(x + 42 + H, 0); c.lineTo(x + H, 0); c.closePath(); c.fill(); }
   c.restore();

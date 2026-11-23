@@ -44,6 +44,7 @@ const ICONS = {
   link: '<path d="M10 14a4.2 4.2 0 0 0 6 0l3-3a4.2 4.2 0 0 0-6-6l-1 1M14 10a4.2 4.2 0 0 0-6 0l-3 3a4.2 4.2 0 0 0 6 6l1-1" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
   hammer: '<path d="M14 6l4 4M5 19l8.5-8.5M11 4l4-1 6 6-1 4-4 1-5-5z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
   tv: '<rect x="3" y="5" width="18" height="12.5" rx="2.4" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M8 21h8M12 17.5V21" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>',
+  key: '<circle cx="8" cy="15" r="4.2" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M11 12l9-9M17 6l3 3M14 9l2.4 2.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
   slot: '<rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="3.4 3.4"/><path d="M12 8.6v6.8M8.6 12h6.8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>',
   clock: '<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M12 7.4V12l3.2 2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
   plus: '<path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>',

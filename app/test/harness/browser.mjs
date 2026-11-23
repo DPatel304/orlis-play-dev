@@ -46,16 +46,18 @@ class FakeEl {
     this.classList = new ClassList(this);
   }
 
+  get isConnected(){ let n = this; while (n.parent) n = n.parent; return n === document._root; }
   get className(){ return this._class; }
   set className(v){ this._class = String(v == null ? '' : v); }
 
   get textContent(){ return this._text; }
-  set textContent(v){ this._text = String(v == null ? '' : v); this.children = []; }
+  set textContent(v){ this._text = String(v == null ? '' : v); this.children = []; this._html = null; }
 
   /* Only the markup Orlis Play actually writes: a flat run of single-depth tags.
      Enough for button(), which is the one place innerHTML builds structure. */
-  get innerHTML(){ return this._text; }
+  get innerHTML(){ return this._html != null ? this._html : this._text; }
   set innerHTML(html){
+    this._html = String(html);          /* (what was written, as written - the markup is only parsed one level deep) */
     this.children = [];
     this._text = '';
     const re = /<(\w+)([^>]*)>([\s\S]*?)<\/\1>/g;
@@ -73,7 +75,7 @@ class FakeEl {
   }
 
   appendChild(c){ c.parent = this; this.children.push(c); return c; }
-  append(...cs){ cs.forEach(c => this.appendChild(c)); }
+  append(...cs){ cs.forEach(c => (typeof c === 'string' ? (this._text += c) : this.appendChild(c))); }
   remove(){
     if (!this.parent) return;
     const i = this.parent.children.indexOf(this);
@@ -109,6 +111,17 @@ class FakeEl {
     return null;
   }
 
+  replaceWith(node){
+    if (!this.parent) return;
+    const i = this.parent.children.indexOf(this);
+    if (i >= 0){ this.parent.children[i] = node; node.parent = this.parent; this.parent = null; }
+  }
+  insertAdjacentHTML(where, html){
+    const tmp = new FakeEl('div'); tmp.innerHTML = html;
+    tmp.children.forEach(c => this.appendChild(c));
+  }
+  setAttribute(k, v){ (this._attrs ||= {})[k] = String(v); }
+  getAttribute(k){ return this._attrs && k in this._attrs ? this._attrs[k] : null; }
   addEventListener(type, fn){ (this._listeners[type] ||= []).push(fn); }
   removeEventListener(type, fn){
     const a = this._listeners[type]; if (!a) return;

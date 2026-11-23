@@ -1,6 +1,6 @@
 /* Looking after the family, on the first screen (the one you get to by picking
    your picture): a pencil on each profile opens a small card to rename them,
-   change their picture or avatar, or remove them (a child, not the grown-up
+   change their avatar, or remove them (a child, not the grown-up
    who made the account); a pencil by the family's name changes that.
 
    The account's maker is the head of the household and a grown-up; everyone
@@ -9,8 +9,8 @@
 import { button, onPick } from './cursor.js';
 import { screen, h } from './screens.js';
 import { sfx } from '../audio/sound.js';
-import { account, AVATARS } from './account.js';
-import { openMaker, faceOf, MAKING } from './avatar-maker.js';
+import { account } from './account.js';
+import { openMaker, faceOf } from './avatar-maker.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SURE = 4000;
@@ -43,41 +43,26 @@ const nameBox = (value = '', max = 20, placeholder = 'A first name or nickname')
   i.type = 'text'; i.maxLength = max; i.value = value; i.placeholder = placeholder; i.className = 'finput';
   return i;
 };
-/* the pictures to choose from */
-function pictures(pick, onChoose){
-  const grid = h('div', 'avatars');
-  const mark = () => [...grid.children].forEach(b => b.classList.toggle('chosen', b.dataset.av === pick));
-  for (const [id, em] of Object.entries(AVATARS)){
-    const b = onPick(button(em, 'av'), () => { pick = id; mark(); onChoose(id); }); b.type = 'button'; b.dataset.av = id; grid.appendChild(b);
-  }
-  mark();
-  return grid;
-}
-
 /* a profile to change: p, or null to add a child. self: the grown-up's own (no Remove). */
 export function editProfile(p, { self = false, onDone = () => {} } = {}){
-  let pick = p ? p.avatar : 'rocket';
   const box = nameBox(p ? p.name : '');
   const { card, close } = popup(h('h2', '', p ? esc(p.name) : 'Add a child'), box);
   const finish = () => { close(); onDone(); };
-  if (MAKING && p && p.look){
-    /* they have an avatar: it, and a way to change it, instead of the old pictures */
+  /* the avatar maker is the picture: their character, and a way to change it (a new child goes straight on to making theirs) */
+  if (p){
     const row = h('div', 'favrow'); row.append(faceOf(p, 140), btn('Change avatar', () => { close(); openMaker(p, { onDone }); }, 'go'));
     card.appendChild(row);
-  } else {
-    card.appendChild(pictures(pick, (id) => { pick = id; }));
-    if (MAKING && p) card.appendChild(btn('Make an avatar', () => { close(); openMaker(p, { onDone }); }, 'go fsmall'));
   }
-  if (!self) card.appendChild(h('p', 'fnote', 'Just a name and a picture - nothing else is kept about a child.'));
+  if (!self) card.appendChild(h('p', 'fnote', 'Just a name and an avatar - nothing else is kept about a child.'));
   const go = async () => {
     const name = box.value.trim(); if (!name) return box.focus();
     try {
-      if (p){ await account.call('PATCH', `/api/profiles/${encodeURIComponent(p.id)}`, { name, avatar: pick }); sfx.gold?.(); finish(); }
+      if (p){ await account.call('PATCH', `/api/profiles/${encodeURIComponent(p.id)}`, { name }); sfx.gold?.(); finish(); }
       else {
-        const made = await account.call('POST', '/api/profiles', { name, avatar: pick });
+        const made = await account.call('POST', '/api/profiles', { name, avatar: 'cube' });
         sfx.gold?.(); close();
-        /* straight on to making their avatar (Cancel keeps the picture) */
-        if (MAKING) openMaker(made, { onDone }); else onDone();
+        /* straight on to making their avatar (Cancel keeps Cubo's face) */
+        openMaker(made, { onDone });
       }
     } catch (e){ problem(card)(e); }
   };

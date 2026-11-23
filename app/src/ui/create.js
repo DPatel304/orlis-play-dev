@@ -21,6 +21,7 @@ import { setup, claudeConnected } from './setup.js';
 import { claudeChecklist } from './connect-claude.js';
 import { tv } from './tv.js';
 import { topBar } from './tabs.js';
+import { icon } from './brand.js';
 import { CREATE_SOON, looks } from './menu.js';
 import { making } from './making.js';
 import { unpack, check, build, pack, nextVersion } from './creator-kit.js';
@@ -54,7 +55,7 @@ let lastTry = null;
 /* the first game a new creator made (setup's "Make my first game"), for a friendlier word after trying it */
 let firstFolder = null;
 
-export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, pro = false }){
+export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, pro = false, view = '' }){
   clearUI();
   const s = screen('tvhome createpage onhero');
   const bar = topBar(pro ? 'pro' : 'create', nav, { onWho, onRecalibrate });
@@ -71,46 +72,48 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
   /* (the Dev Kit - building games with Claude Code - is Create Pro; Create is the kids' picture flow) */
   const kit = pro && creator && !!(account.state.account && account.state.account.devkit);
   /* waiting to be let in: Create opens then */
+  /* (a plain card: a painted picture, the title, and one line on what happens next) */
+  const notice = (ico, title, ...lines) => {
+    const c = h('section', 'cnotice');
+    c.append(h('div', 'cnico', icon(ico)), h('h1', '', esc(title)), ...lines.map(l => h('p', '', esc(l))));
+    scroll.appendChild(c);
+  };
   if (grown && account.waiting){
-    scroll.appendChild(banner('Create', 'Make a game', 'Pending account approval').hero);
+    notice('clock', 'Pending approval', 'The owner has been told. As soon as they say yes, Create and Discover open up here by themselves.', 'Meanwhile, the starter games are on Home.');
     return scene;
   }
   if (!grown){
     const m = CREATE_SOON;
-    scroll.appendChild(banner('Coming soon', m.name, m.line).hero);
-    const sec = h('section', 'srow');
-    sec.append(h('p', 'cabout', esc(m.about)));
-    if (account.signedIn) sec.append(h('p', 'snote', 'Making games is for grown-ups.'));
-    scroll.appendChild(sec);
+    notice('pencil', m.name, m.line, m.about);
+    if (account.signedIn) scroll.lastChild.appendChild(h('p', 'snote', 'Making games is for grown-ups.'));
     return scene;
   }
 
   if (!pro){
     /* the page is the flow: no banner, straight into the first question */
     s.classList.add('flow'); s.classList.remove('onhero');
-    /* the tabs, the cube and who's playing slide up and away (the page is the build now); a handle at the top, the top edge, or Escape brings them back */
-    let awayT = 0;
-    const lift = () => { clearTimeout(awayT); s.classList.add('chromeaway'); };
-    const drop = () => { clearTimeout(awayT); s.classList.remove('chromeaway'); };
-    setTimeout(() => { if (s.isConnected) lift(); }, 450);
-    const handle = onPick(button('▾', 'pullhandle'), () => { sfx.select?.(); s.classList.contains('chromeaway') ? drop() : lift(); });
-    handle.title = 'Show the tabs'; handle.setAttribute('aria-label', 'Show the tabs');
-    s.appendChild(handle);
-    s.addEventListener('pointermove', (e) => {
-      if (e.clientY < 36 && s.classList.contains('chromeaway')) drop();
-      else if (e.clientY > innerHeight * 0.22 && !s.classList.contains('chromeaway')){ clearTimeout(awayT); awayT = setTimeout(lift, 1800); }
-    });
-    const escKey = (e) => {
-      if (!s.isConnected){ removeEventListener('keydown', escKey, true); return; }
-      if (e.key === 'Escape' && !document.querySelector('.fpopwrap')){ e.preventDefault(); sfx.select?.(); s.classList.contains('chromeaway') ? drop() : lift(); }
-    };
-    addEventListener('keydown', escKey, true);
   }
   /* Create Pro: a banner, with the Dev Kit's buttons */
   if (pro){
     const b = banner('Create Pro', 'Make games with Claude Code', kit ? '' : 'On your own Claude account');
     b.hero.classList.add('prohero');
     scroll.appendChild(b.hero);
+  }
+  /* "Your requests": the games asked for, and how each is going */
+  if (!pro && view === 'requests'){
+    s.classList.remove('flow'); s.classList.add('requestspage');
+    const sec = h('section', 'cnotice requests');
+    sec.append(h('h1', '', 'Your requests'));
+    const fill = async () => {
+      await week.refresh({ force: true }).catch(() => {});
+      sec.querySelectorAll('.buildingrow, .cempty').forEach(e => e.remove());
+      const row_ = buildingRow(week.building(), () => fill());
+      if (row_){ row_.classList.add('buildingrow'); sec.appendChild(row_); }
+      else sec.appendChild(h('p', 'cempty', 'Nothing asked for yet. Ask for a game and it shows up here while it is made.'));
+    };
+    scroll.appendChild(sec); fill();
+    if (nav.create) sec.appendChild(onPick(button('Ask for a game', 'cbtn ringed go'), () => { sfx.select(); nav.create(); }));
+    return scene;
   }
   /* where Make a game builds */
   const buildHost = h('div', 'cbuild');
@@ -380,7 +383,9 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     if (slots && slots.used >= slots.total){
       buildHost.innerHTML = '';
       const full = h('section', 'builder');
-      full.append(h('div', 'bq bsent', `<div class="bigemoji">\u{1F6A7}</div><h1 class="bh">No game slots left</h1><p class="bnote">All ${slots.total} are used. Ask the owner for more.</p>`));
+      /* (none at all is not "all 0 are used") */
+      const none = !slots.total;
+      full.append(h('div', 'bq bsent', `<div class="bigicon">${icon('slot')}</div><h1 class="bh">${none ? 'No game slots yet' : 'No game slots left'}</h1><p class="bnote">${none ? 'You have no game slots yet. Ask the owner.' : `All ${slots.total} are used. Ask the owner for more.`}</p>`));
       buildHost.appendChild(full);
       return;
     }
@@ -429,12 +434,12 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
       const chip = (text) => h('span', 'pchip', text);
       const ready = !!claudeOk || !making.available;
       steps.append(
-        ready ? step(1, 's1', '\u{1F517}', 'Connected', chip('\u2713 Claude is ready'))
-              : step(1, 's1 todo', '\u{1F511}', 'Connect Claude', pbtn('Connect', kitPop)),
-        step(2, 's2', '\u{1F6E0}\uFE0F', 'Build a game', pbtn('+ New game', () => (claudeOk && making.available ? newGamePop() : kitPop()))),
+        ready ? step(1, 's1', icon('link'), 'Connected', chip('\u2713 Claude is ready'))
+              : step(1, 's1 todo', icon('key'), 'Connect Claude', pbtn('Connect', kitPop)),
+        step(2, 's2', icon('hammer'), 'Build a game', pbtn('+ New game', () => (claudeOk && making.available ? newGamePop() : kitPop()))),
         mine.length
-          ? step(3, 's3', '\u{1F4FA}', 'Test it on the TV', pbtn(testing.size ? 'Test or publish' : 'Test a game', () => gamePop(mine.find(x => testing.has(x.manifest.id)) || mine[0])))
-          : step(3, 's3 lock', '\u{1F4FA}', 'Test it on the TV', chip('Build a game first')));
+          ? step(3, 's3', icon('tv'), 'Test it on the TV', pbtn(testing.size ? 'Test or publish' : 'Test a game', () => gamePop(mine.find(x => testing.has(x.manifest.id)) || mine[0])))
+          : step(3, 's3 lock', icon('tv'), 'Test it on the TV', chip('Build a game first')));
       body.appendChild(steps);
     }
 

@@ -716,7 +716,7 @@ const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : new
   requestAnimationFrame(tick);
   pose.setVideo(video, { forceMouse: debug });
   window.__pose = pose; window.__cursor = cursor; window.__music = music;   /* handles for tests; harmless in play */
-  window.__scene = () => scene; window.__game = () => (mode === 'play' || mode === 'starting' || mode === 'lineup' ? game : null); window.__mode = () => mode; window.__week = week; window.__home = () => toMenu(false); window.__go = { toMenu, toStore, toCreate, toPro, toWho, toGame, toCalibration, showResults: () => showResults(), openPause: () => openPause() }; window.__round = () => inst; window.__finish = () => { roundLeft = 0; }; window.__library = library;
+  window.__crew = crew; window.__scene = () => scene; window.__game = () => (mode === 'play' || mode === 'starting' || mode === 'lineup' ? game : null); window.__mode = () => mode; window.__week = week; window.__home = () => toMenu(false); window.__go = { toMenu, toStore, toCreate, toPro, toWho, toGame, toCalibration, showResults: () => showResults(), openPause: () => openPause() }; window.__round = () => inst; window.__finish = () => { roundLeft = 0; }; window.__library = library;
   holdScreen();
   show.camReady = true;
   await new Promise(res => {

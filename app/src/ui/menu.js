@@ -6,7 +6,7 @@ import { pose, MAX_PLAYERS } from '../tracking/pose.js';
 import { remote } from './remote.js';
 import { account } from './account.js';
 import { appMode } from './mode.js';
-import { icon } from './brand.js';
+import { icon, homeButton } from './brand.js';
 import { faceOf } from './avatar-maker.js';
 import { openTrustedPhones } from './trusted-phones.js';
 import { createTrust } from '../session/trust.js';
@@ -156,7 +156,7 @@ export function openProfileSheet({ onRecalibrate, onWho, onClosed } = {}){
   addEventListener('keydown', esc, true);
   const item = (name, label, fn, cls = '') => card.appendChild(onPick(button(`${icon(name)}<span>${label}</span>`, 'sheetitem ' + cls), () => { sfx.select(); shut(); fn(); }));
   if (account.signedIn && onWho) item('person', 'Profile', () => onWho());
-  item('gear', 'Settings', () => openSettings(onRecalibrate));
+  item('gear', 'Settings', () => settings(onRecalibrate));
   if (account.signedIn) item('out', 'Sign out', () => { sfx.back?.(); account.signOut(); location.reload(); });
   /* in the Windows app, a way out */
   const app = appWindow();
@@ -179,11 +179,14 @@ function overlay(){
 export { settings as openSettings };
 
 function settings(onRecalibrate){
-  const s = overlay(); s.classList.add('setscreen');
+  /* a full-screen sheet (TV size), the big Home button where the logo sits */
+  const s = overlay(); s.classList.add('setscreen', 'setsheet');
   const card = h('div', 'setcard');
   const close = () => { sfx.back?.(); s.remove(); };
+  const home = homeButton(close); home.classList.add('close');          /* (the remote's Back presses it) */
+  s.appendChild(home);
   const head = h('div', 'sethead');
-  head.append(h('h2', '', 'Settings'), onPick(button('✕', 'setclose'), close));
+  head.append(h('h2', '', 'Settings'));
   card.appendChild(head);
   /* one setting a row: its name on the left, its control on the right */
   /* (the Creator app can't play: no volume to set) */
