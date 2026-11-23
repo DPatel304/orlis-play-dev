@@ -9,6 +9,7 @@
    world, plays the sounds, and ends when the last beat does. A beat finishes when the voice finishes (or, with no voice - the sound's
    off - after the time the words would take to read). */
 import { color, alpha } from './assets/palette.js';
+import { assets } from './assets/index.js';
 import { voice } from '../audio/voice.js';
 import { sfx } from '../audio/sound.js';
 import { body, cuboFigure } from '../ui/avatar-art.js';
@@ -32,10 +33,10 @@ const GRND = { planet: pal('night.farHills'), day: pal('meadow.fresh'), dusk: pa
 const HILL_DAY = [pal('meadow.grass'), pal('meadow.leaf')], HILL_DUSK = [pal('meadow.leaf', 'shade'), pal('meadow.deep', 'shade')];
 /* the Animal Gym animals, and where each stands (in front of Cubo at his stop) */
 const ANIMALS = [
-  { id: 'giraffe', e: '🦒', at: PLACES.giraffe + AHEAD, size: 230, y: 14, off: -600 },
-  { id: 'bunny', e: '🐰', at: PLACES.bunny + AHEAD, size: 120, y: 14, off: -430 },
-  { id: 'bird', e: '🐦', at: PLACES.bird + AHEAD, size: 100, y: -250, off: -120 },
-  { id: 'frog', e: '🐸', at: PLACES.frog + AHEAD, size: 110, y: 14, off: -270 }
+  { id: 'giraffe', e: 'giraffe', at: PLACES.giraffe + AHEAD, size: 230, y: 14, off: -600 },
+  { id: 'bunny', e: 'bunny', at: PLACES.bunny + AHEAD, size: 120, y: 14, off: -430 },
+  { id: 'bird', e: 'bird', at: PLACES.bird + AHEAD, size: 100, y: -250, off: -120 },
+  { id: 'frog', e: 'frog', at: PLACES.frog + AHEAD, size: 110, y: 14, off: -270 }
 ];
 /* the children in the window: the same character, each a different favourite */
 const KIDS = [{ colour: 'orange', top: 'tuft', outfit: 'stripes' }, { colour: 'pink', top: 'bow', face: { eyes: 'happy', mouth: 'grin' } },
@@ -125,7 +126,7 @@ class Story {
   }
   /* the moves in the story are shown on the shell's card, the same as in every game */
   card(){ return this.beat && this.beat.card && this.age > 0.2 && this.age < this.est + (this.beat.hold || 0) + 1.5 ? this.beat.card : null; }
-  hud(){ return { score: Array(Math.max(2, this.players)).fill(0), showLives: false, hideScore: true, hideClock: true, panel: [] }; }
+  hud(){ return { score: Array(Math.max(2, this.players)).fill(0), showLives: false, hideScore: true, hideClock: true, corner: [] }; }
   tally(){ return Array.from({ length: this.players }, (_, i) => ({ label: `Player ${i + 1}`, value: 0, color: PLAYER_COLORS[i] || color('earth.snow') })); }
   winner(){ return this.players >= 2 ? 0 : null; }
   value(){ return 0; }
@@ -208,13 +209,11 @@ class Story {
   meadow(c, cam, vw, dusk){
     for (let i = 0; i < 60; i++){
       const wx = MEADOW + 200 + i * 130 + ((i * 53) % 60) - cam; if (wx < -80 || wx > vw + 80) continue;
-      this.emoji(c, i % 3 === 0 ? '🌳' : i % 3 === 1 ? '🌼' : '🌿', wx, GROUND + (i % 3 === 0 ? 6 : i % 3 === 1 ? 30 : 24), i % 3 === 0 ? 110 : 44);
+      this.emoji(c, i % 3 === 0 ? 'roundtree' : i % 3 === 1 ? 'flower' : 'fern', wx, GROUND + (i % 3 === 0 ? 6 : i % 3 === 1 ? 30 : 24), i % 3 === 0 ? 110 : 44);
     }
   }
-  emoji(c, e, x, y, size, rot = 0, flip = false){
-    c.save(); c.translate(x, y); if (rot) c.rotate(rot); if (flip) c.scale(-1, 1);
-    c.font = `${size}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillText(e, 0, 0); c.restore();
-  }
+  /* a painted library icon (e is its id), standing on (x, y) */
+  emoji(c, e, x, y, size, rot = 0, flip = false){ assets.draw(c, e, x, y - size * 0.45, size * 0.95, { rotate: rot, flip }); }
   animals(c, cam, vw){
     const b = this.beat, ease = this.gather * this.gather * (3 - 2 * this.gather);
     ANIMALS.forEach((a, i) => {

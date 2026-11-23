@@ -34,7 +34,7 @@ export const RESULTS = {
   grow:      { doc: 'it gets bigger ({ "grow": 1.3 } is 30% bigger)', value: 'number' },
   become:    { doc: 'it turns into another piece ({ "become": "bunny" })', value: 'piece' },
   sound:     { doc: 'a sound ({ "sound": "pop" })', value: 'sound' },
-  say:       { doc: 'new hint words ({ "say": "Well done!" } - a picture and up to four words)', value: 'text' },
+  say:       { doc: 'new hint words ({ "say": "Well done!" }, or { "say": { "text": "Well done!", "icon": "glowstar" } } with a painted icon from the library - up to four words)', value: 'text' },
   spawn:     { doc: 'another thing appears here ({ "spawn": "name of a thing" })', value: 'thing' },
   kickUp:    { doc: 'a ball is hit upward, a little the way the hand was going' },
   celebrate: { doc: 'confetti and a cheer' }
@@ -48,7 +48,7 @@ export const COLORS = { red: '#ff5d6c', orange: '#ffb84d', yellow: '#ffe36e', gr
 /* the keys a game and a thing may have, with what each is */
 export const GAME_KEYS = {
   secs: 'seconds in a round (20 to 600)', endless: 'true: no clock, it runs until the goal', scene: 'the background (a name from the library)',
-  hint: 'the hint words: a picture and up to four words', hintFor: 'seconds the hint stays (then it fades)', card: 'the move card shown bottom left',
+  hint: 'the hint words: up to four words', hintIcon: 'a painted icon from the library shown beside the hint ("glowstar", "balloon"...)', hintFor: 'seconds the hint stays (then it fades)', card: 'the move card shown bottom left',
   cardFor: 'seconds the move card stays', team: 'true: everyone scores together (no score pills)', goal: '{ "score": 30, "ends": true } fills the goal bar; ends: true finishes the round at the goal',
   things: 'the things in the game (a list)', title: 'a name for the game (optional)'
 };

@@ -1,4 +1,5 @@
 /* Checks a game description against the vocabulary, and says what's wrong in plain words (and what was meant, when it can tell). */
+import { stripEmoji } from '../assets/legacy-emoji.js';
 import { PALETTE } from '../assets/palette.js';
 import { MOVES, TRIGGERS, RESULTS, SOUNDS, FROM, COLORS, GAME_KEYS, THING_KEYS, LIMITS } from './vocabulary.js';
 
@@ -14,7 +15,7 @@ export function didYouMean(name, options){
   return best && far <= Math.max(2, Math.floor(best.length / 3)) ? best : null;
 }
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
-const words = (text) => String(text).replace(/[\p{Extended_Pictographic}️‍]/gu, ' ').trim().split(/\s+/).filter(Boolean).length;
+const words = (text) => stripEmoji(text).trim().split(/\s+/).filter(Boolean).length;
 
 /* env: { has(id): is it a piece in the library, scenes: [ids], poses: [names] } */
 export function validate(spec, env){
@@ -27,7 +28,8 @@ export function validate(spec, env){
   for (const k of Object.keys(spec)) if (!(k in GAME_KEYS)) unknown('game setting', k, Object.keys(GAME_KEYS), 'the game');
   if (spec.endless !== true) num(spec.secs ?? 90, 'secs', 'the game'); else if (!spec.goal) bad('the game: an endless game needs a goal, or it can never end.');
   if (spec.scene !== undefined && !env.scenes.includes(spec.scene)) unknown('scene', spec.scene, env.scenes, 'the game');
-  if (spec.hint !== undefined){ if (typeof spec.hint !== 'string' || !spec.hint.trim()) bad('the game: "hint" is a few words, like "⭐ Catch the stars!".'); else if (words(spec.hint) > 4) bad(`the game: the hint "${spec.hint}" is more than four words - a picture and up to four words.`); }
+  if (spec.hint !== undefined){ if (typeof spec.hint !== 'string' || !spec.hint.trim()) bad('the game: "hint" is a few words, like "Catch the stars!" (with "hintIcon": "glowstar" for the picture).'); else if (words(spec.hint) > 4) bad(`the game: the hint "${spec.hint}" is more than four words - up to four words, and a painted icon from the library in "hintIcon".`); }
+  if (spec.hintIcon !== undefined && (typeof spec.hintIcon !== 'string' || !env.has(spec.hintIcon))) unknown('icon in the library', spec.hintIcon, env.pieceNames || [], 'the game: "hintIcon"');
   if (spec.hintFor !== undefined) num(spec.hintFor, 'hintFor', 'the game');
   if (spec.card !== undefined && !env.poses.includes(spec.card)) unknown('move', spec.card, env.poses, 'the game: "card"');
   if (spec.cardFor !== undefined) num(spec.cardFor, 'cardFor', 'the game');
@@ -77,7 +79,7 @@ export function validate(spec, env){
           if (typeof res === 'string' && RESULTS[key].value && !['score', 'grow'].includes(key)) bad(`${rw}: "${key}" needs a value, like { "${key}": ... }.`);
           if (key === 'become' && !env.has(v)) unknown('piece in the library', v, env.pieceNames || [], rw + ': "become"');
           if (key === 'sound' && !SOUNDS.includes(v)) unknown('sound', v, SOUNDS, rw + ': "sound"');
-          if (key === 'say' && (typeof v !== 'string' || words(v) > 4)) bad(rw + ': "say" is a picture and up to four words.');
+          if (key === 'say'){ const t = v && typeof v === 'object' ? v.text : v; if (typeof t !== 'string' || words(t) > 4) bad(rw + ': "say" is up to four words ({ "say": "Well done!" }).'); else if (v && typeof v === 'object' && v.icon !== undefined && (typeof v.icon !== 'string' || !env.has(v.icon))) unknown('icon in the library', v.icon, env.pieceNames || [], rw + ': "say" icon'); }
           if (key === 'spawn' && !names.includes(v)) unknown('thing (give it a "name")', v, names, rw + ': "spawn"');
           if ((key === 'score' || key === 'grow') && typeof res === 'object' && !isNum(v)) bad(rw + `: "${key}" is a number.`);
           if (key === 'kickUp' && moves !== 'bounce') bad(rw + ': "kickUp" is for a ball (moves: "bounce").');

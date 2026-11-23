@@ -6,7 +6,7 @@
    is the round's best. Gentle by design - a hit always sends the ball up, a little toward where the hand was going. */
 import { color, alpha } from './assets/palette.js';
 import { Juice } from './common.js';
-import { sayBubble, goalBar, hudZones } from './hud.js';
+import { hudZones } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
@@ -36,7 +36,7 @@ class KeepItUp {
     this.streak = 0; this.best = 0; this.hits = 0;
     this.t = 0; this.over = false;
     this.breezeT = 6 + Math.random() * 4; this.breeze = 0; this.breezeLeft = 0;
-    this.say = { text: '\u{1F3D0} Keep it up!', t: 0 };
+    this.say = { icon: 'volleyball', text: 'Keep it up!', t: 0 };
     this.j = new Juice();
     this.scene = new Scene();
     this.avatars = new Avatars();
@@ -164,8 +164,6 @@ class KeepItUp {
     }
     if (shook) c.restore();
     this.avatars.drawMitts(c, W, H, this.players);
-    sayBubble(c, W, H, { text: this.say.text, t: this.say.t });
-    goalBar(c, W, H, this.streak / this._next(), { color: color('touch.skyBlue') });
   }
 
   /* a beach ball: coloured wedges, a shine */
@@ -182,7 +180,7 @@ class KeepItUp {
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
   card(){ return this.t < 8 ? 'reach' : null; }
-  hud(){ return { score: this.score, showLives: false }; }
+  hud(){ return { score: this.score, showLives: false, goal: this.streak / this._next(), words: this.say }; }
   tally(){
     const rows = [];
     for (let i = 0; i < this.players; i++){

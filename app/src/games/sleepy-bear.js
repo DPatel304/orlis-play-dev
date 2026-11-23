@@ -16,7 +16,6 @@
    little; the camera's jitter is well under STILL. */
 import { color, alpha } from './assets/palette.js';
 import { Juice, clamp } from './common.js';
-import { sayBubble } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx, music } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
@@ -71,7 +70,7 @@ class SleepyBear {
     this.bear = { eye: 0, roll: 0, grumble: 0, wake: 0, snore: 2 };
     this.notes = [];
     this.noteT = 0;
-    this.say = { text: '\u{1F483} Dance!', t: 0 };
+    this.say = { icon: 'musicnote', text: 'Dance!', t: 0 };
     this.j = new Juice();
     this.scene = new Scene();
     this.avatars = new Avatars();
@@ -139,7 +138,7 @@ class SleepyBear {
     this.caught.fill(false);
     music.hold(true);
     sfx.startle?.();
-    this.say = { text: 'Freeze!', t: 0 };
+    this.say = { icon: 'snowflake', text: 'Freeze!', t: 0 };
   }
   _dance(){
     /* everyone who held still gets a star */
@@ -152,7 +151,7 @@ class SleepyBear {
     this.phase = 'dance'; this.inPhase = 0;
     this.left = DANCE[0] + Math.random() * (DANCE[1] - DANCE[0]);
     music.hold(false);
-    this.say = { text: still ? 'Hooray! Dance!' : '\u{1F483} Dance!', t: 0 };
+    this.say = still ? { text: 'Hooray! Dance!', t: 0 } : { icon: 'musicnote', text: 'Dance!', t: 0 };
   }
   _wobble(i){
     this.caught[i] = true; this.frost[i] = 0;
@@ -174,7 +173,6 @@ class SleepyBear {
       const hands = pose.mouse.active ? [p.hands.right] : [p.hands.left, p.hands.right];
       for (const h of hands) frost(c, h.x * W, h.y * H, H * 0.03, this.frost[i], this.t);
     }
-    this._say(c, W, H);
   }
 
   /* the bear's hill, with the cave and the bear in it, on the right */
@@ -215,12 +213,10 @@ class SleepyBear {
     }
   }
 
-  _say(c, W, H){ sayBubble(c, W, H, { text: (this.phase === 'freeze' && this.say.text === 'Freeze!' ? '\u2744 ' : '') + this.say.text, t: this.say.t }); }
-
 
   /* the move card: which move the card in the corner shows right now, or null for none (dancing, then frozen) */
   card(){ return this.phase === 'dance' ? 'dance' : 'freeze'; }
-  hud(){ return { score: this.score, showLives: false }; }
+  hud(){ return { score: this.score, showLives: false, words: this.say }; }
   /* both hands up is a dance move here; Back on the remote still pauses */
   pausable(){ return false; }
   tally(){

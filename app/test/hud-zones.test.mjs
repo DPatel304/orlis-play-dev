@@ -34,7 +34,7 @@ test('underHud says where a target must not go', () => {
 
 test('the badge draws a pill, and nothing on the results screen or with nothing to say', () => {
   const calls = []; const c = new Proxy({}, { get: (_, k) => k === 'measureText' ? () => ({ width: 40 }) : (...a) => { calls.push(k); }, set: () => true });
-  hud.quiet = false; badge(c, 1600, 900, { icon: '\u{1F525}', value: 3 });
+  hud.quiet = false; badge(c, 1600, 900, { icon: 'sparkles', value: 3 });
   assert.ok(calls.includes('roundRect') && calls.includes('fillText'), 'a pill with its number');
   calls.length = 0; badge(c, 1600, 900, {}); assert.equal(calls.length, 0, 'nothing to say, nothing drawn');
   hud.quiet = true; badge(c, 1600, 900, { value: 3 }); assert.equal(calls.length, 0, 'quiet: no badge'); hud.quiet = false;
@@ -55,7 +55,7 @@ test('the grid: square cells that fit, the same pieces in the same cells, at any
 
 test('the three pieces draw, and bars only use the allowed colours', () => {
   const calls = []; const c = new Proxy({}, { get: (_, k) => k === 'measureText' ? () => ({ width: 30 }) : (...a) => { calls.push(k); }, set: () => true });
-  scorePill(c, 10, 10, 50, '#3da9ff', 7, 0.5); chip(c, 10, 70, 50, { icon: '\u{1F48E}', value: 12 }); statusBar(c, 10, 130, 50, { icon: '\u2B50', fill: 0.6, color: 'rose' });
+  scorePill(c, 10, 10, 50, '#3da9ff', 7, 0.5); chip(c, 10, 70, 50, { icon: 'gem', value: 12 }); statusBar(c, 10, 130, 50, { icon: 'glowstar', fill: 0.6, color: 'rose' });
   assert.ok(calls.filter(x => x === 'roundRect').length >= 5 && calls.includes('fillText'), 'pill, chip and bar all draw');
   const taken = ['#3da9ff', '#ff8a3d', '#3fcf7f', '#c46bff', '#ff7a59'];
   for (const col of Object.values(BAR_COLORS)) assert.ok(!taken.includes(col), `${col} is not a player colour or the arrow orange`);
@@ -66,18 +66,19 @@ test('the first words of a round are said once, without their pictures', () => {
   assert.equal(spoken('\u{1F992} Stretch up tall!'), 'Stretch up tall!');
   const said = []; const c = new Proxy({}, { get: (_, k) => k === 'measureText' ? () => ({ width: 100 }) : () => {}, set: () => true });
   hud.quiet = false; hud.introText = null; hud.spoken = false; hud.speak = (t) => said.push(t);
-  sayBubble(c, 1600, 900, { text: '\u{1F3D0} Keep it up!', t: 0 });            /* not yet: the game hasn't started */
+  sayBubble(c, 1600, 900, { icon: 'volleyball', text: 'Keep it up!', t: 0 });            /* not yet: the game hasn't started */
   assert.equal(said.length, 0);
-  sayBubble(c, 1600, 900, { text: '\u{1F3D0} Keep it up!', t: 0.3 }); sayBubble(c, 1600, 900, { text: '\u{1F3D0} Keep it up!', t: 0.6 });
+  sayBubble(c, 1600, 900, { icon: 'volleyball', text: 'Keep it up!', t: 0.3 }); sayBubble(c, 1600, 900, { icon: 'volleyball', text: 'Keep it up!', t: 0.6 });
   sayBubble(c, 1600, 900, { text: '3 in a row!', t: 0.3 });
   assert.deepEqual(said, ['Keep it up!'], 'said once, and later words are not said');
   hud.speak = null; hud.introText = null; hud.spoken = false;
 });
 
-test('every game\'s first words are short: a picture and at most four words', async () => {
-  const { GAMES } = await import('../src/games/index.js');
-  for (const g of GAMES){ if (g.id === 'last-known-position' || g.id === 'castle-defense' || g.id === 'sky-painter') continue;
+test('every game\'s first words are short: a painted icon from the library and at most four words, with no emoji', async () => {
+  const { GAMES } = await import('../src/games/index.js'); const { assets } = await import('../src/games/assets/index.js');
+  for (const g of GAMES){ if (g.id === 'last-known-position' || g.id === 'castle-defense' || g.id === 'sky-painter' || g.id === 'story-player') continue;
     const i = g.create(1), t = i.say && i.say.text; if (!t) continue;
     const words = spoken(t).split(' ').filter(Boolean); assert.ok(words.length <= 4, `${g.id}: "${t}" is ${words.length} words`);
-    assert.ok(/\p{Extended_Pictographic}/u.test(t), `${g.id}: "${t}" starts with a picture`); }
+    assert.ok(!/\p{Extended_Pictographic}/u.test(t), `${g.id}: "${t}" has no emoji in it`);
+    assert.ok(i.say.icon && assets.has(i.say.icon), `${g.id}: its first words carry a library icon (${i.say.icon})`); }
 });

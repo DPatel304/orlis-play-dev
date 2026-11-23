@@ -1,6 +1,5 @@
 import { PALETTE, color, alpha } from './assets/palette.js';
 import { Juice, clamp } from './common.js';
-import { sayBubble } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx, music } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
@@ -623,8 +622,6 @@ class PopParty {
        of everything, so a child never loses them. */
     if (this.out) this._drawBouquets(c, W, H);
     else this.avatars.drawMitts(c, W, H, this.players);
-    /* the first seconds: what to do (then it eases away) */
-    if (!this.out) sayBubble(c, W, H, { text: '\u{1F388} Pop the balloons!', t: this.t, until: 7 });
   }
 
   /* a soft shadow on the grass under a balloon: smaller and fainter the higher it floats, leaning away from the sun
@@ -732,7 +729,9 @@ class PopParty {
   /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds, then get out of the way of the balloons) */
   card(){ return this.t < 8 ? 'reach' : null; }
   hud(){
-    return { score: this.score, showLives: false, hideScore: true };
+    /* no winner: the faces-only row (who is playing, and whether the camera sees them), and in the first seconds what to do (then it eases away) */
+    return { score: this.score, showLives: false, hideScore: true, scoreStyle: 'faces',
+      words: this.out ? null : { icon: 'balloon', text: 'Pop the balloons!', t: this.t, until: 7 } };
   }
   /* No pausing by gesture: reaching up with both hands is how you pop the
      high ones. The game waits by itself when everyone steps out of view,

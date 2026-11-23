@@ -7,7 +7,8 @@
 Orlis.play({
   "secs": 90,
   "scene": "sunset",
-  "hint": "⭐ Catch the stars!",
+  "hint": "Catch the stars!",
+  "hintIcon": "glowstar",
   "hintFor": 8,
   "card": "reach",
   "cardFor": 8,

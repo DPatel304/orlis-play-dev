@@ -5,6 +5,7 @@
 
      openMaker(profile, { onDone })   a card over the page; onDone(look) after it's saved
      faceOf(profile, size)            an element for their face: their character's portrait, or (while making is off) their old picture */
+import { iconHTML } from './icons.js';
 import { button, onPick } from './cursor.js';
 import { screen, h } from './screens.js';
 import { sfx } from '../audio/sound.js';
@@ -32,7 +33,7 @@ function pic(size, fn, cls = 'avpic'){
 export function faceOf(profile, size = 48){
   if (MAKING && profile) return pic(size, (c, s) => portrait(c, s / 2, s / 2, s, normalizeLook(profile.look), 1.3), 'avface');
   const span = document.createElement('span'); span.className = 'av';
-  span.textContent = AVATARS[profile && profile.avatar] || AVATARS.cube;
+  span.innerHTML = iconHTML(AVATARS[profile && profile.avatar] || AVATARS.cube, 128);
   return span;
 }
 /* put their face in place of an element's emoji picture (.av) */

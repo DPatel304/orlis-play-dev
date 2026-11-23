@@ -29,7 +29,7 @@ Read the **orlis-game** skill first: it has every word you can use. In short:
 
 ```js
 Orlis.play({
-  "secs": 90, "scene": "meadow", "hint": "\u2B50 Catch the stars!", "card": "reach", "goal": { "score": 40 },
+  "secs": 90, "scene": "meadow", "hint": "Catch the stars!", "hintIcon": "glowstar", "card": "reach", "goal": { "score": 40 },
   "things": [
     { "piece": "star", "size": 0.085, "appears": { "every": 1.3, "from": "top" }, "moves": "fall",
       "rules": [ { "when": "touched", "then": ["sparkle", "score", "vanish"] } ] }
@@ -71,10 +71,10 @@ the library), say so plainly to the grown-up - it can be asked for - and offer t
   anything. No images or files from anywhere.
 - **The Orlis look - a calm painted world.** The asset library already is it (flat colour, one soft shadow tone, painted
   skies, far hills fading out): use its scenes and pieces as they are. Lots of room. Words in cream rounded "pill" cards.
-- **The shared screen.** Every Orlis game has the same edges (the clock top centre, the scores top left, the move card bottom
-  left, a goal bar and the hint words under the clock) and the engine fills them in: say them with `"hint"`, `"card"` and
-  `"goal"`. Hint words are **a picture and a few words** - `\u{1F388} Pop the balloons!` - because many players can't read
-  yet. The skill has the whole layout.
+- **The shared screen.** Every Orlis game has the same edges (the clock top centre, the scores top left with each child's face, the move card
+  bottom left, a goal bar and the hint words under the clock) and the engine fills them in: say them with `"hint"`, `"card"` and
+  `"goal"`. Hint words are **a painted icon and a few words** - `"hint": "Pop the balloons!", "hintIcon": "balloon"` (the icon is a piece
+  from the library; never an emoji) - because many players can't read yet. The skill has the whole layout.
 - **Colours by name.** Colours come from the Orlis palette, like `"color": "touch.mint"` (the skill lists them). Never a colour
   code such as `#ff9a55`, `rgb(...)` or `hsl(...)`: the checks turn it back.
 - **Five style rules.** (1) Name one colour per object; its shade and highlight come by themselves

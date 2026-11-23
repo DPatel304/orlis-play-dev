@@ -10,8 +10,8 @@
    The world is endless and the same wherever you fly: a grid of cells, each deciding from its position what grows
    there. A cell's things are drawn from far to near, scaled by how far ahead they are. */
 import { color, alpha } from './assets/palette.js';
+import { assets } from './assets/index.js';
 import { Juice } from './common.js';
-import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { L } from '../tracking/pose-shared.js';
 import { sfx } from '../audio/sound.js';
@@ -28,14 +28,14 @@ export const FIND = 2.8, FIND_ALT = 4.6;
 export const WONDER_EVERY = [13, 19];
 
 export const WONDERS = [
-  { emoji: '\u{1F30B}', text: 'a smoking volcano', size: 4.2 },
-  { emoji: '\u{1F995}', text: 'a long-necked dinosaur', size: 2.2 },
-  { emoji: '\u{1F95A}', text: 'a nest of eggs', size: 1.4 },
-  { emoji: '\u{1F996}', text: 'a big friendly roarer', size: 2.2 },
-  { emoji: '\u{1F33A}', text: 'giant flowers', size: 2.2 },
-  { emoji: '\u{1F98E}', text: 'a sunbathing lizard', size: 1.6 },
-  { emoji: '\u{1F334}', text: 'the tallest palm tree', size: 3.4 },
-  { emoji: '\u{1F30A}', text: 'a sparkling waterfall', size: 2.6 }
+  { emoji: 'volcano', text: 'a smoking volcano', size: 4.2 },
+  { emoji: 'dinosaur', text: 'a long-necked dinosaur', size: 2.2 },
+  { emoji: 'egg', text: 'a nest of eggs', size: 1.4 },
+  { emoji: 'dinosaur', text: 'a big friendly roarer', size: 2.2 },
+  { emoji: 'flower', text: 'giant flowers', size: 2.2 },
+  { emoji: 'lizard', text: 'a sunbathing lizard', size: 1.6 },
+  { emoji: 'palm', text: 'the tallest palm tree', size: 3.4 },
+  { emoji: 'waterfall', text: 'a sparkling waterfall', size: 2.6 }
 ];
 
 /* sky and ground through the day: dawn, midday, sunset (top of the sky, the horizon, the near and far ground) */
@@ -56,16 +56,16 @@ export function skyAt(f){
 /* a number from a cell, the same every time: 0 to 1 */
 export const hash = (i, j, s = 0) => { let h = (i * 374761393 + j * 668265263 + s * 2246822519) | 0; h = (h ^ (h >>> 13)) * 1274126177; h = (h ^ (h >>> 16)) >>> 0; return h / 4294967295; };
 
-/* The emoji are drawn once each into a small picture and stamped from then on - far quicker than drawing text a
-   hundred times a frame. (Where there's no document - the tests - they're drawn as text.) */
-const SPRITES = new Map(), EMOJI_FONT = '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+/* The pictures (painted library icons, named by id; the field is still called `emoji`) are drawn once each into a small picture and stamped from then on - far quicker than drawing text a
+   hundred times a frame. (Where there's no document - the tests - they're drawn straight on.) */
+const SPRITES = new Map();
 function sprite(e){
   if (SPRITES.has(e)) return SPRITES.get(e);
   let cv = null;
   if (typeof document !== 'undefined'){
     cv = document.createElement('canvas'); cv.width = cv.height = 160;
     const x = cv.getContext && cv.getContext('2d');
-    if (x){ x.font = `128px ${EMOJI_FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(e, 80, 84); } else cv = null;
+    if (x) assets.draw(x, e, 80, 84, 128); else cv = null;
   }
   SPRITES.set(e, cv);
   return cv;
@@ -111,7 +111,7 @@ class PteroFlight {
     this.found = [];            /* the wonders in the sticker book */
     this.wonders = [];          /* wonders waiting ahead */
     this.nextAt = 4; this.nth = 0;
-    this.say = { text: '\u{1F995} Spread your arms!', t: 0 };
+    this.say = { icon: 'dinosaur', text: 'Spread your arms!', t: 0 };
     this.hintUntil = 9;
     this.j = new Juice();
     this.avatars = new Avatars();
@@ -219,8 +219,6 @@ class PteroFlight {
     this.j.draw(c, H);
     this._ptero(c, W, H);
     this._book(c, W, H);
-    sayBubble(c, W, H, { text: this.say.text, t: this.say.t, until: this.say.until || (this.say.text.startsWith('Spread') ? this.hintUntil : Infinity) });
-    goalBar(c, W, H, this.found.length / WONDERS.length, { color: color('earth.clay') });
     this.avatars.drawMitts(c, W, H, this.players);
   }
 
@@ -264,8 +262,8 @@ class PteroFlight {
       c.fillStyle = alpha('earth.snow', 0.3); c.beginPath(); c.ellipse(x - wd * 0.2, y - wd * flat * 0.2, wd * 0.5, wd * flat * 0.3, 0, 0, 6.2832); c.fill(); c.restore();
       return;
     }
-    const emoji = k < 0.5 ? '\u{1F332}' : k < 0.72 ? '\u{1F334}' : k < 0.85 ? '\u{1F333}' : k < 0.93 ? '\u{1F33F}' : k < 0.97 ? '\u{1F995}' : '\u{1F30B}';
-    const size = (emoji === '\u{1F30B}' ? 4 : emoji === '\u{1F995}' ? 1.4 : 1.2 + o.big * 1.1) * s;
+    const emoji = k < 0.5 ? 'pinetree' : k < 0.72 ? 'palm' : k < 0.85 ? 'roundtree' : k < 0.93 ? 'fern' : k < 0.97 ? 'dinosaur' : 'volcano';
+    const size = (emoji === 'volcano' ? 4 : emoji === 'dinosaur' ? 1.4 : 1.2 + o.big * 1.1) * s;
     this._emoji(c, emoji, x, y, size, fade);
   }
 
@@ -274,7 +272,7 @@ class PteroFlight {
     const sp = sprite(e);
     c.save(); c.globalAlpha = alpha;
     if (sp){ const k = size / 128; c.drawImage(sp, x - 80 * k, y - size * 0.38 - 84 * k, 160 * k, 160 * k); }
-    else { c.font = `${Math.round(size)}px ${EMOJI_FONT}`; c.textAlign = 'center'; c.textBaseline = 'bottom'; c.fillStyle = color('shade.ink'); c.fillText(e, x, y + size * 0.12); }
+    else assets.draw(c, e, x, y - size * 0.38, size);
     c.restore();
   }
 
@@ -308,13 +306,14 @@ class PteroFlight {
     const size = H * 0.05, gap = size * 1.2, x0 = W * 0.04 + size * 0.7, y = H * 0.94, n = this.found.length;
     c.save(); c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillStyle = alpha('earth.snow', 0.7); c.beginPath(); c.roundRect(x0 - gap * 0.7, y - size * 0.7, gap * (n - 1) + gap * 1.4, size * 1.4, size * 0.7); c.fill();
-    this.found.forEach((w, i) => { const sp = sprite(w.emoji); if (sp){ const k = size / 128; c.drawImage(sp, x0 + i * gap - 80 * k, y - 84 * k, 160 * k, 160 * k); } else { c.font = `${Math.round(size)}px ${EMOJI_FONT}`; c.fillStyle = color('shade.ink'); c.fillText(w.emoji, x0 + i * gap, y); } });
+    this.found.forEach((w, i) => { const sp = sprite(w.emoji); if (sp){ const k = size / 128; c.drawImage(sp, x0 + i * gap - 80 * k, y - 84 * k, 160 * k, 160 * k); } else assets.draw(c, w.emoji, x0 + i * gap, y, size); });
     c.restore();
   }
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
   card(){ return this.t < 8 ? 'flap' : null; }
-  hud(){ return { score: this.score, showLives: false }; }
+  hud(){ return { score: this.score, showLives: false, goal: this.found.length / WONDERS.length,
+    words: { ...this.say, until: this.say.until || (this.say.text.startsWith('Spread') ? this.hintUntil : Infinity) } }; }
   tally(){
     const rows = [];
     for (let i = 0; i < this.players; i++){

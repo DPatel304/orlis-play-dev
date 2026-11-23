@@ -9,6 +9,7 @@
 
    Only in the Windows app (window.__TAURI__). Opened any other way - the
    browser, the tests - there's no account step at all. */
+import { iconHTML } from './icons.js';
 import { frontScene } from './front.js';
 import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
@@ -20,9 +21,10 @@ import { claudeChecklist } from './connect-claude.js';
 import { HOME_SERVER } from './home-server.js';
 
 const KEY = 'orlis.account';
+/* the pictures a profile can have (before the avatar maker): painted library icons, by id */
 export const AVATARS = {
-  cube: '\u{1F9CA}', rocket: '\u{1F680}', star: '\u{2B50}', moon: '\u{1F319}', balloon: '\u{1F388}', fish: '\u{1F41F}',
-  dino: '\u{1F996}', cat: '\u{1F431}', dog: '\u{1F436}', owl: '\u{1F989}', bee: '\u{1F41D}', leaf: '\u{1F343}'
+  cube: 'block', rocket: 'rocket', star: 'glowstar', moon: 'moon', balloon: 'balloon', fish: 'fish',
+  dino: 'dinosaur', cat: 'cat', dog: 'dog', owl: 'owl', bee: 'bee', leaf: 'leaf'
 };
 const TIMEOUT = 4000;
 
@@ -386,18 +388,18 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
     const changed = async () => { await account.refresh(); who(); };
     for (const p of account.state.profiles || []){
       const cell = h('div', 'whocell');
-      cell.appendChild(withFace(onPick(button(`<span class="av">${AVATARS[p.avatar] || AVATARS.cube}</span><span class="nm">${esc(p.name)}</span>`, 'who'), () => {
+      cell.appendChild(withFace(onPick(button(`<span class="av">${iconHTML(AVATARS[p.avatar] || AVATARS.cube, 128)}</span><span class="nm">${esc(p.name)}</span>`, 'who'), () => {
         sfx.select(); account.set({ current: p.id }); done(p);
       }), p, 220));
       /* (a grown-up looks after the family right here: a pencil on each) */
-      if (grown){ const pen = onPick(button('✏️', 'whoedit'), () => { sfx.select(); editProfile(p, { self: p === head, onDone: changed }); }); pen.title = 'Change'; pen.setAttribute('aria-label', `Change ${p.name}`); cell.appendChild(pen); }
+      if (grown){ const pen = onPick(button(iconHTML('pencil', 64), 'whoedit'), () => { sfx.select(); editProfile(p, { self: p === head, onDone: changed }); }); pen.title = 'Change'; pen.setAttribute('aria-label', `Change ${p.name}`); cell.appendChild(pen); }
       tiles.appendChild(cell);
     }
     if (grown && (account.state.profiles || []).length < 8) tiles.appendChild(onPick(button('<span class="av">+</span><span class="nm">Add a child</span>', 'who add'), () => { sfx.select(); editProfile(null, { onDone: changed }); }));
     /* the family's name is the title (no "Who's playing?": the faces say it) */
     const fam = account.state.household && account.state.household.name;
     const title = h('h2', 'whotitle', esc(fam || 'Who\u2019s playing?'));
-    if (grown){ const pen = onPick(button('✏️', 'whoedit title'), () => { sfx.select(); renameFamily({ onDone: changed }); }); pen.title = 'The family’s name'; pen.setAttribute('aria-label', 'Change the family’s name'); title.appendChild(pen); }
+    if (grown){ const pen = onPick(button(iconHTML('pencil', 64), 'whoedit title'), () => { sfx.select(); renameFamily({ onDone: changed }); }); pen.title = 'The family’s name'; pen.setAttribute('aria-label', 'Change the family’s name'); title.appendChild(pen); }
     const nodes = [
       /* opened from inside the app: a way back (Escape does it too, through the Back key) */
       onBack ? corner('←', 'back close', 'Back', () => { sfx.back?.(); onBack(); }) : null,

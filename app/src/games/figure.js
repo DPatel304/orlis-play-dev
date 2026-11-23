@@ -1,6 +1,6 @@
 /* The move card: one little picture of a move, for the ones who can't read. Every game that shows one uses this, so it
    always looks the same and sits in the same place. It is Cubo, the Orlis cube, the block-limb character of avatar-art.js (a square head
-   looking straight at you, a body with block arms and legs, the ink outline), on a white card with a thick indigo border.
+   looking straight at you, a body with block arms and legs, the ink outline), on a paper card with the kit's strongest ink border.
    The card floats (a soft shadow under it) and slides in from the right, where it sits in the top-right corner, when a move starts, and out again when it ends.
    Cubo moves like stop-motion: each move is three or four still drawings that repeat, and his face is part of each
    drawing, so he looks excited when his hands go up and strains a little in the squat. */
@@ -11,7 +11,7 @@ const L = (a, b, k) => a + (b - a) * k;
 
 /* the look, in one place. (Where the card goes, and how big it is, is the grid's: the card's block in grid.js. head: how big his
    head is, as a share of what it was first drawn at.) */
-export const CARD = { fill: pal('earth.snow'), edge: pal('shade.ink'), edgeW: 0.07, body: pal('touch.skyBlue'), line: pal('shade.ink'), ink: pal('shade.ink'),
+export const CARD = { fill: pal('shade.card'), edge: pal('shade.ink'), edgeW: 0.036, body: pal('touch.skyBlue'), line: pal('shade.ink'), ink: pal('shade.ink'),
   arrow: pal('touch.tangerine'), head: pal('touch.skyBlue'), top: pal('touch.skyBlue', 'light'), left: pal('touch.skyBlue', 'shade'), headSize: 0.75,
   pink: pal('earth.brick'), ice: pal('sea.sunlit'), white: pal('earth.snow') };
 /* how it moves: drawings a second, and how long the card takes to slide in and out (quick enough to start the move in time) */
@@ -102,11 +102,10 @@ export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
   if (!POSES[pose]) return;
   const fr = frameAt(pose, t), bob = (fr.i % 2 ? 1 : -1) * K * 0.006;     /* floating: it steps up and down with the drawings */
   c.save(); c.globalAlpha *= alpha; c.translate(cx, cy + bob);
-  /* the card: white, a thick indigo border, and a big soft shadow well under it, so it lifts off whatever is behind */
-  const e = K * CARD.edgeW, rr = K * 0.17;
-  c.shadowColor = palAlpha('shade.shadow', 0.42); c.shadowBlur = K * 0.14; c.shadowOffsetY = K * 0.085;
+  /* the card: paper, the kit's strongest ink border (about twice a pill's), and the one flat soft shadow under it */
+  const e = K * CARD.edgeW, rr = K * 0.17, sh = K * 0.045;
+  c.fillStyle = palAlpha('shade.shadow', 0.18); c.beginPath(); c.roundRect(-K / 2, -K / 2 + sh, K, K, rr); c.fill();
   c.fillStyle = CARD.fill; c.beginPath(); c.roundRect(-K / 2, -K / 2, K, K, rr); c.fill();
-  c.shadowColor = 'transparent';
   c.strokeStyle = CARD.edge; c.lineWidth = e; c.beginPath(); c.roundRect(-K / 2 + e / 2, -K / 2 + e / 2, K - e, K - e, rr - e / 2); c.stroke();
   /* him, big in the card: as big as fits his own drawn box (all four drawings, arrows and marks), which is what he is centred on */
   const b = poseBounds(pose, true), h = Math.min(K * 0.75, K * 0.74 / (b.x1 - b.x0), K * 0.74 / (b.y1 - b.y0));
@@ -121,4 +120,25 @@ export function figureCard(c, W, H, pose, t, { alpha = 1, age = Infinity, left =
   const sl = slot(W, H, 'card'), K = Math.min(sl.w, sl.h), cx = sl.cx, cy = sl.cy, dir = cx < W / 2 ? -1 : 1, away = dir * ((dir < 0 ? cx : W - cx) + K * 0.6);   /* it comes from whichever side it lives on */
   const into = 1 - easeOut(Math.min(1, Math.max(0, age / MOTION.slideIn))), out = easeIn(Math.min(1, Math.max(0, 1 - left / MOTION.slideOut)));
   drawCard(c, pose, K, cx + away * Math.max(into, out), cy, Math.min(t, isFinite(age) ? age : t), alpha);
+}
+
+
+/* When the card shows, and when it tucks away (ui-review item 10). A game only says which move it wants (or none); this decides. A move shown for the
+   first time this round stays 6 s (long enough to learn it), the same move asked again 3 s; then the card slides out and stays out until the game asks
+   for a different move (or asks again after none). step(want, dt) returns what to draw ({ pose, age, left }, as figureCard takes) or null. */
+export const CARD_HOLD = { first: 6, again: 3 };
+export function cardTucker(){
+  const k = { pose: null, age: 0, out: -1, last: null, hold: 0, shown: new Set() };
+  return {
+    reset(){ k.pose = null; k.age = 0; k.out = -1; k.last = null; k.hold = 0; k.shown.clear(); },
+    step(want, dt){
+      k.age += dt; if (k.out >= 0) k.out += dt;
+      if (want && want !== k.last){ k.pose = want; k.age = 0; k.out = -1; k.hold = k.shown.has(want) ? CARD_HOLD.again : CARD_HOLD.first; k.shown.add(want); }
+      k.last = want || null;
+      if (k.pose && k.out < 0 && (!want || k.age > k.hold)) k.out = 0;
+      if (!k.pose) return null;
+      if (k.out > MOTION.slideOut){ k.pose = null; return null; }
+      return { pose: k.pose, age: k.age, left: k.out < 0 ? Infinity : MOTION.slideOut - k.out };
+    }
+  };
 }
