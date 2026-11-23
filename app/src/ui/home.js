@@ -29,7 +29,7 @@ import { testingRow } from './building.js';
 import { logo, icon, propIcon } from './brand.js';
 import { iconEl } from './icons.js';
 import { BLURB, iconOf, HIDDEN, openProfileSheet } from './menu.js';
-import { homeRows, makeFor, startFocus, step, heroOf, bigHero } from './home-model.js';
+import { homeRows, makeFor, startFocus, step, heroOf, bigHero, howYouPlay, needsTablet } from './home-model.js';
 import { color } from '../games/assets/palette.js';
 
 const LAUNCH = 0.2;    /* seconds of going in (the loading screen fading in) */
@@ -105,8 +105,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   top.appendChild(sys);
 
   const info = h('div', 'hinfo');
-  const blurb = h('div', 'hblurb'), meta = h('div', 'hmeta');
-  info.append(blurb, meta);
+  const blurb = h('div', 'hblurb'), how = h('div', 'hhows'), meta = h('div', 'hmeta');
+  info.append(blurb, how, meta);
   const rowsEl = h('div', 'hrows');
   box.append(top, info, rowsEl);
   s.append(bgwrap, box);
@@ -141,6 +141,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       el.style.setProperty('--c1', ic.cols[0]); el.style.setProperty('--c2', ic.cols[1] || ic.cols[0]);
       el.querySelector('.hname').textContent = item.g.name;
       paintTile(t);
+      if (needsTablet(item.g)){ const b = h('span', 'tabmark'); b.setAttribute('role', 'img'); b.setAttribute('aria-label', 'Needs a tablet'); b.appendChild(iconEl('tabletgrip', 96)); el.appendChild(b); }
       if (item.kind === 'get') el.insertAdjacentHTML('beforeend', `<span class="getpill">${icon('get')}Get</span><span class="gotbar"><i></i></span>`);
     } else if (item.kind === 'more'){
       el.classList.add('mk', 'm4'); el.appendChild(propIcon('star')); el.querySelector('.hname').textContent = 'More to try';
@@ -185,17 +186,13 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   };
   function paintHero(t){
     const it = t.item, hero = heroOf(it, { blurb: it.g ? (BLURB[it.g.id] || (it.g.store && it.g.store.blurb) || '') : '', cap: pose.cap });
-    /* the last word and the figures stay together, so the figures sit right after the last word */
-    const cut = hero.players ? hero.line.lastIndexOf(' ') + 1 : hero.line.length, tail = h('span', 'hlast');
-    blurb.textContent = hero.line.slice(0, cut); tail.textContent = hero.line.slice(cut); blurb.appendChild(tail);
-    /* players: one figure per player the game takes, up to 4, close together on one line; the front one (left) is white, the ones
-       behind it to the right are darker; no number (owner, 2026-11-23) */
-    if (hero.players){
-      const { lo, hi } = hero.players, n = Math.max(1, Math.min(4, hi)), pl = h('span', 'hplayers');
-      pl.style.setProperty('--n', n);
-      for (let k = 0; k < n; k++){ const f = iconEl('player', 48); f.style.setProperty('--k', k); pl.appendChild(f); }
-      pl.setAttribute('role', 'img'); pl.setAttribute('aria-label', lo === hi ? `${hi} player${hi > 1 ? 's' : ''}` : `${lo} to ${hi} players`);
-      tail.appendChild(pl);
+    blurb.textContent = hero.line;
+    /* the "how you play" row on its own line: players (the people icon and the number), then Move / Tablet / Phones / Sit back (0052) */
+    how.textContent = '';
+    for (const x of it.g ? howYouPlay(it.g, { cap: pose.cap }) : []){
+      const e = h('span', 'hhow hh-' + x.id); e.appendChild(iconEl(x.icon, 64)); e.append(x.text);
+      if (x.label) e.setAttribute('aria-label', x.label);
+      how.appendChild(e);
     }
     s.style.setProperty('--accent', it.g ? iconOf(it.g).cols[0] : 'var(--blue)');
     setWorld(it.g ? worldOf(it.g) : null);

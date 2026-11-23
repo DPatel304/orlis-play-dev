@@ -75,3 +75,26 @@ export function heroOf(item, { blurb = '', cap = 4 } = {}){
 
 /* Is the hero big (the page at rest) or a banner (scrolled)? Only the first row keeps it big. */
 export const bigHero = (pos, rows) => !rows.length || pos.row === 0;
+
+/* The "how you play" row (decision 0052), from what a game already declares: `seats` ({ tracked: [lo, hi], pads: [lo, hi] }), `requiredPads`,
+   `passive`, and its player counts. Only what is true, at most three items, in this order:
+     players      always first, except a story (nobody counts)       { id: 'players', icon: 'people', lo, hi, text: '1–2' }
+     Move         played with the camera (not a story, not a game with no camera seats)
+     Tablet       one pad seat and a pad is required  /  Tablet optional: one pad seat, not required
+     Phones       two or more pad seats: phones are the controllers
+     Sit back     a story (and nothing else) */
+export const padsOf = (g) => { const p = g && g.seats && Array.isArray(g.seats.pads) ? g.seats.pads : null; return p ? { lo: Math.max(p[0] | 0, (g.requiredPads | 0) > 0 || Array.isArray(g.requiredPads) ? 1 : 0), hi: p[1] | 0 } : { lo: 0, hi: 0 }; };
+/* does the game need a tablet? (the mark on its tile) */
+export const needsTablet = (g) => { const p = padsOf(g); return !!g && !g.passive && p.hi === 1 && p.lo >= 1; };
+export const playersText = (lo, hi) => lo === hi ? String(hi) : `${lo}–${hi}`;
+export function howYouPlay(g, { cap = 4 } = {}){
+  if (!g) return [];
+  if (g.passive) return [{ id: 'sitback', icon: 'sofa', text: 'Sit back' }];
+  const lo = Math.min(g.minPlayers || 1, cap), hi = Math.min(g.maxPlayers || 4, cap);
+  const items = [{ id: 'players', icon: 'people', lo, hi, text: playersText(lo, hi), label: lo === hi ? `${hi} player${hi > 1 ? 's' : ''}` : `${lo} to ${hi} players` }];
+  const p = padsOf(g), tracked = g.seats && Array.isArray(g.seats.tracked) ? (g.seats.tracked[1] | 0) : 1;
+  if (tracked > 0) items.push({ id: 'move', icon: 'move', text: 'Move' });
+  if (p.hi === 1) items.push({ id: 'tablet', icon: 'tabletgrip', text: p.lo >= 1 ? 'Tablet' : 'Tablet optional' });
+  else if (p.hi > 1) items.push({ id: 'phones', icon: 'phone', text: 'Phones' });
+  return items.slice(0, 3);
+}
