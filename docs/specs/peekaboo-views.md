@@ -16,6 +16,10 @@ and the pads API at the end of `docs/specs/session.md`. Characters are the one b
   `rustles: [placeId]` (last 1 s). Nothing about the seekers' faces or names.
 - Lanterns: for each tracked seeker, the hand that moved most over the last 0.5 s (owner); its screen point → a ray from the fixed TV
   camera onto the floor (as the lab does) → `{x, z}`. No hand seen → no lantern.
+- **Events to the tablet** (`pads.send(hiderSeat, m)`, arriving as `ev` with `e` = `m.e`): `{e:'phase', name}` ('hide' at the start of the round, on the tablet's join and on resume, then 'seek', 'reveal'),
+  `{e:'rustle', placeId}`, `{e:'enter', placeId}`, `{e:'leave', placeId}`, `{e:'found', by}` (a seeker's seat) and `{e:'hidden'}`. The rules' event `type` is sent as `e`, the rest as is.
+  The tablet's input is `{t:'in', stick:{x,y}}` and `{t:'in', act:'out'}`; only the hider's seat is heard.
+- **The TV camera** is fixed numbers in `app/src/games/peekaboo/camera.js` (`floorPoint`, `screenPoint`, garden to scene `toScene`); the whole 30 by 30 garden is in view at 16:9 and 4:3. The game is `endless: true` (no shell clock; it ends itself after the reveal).
 - Pause: when the tablet drops, the session pauses (S1 already); `step` is not called.
 - Results: "Found by Mia in 0:42!" or "You stayed hidden!" with both as wins (no score table); then "Play again" keeps the same hider.
 

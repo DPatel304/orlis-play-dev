@@ -150,7 +150,17 @@ class Peekaboo {
     }).catch((e) => { this.err = String((e && e.message) || e); this.viewState = 'failed'; });
   }
 
+  /* the tile's still (the home screen draws a game once, off-screen): a painted meadow, never the 3D layer */
+  _still(c, W, H) {
+    assets.scene(c, W, H, 'meadow', { t: 3 });
+    assets.draw(c, 'tree', W * 0.2, H * 0.62, H * 0.5, { shadow: true }); assets.draw(c, 'pine', W * 0.82, H * 0.6, H * 0.45, { shadow: true });
+    assets.draw(c, 'seedling', W * 0.62, H * 0.82, H * 0.2, { shadow: true });
+    this.seekers.slice(0, 2).forEach((seat, i) => { portrait(c, W * (0.4 + i * 0.14), H * 0.72, H * 0.14, this.lookOf(seat) || cubo(), 0); });
+    this._ring(c, W * 0.5, H * 0.2, H * 0.07, 0.6);
+  }
+
   draw(c, W, H) {
+    if (this.stillMode) { this._still(c, W, H); return; }
     this._startView();
     c.clearRect(0, 0, W, H);                       /* the 2D canvas goes clear: the 3D garden underneath shows */
     if (!this.view) {

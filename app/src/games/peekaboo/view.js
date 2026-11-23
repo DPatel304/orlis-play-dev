@@ -24,6 +24,7 @@ export function glLayer(T) {
   glCanvas = document.createElement('canvas');
   glCanvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;display:block';
   const st = document.getElementById('stage'); st.parentNode.insertBefore(glCanvas, st);
+  lastDraw = performance.now();
   R = new T.WebGLRenderer({ canvas: glCanvas, antialias: true, powerPreference: 'default' });
   /* hide the 3D layer whenever the shell stops drawing this game (results, menus) */
   watch = setInterval(() => { if (glCanvas && performance.now() - lastDraw > 400) glCanvas.style.display = 'none'; }, 250);
@@ -32,6 +33,7 @@ export function glLayer(T) {
 
 /* ---- the hider's card: their own block-limb character, painted once into one texture (four drawings side by side) ---- */
 const CARD = [['stand', 0], ['wave', 0.157], ['wave', 0.47], ['cheer', 0.2]];
+export const REVEAL_SCALE = 2.4;     /* on the reveal the character is shown big, so the whole room sees them */
 export const HIDER_HEIGHT = 1.9;      /* how tall the character stands on the TV, in steps */
 function paintCard(look) {
   const S = 170, bs = ['stand', 'wave', 'cheer'].map(p => poseBounds(p, false));
@@ -173,7 +175,8 @@ export class GardenView {
     const tex = new T.CanvasTexture(card.cv); tex.colorSpace = T.SRGBColorSpace; tex.repeat.set(1 / CARD.length, 1); this.cardTex = tex;
     const gw = card.cw * card.k, gh = card.ch * card.k, geo = new T.PlaneGeometry(gw, gh); geo.translate(0, gh / 2 - (card.ch - card.feet) * card.k, 0);
     this.hider = new T.Mesh(geo, new T.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, opacity: 0, color: col('shade.mid') }));
-    this.hider.renderOrder = 10; this.hider.visible = false; scene.add(this.hider);
+    this.hider.renderOrder = 10; this.hider.rotation.x = -0.75;      /* leaning to the high camera, so the card is not squashed */
+     this.hider.visible = false; scene.add(this.hider);
     this.hblob = blob(0, 0, 1.0); this.hblob.visible = false;
     this.reveal = { name: '', t: 0 };
     this.cam = new T.PerspectiveCamera(FOV, 16 / 9, 0.1, 260);
@@ -235,14 +238,14 @@ export class GardenView {
     let want = 0, cell = 0, rise = 1, pop = 1;
     if (m.phase === 'reveal') {
       const p = this.world.place(m.hider.place), s = toScene(m.hider.x, m.hider.z);
-      const out = (p ? p.r + 0.9 : 0.3);
+      const out = (p ? p.r + 1.4 : 0.8);
       h.position.set(s.x, 0, s.z + out);
       want = 1; mat.color.set(col('earth.snow'));
       const k = m.t;
-      rise = backOut(k / 0.45); pop = 0.6 + 0.4 * Math.min(1, ease(k / 0.35));
+      rise = backOut(k / 0.45); pop = REVEAL_SCALE * (0.6 + 0.4 * Math.min(1, ease(k / 0.35)));
       cell = m.result === 'hidden' ? 3 : (Math.floor(this.t * 6) % 2 ? 2 : 1);
-      const hop = m.result === 'hidden' ? Math.abs(Math.sin(k * 7)) * 0.35 * Math.min(1, k) : 0;
-      h.position.y = -(1 - Math.min(1.1, rise)) * HIDER_HEIGHT * 0.9 + hop;
+      const hop = m.result === 'hidden' ? Math.abs(Math.sin(k * 7)) * 0.8 * Math.min(1, k) : 0;
+      h.position.y = -(1 - Math.min(1.1, rise)) * HIDER_HEIGHT * REVEAL_SCALE * 0.9 + hop;
       h.scale.set(pop, pop, 1);
       this.hblob.visible = true; const q = this.hblob.position; q.x = s.x + 0.15; q.z = s.z + out - 0.1;
     } else {
@@ -260,7 +263,7 @@ export class GardenView {
 
   render() {
     if (!glCanvas || !R) return;
-    lastDraw = performance.now();
+    lastDraw = performance.now(); glCanvas.style.display = 'block';
     const w = glCanvas.clientWidth, h = glCanvas.clientHeight, dpr = Math.min(window.devicePixelRatio || 1, 2);
     if (this._w !== w || this._h !== h) { this._w = w; this._h = h; R.setPixelRatio(dpr); R.setSize(w, h, false); this.cam.aspect = w / h; this.cam.updateProjectionMatrix(); }
     R.render(this.scene, this.cam);
