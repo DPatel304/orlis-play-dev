@@ -97,7 +97,7 @@ const easeOut = (k) => 1 - Math.pow(1 - k, 3), easeIn = (k) => k * k * k;
 
 /* draw the card for a pose. K: the card's side in pixels. cx, cy: its middle. t: seconds into the move. alpha: fade (0..1).
    face: force a face (for looking at them). The picture is the block-limb Cubo himself (avatar-art.js), showing the move with its
-   arrows (beside the arms, and the move's own marks), and the ice twinkles for freeze. */
+   arrows (beside the arms, and the move's own marks; freeze gets its frost, sparkles and stillness ticks instead of arrows). */
 export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
   if (!POSES[pose]) return;
   const fr = frameAt(pose, t), bob = (fr.i % 2 ? 1 : -1) * K * 0.006;     /* floating: it steps up and down with the drawings */
@@ -111,9 +111,6 @@ export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
   /* him, big in the card: as big as fits his own drawn box (all four drawings, arrows and marks), which is what he is centred on */
   const b = poseBounds(pose, true), h = Math.min(K * 0.75, K * 0.74 / (b.x1 - b.x0), K * 0.74 / (b.y1 - b.y0));
   cuboFigure(c, -(b.x0 + b.x1) / 2 * h, -(b.y0 + b.y1) / 2 * h, h, pose, t, face, { arrows: true });
-  if (pose === 'freeze') [[-0.34, -0.34], [0.35, -0.26], [-0.35, 0.28], [0.34, 0.22]].forEach(([x, y], j) => { if ((j + fr.i) % 2) return;   /* ice twinkles, a different pair each drawing */
-    const r = K * 0.05; c.beginPath(); c.moveTo(x * K, y * K - r * 1.5); c.lineTo(x * K + r, y * K); c.lineTo(x * K, y * K + r * 1.5); c.lineTo(x * K - r, y * K); c.closePath();
-    c.fillStyle = CARD.ice; c.fill(); c.strokeStyle = CARD.line; c.lineWidth = K * 0.018; c.lineJoin = 'round'; c.stroke(); });
   c.restore();
 }
 

@@ -42,6 +42,10 @@ function resolve(look){
   return a;
 }
 const INK = () => color('shade.ink');
+/* a pale icy wash over the colours of a look (the outline is not one of them) */
+const mixHex = (c1, c2, k) => { if (!/^#[0-9a-f]{6}$/i.test(c1) || !/^#[0-9a-f]{6}$/i.test(c2)) return c1; const A = parseInt(c1.slice(1), 16), B = parseInt(c2.slice(1), 16), ch = (sh) => Math.round(((A >> sh) & 255) * (1 - k) + ((B >> sh) & 255) * k); return '#' + ((1 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).slice(1); };
+const frosted = new WeakMap();
+const frost = (a) => { let f = frosted.get(a); if (!f){ const ice = color('sea.sunlit'), m = (c) => mixHex(c, ice, 0.25); f = { ...a, c: m(a.c), c2: m(a.c2), shade: m(a.shade), light: m(a.light), t2: m(a.t2) }; frosted.set(a, f); } return f; };
 
 const rr = (x, a, b, w, h, q) => { x.beginPath(); x.moveTo(a + q, b); x.arcTo(a + w, b, a + w, b + h, q); x.arcTo(a + w, b + h, a, b + h, q); x.arcTo(a, b + h, a, b, q); x.arcTo(a, b, a + w, b, q); x.closePath(); };
 const dot = (x, px, py, r) => { x.beginPath(); x.arc(px, py, Math.max(0.1, r), 0, Math.PI * 2); };
@@ -294,8 +298,9 @@ const MOVES = {
   duck: (i) => { const p = 0.3 + 0.7 * P('duck', i); return rig({ k: Lp(1, 0.55, p), headDrop: Lp(0, 0.16, p), armsOver: true, mark: 'down', arms: [AR(Lp(0, -150, p), Lp(0, 150, p)), AR(Lp(0, 150, p), Lp(0, -150, p))] }); },
   /* a step sideways: one leg straight down, the other straight out at an angle, the arms out, and an arrow beside the leg that goes out */
   side: (i) => { const p = P('side', i); return rig({ rot: Lp(0, 0.05, p), mark: 'step', legs: [LG(0), LG(Lp(0, 30, p))], arms: [AR(-Lp(10, 74, p)), AR(Lp(10, 74, p))] }); },
-  /* frozen: arms out, shivering */
-  freeze: (i) => rig({ dx: (i % 2 ? 1 : -1) * 0.009, arms: [AR(-80), AR(80)] })
+  /* frozen: stiff and still, the arms a little out from the body. The only motion is a tiny shiver (about a pixel). When he shows it as a move to copy
+     (arrows) he also gets a pale frost tint, ice sparkles round him and two short stillness ticks either side of his head - and no arrows, which mean "move" */
+  freeze: (i) => rig({ dx: (i % 2 ? 1 : -1) * 0.006, mark: 'ice', frame: i, arms: [AR(-26), AR(26)] })
 };
 /* the other move cards (flap, clap, hug, lean, duck, dance, side) are drawn from the cards' own drawings (figure.js POSES): their arm and leg
    points give the angles of the blocks (the lengths are always the blocks' own) */
@@ -372,6 +377,7 @@ export function poseBounds(pose, arrows = true){
       }
     });
     if (arrows && rg.mark === 'down') add(0, headTop - 0.24, 0.07);
+    if (arrows && rg.mark === 'ice'){ add(-0.46, -0.9, 0.07); add(0.46, 0, 0.07); add(0.4, headTop + 0.21, 0.05); }
     if (arrows && rg.mark === 'burst') add(0, torsoTop + 0.04, 0.05);
     if (arrows && rg.mark === 'step') add(lx + L * Math.sin(rg.legs[1].a1 * DEG) + 0.17 + 0.16, -0.07, 0.07);
   }
@@ -381,8 +387,8 @@ export function poseBounds(pose, arrows = true){
 /* opts.arrows: he is showing a move to copy (a move card, a story beat that says "do this"): a bold arrow beside each straight, stretched-out arm
    (freeze, the arms-up V, a cheer, a reach, a flap), parallel to it, makes the reach read bigger than the stubby arms. Acting in a story beat has none. */
 export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false, face: alive = null, still = false, arrows = false } = {}){
-  const a = resolve(look), S = h, { hh, bw, bh } = SIZE(S);
-  const rg = pose === 'stand' && !still && !back ? idleRig(t) : rigOf(pose, t);
+  const a0 = resolve(look), S = h, { hh, bw, bh } = SIZE(S);
+  const rg = pose === 'stand' && !still && !back ? idleRig(t) : rigOf(pose, t), a = arrows && rg.mark === 'ice' ? frost(a0) : a0;
   const hipY = -S * BODY.legLen * rg.k + rg.yo * S, torsoTop = hipY - bh, headTop = torsoTop + S * 0.015 - hh + (rg.headDrop || 0) * S, rot = rg.rot || 0, dx = (rg.dx || 0) * S;
   const lx = S * (BODY.legGap + BODY.legW) / 2, ax = bw / 2 + S * (BODY.armGap + BODY.armW / 2), ay = torsoTop + S * BODY.armW / 2;
   /* where the arms hang from: the torso's top corners, or (clap, hug) further in over the chest */
@@ -404,7 +410,7 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
     cc.save(); cc.translate(0, headTop); drawHead(cc, a, S, back, t); cc.restore();
     if (rg.armsOver) arms();
     if (arrows) [-1, 1].forEach((d, i) => { const r = rg.arms[i];
-      if (rg.sho || Math.abs(r.a1 - r.a2) > 1 || Math.abs(r.a1) < 55) return;
+      if (rg.sho || rg.mark === 'ice' || Math.abs(r.a1 - r.a2) > 1 || Math.abs(r.a1) < 55) return;
       /* beside the arm, not on its end: parallel to it, on its outer side (the upper side when it points straight out), one arm-width and a clear gap
          away, about the arm's own length, pointing the way the arm goes; never over the head or what he wears on it */
       const head = { x0: a.top === 'phones' ? -0.29 : -0.25, x1: a.top === 'phones' ? 0.29 : 0.25, y0: headTop / S - HAT_UP[a.top || 'none'], y1: headTop / S + 0.42 };
@@ -416,6 +422,13 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
       if (rg.mark === 'burst'){ cc.save(); cc.strokeStyle = INK(); cc.lineWidth = S * 0.025; cc.lineCap = 'round';
         for (const an of [-150, -120, -90, -60, -30]){ const u = [Math.cos(an * DEG), Math.sin(an * DEG)], r0 = S * 0.04 * pulse, r1 = S * (an === -90 ? 0.1 : 0.08) * pulse;
           cc.beginPath(); cc.moveTo(u[0] * r0, torsoTop + S * 0.12 + u[1] * r0); cc.lineTo(u[0] * r1, torsoTop + S * 0.12 + u[1] * r1); cc.stroke(); }
+        cc.restore(); }
+      if (rg.mark === 'ice'){ cc.save(); cc.strokeStyle = INK(); cc.lineWidth = S * 0.02; cc.lineCap = 'round'; cc.lineJoin = 'round';
+        const hy = headTop + S * 0.21;
+        for (const d of [-1, 1]) for (const o of [0.31, 0.37]){ cc.beginPath(); cc.moveTo(d * o * S, hy - S * 0.045); cc.lineTo(d * o * S, hy + S * 0.045); cc.stroke(); }
+        [[-0.42, -0.86], [0.44, -0.44], [-0.45, -0.06], [0.45, -0.14]].forEach(([sx, sy], j) => { if ((j + (rg.frame || 0)) % 2) return;   /* ice sparkles, a different pair each drawing */
+          const r = S * 0.045; cc.beginPath(); cc.moveTo(sx * S, sy * S - r * 1.5); cc.lineTo(sx * S + r, sy * S); cc.lineTo(sx * S, sy * S + r * 1.5); cc.lineTo(sx * S - r, sy * S); cc.closePath();
+          cc.fillStyle = color('sea.sunlit'); cc.fill(); cc.lineWidth = S * 0.014; cc.stroke(); });
         cc.restore(); }
       if (rg.mark === 'down') motionArrow(cc, S, 0, headTop - S * 0.24, 0, S * 0.14 * pulse);
       if (rg.mark === 'step') motionArrow(cc, S, lx + S * BODY.legLen * Math.sin(rg.legs[1].a1 * DEG) + S * 0.17, -S * 0.07, 90, S * 0.16 * pulse);
