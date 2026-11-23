@@ -68,7 +68,8 @@ test('only the drawing changes: picking and pointing never ask which way hands a
   const update = src.slice(src.indexOf('  update(dt, root){'), src.indexOf('  /* The wave:'));
   assert.ok(!/handsMode/.test(update), 'cursor.update (pointing, waves, picks) does not look');
   const home = readFileSync(new URL('../src/ui/home.js', import.meta.url), 'utf8');
-  assert.ok(!/hcur/.test(home), 'home has no cursor dot, in any way');
+  /* owner, 2026-11-23: home shows its own dot to follow, whichever way the games show hands */
+  assert.ok(/hcur/.test(home) && !/handsMode/.test(home), 'home has its cursor dot, in every way');
 });
 
 test('Settings > Testing has the choice for the owner, and H does it in play', () => {
