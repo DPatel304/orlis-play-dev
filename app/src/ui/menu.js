@@ -1,37 +1,19 @@
-import { GAMES, LABS, STARTER_GAMES } from '../games/index.js';
-import { button, onPick, cursor } from './cursor.js';
-import { screen, h, clearUI } from './screens.js';
-import { audio, sfx, ambience } from '../audio/sound.js';
+import { GAMES } from '../games/index.js';
+import { button, onPick } from './cursor.js';
+import { screen, h } from './screens.js';
+import { audio, sfx } from '../audio/sound.js';
 import { pose, MAX_PLAYERS } from '../tracking/pose.js';
-import { poster } from './posters.js';
-import { PAPER } from './boot.js';
 import { remote } from './remote.js';
-import { trailer } from './trailer.js';
-import { topBar } from './tabs.js';
 import { account } from './account.js';
-import { week } from './week.js';
 import { appMode } from './mode.js';
-import { library } from './library.js';
-import { toast } from './toast.js';
-import { splashWanted, showChallenges } from './challenges.js';
-import { launch } from './launch.js';
-import { shotOf, shotImage, keepShot, makeShots } from './shots.js';
-import { banner as wideBanner, discoverCoverUrl, seeAllCoverUrl } from './covers.js';
-import { buildingRow, testingRow } from './building.js';
+import { icon } from './brand.js';
+import { faceOf } from './avatar-maker.js';
 import { openTrustedPhones } from './trusted-phones.js';
 import { createTrust } from '../session/trust.js';
 
-/* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
-   name, who's here (a bubble each, with their face), whether the camera's
-   working, and the time. Under it a big banner for the game you're on - its
-   living picture, its name, a line about it, how many can play, and Play.
-   Under that, the games in a row. The console's own places - settings, the
-   store - are in the menu behind the button in the corner. Moving along (pointing, or the remote's arrows) changes the banner; a row
-   slides along to keep the one you're on in view, so there's room for as
-   many games as there are.
+/* What the home page (home.js) and the other pages share: a line about each game, each game's icon and look, what was played lately,
+   how many can play, Settings, and the profile sheet behind the profile face. */
 
-   Arriving from the boot (arrive), the tiles fly out from where the cube
-   broke apart, into their places. */
 /* A line about each game. */
 export const BLURB = {
   'pop-party': 'Reach up and pop the balloons before they float away',
@@ -106,427 +88,20 @@ export function looks(g){
 }
 
 
-/* The pick made this session ({ id, row }): coming back (from a game, or another page) it's still the one. A fresh start picks the first Featured game. */
-let sessionPick = null;
+
 /* Games kept off the home screen for now (still there, just not shown). */
 export const HIDDEN = new Set(['last-known-position', 'castle-defense']);
-/* What was picked last - kept between launches, by game. */
-const LAST = 'orlis.lastGame';
-let lastFocus = null;
-/* the Play page's big banner (cinema) carries over a refresh of the page, not a visit */
-let keepCinema = null;
-const remembered = () => { try { return localStorage.getItem(LAST); } catch { return null; } };
-const remember = (id) => { try { localStorage.setItem(LAST, id); } catch {} };
 /* What's been played lately, newest first (Jump back in). */
 const RECENT = 'orlis.recent';
 export const recent = () => { try { const r = JSON.parse(localStorage.getItem(RECENT)); return Array.isArray(r) ? r : []; } catch { return []; } };
 export function played(id){ try { localStorage.setItem(RECENT, JSON.stringify([id, ...recent().filter(x => x !== id)].slice(0, 8))); } catch {} }
-/* Featured, when the family's server can't say this week's: these. */
-export const FEATURED = ['pop-party', 'sky-painter', 'last-known-position', 'stack-it-high', 'sleepy-bear', 'leaf-pile'];
-/* Play's rows: Jump back in (if anything's been played), Featured this week
-   (the server's pick from Discover - games to get - else a few from this
-   PC, once there are enough to mean something), and All, A-Z. The same
-   game can be in more than one. */
-export function playRows(pool, lately = recent(), featured = []){
-  const byId = new Map(pool.map(g => [g.id, g])), rows = [];
-  const back = lately.map(id => byId.get(id)).filter(Boolean).slice(0, 6);
-  if (back.length) rows.push({ id: 'back', title: 'Jump back in', games: back });
-  if (featured.length) rows.push({ id: 'featured', title: 'Featured this week', games: featured.slice(0, 3) });
-  else if (pool.length > 3){
-    const feat = [...pool.filter(g => g.store), ...FEATURED.map(id => byId.get(id)).filter(Boolean)];
-    rows.push({ id: 'featured', title: 'Featured', games: feat.filter((g, i) => feat.indexOf(g) === i).slice(0, 3) });
-  }
-  rows.push({ id: 'all', title: 'My games', games: [...pool].sort((a, b) => a.name.localeCompare(b.name)) });
-  return rows;
-}
-const HOVER_FOCUS = 0.05;      /* seconds of a hand on a tile to pick it (the cursor's already sticky) */
-const LAUNCH = launch.OPEN;    /* seconds of going in (the tile opening up) */
-const POINT_AGAIN = 0.04;      /* how far (of the screen) a hand moves to take over from the remote */
-const FLY = 0.7, FLY_STAGGER = 0.05;   /* arriving: each tile's flight, one after another */
 
 /* What Create is, until it's here. */
 export const CREATE_SOON = {
-  icon: '\u{1F58C}\u{FE0F}', name: 'Create', line: 'Make your own games',
+  name: 'Create', line: 'Make your own games',
   about: 'Build your own movement games, then play them by moving. Share the ones you like with the family in Discover.'
 };
 
-/* nav: { home(), store(), create() } - the tabs in the top bar. */
-export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh = null }){
-  clearUI();
-  const s = screen('tvhome homepage onhero' + (arrive ? ' arrive' : ''));
-
-  /* the top bar, with the tabs */
-  const bar = topBar('home', nav, { onWho, onRecalibrate, isBusy: () => !!going });
-  s.appendChild(bar.el);
-  if (pose.mouse.active && pose.reason !== 'debug') s.appendChild(h('div', 'warnstrip', '⚠ No camera — the mouse is playing'));
-
-  const items = [];
-  /* (waiting to be let in: the starter games only) */
-  const waiting = account.waiting;
-  const showHidden = typeof location !== 'undefined' && /[?&]debug\b/.test(location.search) && /[?&]hidden=1/.test(location.search);   /* (to try the games kept off Play) */
-  const labs = showHidden || account.role === 'owner' ? LABS : [];
-  const pool = GAMES.concat(labs).filter(g => (showHidden || !HIDDEN.has(g.id)) && (!waiting || STARTER_GAMES.includes(g.id)));
-  /* this week's featured, from Discover: a game already here as itself;
-     one to get as a stand-in that knows its Discover entry */
-  const featured = waiting ? [] : week.featured().map(e => (library.installed.has(e.id) && GAMES.find(x => x.id === e.id))
-    || { id: e.id, name: e.name, accent: (e.icon && e.icon.cols && e.icon.cols[0]) || '#6d5efc', store: { icon: e.icon, blurb: e.blurb, version: e.version, cover: e.cover || '' }, discover: e });
-  const ROWS = pool.length ? playRows(pool, recent(), featured) : [];
-  /* (one picture and one trailer per game, wherever it shows up) */
-  const paints = new Map(), trailers = new Map();
-  const entry = (g, shelf) => {
-    if (!paints.has(g.id)) paints.set(g.id, poster(g));
-    return { kind: 'game', g, shelf, accent: iconOf(g).cols[0], icon: iconOf(g), name: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '', paint: paints.get(g.id) };
-  };
-  ROWS.forEach((r, k) => { for (const g of r.games) items.push(entry(g, k)); });
-
-  /* the banner: the game you're on, playing itself, right across the top -
-     the same banner as the Store's and Create's */
-  const hero = h('section', 'shero');
-  const heroPic = document.createElement('canvas'); heroPic.className = 'sheropic shown';
-  const hname = h('h1', ''), hblurb = h('p', ''), hmoves = h('div', 'schips');
-  /* (no Play button: picking a tile plays it - the banner shows the one you're on) */
-  const btns = h('div', 'sbtns');
-  const htext = h('div', 'shtext'); htext.append(hname, hblurb, hmoves, btns);
-  hero.append(heroPic, h('div', 'shshade'), htext);
-  s.appendChild(hero);
-
-  /* no games yet (a new install: they come from the Store) - a way there */
-  if (!items.length){
-    hname.textContent = 'Get your first game'; hblurb.textContent = 'Pop Party is waiting for you in Discover.';
-    if (nav.store) btns.appendChild(onPick(button('Open Discover', 'sbtn play'), () => { sfx.select(); nav.store(); }));
-    ambience.start();
-    return {
-      focus: 0,
-      tick(dt){ bar.tick(dt); },
-      draw(c, W, H){ c.fillStyle = PAPER; c.fillRect(0, 0, W, H); }
-    };
-  }
-
-  /* the rows */
-  const shelves = h('div', 'shelves'), wrap = h('div', 'shelfwrap');
-  shelves.appendChild(wrap); s.appendChild(shelves);
-  const rows = [];
-  for (let k = 0; k < ROWS.length; k++){
-    const list = items.map((it, n) => ({ it, n })).filter(({ it }) => it.shelf === k);
-    if (!list.length) continue;
-    const sec = h('section', 'shelf');
-    const row = h('div', 'shelfrow');
-    const head = h('h3', '', ROWS[k].title);
-    /* (the Featured row has big tiles, and ends with the Discover tile) */
-    if (ROWS[k].id === 'featured') sec.classList.add('fr');
-    sec.append(head, row);
-    wrap.appendChild(sec);
-    rows.push({ sec, row, ns: list.map(({ n }) => n) });
-    for (const { it, n } of list) items[n].rowAt = rows.length - 1;
-  }
-  /* a tile's picture: a still of the game itself, once there is one (else
-     its colours and icon) */
-  const picture = (pic, g) => { const url = shotOf(g); if (url){ const tile = pic.closest('.slock'); pic.style.backgroundImage = `url(${url})`; pic.classList.add('shot'); if (tile?.classList.contains('waiting')) pic.classList.add('fadein'); tile?.classList.remove('waiting'); tile?.classList.add('covered'); if (pic.classList.contains('fadein')) pic.addEventListener('animationend', () => pic.classList.remove('fadein'), { once: true }); } };
-  /* a game's card: its art, and its name under it, big enough to read
-     from the sofa (no icon - the art says it - and no small print) */
-  const gameCard = (it) => {
-    const card = button('', 'slock');
-    card.style.setProperty('--accent', it.accent);
-    const L = looks({ id: it.g.id, icon: it.g.store && it.g.store.icon });
-    const pic = L.art('sthumb');
-    picture(pic, it.g);
-    const meta = h('div', 'smeta', '<div class="stxt"><div class="nm"></div></div>');
-    meta.querySelector('.nm').textContent = it.name;
-    card.insertBefore(pic, card.firstChild);
-    card.querySelector('.lbl').replaceWith(meta);
-    if (pic.classList.contains('shot')) card.classList.add('covered');
-    /* (no cover yet, but one is coming: a paper card until it fades in, so the tiles never flash a placeholder and swap) */
-    else if (!it.g.discover) card.classList.add('waiting');
-    return { card, pic };
-  };
-  const cards = items.map((it, n) => {
-    const { card, pic } = gameCard(it);
-    /* (one from Discover, not on this PC yet) */
-    /* (Get is always top right: no title lettering goes there - the 'pop' one is kept short of it) */
-    if (it.g.discover) card.insertAdjacentHTML('beforeend', '<span class="getpill">\u2193 Get</span>');
-    onPick(card, () => choose(n));
-    card.addEventListener('mouseenter', () => { if (!going && !bar.menuOpen) move(n); });
-    card.addEventListener('remotefocus', () => move(n));
-    rows[it.rowAt].row.appendChild(card);
-    return { card, pic, paint: it.paint, hot: 0, it, still: false };
-  });
-  const extraTile = (glyph, name, fn) => {
-    const t = button('', 'slock addtile');
-    t.insertBefore(h('div', 'sthumb', `<span class="plus">${glyph}</span>`), t.firstChild);
-    t.querySelector('.lbl').replaceWith(h('div', 'smeta', `<div class="stxt"><div class="nm">${name}</div></div>`));
-    onPick(t, () => { if (going) return; sfx.select(); fn(); });
-    /* (reached with the remote or keys: the row slides to show it, and the games lose their highlight) */
-    t.addEventListener('remotefocus', () => { cards.forEach(c => c.card.classList.remove('focus')); slideRow(t); });
-    return t;
-  };
-  /* the end of Featured: the Discover tile - the rest of Discover, with how many are new this week (or to get) */
-  const fi = ROWS.findIndex(r => r.id === 'featured');
-  if (fi >= 0 && nav.store){
-    const fr = rows.find(r => r.ns.length && items[r.ns[0]].shelf === fi);
-    if (fr){
-      const t = extraTile('', 'Discover', () => nav.store());
-      t.classList.add('discovertile', 'pictile', 'covered');
-      const th = t.querySelector('.sthumb'); th.innerHTML = '';
-      const pic = discoverCoverUrl(); if (pic) th.style.backgroundImage = `url(${pic})`;
-      const games = (week.store && week.store.games) || [];
-      const toGet = games.filter(g => !library.installed.has(g.id));
-      const fresh = toGet.filter(g => g.added && Date.now() - Date.parse(g.added) < 7 * 864e5).length;
-      const chip = fresh ? `${fresh} new this week` : toGet.length ? `${toGet.length} to get` : '';
-      if (chip) th.appendChild(h('span', 'newchip', chip));
-      fr.row.appendChild(t);
-    }
-  }
-  /* the end of My games: every game at once - a tile drawn like the covers */
-  if (rows.length){
-    const seeAll = extraTile('', 'See all', () => allGames());
-    seeAll.classList.add('pictile', 'covered');
-    const th = seeAll.querySelector('.sthumb'); th.innerHTML = '';
-    const pic = seeAllCoverUrl(); if (pic) th.style.backgroundImage = `url(${pic})`;
-    rows[rows.length - 1].row.appendChild(seeAll);
-  }
-
-  /* Under construction: the games asked for and not here yet - at the very end, out of the way
-     (nothing to do about one while it's being made, so nothing to pick, and no stop on the way down) */
-  /* (and Testing: a creator's game on this TV to try, played from the family's server, not kept) */
-  /* the creator asked to publish it: a grown-up answers here, on the TV */
-  const askPublish = (d) => {
-    const wrap = screen('dim fpopwrap'); wrap.style.zIndex = 6;
-    const card = h('div', 'fpop'), close = () => { wrap.remove(); remote.mark(cards[focus].card); };
-    const kid = account.isKid;
-    card.append(h('h2', '', `Publish ${d.name}?`),
-      h('p', '', kid ? 'Ask a grown-up: only they can say yes.' : 'It becomes one of your family\u2019s games, under Play. Play it first if you haven\u2019t.'),
-      h('div', 'fbtns'));
-    const b = (label, fn, cls = '') => onPick(button(label, 'setbtn ' + cls), fn);
-    const act = card.querySelector('.fbtns');
-    act.append(b('Not now', async () => { sfx.back?.(); close(); if (!kid) { try { await account.call('DELETE', `/api/drafts/${encodeURIComponent(d.id)}/ask`); } catch {} } }),
-      b('Play it', () => { sfx.select(); close(); playDraft(d); }));
-    if (!kid) act.append(b('Publish', async () => {
-      try { await account.call('POST', `/api/drafts/${encodeURIComponent(d.id)}/publish`); }
-      catch (e){ toast(e.message || 'That didn\u2019t work.', { bad: true }); return; }
-      sfx.gold?.(); close(); toast(`${d.name} is published`);
-      await week.refresh({ force: true }).catch(() => {}); if (nav.home) nav.home();
-    }, 'go'));
-    wrap.appendChild(card);
-  };
-  const tryDraft = (d) => { if (going || getting) return; if (d.asking) askPublish(d); else playDraft(d); };
-  const playDraft = async (d) => {
-    if (going || getting) return;
-    toast(`Getting ${d.name}\u2026`);
-    try {
-      const game = await library.preview({ id: d.id, version: d.version, sha256: d.sha256, draft: true });
-      game.back = () => nav.home && nav.home();
-      sfx.gold?.(); onPlay(game);
-    } catch (e){ toast(e.message || 'That didn\u2019t start.', { bad: true }); }
-  };
-  const tail = !waiting && rows.length ? (() => {
-    const a = testingRow(week.drafts || [], tryDraft), b = buildingRow(week.building(), () => { if (nav.home) nav.home(); });
-    if (a && b){ const both = h('div', 'tailrows'); both.append(a, b); return both; }
-    return a || b;
-  })() : null;
-  if (tail) wrap.appendChild(tail);
-
-  /* this week's family challenges: three big cards on arriving (once each time the
-     app starts), then a pill in the top bar (challenges.js) */
-  const ch = week.challenges;
-  let holdArrive = false;
-  if (!waiting && ch && ch.challenges && ch.challenges.length && splashWanted()){
-    /* (up at once, over a plain page: no glimpse of Play first; the tiles fly in as the cards leave) */
-    holdArrive = true;
-    showChallenges(ch, { auto: true, first: true, from: bar.pill, onLeave: () => { holdArrive = false; } });
-  }
-
-  /* All games: a grid of every game, with a filter along the top */
-  function allGames(){
-    const g = screen('dim allgames');
-    const grid = h('div', 'allgrid'), chips = h('div', 'allchips');
-    const close = onPick(button('←', 'cardicon close allback'), () => { sfx.back?.(); g.remove(); remote.mark(cards[focus].card); });
-    close.title = 'Back'; close.setAttribute('aria-label', 'Back');
-    g.append(h('div', 'allhead'), chips, grid);
-    g.firstChild.append(close, h('h2', '', 'My games'));
-    const allRow = ROWS.length - 1;
-    const sets = [['All', ROWS[allRow].games], ...ROWS.slice(0, allRow).map(r => [r.title, r.games])];
-    const fill = (k) => {
-      [...chips.children].forEach((c, i) => c.classList.toggle('on', i === k));
-      grid.innerHTML = '';
-      for (const game of sets[k][1]){
-        const n = items.findIndex(x => x.shelf === allRow && x.g === game);
-        const { card } = gameCard(items[n]);
-        onPick(card, () => { g.remove(); choose(n); });
-        grid.appendChild(card);
-      }
-    };
-    sets.forEach(([t], k) => chips.appendChild(onPick(button(t, 'allchip'), () => { sfx.select?.(); fill(k); })));
-    fill(0);
-  }
-  /* (which build this is: in the Beta, and while it's being made - not in
-     the released app) */
-  const beta = typeof window === 'undefined' || !window.ORLIS_LABEL || window.ORLIS_LABEL.beta;
-  if (beta) s.appendChild(h('div', 'buildstamp', typeof __BUILD__ === 'string' ? __BUILD__ : 'dev'));
-
-  let scrollY = 0;
-  /* (by game, not place: the rows change as games are played) */
-  const rowOf = (it) => (ROWS[it.shelf] || {}).id;
-  const fromSession = sessionPick ? items.findIndex(it => it.g.id === sessionPick.id && rowOf(it) === sessionPick.row) : -1;
-  const firstFeatured = items.findIndex(it => rowOf(it) === 'featured');
-  lastFocus = fromSession >= 0 ? fromSession : firstFeatured >= 0 ? firstFeatured : Math.max(0, items.findIndex(it => it.g.id === remembered()));
-  let focus = Math.min(lastFocus, items.length - 1), t = 0, going = null, flown = !arrive;
-  /* After the remote's used, pointing takes over again only once a hand (or
-     the mouse) actually moves - not because the rows slid under one that's
-     resting. */
-  let keySeen = remote.lastKey, anchor = null;
-  /* Cinema: on arriving, the banner is a trailer filling most of the screen, with just the row of the
-     picked game along the bottom. Moving about shrinks it to the usual size (the rows come up); stay
-     on one game a little while and it grows back. */
-  const CINEMA_AFTER = 7;       /* seconds of nothing, and the big banner returns */
-  const MOVED_ENOUGH = 0.22;    /* how far a hand or the mouse travels (screen widths) before it counts as moving about */
-  let cinema = ROWS.some(r => r.id === 'featured') && (keepCinema === null ? true : keepCinema);
-  keepCinema = null;
-  let idleT = 0, motion = 0, ringsAt = null;
-  s.classList.toggle('cinema', cinema);
-  const setCinema = (on) => { if (cinema === on) return; cinema = on; s.classList.toggle('cinema', on); idleT = 0; motion = 0; show(); };
-  const stir = () => { idleT = 0; };
-  s.addEventListener('pointerdown', stir); addEventListener('keydown', stir, true);
-
-  function show(){
-    const it = items[focus];
-    cards.forEach(({ card }, n) => card.classList.toggle('focus', n === focus));
-    remote.mark(cards[focus].card);
-    hero.style.setProperty('--accent', it.accent);
-    hname.textContent = it.name; hblurb.textContent = it.blurb;
-    hmoves.innerHTML = `<span class="schip">${howMany(it.g)}</span>`;
-    /* keep the row in view, and the tile along it */
-    const r = rows[it.rowAt];
-    /* (up only as far as it takes to see the whole row - with everything on
-       screen, not at all) */
-    const top = r.sec.offsetTop - rows[0].sec.offsetTop, bottom = (tail && it.rowAt === rows.length - 1 ? tail.offsetTop + tail.offsetHeight : r.sec.offsetTop + r.sec.offsetHeight) - rows[0].sec.offsetTop, view = shelves.clientHeight - rows[0].sec.offsetTop;
-    /* (in cinema the row is all there is down there: its top at the shelves' top) */
-    if (cinema) scrollY = top;
-    else if (top < scrollY) scrollY = top;
-    else if (bottom > scrollY + view) scrollY = Math.min(top, bottom - view);
-    wrap.style.transform = `translateY(${-scrollY}px)`;
-    slideRow(cards[focus].card);
-  }
-  /* slide a row along so the tile (and a little past it) is in view */
-  function slideRow(tile){
-    const row = tile.closest('.shelfrow'); if (!row) return;
-    const over = tile.offsetLeft + tile.offsetWidth - row.clientWidth + tile.offsetWidth * 0.3;
-    row.style.transform = `translateX(${-Math.max(0, over)}px)`;
-  }
-  function move(to){
-    to = Math.max(0, Math.min(items.length - 1, to));
-    if (to === focus) return;
-    stir(); if (cinema) setCinema(false);
-    focus = to; lastFocus = to; remember(items[to].g.id); sessionPick = { id: items[to].g.id, row: (ROWS[items[to].shelf] || {}).id }; sfx.nav(); ambience.lift(); show();
-  }
-  /* A pick goes straight in - one from Discover is got first. */
-  let getting = false;
-  async function choose(n){
-    if (going || getting || bar.menuOpen) return;
-    move(n);
-    sfx.select();
-    let g = items[n].g;
-    if (g.discover){
-      getting = true; cards[n].card.classList.add('getting');
-      toast(`Getting ${g.name}\u2026`);
-      try { g = await library.install(g.discover); sfx.gold?.(); }
-      catch (e){ getting = false; cards[n].card.classList.remove('getting'); toast(e.message || 'That didn\u2019t download. Try again.', { bad: true }); return; }
-      getting = false;
-    }
-    going = { t: 0, g };
-    /* the tile opens up to fill the screen (its cover, title and all) and stays while the game gets ready */
-    const th = cards[n].card.querySelector('.sthumb') || cards[n].card;
-    launch.begin({ rect: th.getBoundingClientRect(), url: shotOf(g) || (items[n].g === g ? shotOf(items[n].g) : null), accent: items[n].accent, name: g.name });
-  }
-  show();
-  ambience.start();
-  /* this week's featured and challenges, fresh from the server (shown
-     again if they changed - not mid-pick) */
-  if (onFresh) week.refresh().then(changed => { if (changed && !going && !getting && !holdArrive){ keepCinema = cinema; onFresh(); } }, () => {});
-  /* the pictures still to make (one at a time, between frames) */
-  const pictured = (g) => cards.forEach(c => { if (c.it.g.id === g.id) picture(c.pic, g); });
-  const stopShots = makeShots([...new Map(items.map(it => [it.g.id, it.g])).values()], pictured);
-  let onBanner = 0;
-
-  return {
-    leave(){ stopShots(); },
-    get focus(){ return focus; },
-    tick(dt){
-      if (!holdArrive) t += dt;
-      /* arriving: each tile flies out from the middle of the screen, where the cube was */
-      if (!flown){
-        flown = true;
-        const cx = innerWidth / 2, cy = innerHeight * 0.42;
-        cards.forEach(({ card }, n) => {
-          const r = card.getBoundingClientRect();
-          card.style.setProperty('--fx', `${cx - (r.left + r.width / 2)}px`);
-          card.style.setProperty('--fy', `${cy - (r.top + r.height / 2)}px`);
-          card.style.setProperty('--fr', `${((n * 1.3 + 0.5) % 3) - 1.5}rad`);
-          card.style.animationDelay = `${n * FLY_STAGGER}s`;
-          card.classList.add('fly');
-        });
-        setTimeout(() => cards.forEach(({ card }) => card.classList.remove('fly')), (FLY + items.length * FLY_STAGGER) * 1000 + 100);
-      }
-      if (remote.lastKey !== keySeen){ keySeen = remote.lastKey; anchor = cursor.rings.map(r => [r.x, r.y]); }
-      if (anchor && (cursor.rings.length !== anchor.length || cursor.rings.some((r, i) => Math.hypot(r.x - anchor[i][0], r.y - anchor[i][1]) > POINT_AGAIN))) anchor = null;
-      /* The tile pointed at is the picked one. */
-      if (!anchor && !bar.menuOpen) for (let n = 0; n < cards.length; n++){
-        const cd = cards[n];
-        cd.hot = cd.card.classList.contains('hot') && n !== focus ? cd.hot + dt : 0;
-        if (cd.hot >= HOVER_FOCUS){ cd.hot = 0; move(n); }
-      }
-      bar.tick(dt);
-      /* cinema: moving about (a hand, the mouse) shrinks the banner; a while of nothing brings it back */
-      const rings = cursor.rings.map(r => [r.x, r.y]);
-      if (ringsAt && rings.length === ringsAt.length){
-        const d = rings.reduce((a, r, i) => a + Math.hypot(r[0] - ringsAt[i][0], r[1] - ringsAt[i][1]), 0);
-        if (d > 3){ idleT = 0; if (cinema){ motion += d / innerWidth; if (motion > MOVED_ENOUGH) setCinema(false); } }
-      }
-      ringsAt = rings;
-      if (!going && !getting && !holdArrive && !bar.menuOpen && !document.querySelector('.dim')){
-        idleT += dt;
-        if (!cinema && idleT > CINEMA_AFTER && ROWS.some(r => r.id === 'featured')) setCinema(true);
-      } else idleT = 0;
-      /* a downloaded game's picture: from its banner, once it's been playing a moment */
-      onBanner = items[focus] && items[focus].trailer ? onBanner + dt : 0;
-      const on = items[focus];
-      if (onBanner > 2.5 && (on.g.sandboxed || on.g.discover) && !shotOf(on.g)){
-        /* (the whole frame, not the banner's slice of it) */
-        const film = document.createElement('canvas'); film.width = 1440; film.height = 810;
-        try { on.trailer.draw(film.getContext('2d'), 1440, 810); } catch (e){}
-        if (keepShot(on.g, film)) pictured(on.g);
-      }
-      /* the banner's trailer: the picked game, playing itself */
-      const it = items[focus];
-      if (it.trailer === undefined){
-        /* (one from Discover: its preview, fetched once, while its art shows) */
-        if (it.g.discover){
-          if (!trailers.has(it.g.id)){ trailers.set(it.g.id, null); library.preview(it.g.discover).then(game => trailers.set(it.g.id, trailer(game) || null), () => {}); }
-          if (trailers.get(it.g.id)) it.trailer = trailers.get(it.g.id);
-        } else { if (!trailers.has(it.g.id)) trailers.set(it.g.id, trailer(it.g)); it.trailer = trailers.get(it.g.id); }
-      }
-      if (it.trailer && !going){
-        it.trailer.step(Math.min(dt, 1 / 20), TW, TH);
-      }
-      if (going){
-        going.t += dt;
-        if (going.t >= LAUNCH){ ambience.stop(); const g = going.g; going = null; onPlay(g); }
-      }
-    },
-    draw(c, W, H){
-      /* the room: plain paper, like the Store's and Create's */
-      c.fillStyle = PAPER; c.fillRect(0, 0, W, H);
-      /* the banner's living picture; the tiles' still ones */
-      const it = items[focus];
-      if (it.trailer) paint(heroPic, (c, w, hh) => cover(c, w, hh, it.trailer), t, 1);
-      else {
-        /* no trailer: the game's still, else its poster */
-        const wide = wideBanner(it.g);
-        const im = wide ? null : shotImage(it.g);
-        paint(heroPic, wide ? wide : im ? (c, w, hh) => { const k = Math.max(w / im.width, hh / im.height); c.drawImage(im, (w - im.width * k) / 2, (hh - im.height * k) * 0.4, im.width * k, im.height * k); } : it.paint, t);
-      }
-    }
-  };
-}
 
 /* How many can play: '1-4 players', or just the one number. */
 export function howMany(g){
@@ -559,6 +134,40 @@ export function paint(pic, fn, t, sharp = 2){
   c.setTransform(k, 0, 0, k, 0, 0);
   fn(c, w0, h0, t);
   return true;
+}
+
+/* The Windows app's own window, when the game is running inside it. */
+const appWindow = () => { const w = typeof window !== 'undefined' && window.__TAURI__ && window.__TAURI__.window; return w && w.getCurrentWindow ? w.getCurrentWindow() : null; };
+
+/* The profile sheet, behind the profile face (top right of Home): who is playing and their family, then Profile ("Who's playing?",
+   where a grown-up looks after the family), Settings and Sign out - in the same clean card as the rest. A click outside it closes it
+   (or Escape). Returns the layer; onClosed() once it has closed. */
+export function openProfileSheet({ onRecalibrate, onWho, onClosed } = {}){
+  const open = screen('dim hsheetwrap'); open.style.zIndex = 5;
+  const card = h('div', 'hsheet');
+  const who = account.current, family = account.state && account.state.household && account.state.household.name;
+  const head = h('div', 'hshead'), face = h('span', 'hsface'), words = h('div', 'hswords');
+  face.appendChild(faceOf(who || {}, 160));
+  const nm = h('b'); nm.textContent = who ? who.name : 'Orlis Play'; words.appendChild(nm);
+  if (family){ const f = h('span'); f.textContent = family; words.appendChild(f); }
+  head.append(face, words); card.appendChild(head);
+  const esc = (e) => { if (e.key === 'Escape'){ e.preventDefault(); sfx.back(); shut(); } };
+  const shut = () => { if (!open.isConnected) return; open.remove(); removeEventListener('keydown', esc, true); onClosed && onClosed(); };
+  addEventListener('keydown', esc, true);
+  const item = (name, label, fn, cls = '') => card.appendChild(onPick(button(`${icon(name)}<span>${label}</span>`, 'sheetitem ' + cls), () => { sfx.select(); shut(); fn(); }));
+  if (account.signedIn && onWho) item('person', 'Profile', () => onWho());
+  item('gear', 'Settings', () => openSettings(onRecalibrate));
+  if (account.signedIn) item('out', 'Sign out', () => { sfx.back?.(); account.signOut(); location.reload(); });
+  /* in the Windows app, a way out */
+  const app = appWindow();
+  if (app) item('close', 'Exit', () => app.close());
+  /* small print: the version, and who's signed in */
+  const info = typeof window !== 'undefined' && window.orlisApp;
+  const bits = [info ? `Orlis Play ${info.label ? info.label() : info.version}` : '', account.signedIn ? account.state.account.email : ''].filter(Boolean);
+  if (bits.length){ const f = h('div', 'hsfoot'); f.textContent = bits.join(' · '); card.appendChild(f); }
+  open.appendChild(card);
+  open.addEventListener('pointerdown', (e) => { if (e.target === open){ sfx.back(); shut(); } });
+  return open;
 }
 
 function overlay(){

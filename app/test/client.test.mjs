@@ -91,12 +91,14 @@ test('one version people see (client/VERSION), with the build number behind it',
   assert.ok(main.includes('Beta \\u00B7 build') && main.includes('nameOf'), 'labelled "0.1 Beta · build 27" in the app');
 });
 
-test('the camera is on only in a game (and the camera check): off through the intro, signing in and the home screen', () => {
+test('the camera is on only in a game (and the camera check), and lightly on the home screen in Big Picture (hand mode): off through the intro and signing in', () => {
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   const set = main.match(/const CAMERA = new Set\(\[([^\]]*)\]\)/)[1];
   for (const m of ['play', 'outro', 'results', 'calibrate', 'starting']) assert.ok(set.includes(`'${m}'`), m);
   for (const m of ['boot', 'menu', 'who']) assert.ok(!set.includes(`'${m}'`), m);
-  assert.match(main, /CAMERA\.has\(next\)\) pose\.wake\(\); else pose\.sleep\(\)/);
+  assert.match(main, /CAMERA\.has\(next\) \|\| hand\) pose\.wake\(\); else pose\.sleep\(\)/);
+  assert.match(main, /const hand = next === 'menu' && handWanted\(\)/, 'home keeps the camera on only in Big Picture');
+  assert.match(main, /pose\.lite = hand \? LOOKS : null/, 'and only lightly (a few looks a second)');
   assert.ok(!/pose\.start\(/.test(main), 'boot no longer starts the camera');
 });
 
@@ -110,23 +112,15 @@ test('updates: the Update button and a slow check both show "Updating"; the beta
   assert.ok(wf.indexOf('upload "$TAG" "$UPD"') < wf.indexOf('upload "$TAG" latest.json'), 'the update file goes up last');
 });
 
-test('Home, the Store and Create are pages under the same tabs; the corner menu keeps just Settings and Exit', () => {
+test('Home is one page with no tabs; the profile sheet keeps Profile, Settings, Sign out (and Exit in the app)', () => {
+  const menu = readFileSync(new URL('../src/ui/menu.js', import.meta.url), 'utf8');
+  const home = readFileSync(new URL('../src/ui/home.js', import.meta.url), 'utf8');
   const tabs = readFileSync(new URL('../src/ui/tabs.js', import.meta.url), 'utf8');
-  assert.match(tabs, /\['home', 'Play'\], \['store', 'Discover'\], \['create', 'Create'\], \['pro', 'Create Pro'\]/);
-  for (const w of ["'Settings'", "'Exit'"]) assert.ok(tabs.includes(`item(`) && tabs.includes(w), w);
-  assert.ok(!tabs.includes("'Sign out'") && !tabs.includes("'Check for updates'"), 'signing out is on the profile screen, updates are in Settings');
-  assert.ok(!/\\u\{1F/.test(tabs), 'the corner menu has line icons, not emoji');
-  assert.ok(tabs.includes("id !== 'create' || !account.isKid"), 'a child playing sees Home and the Store, not Create');
-  assert.ok(!/Store<\/span>|Create<\/span>/.test(tabs), 'Store and Create are tabs now, not in the corner menu');
-  assert.ok(!tabs.includes('places'), 'the menu has no Play / Discover / Create items: those are the tabs');
-  const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
-  assert.match(main, /go\('store'/); assert.match(main, /go\('create'/);
-  assert.match(main, /const HOMEY = new Set\(\['menu', 'store', 'create', 'pro', 'who'\]\)/);
-});
-
-test('the title bar really goes in Big Picture: hidden beats its display:flex', () => {
-  const css = readFileSync(new URL('../src/style.css', import.meta.url), 'utf8');
-  assert.match(css, /\.titlebar\[hidden\]\{\s*display:none/);
+  for (const w of ["'Profile'", "'Settings'", "'Sign out'", "'Exit'"]) assert.ok(menu.includes(`item(`) && menu.includes(w), w);
+  assert.ok(!/\\u\{1F/.test(menu + tabs + home), 'line icons, not emoji');
+  assert.ok(!tabs.includes("'Discover'") && !tabs.includes("'Create Pro'"), 'no tabs along the top any more');
+  assert.ok(tabs.includes('homeButton'), 'every other page has the big Home button where the logo sits');
+  assert.ok(home.includes("openProfileSheet") && home.includes("'hme'"), 'the profile face opens the sheet');
 });
 
 test('light only: no dark theme left', () => {
@@ -164,8 +158,8 @@ test('one app, modes by install: Player has Play, Discover and Create; Creator h
   assert.equal(Object.keys(MODES).length, 2);
   assert.equal(appMode.get(), 'player', 'unset is the Player app');
   assert.equal(appMode.canSwitch(), true, 'a testing build (no mode told, no release label) can be switched');
-  const tabs = readFileSync(new URL('../src/ui/tabs.js', import.meta.url), 'utf8');
-  assert.ok(tabs.includes('appMode.tabs().includes(id)'), 'the tab bar follows the mode');
+  const home = readFileSync(new URL('../src/ui/home.js', import.meta.url), 'utf8');
+  assert.ok(home.includes("appMode.tabs().includes('create')") && home.includes('appMode.creator()'), 'the rows follow the mode');
   const menu = readFileSync(new URL('../src/ui/menu.js', import.meta.url), 'utf8');
   assert.ok(menu.includes("row('Mode'") && menu.includes('appMode.canSwitch()'), 'testing builds can switch in Settings; a build told its mode cannot');
   const rust = readFileSync(new URL('../client/src-tauri/src/main.rs', import.meta.url), 'utf8');

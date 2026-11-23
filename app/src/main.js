@@ -11,7 +11,10 @@ import { cell, slot } from './games/grid.js';
 import { figureCard, MOTION } from './games/figure.js';
 import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
-import { menu, toggleFullscreen, openSettings, played as playedLately, BLURB } from './ui/menu.js';
+import { toggleFullscreen, openSettings, played as playedLately, BLURB } from './ui/menu.js';
+import { menu, handWanted } from './ui/home.js';
+import { LOOKS } from './ui/hand.js';
+import { PAPER } from './ui/boot.js';
 import { remote, typing } from './ui/remote.js';
 import { account, welcome, AVATARS } from './ui/account.js';
 import { smoothness } from './ui/smoothness.js';
@@ -77,8 +80,12 @@ const INTO_GAME = new Set(['starting', 'lineup', 'join', 'play']);
 /* (?fx=0 turns the page fades off - the rehearsals read the page, and two pages at once would confuse them) */
 const NOFX = /[?&]fx=0\b/.test(location.search);
 function go(next, build){
+  /* Home, in Big Picture, keeps the camera on lightly (hand.js): one person (and a second to take over), a few looks a second.
+     Nowhere else is the camera on outside a game. */
+  const hand = next === 'menu' && handWanted() && !appMode.creator() && pose.reason !== 'debug';
+  pose.lite = hand ? LOOKS : null;
   /* (looking for everyone again, except in a round, which looks for its players) */
-  if (next !== 'play') pose.look();
+  if (next !== 'play') pose.look(hand ? 1 : undefined);
   /* (a page with something to tidy away first - the Store's previews) */
   if (scene && scene.leave) scene.leave();
   const was = mode;
@@ -91,7 +98,7 @@ function go(next, build){
   dropWait();
   if (!PADS_KEEP.has(next)) stopPads();
   /* (a passive game - a story - never turns the camera on: nobody has to do anything) */
-  if (CAMERA.has(next)) pose.wake(); else pose.sleep();
+  if (CAMERA.has(next) || hand) pose.wake(); else pose.sleep();
   if (game && game.passive && (INTO_GAME.has(next) || next === 'results')) pose.sleep();
   if (HOMEY.has(next)) updateIfWaiting();
   clearUI();
@@ -128,7 +135,7 @@ function toMenu(arrive = false){
     onFresh: () => { if (mode === 'menu') toMenu(false); } }));
 }
 /* The tabs along the top: Home, the Store, Create. */
-function tabs(){ return { home: () => toMenu(false), store: toStore, create: toCreate, pro: toPro }; }
+function tabs(){ return { home: () => toMenu(false), store: toStore, create: () => toCreate(), requests: () => toCreate('requests'), pro: toPro }; }
 function toStore(){
   if (appMode.creator()) return toStart();
   music.stop(); voice.hush();
@@ -149,8 +156,8 @@ addEventListener('orlisletin', () => {
 function toStart(){
   if (account.signedIn && !account.isKid && ['creator', 'owner'].includes(account.role)) toPro(); else toCreate();
 }
-function toCreate(){
-  go('create', () => createPage({ nav: tabs(), onPlay: toGame, onWho: () => toWho(false), onRecalibrate: toCalibration }));
+function toCreate(view = ''){
+  go('create', () => createPage({ view, nav: tabs(), onPlay: toGame, onWho: () => toWho(false), onRecalibrate: toCalibration }));
 }
 /* the mode was switched (Settings, in a testing build): that mode's first page */
 addEventListener('orlismode', (e) => {
@@ -529,10 +536,10 @@ function tick(now){
   last = now;
 
   pose.paused = !!paused;
-  if (!away && !CALM.has(mode)) pose.update(now, dt);
+  if (!away && (!CALM.has(mode) || pose.lite)) pose.update(now, dt);
 
   /* paper, under the menus; dark under a game while it loads */
-  c.fillStyle = mode === 'play' || mode === 'outro' || mode === 'results' || mode === 'starting' ? '#0d0b1a' : '#f3f4f7';
+  c.fillStyle = mode === 'play' || mode === 'outro' || mode === 'results' || mode === 'starting' ? '#0d0b1a' : PAPER;
   c.fillRect(0, 0, W, H);
 
   if (mode === 'play' && inst && !paused && !lost && !padWait){
@@ -705,7 +712,7 @@ const START_IN = /[?&]dev\b/.test(location.search) ? 'last-known-position' : new
   requestAnimationFrame(tick);
   pose.setVideo(video, { forceMouse: debug });
   window.__pose = pose; window.__cursor = cursor; window.__music = music;   /* handles for tests; harmless in play */
-  window.__scene = () => scene; window.__round = () => inst; window.__finish = () => { roundLeft = 0; }; window.__library = library;
+  window.__scene = () => scene; window.__week = week; window.__home = () => toMenu(false); window.__go = { toMenu, toStore, toCreate, toPro, toWho, toGame, toCalibration, showResults: () => showResults(), openPause: () => openPause() }; window.__round = () => inst; window.__finish = () => { roundLeft = 0; }; window.__library = library;
   holdScreen();
   show.camReady = true;
   await new Promise(res => {

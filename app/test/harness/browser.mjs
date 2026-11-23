@@ -89,6 +89,7 @@ class FakeEl {
   }
 
   _matches(sel){
+    if (sel.includes(',')) return sel.split(',').some(p => this._matches(p.trim()));
     if (sel.startsWith('#')) return this.id === sel.slice(1);
     if (sel.startsWith('.')) return sel.slice(1).split('.').every(c => this.classList.contains(c));
     return this.tagName === sel.toUpperCase();

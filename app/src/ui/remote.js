@@ -40,7 +40,7 @@ export const remote = {
   buttons(layer){
     /* (and the boxes and tick of a sign-in form, so the remote can go up and down them) */
     const boxes = [...layer.querySelectorAll('.acctform input')].filter(i => i.type !== 'hidden');
-    return [...layer.querySelectorAll('.btn'), ...boxes].filter(b => !b.disabled && !b.closest('.hide') && b.getBoundingClientRect().width > 0);
+    return [...layer.querySelectorAll('.btn'), ...boxes].filter(b => !b.disabled && !b.closest('.hide, .away') && b.getBoundingClientRect().width > 0);
   },
   /* Where to start from in this layer. */
   start(layer, bs){

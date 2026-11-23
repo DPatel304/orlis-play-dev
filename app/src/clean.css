@@ -1,8 +1,8 @@
+@import './clean-home.css';
 /* ---------- The clean look (decision 0045; the approved mockup is docs/screens-mockup.html) ----------
    Menus, pause, results, sign-in, Settings and Create: flat white surfaces, soft shadows, Outfit, near-black ink, the blue to violet accent
    on a light neutral. Game art (covers, worlds, faces) is the colour on screen. Loaded after style.css, so where the two meet, this wins.
    Sizes are in --u (one percent of the height of the 16:9 box the screen fits in; style.css), so the TV scale holds in any window. */
-.u1{ }
 body{ background:var(--paper); color:var(--ink); font-family:var(--ui); }
 .screen{ font-family:var(--ui); color:var(--ink); }
 h1,h2,h3{ font-family:var(--ui); color:var(--ink); font-weight:700; letter-spacing:-.01em; }
