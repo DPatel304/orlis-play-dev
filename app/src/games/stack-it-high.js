@@ -11,7 +11,6 @@
    hands. */
 import { color, alpha } from './assets/palette.js';
 import { Juice } from './common.js';
-import { sayBubble } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
@@ -50,7 +49,7 @@ class StackItHigh {
     this.scene = new Scene();
     this.avatars = new Avatars();
     this.fx = [];
-    this.say = { text: '\u{1F9F1} Stack the blocks!', t: 0 };
+    this.say = { icon: 'block', text: 'Stack the blocks!', t: 0 };
   }
 
   _spawn(){
@@ -176,7 +175,6 @@ class StackItHigh {
     this.avatars.drawMitts(c, W, H, this.players);
     /* carried blocks ride on top of the hands */
     for (const b of this.blocks) if (b.held) block(c, b.x * W, b.y * H, s, b.rot, b.col, b.mark);
-    this._say(c, W, H);
   }
 
   /* the finished tower, as a rocket: a nose cone on top, fins, flames */
@@ -193,12 +191,9 @@ class StackItHigh {
     c.fillStyle = color('touch.cherry'); c.beginPath(); c.moveTo(x - s * 0.5 + shake, base - n * s); c.quadraticCurveTo(x + shake, base - n * s - s * 1.5, x + s * 0.5 + shake, base - n * s); c.fill();
   }
 
-  /* (left of the tower, which grows up the middle) */
-  _say(c, W, H){ sayBubble(c, W, H, { text: this.say.text, t: this.say.t }); }
-
   /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
   card(){ return this.t < 8 ? 'reach' : null; }
-  hud(){ return { score: this.score, showLives: false }; }
+  hud(){ return { score: this.score, showLives: false, words: this.say }; }
   /* reaching up high is how you catch the blocks; Back on the remote pauses */
   pausable(){ return false; }
   tally(){

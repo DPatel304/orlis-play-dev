@@ -14,7 +14,6 @@
    is the leaves they swept in. First person: the players are their hands. */
 import { color, alpha } from './assets/palette.js';
 import { Juice } from './common.js';
-import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { JumpWatch } from '../tracking/jump.js';
@@ -44,7 +43,7 @@ const GROUND_TOP = 0.7, GROUND_BOTTOM = 0.9, START_LEAVES = 46, MAX_LEAVES = 180
 const COLS = [color('autumn.amber'), color('fav.orange', 'shade'), color('fav.yellow', 'shade'), color('autumn.rust'), color('ui.gold', 'shade')];
 
 /* (the words when the pile is big enough: the move card shows a jump while they're up) */
-const JUMP_IN = '\u{1F342} Jump in!';
+const LEAF = 'fallenleaf', JUMP_IN = 'Jump in!';
 
 export default {
   id: 'leaf-pile', unit: 'leaves', name: 'Leaf Pile', stars: 1, accent: color('autumn.amber'), secs: ROUND,
@@ -79,7 +78,7 @@ class LeafPile {
     this.jumps = new JumpWatch({ rise: 0.08, speed: 0.5 });
     this.scene = new Scene(AUTUMN);
     this.avatars = new Avatars();
-    this.say = { text: '\u{1F342} Sweep to the pile!', t: 0 };
+    this.say = { icon: LEAF, text: 'Sweep to the pile!', t: 0 };
   }
 
   /* a leaf: lying on the grass (onGround), or falling from the trees */
@@ -205,12 +204,12 @@ class LeafPile {
   _pileR(){ return 0.04 + this._k() * 0.22; }
   /* the words as it grows (each said once) */
   _milestone(){
-    const says = [[BIG / 3, '\u{1F342} It\u2019s getting big!'], [BIG * 2 / 3, '\u{1F342} Huge! Keep going!'], [BIG, '\u{1F342} What a pile!']];
-    for (const [n, text] of says) if (this.pile >= n && !this.told.has(n)){ this.told.add(n); this.say = { text, t: 0 }; sfx.twinkle?.(); }
+    const says = [[BIG / 3, 'It\u2019s getting big!'], [BIG * 2 / 3, 'Huge! Keep going!'], [BIG, 'What a pile!']];
+    for (const [n, text] of says) if (this.pile >= n && !this.told.has(n)){ this.told.add(n); this.say = { icon: LEAF, text, t: 0 }; sfx.twinkle?.(); }
   }
   _full(){
     this.ready = 0.001; this.jumped.clear();
-    this.say = { text: JUMP_IN, t: 0 };
+    this.say = { icon: LEAF, text: JUMP_IN, t: 0 };
     sfx.tada?.(0);
   }
   /* everyone jumped in: the pile bursts, and comes down all over */
@@ -226,7 +225,7 @@ class LeafPile {
     this.peak = this.pile; this.pile = 0;
     sfx.hooray?.(); sfx.whoosh?.();
     this.j.kick(10);
-    this.say = { text: '\u{1F342} Wheee!', t: 0 };
+    this.say = { icon: LEAF, text: 'Wheee!', t: 0 };
   }
 
   draw(c, W, H){
@@ -241,8 +240,6 @@ class LeafPile {
     for (const L of this.leaves) if (L.air) leaf(c, L.x * W, L.y * H, L.s * H / 900, L.rot, L.col);
     if (shook) c.restore();
     this.avatars.drawMitts(c, W, H, this.players);
-    this._say(c, W, H);
-    this._meter(c, W, H);
   }
 
   /* the pile: a mound of leaves, growing; bouncing when it's ready */
@@ -258,13 +255,11 @@ class LeafPile {
     }
   }
 
-  _say(c, W, H){ sayBubble(c, W, H, { text: this.say.text, t: this.say.t }); }
-  /* how big the pile is: a bar under the words */
-  _meter(c, W, H){ goalBar(c, W, H, this.ready || this.piles ? 1 : Math.min(1, this.pile / BIG)); }
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it when the game says to jump in) */
   card(){ return this.say.text === JUMP_IN && this.say.t < 6 ? 'jump' : null; }
-  hud(){ return { score: this.score, showLives: false }; }
+  /* the words, and how big the pile is: the goal bar under the clock */
+  hud(){ return { score: this.score, showLives: false, goal: this.ready || this.piles ? 1 : Math.min(1, this.pile / BIG), words: this.say }; }
   /* arms go up a lot (and in the jump); Back on the remote still pauses */
   pausable(){ return false; }
   tally(){

@@ -13,7 +13,6 @@
    ask; the picture shows through a mask painted with the same strokes. */
 import { color, alpha, tone } from './assets/palette.js';
 import { Juice } from './common.js';
-import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { Avatars } from '../ui/avatars.js';
@@ -185,18 +184,17 @@ class SkyPainter {
     for (const f of this.flecks){ c.globalAlpha = 1 - f.age / 0.6; c.fillStyle = f.col; c.beginPath(); c.arc(f.x * W, f.y * H, H * 0.006, 0, 6.2832); c.fill(); }
     c.globalAlpha = 1;
     this.avatars.drawMitts(c, W, H, this.players);
-    this._say(c, W, H);
   }
 
-  _say(c, W, H){
+  /* the words, and how much of the sky is painted: the goal bar */
+  _words(){
     const text = this.alive ? ['Look - a whale!', 'Look - a hot-air balloon!', 'Look - a butterfly!'][this.which] : 'What\u2019s hiding in the sky? Keep painting!';
-    sayBubble(c, W, H, { text });
-    goalBar(c, W, H, this.alive ? 1 : this.covered / DONE, { color: WHALE });
+    return { icon: this.alive ? ['whale', 'sailboat', 'bee'][this.which] : 'paintbrush', text, t: 1 };
   }
 
   /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
   card(){ return this.t < 8 ? 'wave' : null; }
-  hud(){ return { score: this.score, showLives: false, hideScore: true }; }
+  hud(){ return { score: this.score, showLives: false, hideScore: true, goal: this.alive ? 1 : this.covered / DONE, words: this._words() }; }
   /* big arm sweeps go everywhere; Back on the remote still pauses */
   pausable(){ return false; }
   tally(){

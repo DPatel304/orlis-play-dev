@@ -2,14 +2,14 @@
    around the edge (the top four rows, the bottom row, and a column on each side); the middle is the game's world.
    Every HUD piece sits in cells, so the same piece is always in the same place (see UI-STANDARD.md).
 
-   The cells are square, sized to fit the screen, inset 4% from every edge (TVs can crop the edges, so nothing sits right on one). A column on the left half hangs from the
+   The cells are square, sized to fit the screen, inset 5% from every edge (TVs can crop the edges, so nothing sits right on one). A column on the left half hangs from the
    left edge, one on the right half from the right edge, and a piece that crosses the middle is centred, so on a very wide
    screen the HUD stays at the edges and the clock stays in the middle. Rows in the top half hang from the top and rows
    in the bottom half from the bottom. */
 export const COLS = 20, ROWS = 11;
 
 export function gridOf(W, H){
-  const s = Math.round(Math.min(W, H) * 0.04), gw = W - 2 * s, gh = H - 2 * s;
+  const s = Math.round(Math.min(W, H) * 0.05), gw = W - 2 * s, gh = H - 2 * s;
   const C = Math.min(gw / COLS, gh / (ROWS + 0.25));
   return { s, gw, gh, C, pad: C * 0.14 };
 }
@@ -33,8 +33,8 @@ export function cell(W, H, col, row, cs = 1, rs = 1){
 /* where the pieces the shell draws always go: [column, row, columns wide, rows tall] */
 export const SLOTS = {
   clock: [8, 0, 4, 1],      /* the time, top centre */
-  goal:  [7, 1, 6, 1],      /* the goal bar, under the clock */
-  words: [7, 2, 6, 1],      /* the hint words, under the goal bar */
+  goal:  [8, 1, 4, 1],      /* the goal bar, the clock's width, under it (a dock: a game with no goal gives the row back) */
+  words: [6, 2, 8, 1],      /* the hint words, under the goal bar (row 1 when there is no goal); drawn at most 6 cells wide, centred */
   card:  [1, 7, 3, 3],      /* the move card, bottom left (it slides in from the left edge) */
   badge: [14, 9, 5, 1],     /* the game's one badge, bottom right, lined up with the right-hand end of the slot */
   panel: [1, 0, 6, 4],      /* the game's own corner, top left: scores in the first row, then chips and bars */

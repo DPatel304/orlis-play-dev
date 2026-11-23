@@ -8,8 +8,8 @@
    The moves are the body's, from the camera's landmarks (a jump uses the jump watch the other games use). With no
    landmarks - the mouse, in testing - a fast hand counts as a try, so the game can still be played. */
 import { color, alpha } from './assets/palette.js';
+import { assets } from './assets/index.js';
 import { Juice } from './common.js';
-import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { L } from '../tracking/pose-shared.js';
 import { sfx } from '../audio/sound.js';
@@ -21,19 +21,19 @@ export const ROUND = 180;
 /* tries per player that fill one animal's bar */
 export const REPS = 6;
 export const MOVES = {
-  reach: { animal: '\u{1F992}', name: 'Giraffe', text: '\u{1F992} Stretch up tall!' },
-  jump:  { animal: '\u{1F430}', name: 'Bunny', text: '\u{1F430} Hop like a bunny!' },
-  flap:  { animal: '\u{1F426}', name: 'Bird', text: '\u{1F426} Flap your wings!' },
-  squat: { animal: '\u{1F438}', name: 'Frog', text: '\u{1F438} Squat down low!' },
-  march: { animal: '\u{1F418}', name: 'Elephant', text: '\u{1F418} Lift your knees!' },
-  lean:  { animal: '\u{1F427}', name: 'Penguin', text: '\u{1F427} Wobble side to side!' }
+  reach: { animal: 'giraffe', name: 'Giraffe', text: 'Stretch up tall!' },
+  jump:  { animal: 'bunny', name: 'Bunny', text: 'Hop like a bunny!' },
+  flap:  { animal: 'bird', name: 'Bird', text: 'Flap your wings!' },
+  squat: { animal: 'frog', name: 'Frog', text: 'Squat down low!' },
+  march: { animal: 'elephant', name: 'Elephant', text: 'Lift your knees!' },
+  lean:  { animal: 'penguin', name: 'Penguin', text: 'Wobble side to side!' }
 };
 /* 15 + 6 x 24 + 21 = 180 seconds */
 export const SCHEDULE = [
-  { move: 'reach', len: 15, text: '\u{1F992} Stretch up tall!' },
+  { move: 'reach', len: 15, text: 'Stretch up tall!' },
   { move: 'jump', len: 24 }, { move: 'flap', len: 24 }, { move: 'squat', len: 24 },
   { move: 'march', len: 24 }, { move: 'lean', len: 24 }, { move: 'jump', len: 24 },
-  { move: 'reach', len: 21, text: '\u{1F9D8} Slow stretch…' }
+  { move: 'reach', len: 21, text: 'Slow stretch…', icon: 'giraffe' }
 ];
 /* thresholds, in body sizes (pose's scale) */
 export const T = { reachUp: 0.15, flapUp: 0.05, flapDown: 0.1, squatDown: 0.16, squatUp: 0.07, kneeUp: 0.2, lean: 0.1, handFast: 0.5 };
@@ -130,7 +130,7 @@ class AnimalGym {
     this.seg = i; this.segT = 0; this.fill = 0; this.cheered = false;
     this.st.forEach((s, k) => { for (const key of Object.keys(s)) delete s[key]; });
     const seg = SCHEDULE[i];
-    this.say = { text: seg.text || MOVES[seg.move].text, t: 0 };
+    this.say = { icon: seg.icon || MOVES[seg.move].animal, text: seg.text || MOVES[seg.move].text, t: 0 };
     if (i > 0) sfx.whoosh?.();
   }
 
@@ -159,7 +159,7 @@ class AnimalGym {
     }
     if (this.fill >= 1 && !this.cheered){
       this.cheered = true; this.circuits++;
-      this.say = { text: 'Great job!', t: 0 };
+      this.say = { icon: 'glowstar', text: 'Great job!', t: 0 };
       this.j.kick(6); sfx.hooray?.();
       for (let k = 0; k < 14; k++) this.j.burst(W * (0.25 + Math.random() * 0.5), H * (0.3 + Math.random() * 0.3), [color('touch.sunflower'), color('touch.bubblegum'), color('touch.mint'), color('touch.skyBlue')][k % 4], 4, 1);
     }
@@ -183,9 +183,7 @@ class AnimalGym {
     const bob = Math.sin(t * 4) * H * 0.006 - this.pulse * H * 0.03, sc = 1 + this.pulse * 0.12;
     c.save(); c.translate(W * 0.5 + dx, H * 0.58 + bob + dy); c.rotate(rot); c.scale(sc * sx, sc * sy);
     c.fillStyle = alpha('shade.shadow', 0.16); c.beginPath(); c.ellipse(0, H * 0.2, H * 0.17, H * 0.03, 0, 0, 6.2832); c.fill();
-    c.font = `${Math.round(H * 0.34)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
-    c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = color('shade.ink');
-    c.fillText(m.animal, 0, 0);
+    assets.draw(c, m.animal, 0, 0, H * 0.36);
     c.restore();
     /* the animal's name, and where we are in the workout (a dot for each stretch) */
     c.save(); c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -200,13 +198,11 @@ class AnimalGym {
     this.j.draw(c, H);
     if (shook) c.restore();
     this.avatars.drawMitts(c, W, H, this.players);
-    sayBubble(c, W, H, { text: this.say.text, t: this.say.t });
-    goalBar(c, W, H, this.fill, { color: this.cheered ? color('ui.gold') : color('touch.mint', 'shade') });
   }
 
   /* the move card: which move the card in the corner shows right now, or null for none (the move he is on, all round) */
   card(){ return this.move; }
-  hud(){ return { score: this.score, showLives: false }; }
+  hud(){ return { score: this.score, showLives: false, goal: this.fill, words: this.say }; }
   tally(){
     const rows = [];
     for (let i = 0; i < this.players; i++){

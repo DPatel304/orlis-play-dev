@@ -6,8 +6,7 @@ import { toast } from './ui/toast.js';
 import { pose } from './tracking/pose.js';
 import { appMode } from './ui/mode.js';
 import { watchTests } from './ui/tvwatch.js';
-import { hud, scorePill, chip, statusBar, PANEL_ROWS } from './games/hud.js';
-import { cell, slot } from './games/grid.js';
+import { hud, drawShellHud } from './games/hud.js';
 import { figureCard, MOTION } from './games/figure.js';
 import { renderScale } from './tracking/budget.js';
 import { cursor, inFront } from './ui/cursor.js';
@@ -285,13 +284,16 @@ const INTRO_CARD = 0.9, INTRO = INTRO_CARD + 3;
 let introLeft = 0, introN = 0, veilIntro = false;   /* (veilIntro: the card and the countdown are on the launch cover, not drawn over the game) */
 /* The move card: a game says which move to show (inst.card(), or null for none) and the shell draws it, the same way
    for every game: it slides in when the move changes and out when there is none. */
-const moveCard = { pose: null, age: 0, out: -1 };
+const moveCard = { pose: null, age: 0, out: -1, last: null, hold: 0, shown: new Set() };
+/* It tucks away by itself (ui-review item 10): a move shown for the first time this round stays for 6 s (long enough to learn it), the same move
+   asked again for 3 s, and then the card slides out and stays out until the game asks for a different move (or asks again after none). */
+const CARD_FIRST = 6, CARD_AGAIN = 3;
 function drawMoveCard(c, W, H, dt){
   const want = !hud.quiet && inst && inst.card ? inst.card() : null;
   if (!paused && introLeft <= 0){ moveCard.age += dt; if (moveCard.out >= 0) moveCard.out += dt; }
-  if (want && want !== moveCard.pose){ moveCard.pose = want; moveCard.age = 0; moveCard.out = -1; }
-  else if (want) moveCard.out = -1;
-  else if (moveCard.pose && moveCard.out < 0) moveCard.out = 0;
+  if (want && want !== moveCard.last){ moveCard.pose = want; moveCard.age = 0; moveCard.out = -1; moveCard.hold = moveCard.shown.has(want) ? CARD_AGAIN : CARD_FIRST; moveCard.shown.add(want); }
+  moveCard.last = want;
+  if (moveCard.pose && moveCard.out < 0 && (!want || moveCard.age > moveCard.hold)) moveCard.out = 0;
   if (!moveCard.pose) return;
   if (moveCard.out > MOTION.slideOut){ moveCard.pose = null; return; }
   figureCard(c, W, H, moveCard.pose, moveCard.age, { age: moveCard.age, left: moveCard.out < 0 ? Infinity : MOTION.slideOut - moveCard.out });
@@ -309,7 +311,7 @@ function startRound(){
   joined = new Set();
   hud.quiet = false;
   veilIntro = !!launch.el && launch.el.classList.contains('hascard') && !game.passive;
-  introLeft = 0; introN = 0;      /* (no countdown: the cover goes and the game's on) */ moveCard.pose = null; hud.introText = null; hud.spoken = false; for (const k of Object.keys(scoreSeen)) delete scoreSeen[k]; for (const k of Object.keys(scoreBumpAt)) delete scoreBumpAt[k];
+  introLeft = 0; introN = 0;      /* (no countdown: the cover goes and the game's on) */ moveCard.pose = null; moveCard.last = null; moveCard.shown.clear(); hud.resetPieces(); hud.introText = null; hud.spoken = false;
   if (roundPads){ roundPads.dispose(); roundPads = null; }
   inst = game.create(players, usesPads(game) && padsRt ? { pads: (roundPads = padsRt.forRound()) } : undefined);
   /* A game where squatting is a move keeps players who crouch or sit. */
@@ -446,47 +448,14 @@ function drawIntro(){
 }
 /* the first words of a round are said aloud once (for the ones who can't read yet) */
 hud.speak = (text) => voice.say(text);
-/* what changed in the status panel, for the bounce: when a number goes up, its row bounces */
-const scoreSeen = {}, scoreBumpAt = {};
-
+/* The HUD: the game answers hud() with what it wants in each dock, and drawShellHud (games/hud.js) lays it out on the grid, draws the pieces in the kit's
+   look, bounces what changes and dims what has been still for 3 s (UI-STANDARD.md). */
 function drawHUD(){
   if (mode !== 'play' || !inst) return;
   if (introLeft > 0 && !paused && !lost){ if (!veilIntro) drawIntro(); return; }
-  const hud = inst.hud();
-  c.textBaseline = 'top';
-  /* The game's own corner, top left, on the grid (grid.js): the scores in the first row, each in its player's colour, side by
-     side, two to a row (unless the game keeps score privately); then the rows the game asks for (hud.panel: chips and bars)
-     under them, four rows in all. */
-  const bumpOf = (key, n) => {
-    if (n !== undefined){ if (scoreSeen[key] !== undefined && n > scoreSeen[key]) scoreBumpAt[key] = performance.now(); scoreSeen[key] = n; }
-    return Math.max(0, 1 - (performance.now() - (scoreBumpAt[key] || -1e9)) / 450);
-  };
-  const ids = hud.hideScore ? [] : [...joined].filter(i => i < players).sort();
-  const xs = [];                                          /* where the next pill in each row goes */
-  ids.forEach((i, k) => {
-    const row = Math.floor(k / 2), at = cell(W, H, 1, row), prof = MAKING && crew.profileOf(i);
-    const mark = prof ? { look: crew.lookOf(i) } : { shape: i };
-    if (xs[row] === undefined) xs[row] = at.x;
-    xs[row] += scorePill(c, xs[row], at.y, at.h, PLAYER_COLORS[i], hud.score[i], bumpOf('p' + i, hud.score[i]), mark) + at.h * 0.15;
-  });
-  const used = Math.ceil(ids.length / 2);
-  (hud.panel || []).slice(0, PANEL_ROWS - used).forEach((r, j) => {
-    const b = cell(W, H, 1, used + j, 5, 1);
-    if (r.fill !== undefined) statusBar(c, b.x, b.y, b.h, { ...r, w: b.w });
-    else chip(c, b.x, b.y, b.h, { icon: r.icon, value: r.value, bump: bumpOf('c' + j, r.value) });
-  });
-  /* A game that lasts as long as you hold out has no clock to show. */
-  if (hud.hideClock){ c.textAlign = 'start'; c.textBaseline = 'alphabetic'; return; }
-  const t = Math.max(0, Math.ceil(roundLeft));
-  /* Minutes and seconds once a round runs past one; plain seconds below. */
-  const clock = t >= 60 ? `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}` : String(t);
-  const cs = slot(W, H, 'clock');
-  c.font = `600 ${Math.round(cs.h * 0.72)}px "Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif`;
-  const cw = Math.max(cs.h * 2.2, c.measureText(clock).width + cs.h * 0.9);
-  c.save(); c.shadowColor = 'rgba(20,24,50,.22)'; c.shadowBlur = cs.h * 0.3; c.shadowOffsetY = cs.h * 0.06;
-  c.fillStyle = 'rgba(255,255,255,.92)'; c.beginPath(); c.roundRect(cs.cx - cw / 2, cs.y, cw, cs.h, cs.h / 2); c.fill(); c.restore();
-  c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = t <= 10 ? '#e11d48' : '#16161d';
-  c.fillText(clock, cs.cx, cs.cy + 1);
+  const spec = inst.hud(), ids = [...joined].filter(i => i < players).sort();
+  drawShellHud(c, W, H, spec, { players: ids, colors: PLAYER_COLORS, lookOf: (i) => crew.lookOf(i), present: (i) => !!(pose.players[i] && pose.players[i].present),
+    clock: { left: roundLeft, total: game && game.secs || 0 }, now: performance.now() });
   c.textAlign = 'start'; c.textBaseline = 'alphabetic';
 }
 

@@ -10,9 +10,9 @@
    Moves are the body's, from the camera's landmarks, by the same detectors Animal Gym uses (with no landmarks - the mouse,
    in testing - a fast hand is a try). A try is a try: anyone's counts toward the same bar. */
 import { color, alpha } from './assets/palette.js';
+import { assets } from './assets/index.js';
 import { Juice } from './common.js';
 
-import { sayBubble, goalBar } from './hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { JumpWatch } from '../tracking/jump.js';
@@ -24,10 +24,10 @@ export const TRIES_EACH = 2, TRIES_LEAST = 3;
 export const SPIN = 2.4, MOVE_MAX = 11, RESULT = 2.2, END = 5;
 /* which move picks what */
 export const KINDS = {
-  apple: { e: '\u{1F34E}', move: 'reach', text: '\u{1F34E} Reach for apples!' },
-  pear:  { e: '\u{1F350}', move: 'jump',  text: '\u{1F350} Hop for pears!' },
-  berry: { e: '\u{1F353}', move: 'squat', text: '\u{1F353} Squat for berries!' },
-  raven: { e: '\u{1FAB6}', move: 'flap',  text: '\u{1FAB6} Flap! Shoo him!' }
+  apple: { e: 'apple', move: 'reach', text: 'Reach for apples!' },
+  pear:  { e: 'pear', move: 'jump',  text: 'Hop for pears!' },
+  berry: { e: 'strawberry', move: 'squat', text: 'Squat for berries!' },
+  raven: { e: 'feather', move: 'flap',  text: 'Flap! Shoo him!' }
 };
 const WHEEL = ['apple', 'pear', 'berry', 'raven', 'apple', 'raven'];
 /* the tree's leaves: one green, and its shade by the rule */
@@ -67,7 +67,7 @@ class SaveTheHarvest {
     this.st = Array.from({ length: MAX_PLAYERS }, () => ({}));
     this.jw = new JumpWatch({ rise: 0.08, speed: 0.5 });
     this.j = new Juice();
-    this.say = { text: '\u{1F3B2} Spin the wheel!', t: 0 };
+    this.say = { icon: 'dice', text: 'Spin the wheel!', t: 0 };
     this._spin();
   }
 
@@ -80,9 +80,9 @@ class SaveTheHarvest {
     this.sector = WHEEL.map((k, i) => k === this.kind ? i : -1).filter(i => i >= 0);
     this.sector = this.sector[Math.floor(Math.random() * this.sector.length)];
     this.phase = 'spin'; this.pt = 0; this.tries = 0; this.fill = 0;
-    this._say('\u{1F3B2} Spin the wheel!');
+    this._say('Spin the wheel!', 'dice');
   }
-  _say(text){ this.say = { text, t: 0 }; }
+  _say(text, icon = ''){ this.say = { icon, text, t: 0 }; }
   _present(){ return pose.players.slice(0, this.players).filter(p => p && p.present).length; }
 
   step(dt, W, H){
@@ -98,7 +98,7 @@ class SaveTheHarvest {
       this.phase = 'move'; this.pt = 0; this.tries = 0; this.fill = 0;
       this.need = Math.max(TRIES_LEAST, TRIES_EACH * this._present());
       this.st.forEach(s => { for (const k of Object.keys(s)) delete s[k]; });
-      this._say(KINDS[this.kind].text);
+      this._say(KINDS[this.kind].text, KINDS[this.kind].e);
       if (this.kind === 'raven'){ this.raven = Math.min(RAVEN_STEPS, this.raven + 2); sfx.startle?.(); }
       sfx.whoosh?.();
     }
@@ -131,27 +131,27 @@ class SaveTheHarvest {
     const ok = this.fill >= 0.5;                         /* a good effort is enough; a whole lot of nothing tries again */
     this.phase = 'result'; this.pt = 0; this.ok = ok;
     if (this.kind === 'raven'){
-      if (ok){ this.raven = Math.max(RAVEN_START, this.raven - 1); sfx.whoosh?.(); this._say('\u{1F4A8} Shoo! He hops back'); }
-      else this._say('\u{1F4A2} He’s coming closer!');
+      if (ok){ this.raven = Math.max(RAVEN_START, this.raven - 1); sfx.whoosh?.(); this._say('Shoo! He hops back', 'wind'); }
+      else this._say('He’s coming closer!', 'raven');
       return;
     }
-    if (!ok){ this._say('\u{1F4AA} Let’s try again!'); return; }
+    if (!ok){ this._say('Let’s try again!', 'sparkles'); return; }
     const k = this.kind, left = FRUIT_EACH - this.taken[k], n = Math.min(PER_PICK, left);
     for (let i = 0; i < n; i++) this.flights.push({ kind: k, slot: this.taken[k] + i, age: -i * 0.18, len: 1.1 });
     this.taken[k] += n;
     this.j.kick(4); sfx.hooray?.();
-    this._say('\u{1F9FA} Into the basket!');
+    this._say('Into the basket!', 'basket');
   }
 
   _after(snacked = false){
     if (this.taken.apple + this.taken.pear + this.taken.berry >= FRUIT_EACH * 3 && !this.flights.length && !this.win){
-      this.win = true; this.phase = 'end'; this.pt = 0; this._say('\u{1F389} Harvest saved!'); sfx.fanfare?.(); return;
+      this.win = true; this.phase = 'end'; this.pt = 0; this._say('Harvest saved!', 'confetti'); sfx.fanfare?.(); return;
     }
     /* the raven made it to the tree: he nibbles one fruit back on, then hops home to try again */
     if (!snacked && this.raven >= RAVEN_STEPS){
       const have = ['apple', 'pear', 'berry'].filter(k => this.taken[k] > 0 && this.picked[k] > 0);
       if (have.length){ const k = have[Math.floor(Math.random() * have.length)]; this.taken[k]--; this.picked[k]--; }
-      this.phase = 'snack'; this.pt = 0; this._say('\u{1F60B} The raven took a nibble!'); sfx.uhoh?.(); return;
+      this.phase = 'snack'; this.pt = 0; this._say('The raven took a nibble!', 'raven'); sfx.uhoh?.(); return;
     }
     if (snacked) this.raven = RAVEN_START;
     this._spin();
@@ -170,15 +170,10 @@ class SaveTheHarvest {
     c.restore();
     this.j.draw(c, H);
     if (shook) c.restore();
-    sayBubble(c, W, H, { text: this.say.text, t: this.say.t });
-    goalBar(c, W, H, (this.picked.apple + this.picked.pear + this.picked.berry) / (FRUIT_EACH * 3));
   }
 
-  _emoji(c, e, x, y, size, rot = 0, a = 1){
-    c.save(); c.globalAlpha *= a; c.translate(x, y); if (rot) c.rotate(rot);
-    c.fillStyle = color('shade.ink');          /* (a colour emoji takes the fill's transparency) */
-    c.font = `${size}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(e, 0, 0); c.restore();
-  }
+  /* a painted library icon (e is its id) at a size, turned and faded */
+  _emoji(c, e, x, y, size, rot = 0, a = 1){ assets.draw(c, e, x, y, size, { rotate: rot, alpha: a }); }
 
   _world(c){
     const t = this.t;
@@ -262,7 +257,8 @@ class SaveTheHarvest {
   /* the game's own corner: how close the raven is (a bar, full when he's at the tree) */
   hud(){
     return { score: this.score, showLives: false, hideScore: true, hideClock: true,
-      panel: [{ icon: '\u{1FAB6}', fill: clamp((this.ravenShown - RAVEN_START) / (RAVEN_STEPS - RAVEN_START)), color: 'rose' }] };
+      goal: (this.picked.apple + this.picked.pear + this.picked.berry) / (FRUIT_EACH * 3), words: this.say,
+      corner: [{ icon: 'raven', fill: clamp((this.ravenShown - RAVEN_START) / (RAVEN_STEPS - RAVEN_START)), color: 'rose' }] };
   }
   tally(){
     const rows = [];

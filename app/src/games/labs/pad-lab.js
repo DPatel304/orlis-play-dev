@@ -51,7 +51,7 @@ class PadLab {
       c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); c.stroke();
     }
   }
-  hud(){ return { score: [], hideScore: true, hideClock: true }; }
+  hud(){ return { score: [], hideScore: true, hideClock: true, words: { icon: 'hand', text: 'Move the dots', t: 1 } }; }
   pausable(){ return true; }
   tally(){ return []; }
   winner(){ return null; }

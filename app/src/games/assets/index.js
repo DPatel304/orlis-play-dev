@@ -19,6 +19,7 @@ import { POSE_NAMES, FACE_NAMES } from '../figure.js';
 import { cuboFigure } from '../../ui/avatar-art.js';
 import { EMOJI } from './emoji.js';
 import { PROPS } from './props.js';
+import { ICONS } from './icons.js';
 import { SCENES, drawScene } from './scenes.js';
 
 const ASSETS = {};
@@ -40,6 +41,12 @@ for (const [id, ch, name, tags] of EMOJI){
 /* the pieces drawn in code */
 for (const [id, [name, tags, aspect, draw]] of Object.entries(PROPS)){
   const t = tags.split(' '), kind = t[0] === 'effect' ? 'effect' : t[0] === 'nature' || t[0] === 'animal' ? t[0] : 'thing';
+  add({ id, name, kind, tags: t, aspect, draw });
+}
+
+/* the painted icons (icons.js): they replace the emoji pieces of the same id, so the HUD, the hint words and Create's hints never show a system emoji */
+for (const [id, [name, tags, aspect, draw]] of Object.entries(ICONS)){
+  const t = tags.split(' '), kind = t[0] === 'effect' ? 'effect' : t[0] === 'nature' || t[0] === 'animal' || t[0] === 'food' ? t[0] : 'thing';
   add({ id, name, kind, tags: t, aspect, draw });
 }
 
