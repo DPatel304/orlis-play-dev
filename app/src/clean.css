@@ -51,6 +51,4 @@ svg.hop{ width:calc(var(--u)*34); height:calc(var(--u)*34); overflow:visible; }
 .loadcard .lcv{ flex:none; width:calc(var(--u)*26); aspect-ratio:16/10; border-radius:calc(var(--u)*2); background:var(--line) center/cover no-repeat; box-shadow:0 calc(var(--u)*.6) calc(var(--u)*1.6) rgba(29,27,46,.25); }
 .loadcard b{ display:block; font:700 calc(var(--u)*7.6)/1 var(--ui); color:var(--ink); }
 .loadcard span{ display:block; margin-top:calc(var(--u)*.8); font:400 calc(var(--u)*4)/1.2 var(--ui); color:var(--ink-soft); }
-.launchveil.hascard::before{ display:none; }
-.launchveil.hascard .launchname{ display:none; }
 @media (prefers-reduced-motion: reduce){ .hop .v,.hop .b{ animation:none; } }
