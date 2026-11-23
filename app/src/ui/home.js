@@ -328,7 +328,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     const ring = cursor.rings.find(r => r.id === driver.who) || null;
     cursor.enabled = !sheet && !going;
     /* the cursor in the driver's colour */
-    if (ring){
+    const overButton = !!document.querySelector('.hot');
+    if (ring && !overButton && !(edgeDown.classList.contains('lit') || edgeUp.classList.contains('lit'))){
       dot.classList.add('show');
       dot.style.left = `${ring.x * 100}%`; dot.style.top = `${ring.y * 100}%`;
       s.style.setProperty('--c', ring.color); dot.style.setProperty('--k', `${Math.round(ring.progress * 100)}%`);

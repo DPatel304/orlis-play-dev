@@ -579,7 +579,7 @@ function tick(now){
   }
   if (mode === 'outro' && inst && inst.outro(dt, W, H)) showResults();
   if ((mode === 'play' || mode === 'outro' || mode === 'results') && inst) inst.draw(c, W, H);
-  if (mode === 'play' && inst) drawMoveCard(c, W, H, dt);
+  if (mode === 'play' && inst && !paused) drawMoveCard(c, W, H, dt);      /* (not under the pause card) */
 
   /* A scene can navigate during its own tick - the title's wave ends by
      opening the menu - which leaves `scene` null before the draw. Hold the

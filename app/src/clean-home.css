@@ -106,3 +106,8 @@ body.remote .htile.kfocus{ outline:none; }
 .btn.sheetitem .fill{ background:var(--grad); opacity:.18; }
 .btn.sheetitem:hover,.btn.sheetitem.hot,body.remote .btn.sheetitem.kfocus{ background:#fff; box-shadow:0 0 0 calc(var(--u)*.5) var(--who,var(--blue)); transform:none; }
 .hsfoot{ margin:calc(var(--u)*2) calc(var(--u)*.6) 0; font-size:calc(var(--u)*2.4); color:var(--ink-soft); text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* a tile the hand is waving at: the progress runs round its edge (inside it), so nothing sits on the picture */
+.htile.hot:not(.getting)::after{ content:''; position:absolute; inset:0; border-radius:inherit; border:calc(var(--u)*1.1) solid transparent; pointer-events:none;
+  background:conic-gradient(var(--who,var(--blue)) var(--k,0%), color-mix(in srgb, var(--who,var(--blue)) 24%, transparent) 0) border-box;
+  -webkit-mask:linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); mask:linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); }

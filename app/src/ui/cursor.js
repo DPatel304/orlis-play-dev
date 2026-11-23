@@ -120,7 +120,7 @@ export const cursor = {
         if (f) f.style.transform = `scaleX(${k.toFixed(3)})`;
         el.style.setProperty('--k', `${Math.round(k * 100)}%`);       /* (the clean look's ring around a button fills with the wave) */
         const ring = this.rings[this.rings.length - 1];
-        ring.progress = k; ring.waving = waving ? 1 : 0;
+        ring.progress = k; ring.waving = waving ? 1 : 0; ring.el = el;
         if (s.lit !== el){ s.lit = el; sfx.tick(); }
         if (s.turns >= CLICK_TURNS){
           s.t = 0; s.el = null; s.cool = COOLDOWN; s.turns = 0; s.dir = 0; s.lit = null;
@@ -173,6 +173,8 @@ export const cursor = {
   draw(c, W, H){
     if (this.skin) return;
     for (const r of this.rings){
+      /* over a button with its own ring (the clean look's .ringed), the ring runs round the button: no dot on top of its words */
+      if (r.el && r.el.classList && r.el.classList.contains('ringed')) continue;
       const x = r.x * W, y = r.y * H, rad = Math.max(16, H * 0.035);
       c.save();
       c.lineWidth = Math.max(4, H * 0.008);
