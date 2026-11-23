@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PARTS, CUBO, FAVS, normalizeLook, fromOld, nearestFav, storable, surprise, isPaletteName } from '../src/ui/look.js';
-import { body, head, portrait, figure } from '../src/ui/avatar-art.js';
+import { body, head, portrait, figure, cuboFigure } from '../src/ui/avatar-art.js';
 import { makeCrew, GENERIC } from '../src/ui/crew.js';
 import { resolveColours, setPlayerColours } from '../src/tracking/player-colours.js';
 import { PLAYER_COLORS, DEFAULT_PLAYER_FAVS } from '../src/tracking/pose-shared.js';
@@ -85,6 +85,12 @@ test('the character draws for every look, old, new and none, in every pose, with
     const c = fakeCtx(); head(c, 50, 50, 30, look, 0); head(c, 50, 50, 30, look, 0, { back: true }); portrait(c, 50, 50, 60, look, 0);
     assert.ok(c.calls.length > 20);
   }
+});
+
+test('arrows show only when he shows a move to copy, and only beside a stretched-out arm', () => {
+  const n = (pose, arrows) => { const c = fakeCtx(); cuboFigure(c, 100, 200, 180, pose, 0.3, null, { arrows }); return c.calls.length; };
+  for (const pose of ['freeze', 'jump', 'cheer', 'reach']) assert.ok(n(pose, true) > n(pose, false), `${pose} shows arrows when asked`);
+  for (const pose of ['stand', 'march', 'squat']) assert.equal(n(pose, true), n(pose, false), `${pose} has none to show`);
 });
 
 test('a camera player is drawn as the character over their body', () => {

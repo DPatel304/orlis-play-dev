@@ -1,10 +1,11 @@
 /* The move card: one little picture of a move, for the ones who can't read. Every game that shows one uses this, so it
-   always looks the same and sits in the same place. It is Cubo, the Orlis cube, drawn flat like a sticker: a square head
-   looking straight at you, a body with arms and legs, all with a dark outline, on a white card with a thick indigo border.
+   always looks the same and sits in the same place. It is Cubo, the Orlis cube, the block-limb character of avatar-art.js (a square head
+   looking straight at you, a body with block arms and legs, the ink outline), on a white card with a thick indigo border.
    The card floats (a soft shadow under it) and slides in from the right, where it sits in the top-right corner, when a move starts, and out again when it ends.
    Cubo moves like stop-motion: each move is three or four still drawings that repeat, and his face is part of each
    drawing, so he looks excited when his hands go up and strains a little in the squat. */
 import { slot } from './grid.js';
+import { cuboFigure } from '../ui/avatar-art.js';
 import { color as pal, alpha as palAlpha } from './assets/palette.js';
 const L = (a, b, k) => a + (b - a) * k;
 
@@ -68,37 +69,6 @@ export const FRAMES = {
 export const frameAt = (pose, t) => { const f = FRAMES[pose] || FRAMES.freeze, i = Math.floor(Math.max(0, t) * MOTION.fps) % f.length; return { i, p: f[i][0], face: f[i][1] }; };
 
 
-/* the arrows: orange means "move this way". They show on the drawings that lead into a move, and not while he holds the
-   pose, so the card stays clean. Each is [fromX, fromY, toX, toY, bend], in body sizes from the middle of the figure. */
-const UP = [[-1.3, -0.05, -1.3, -1.1], [1.3, -0.05, 1.3, -1.1]], DOWN = [[-1.3, -1.1, -1.3, -0.05], [1.3, -1.1, 1.3, -0.05]];
-const IN = (y) => [[-1.4, y, -0.8, y], [1.4, y, 0.8, y]], RIGHT = (y) => [[-0.5, y, 0.9, y]], LEFT = (y) => [[0.5, y, -0.9, y]];
-export const MARKS = {
-  reach:  { 0: UP, 1: UP },
-  flap:   { 0: UP, 1: UP, 3: DOWN },
-  wave:   { 0: RIGHT(-1.8), 1: LEFT(-1.8), 2: RIGHT(-1.8), 3: LEFT(-1.8) },
-  clap:   { 0: IN(-0.38), 1: IN(-0.38) },
-  hug:    { 0: IN(-0.45), 1: IN(-0.45) },
-  jump:   { 0: UP, 1: UP, 3: DOWN },
-  squat:  { 0: DOWN, 1: DOWN },
-  march:  { 1: [[-1.2, 0.55, -1.2, -0.2]], 3: [[1.2, 0.55, 1.2, -0.2]] },
-  lean:   { 1: RIGHT(-1.9), 3: LEFT(-1.9) },
-  duck:   { 0: DOWN, 1: DOWN },
-  run:    { 0: [[-1.4, -0.2, -0.6, -0.2]], 2: [[-1.4, -0.2, -0.6, -0.2]] },
-  dance:  { 1: RIGHT(-1.9), 3: LEFT(-1.9) },
-  freeze: {},
-  side:   { 0: [[0.5, 1.0, 1.4, 1.0]], 1: [[0.5, 1.0, 1.4, 1.0]] },
-};
-function arrow(c, s, [x1, y1, x2, y2, bend = 0]){
-  const mx = (x1 + x2) / 2 + bend, my = (y1 + y2) / 2, ang = Math.atan2(y2 - my, x2 - mx), tip = 0.12;
-  const shaft = () => { c.beginPath(); c.moveTo(x1 * s, y1 * s); c.quadraticCurveTo(mx * s, my * s, (x2 - Math.cos(ang) * tip) * s, (y2 - Math.sin(ang) * tip) * s); };
-  const tipPath = () => { const hl = s * 0.34, hw = s * 0.26, X = x2 * s, Y = y2 * s, ca = Math.cos(ang), sa = Math.sin(ang);
-    c.beginPath(); c.moveTo(X, Y); c.lineTo(X - ca * hl + sa * hw, Y - sa * hl - ca * hw); c.lineTo(X - ca * hl - sa * hw, Y - sa * hl + ca * hw); c.closePath(); };
-  c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
-  c.strokeStyle = CARD.line; c.fillStyle = CARD.line; c.lineWidth = s * 0.27; shaft(); c.stroke(); tipPath(); c.fill(); c.lineWidth = s * 0.1; c.stroke();   /* the dark outline */
-  c.strokeStyle = CARD.arrow; c.fillStyle = CARD.arrow; c.lineWidth = s * 0.13; shaft(); c.stroke(); tipPath(); c.fill();
-  c.restore();
-}
-
 /* Cubo's faces: simple ones that read from across the room, built like the cube's own (tall oval eyes with a spark, a soft
    smile). Each draws on a head whose middle is (0, 0) and whose side is w. */
 const eyes = (c, w, ry, dx = 0.2) => { c.fillStyle = CARD.ink; for (const sx of [-1, 1]){ c.beginPath(); c.ellipse(sx * dx * w, -0.12 * w, w * 0.085, ry, 0, 0, 6.2832); c.fill(); }
@@ -123,50 +93,11 @@ export const FACES = {
 };
 export const FACE_NAMES = Object.keys(FACES);
 
-/* the head: a flat square in the cube's colours, with an outline, looking straight at you. r: half its side. */
-function head(c, cx, cy, r, face){
-  const w = r * 2, ow = w * 0.06, rad = w * 0.2;
-  c.save(); c.translate(cx, cy);
-  c.fillStyle = CARD.line; c.beginPath(); c.roundRect(-w / 2 - ow, -w / 2 - ow, w + ow * 2, w + ow * 2, rad + ow); c.fill();
-  /* the cube, flat (decision 0041): one blue, a light top edge (the highlight) and a sliver of its shaded side (the shade) */
-  c.save(); c.beginPath(); c.roundRect(-w / 2, -w / 2, w, w, rad); c.clip();
-  c.fillStyle = CARD.head; c.fillRect(-w / 2, -w / 2, w, w);
-  c.fillStyle = CARD.left; c.fillRect(-w / 2, -w / 2, w * 0.1, w);
-  c.fillStyle = CARD.top; c.fillRect(-w / 2, -w / 2, w, w * 0.17);
-  c.restore();
-  (FACES[face] || FACES.smile)(c, w);
-  c.restore();
-}
-
 const easeOut = (k) => 1 - Math.pow(1 - k, 3), easeIn = (k) => k * k * k;
 
 /* draw the card for a pose. K: the card's side in pixels. cx, cy: its middle. t: seconds into the move. alpha: fade (0..1).
-   face: force a face (for looking at them). */
-/* Cubo on his own, without the card: for the cover, the pause and the results. s: a body size in pixels (the card uses a quarter
-   of its side). (cx, cy) is where the middle of the figure goes. face: force a face. marks: draw the arrows and twinkles too. */
-export function drawFigure(c, pose, cx, cy, s, t, face = null, marks = false){
-  const make = POSES[pose]; if (!make) return;
-  const fr = frameAt(pose, t), q = make(fr.p), yo = q.yOff || 0, lean = q.lean || 0;
-  const sh = { x: lean * 0.6, y: -0.6 + yo }, hip = { x: lean * 0.1, y: -0.05 + yo };
-  const legs = q.legs || [[[-0.15, 0.32], [-0.2, 0.7]], [[0.15, 0.32], [0.2, 0.7]]];
-  c.save(); c.translate(cx, cy); c.lineCap = 'round'; c.lineJoin = 'round';
-  const line = (pts) => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x * s, y * s) : c.moveTo(x * s, y * s))); c.stroke(); };
-  const ends = (r, col) => { c.fillStyle = col; for (const l of [...q.arms, ...legs]){ const p2 = l[l.length - 1]; c.beginPath(); c.arc(p2[0] * s, p2[1] * s, r, 0, 6.2832); c.fill(); } };
-  const hr = s * 0.6 * CARD.headSize, hy = sh.y - 0.08 - hr / s;          /* the head sits right on the shoulders, so he's all one piece */
-  const pass = (w, col) => { c.strokeStyle = col; c.lineWidth = w; line([[sh.x, hy], [hip.x, hip.y]]);
-    for (const a of q.arms) line([[sh.x, sh.y], ...a]); for (const l of legs) line([[hip.x, hip.y], ...l]); };
-  pass(s * 0.3, CARD.line); ends(s * 0.17, CARD.line);                    /* the dark outline, then the body over it */
-  pass(s * 0.17, CARD.body); ends(s * 0.11, CARD.body);
-  head(c, sh.x * s, hy * s, hr, face || fr.face);
-  if (marks){
-    for (const a of (MARKS[pose] || {})[fr.i] || []) arrow(c, s, a);
-    if (pose === 'freeze') [[-1.3, -1.5], [1.3, -0.9], [-1.25, 0.1], [1.2, 0.35]].forEach(([x, y], j) => { if ((j + fr.i) % 2) return;   /* ice twinkles, a different pair each drawing */
-      const r = s * 0.2; c.beginPath(); c.moveTo(x * s, y * s - r * 1.5); c.lineTo(x * s + r, y * s); c.lineTo(x * s, y * s + r * 1.5); c.lineTo(x * s - r, y * s); c.closePath();
-      c.fillStyle = CARD.ice; c.fill(); c.strokeStyle = CARD.line; c.lineWidth = s * 0.07; c.lineJoin = 'round'; c.stroke(); });
-  }
-  c.restore();
-}
-
+   face: force a face (for looking at them). The picture is the block-limb Cubo himself (avatar-art.js), showing the move with its
+   arrows (beside the arms, and the move's own marks), and the ice twinkles for freeze. */
 export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
   if (!POSES[pose]) return;
   const fr = frameAt(pose, t), bob = (fr.i % 2 ? 1 : -1) * K * 0.006;     /* floating: it steps up and down with the drawings */
@@ -177,9 +108,13 @@ export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
   c.fillStyle = CARD.fill; c.beginPath(); c.roundRect(-K / 2, -K / 2, K, K, rr); c.fill();
   c.shadowColor = 'transparent';
   c.strokeStyle = CARD.edge; c.lineWidth = e; c.beginPath(); c.roundRect(-K / 2 + e / 2, -K / 2 + e / 2, K - e, K - e, rr - e / 2); c.stroke();
-  drawFigure(c, pose, 0, K * 0.12, K * 0.25, t, face, true);
+  cuboFigure(c, 0, K * 0.34, K * 0.6, pose, t, face, { arrows: true });
+  if (pose === 'freeze') [[-0.34, -0.34], [0.35, -0.26], [-0.35, 0.28], [0.34, 0.22]].forEach(([x, y], j) => { if ((j + fr.i) % 2) return;   /* ice twinkles, a different pair each drawing */
+    const r = K * 0.05; c.beginPath(); c.moveTo(x * K, y * K - r * 1.5); c.lineTo(x * K + r, y * K); c.lineTo(x * K, y * K + r * 1.5); c.lineTo(x * K - r, y * K); c.closePath();
+    c.fillStyle = CARD.ice; c.fill(); c.strokeStyle = CARD.line; c.lineWidth = K * 0.018; c.lineJoin = 'round'; c.stroke(); });
   c.restore();
 }
+
 
 /* the card where every game puts it: the same spot on the screen, the same size. age: seconds since the move began (it
    slides in from the side); left: seconds until it ends (it slides back out). */

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { POSES, POSE_NAMES, CARD, FACES, FACE_NAMES, FRAMES, MARKS, MOTION, DRAWINGS, frameAt, figureCard, drawCard } from '../src/games/figure.js';
+import { POSES, POSE_NAMES, CARD, FACES, FACE_NAMES, FRAMES, MOTION, DRAWINGS, frameAt, figureCard, drawCard } from '../src/games/figure.js';
 
 /* a canvas that only counts what's drawn */
 const fakeCanvas = () => {
@@ -53,17 +53,11 @@ test('every face draws on every pose', () => {
   for (const f of FACE_NAMES) for (const n of POSE_NAMES){ const c = fakeCanvas(); drawCard(c, n, 300, 500, 400, 1.3, 1, f); assert.ok(c.calls.includes('fill'), `${f} on ${n}`); }
 });
 
-test('arrows: only on drawings that exist, and always inside the card', () => {
-  for (const n of POSE_NAMES){
-    assert.ok(MARKS[n], `${n} has a place in the arrow table`);
-    for (const [i, arrows] of Object.entries(MARKS[n])){
-      assert.ok(+i < FRAMES[n].length, `${n}: drawing ${i} exists`);
-      for (const [x1, y1, x2, y2] of arrows) for (const [x, y] of [[x1, y1], [x2, y2]]) assert.ok(Math.abs(x) <= 1.45 && y >= -2.0 && y <= 1.2, `${n}: an arrow stays on the card`);
-    }
-  }
-  const c = fakeCanvas(); drawCard(c, 'reach', 300, 500, 400, 0.01);                    /* the first drawing of reach has arrows */
-  const d = fakeCanvas(); drawCard(d, 'reach', 300, 500, 400, 2 / MOTION.fps + 0.01);    /* the held one doesn't */
-  assert.ok(c.calls.filter(x => x === 'quadraticCurveTo').length > d.calls.filter(x => x === 'quadraticCurveTo').length, 'arrows lead in, then go while he holds the pose');
+test('the card is the block-limb Cubo, and he shows the move with arrows beside his stretched arms', () => {
+  /* freeze holds his arms straight out: the card has the arrows; march does not stretch his arms: it has none */
+  const n = (pose) => { const c = fakeCanvas(); drawCard(c, pose, 300, 500, 400, 0.3); return c.calls.filter(x => x === 'closePath').length; };
+  assert.ok(n('freeze') > n('march'), 'freeze shows arrows on its card');
+  assert.ok(n('reach') > n('march'), 'reach shows arrows on its card');
 });
 
 test('march lifts the left knee and then the right', () => {
