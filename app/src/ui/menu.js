@@ -11,6 +11,7 @@ import { faceOf } from './avatar-maker.js';
 import { openTrustedPhones } from './trusted-phones.js';
 import { createTrust } from '../session/trust.js';
 import { HANDS, handsMode, setHandsMode } from './handshow.js';
+import { mayManageGames, openGames } from './mygames.js';
 
 /* What the home page (home.js) and the other pages share: a line about each game, each game's icon and look, what was played lately,
    how many can play, Settings, and the profile sheet behind the profile face. */
@@ -144,7 +145,7 @@ const appWindow = () => { const w = typeof window !== 'undefined' && window.__TA
 /* The profile sheet, behind the profile face (top right of Home): who is playing and their family, then Profile ("Who's playing?",
    where a grown-up looks after the family), Settings and Sign out - in the same clean card as the rest. A click outside it closes it
    (or Escape). Returns the layer; onClosed() once it has closed. */
-export function openProfileSheet({ onRecalibrate, onWho, onClosed } = {}){
+export function openProfileSheet({ onRecalibrate, onWho, onClosed, onChanged } = {}){
   const open = screen('dim hsheetwrap'); open.style.zIndex = 5;
   const card = h('div', 'hsheet');
   const who = account.current, family = account.state && account.state.household && account.state.household.name;
@@ -159,6 +160,8 @@ export function openProfileSheet({ onRecalibrate, onWho, onClosed } = {}){
   const item = (name, label, fn, cls = '') => card.appendChild(onPick(button(`${icon(name)}<span>${label}</span>`, 'sheetitem ' + cls), () => { sfx.select(); shut(); fn(); }));
   if (account.signedIn && onWho) item('person', 'Profile', () => onWho());
   item('gear', 'Settings', () => settings(onRecalibrate));
+  /* (grown-ups look after the games downloaded to this TV: Remove) */
+  if (mayManageGames()) item('tv', 'Games on this TV', () => openGames({ onChanged }));
   if (account.signedIn) item('out', 'Sign out', () => { sfx.back?.(); account.signOut(); location.reload(); });
   /* in the Windows app, a way out */
   const app = appWindow();

@@ -11,7 +11,7 @@
    Focus is { row, col }. Left and right stay in the row; up and down change row, landing on the column last used there
    (clamped to the row's length). Up from the first row goes to the tabs (home.js), when there are tabs. */
 
-export const TITLES = { featured: 'Featured', games: 'Your games', testing: 'Testing', updates: 'Updates' };
+export const TITLES = { waiting: 'Waiting for your OK', featured: 'Featured', games: 'Your games', testing: 'Testing', updates: 'Updates' };
 export const FEATURED_MAX = 3;
 /* how many rows keep the big hero (Play's two; Discover keeps it for its first row only) */
 export const PLAY_BIG = 2;
@@ -34,9 +34,10 @@ export function homeRows({ pool = [], featured = [], discover = false, testing =
   return rows;
 }
 
-/* The Discover page's rows: games to update first, then a row per category (store.js layout()'s rows: { name, sub, list }). Every tile is a "get". */
-export function discoverRows({ updates = [], rows = [] } = {}){
+/* The Discover page's rows: the owner's games waiting for an OK (to try), then games to update, then a row per category (store.js layout()'s rows: { name, sub, list }). Every tile is a "get". */
+export function discoverRows({ waiting = [], updates = [], rows = [] } = {}){
   const out = [];
+  if (waiting.length) out.push({ id: 'waiting', title: TITLES.waiting, items: waiting.map(g => ({ kind: 'try', g })) });
   if (updates.length) out.push({ id: 'updates', title: TITLES.updates, items: updates.map(g => ({ kind: 'get', g, update: true })) });
   for (const r of rows) if (r.list && r.list.length) out.push({ id: 'cat:' + r.name, title: r.name, items: r.list.map(g => ({ kind: 'get', g })) });
   return out;
@@ -81,6 +82,10 @@ export function step(rows, pos, dir, mem = {}){
 export function heroOf(item, { blurb = '', cap = 4 } = {}){
   const none = { name: '', line: '', players: null, cta: null };
   if (!item) return none;
+  if (item.kind === 'try'){
+    const g = item.g, by = g.discover && g.discover.by;
+    return { name: g.name, line: `${by ? `Sent by ${by}. ` : ''}Play it for 20 seconds with Try it, then approve it on the management page.`, players: null, cta: { label: 'Try it', icon: 'play' } };
+  }
   if (item.kind === 'game' || item.kind === 'get'){
     const g = item.g, lo = Math.min(g.minPlayers || 1, cap), hi = Math.min(g.maxPlayers || 4, cap);
     const players = g.passive ? null : { lo, hi };

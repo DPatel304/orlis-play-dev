@@ -36,6 +36,7 @@ import { reduced } from './chkit.js';
 import { homeRows, discoverRows, tabsFor, startFocus, step, heroOf, bigHero, howYouPlay, needsTablet, PLAY_BIG } from './home-model.js';
 import { layout as storeLayout, newer } from './store.js';
 import { brandBar } from './tabs.js';
+import { seesWaiting, tryIt } from './submissions.js';
 import { color } from '../games/assets/palette.js';
 
 const LAUNCH = 0.2;    /* seconds of going in (the loading screen fading in) */
@@ -98,7 +99,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
     const placed = new Set(cats.flatMap(r => r.list.map(e => e.id)));
     const rest = fresh.filter(e => !placed.has(e.id));
     if (rest.length && cats.length) cats.push({ name: 'More games', list: rest });
-    rows = discoverRows({ updates: upd, rows: cats.map(r => ({ ...r, list: r.list.map(standIn) })) });
+    rows = discoverRows({ waiting: seesWaiting() ? (week.waiting || []).map(standIn) : [], updates: upd, rows: cats.map(r => ({ ...r, list: r.list.map(standIn) })) });
     nothing = !account.signedIn ? 'Sign in to see Discover.' : (week.store ? (games.length ? 'You have every game in Discover. New ones show up here as your family adds them.' : 'Nothing in Discover yet. Games the family adds to the Orlis server show up here.') : 'Loading Discover…');
   } else rows = homeRows({ pool, featured: toGet, discover: !!nav.store && !waiting && !appMode.creator(), testing: waiting ? [] : (week.drafts || []) });
   const bigRows = discovering ? 1 : PLAY_BIG;
@@ -130,7 +131,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
   let sheet = null;
   const openMe = () => {
     if (sheet || going) return;
-    sheet = openProfileSheet({ onRecalibrate, onWho, onClosed: () => { sheet = null; if (items.length) remote.mark(currentEl()); } });
+    sheet = openProfileSheet({ onRecalibrate, onWho, onChanged: () => { if (onFresh) onFresh(); }, onClosed: () => { sheet = null; if (items.length) remote.mark(currentEl()); } });
   };
   onPick(me, () => { sfx.select(); openMe(); });
   sys.appendChild(me);
@@ -169,12 +170,13 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
     if (hero.cta) el.setAttribute('aria-label', `${hero.cta.label} ${hero.name}`);
     el.querySelector('.lbl').replaceWith(h('span', 'hname'));
     const t = { el, item };
-    if (item.kind === 'game' || item.kind === 'get'){
+    if (item.kind === 'game' || item.kind === 'get' || item.kind === 'try'){
       const ic = iconOf(item.g);
       el.style.setProperty('--c1', ic.cols[0]); el.style.setProperty('--c2', ic.cols[1] || ic.cols[0]);
       el.querySelector('.hname').textContent = item.g.name;
       paintTile(t);
       if (needsTablet(item.g)){ const b = h('span', 'tabmark'); b.setAttribute('role', 'img'); b.setAttribute('aria-label', 'Needs an Orlis PlayPad'); b.appendChild(iconEl('tabletgrip', 96, color('shade.ink'))); el.appendChild(b); }
+      if (item.kind === 'try') el.insertAdjacentHTML('beforeend', `<span class="getpill">${icon('play')}Try it</span>`);
       if (item.kind === 'get') el.insertAdjacentHTML('beforeend', `<span class="getpill">${icon('get')}${item.update ? 'Update' : 'Get'}</span><span class="gotbar"><i></i></span>`);
     } else if (item.kind === 'discover'){
       el.classList.add('disc'); el.insertAdjacentHTML('beforeend', twoSquares('dm')); el.querySelector('.hname').textContent = 'Discover';
@@ -258,6 +260,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
     sfx.select();
     if (it.kind === 'discover') return nav.store && nav.store();
     if (it.kind === 'test') return tryDraft(it.d);
+    if (it.kind === 'try') return trySent(it.g.discover);
     let g = it.g;
     /* one from Discover is got first, with its progress on the tile */
     if (it.kind === 'get'){
@@ -270,6 +273,13 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
     /* straight to the loading screen (a quick fade); it stays while the game gets ready */
     launch.begin({ url: coverOf(g), name: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '' });
   }
+  /* the owner tries a game a creator sent (not kept; played long enough, it can be approved on the management page) */
+  const trySent = async (e) => {
+    if (going || getting) return;
+    toast(`Getting ${e.name}…`);
+    try { const game = await tryIt(e); sfx.gold?.(); onPlay(game); }
+    catch (err){ toast(err.message || 'That didn’t start.', { bad: true }); }
+  };
   /* a creator's game on this TV to try: a grown-up answers the Publish question here */
   const tryDraft = async (d) => {
     if (going || getting) return;

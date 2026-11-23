@@ -147,7 +147,7 @@ test('a game waiting for the owner\'s OK is played before it can be approved: th
   const { TRY_SECS } = await import('../../server/src/submissions.js');
   assert.equal(+main.match(/const TRY_SECS = (\d+);/)[1], TRY_SECS);
   assert.ok(main.includes("/tried`"), 'it tells the server');
-  assert.ok(readFileSync(new URL('../src/ui/store.js', import.meta.url), 'utf8').includes('game.trial = g.submission'), 'Try it marks the game');
+  assert.ok(readFileSync(new URL('../src/ui/submissions.js', import.meta.url), 'utf8').includes('game.trial = g.submission'), 'Try it marks the game');
 });
 
 test('one app, modes by install: Player has Play, Discover and Create; Creator has Create and Create Pro; unset is Player', async () => {

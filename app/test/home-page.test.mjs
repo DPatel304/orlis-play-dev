@@ -259,7 +259,7 @@ test('Create Pro and Create are the Create tab\'s; a Create-less profile sees no
   });
 });
 
-test('the profile face opens the sheet: who is playing and their family, then Profile, Settings and Sign out', () => {
+test('the profile face opens the sheet: who is playing and their family, then Profile, Settings, Games on this TV (grown-ups) and Sign out', () => {
   const was = account.state;
   try {
     account.state = { token: 't', account: { id: 'a', email: 'grown-up@family.example', role: 'owner' }, household: { name: 'The Parkers' }, profiles: [{ id: 'p1', accountId: 'a', name: 'Mia' }], current: 'p1' };
@@ -268,7 +268,7 @@ test('the profile face opens the sheet: who is playing and their family, then Pr
     const sheet = q(ui, '.hsheetwrap');
     assert.ok(sheet && sheet.classList.contains('dim'), 'a sheet over Home');
     assert.equal(txt(q(sheet, '.hswords')), 'MiaThe Parkers', 'their name, then the family');
-    assert.deepEqual(qa(sheet, '.sheetitem').map(b => (/<span>([^<]*)<\/span>/.exec(b.innerHTML) || [])[1]), ['Profile', 'Settings', 'Sign out']);
+    assert.deepEqual(qa(sheet, '.sheetitem').map(b => (/<span>([^<]*)<\/span>/.exec(b.innerHTML) || [])[1]), ['Profile', 'Settings', 'Games on this TV', 'Sign out']);
     assert.ok(txt(q(sheet, '.hsfoot')).includes('grown-up@family.example'));
     page.leave();
   } finally { account.state = was; }
@@ -291,4 +291,79 @@ test('the Create page\'s top bar: the logo and the tabs with Create lit (Play go
   assert.deepEqual(calls, ['home'], 'Play goes home; Create is where we are');
   const plain = topBar('create', nav, { tabs: [] });
   assert.ok(q(plain.el, '.homebtn') && !q(plain.el, '.ptab'));
+});
+
+/* ---------- the owner's Waiting for your OK, and Games on this TV (0055) ---------- */
+const SUBMISSION = { id: 'sub1', gameId: 'wave-bot', name: 'Wave Bot', version: '1.0', bytes: 100, sha256: 'x', family: 'The Lees', state: 'waiting', game: { icon: { cols: ['#111111', '#222222'] }, blurb: 'Wave at the robot' } };
+const asRole = (role, fn) => {
+  const was = account.state;
+  account.state = { token: 't', account: { id: 'a', role }, profiles: [{ id: 'p1', accountId: 'a', name: 'Dad' }], current: 'p1' };
+  try { return fn(); } finally { account.state = was; }
+};
+const withWaiting = async (entries, fn) => { const was = week.waiting; week.waiting = entries; try { return await fn(); } finally { week.waiting = was; } };
+
+test('Discover, for the owner: a first row "Waiting for your OK" with Try it on each tile; a creator or anyone else does not see it', async () => {
+  const { waitingEntries } = await import('../src/ui/submissions.js');
+  const entries = waitingEntries([SUBMISSION, { ...SUBMISSION, id: 'sub2', state: 'approved' }]);
+  assert.equal(entries.length, 1, 'only the waiting ones');
+  assert.equal(entries[0].submission, 'sub1');
+  await withWaiting(entries, () => withWeek({ featured: [], games: SAMPLE }, () => {
+    asRole('owner', () => {
+      const { s, page } = build({ discover: true });
+      assert.equal(txt(qa(s, '.hlab')[0]), 'Waiting for your OK', 'the first row');
+      assert.deepEqual(page.pos, { row: 0, col: 0 });
+      const t = q(s, '.htile.try');
+      assert.ok(t && /Try it/.test(txt(q(t, '.getpill'))), 'a Try it pill');
+      assert.equal(q(s, '.htile.on').getAttribute('aria-label'), 'Try it Wave Bot');
+      assert.match(txt(q(s, '.hblurb')), /Sent by The Lees.*approve it on the management page/);
+      page.leave();
+    });
+    asRole('creator', () => {
+      const { s, page } = build({ discover: true });
+      assert.ok(!qa(s, '.hlab').some(l => txt(l) === 'Waiting for your OK') && !q(s, '.htile.try'), 'not the owner: nothing');
+      page.leave();
+    });
+  }));
+});
+
+test('Try it plays the game from the sandbox and marks it as the trial of that submission (main.js tells the server once it has been played long enough)', async () => {
+  const { tryIt } = await import('../src/ui/submissions.js');
+  const was = library.preview;
+  library.preview = async (e) => ({ id: e.id, name: e.name });
+  try {
+    const game = await tryIt({ id: 'wave-bot', name: 'Wave Bot', submission: 'sub1' });
+    assert.equal(game.trial, 'sub1');
+  } finally { library.preview = was; }
+});
+
+test('Games on this TV: the profile sheet offers it to grown-ups only; the list has a Remove (asks "Sure?" first) for each downloaded game', async () => {
+  const { gamesOnTv, openGames, mayManageGames } = await import('../src/ui/mygames.js');
+  library.installed.set('pop-party', '1.0'); library.installed.set('s9', '1.0');
+  const removed = [], was = library.remove;
+  library.remove = async (id) => { removed.push(id); library.installed.delete(id); };
+  try {
+    assert.deepEqual(gamesOnTv().map(g => g.id).sort(), ['pop-party', 's9'].sort());
+    asRole('owner', () => assert.ok(mayManageGames()));
+    withKid(() => assert.equal(mayManageGames(), false, 'a child'));
+    const labels = (open) => { const ui = resetDom(); El.prototype.getContext = () => null; open(); return qa(ui, '.sheetitem').map(b => (/<span>([^<]*)<\/span>/.exec(b.innerHTML) || [])[1]); };
+    const { openProfileSheet } = await import('../src/ui/menu.js');
+    assert.ok(asRole('owner', () => labels(() => openProfileSheet({}))).includes('Games on this TV'));
+    assert.ok(!withKid(() => labels(() => openProfileSheet({}))).includes('Games on this TV'), 'a child does not see it');
+
+    const ui = resetDom(); El.prototype.getContext = () => null;
+    let changed = 0;
+    const sheet = openGames({ onChanged: () => changed++ });
+    const rows = qa(ui, '.setrow');
+    assert.equal(rows.length, 2);
+    const rm = q(rows[0], '.gamerm');
+    rm.dispatchEvent(new CustomEvent('pick'));
+    assert.deepEqual(removed, [], 'the first press only asks');
+    assert.ok(rm.classList.contains('sure'));
+    rm.dispatchEvent(new CustomEvent('pick'));
+    await new Promise(r => setTimeout(r, 0));
+    assert.equal(removed.length, 1);
+    assert.equal(qa(ui, '.setrow').length, 1, 'gone from the list');
+    sheet.close();
+    assert.equal(changed, 1, 'Home is told it changed');
+  } finally { library.remove = was; library.installed.delete('pop-party'); library.installed.delete('s9'); }
 });

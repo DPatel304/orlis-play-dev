@@ -123,3 +123,8 @@ body.remote .htile.kfocus{ outline:none; }
 .htile.disc .hname{ font-size:calc(var(--u)*4.6); }
 /* the Discover page: the home look, no profile face (the Home button is where the logo sits) */
 .home.discover .htop > .btn.homebtn{ z-index:6; }
+
+/* Games on this TV (ui/mygames.js): a list in the Settings sheet's look, a Remove on each; the second press asks "Sure?" */
+.gamessheet .gameslist{ display:block; }
+.gamessheet .gamesnone{ margin:calc(var(--u)*3) calc(var(--u)*1); font:500 calc(var(--u)*3.6)/1.3 var(--ui); color:var(--ink-soft); }
+.gamessheet .btn.gamerm.sure{ background:var(--ink); color:#fff; }

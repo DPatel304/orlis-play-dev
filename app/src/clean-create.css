@@ -1,7 +1,7 @@
 /* ---------- Create, Create Pro, Discover's pages: the clean look, with the big Home button where the logo sits ---------- */
-.screen.tvhome.createpage,.screen.tvhome.storepage{ background:transparent; color:var(--ink); font-family:var(--ui); }
+.screen.tvhome.createpage{ background:transparent; color:var(--ink); font-family:var(--ui); }
 .ctop{ position:absolute; left:0; top:0; z-index:8; }
-.createpage .sscroll,.storepage .sscroll{ padding-top:0; }
+.createpage .sscroll{ padding-top:0; }
 /* a plain notice: a picture, a title, a line or two (Pending approval, Making games is for grown-ups, Your requests) */
 .cnotice{ position:relative; max-width:calc(var(--u)*128); margin:0 auto; padding:calc(var(--u)*20) calc(var(--u)*5) calc(var(--u)*6); text-align:left; color:var(--ink); }
 .cnotice h1{ margin:0 0 calc(var(--u)*2); font:700 calc(var(--u)*9)/1 var(--ui); color:var(--ink); letter-spacing:-.01em; }
