@@ -1,7 +1,6 @@
 /* Home: one page, no tabs (decision 0045; the approved mockup is docs/screens-mockup.html).
 
-   The focused game's painted world fills the screen, with its name in big plain outlined letters, one line, how many play and for how
-   long, and one big Play. Under it, three rows: "Your games", "New to try" (what Discover was, with Get and download progress on its
+   The focused game's painted world fills the screen, with its name in big plain outlined letters, one line and how many play (one figure or two). Under it, three rows: "Your games", "New to try" (what Discover was, with Get and download progress on its
    tiles) and "Make a game" (Create: Ask for a game, Your requests, Create Pro). Moving to another row (down, or pointing at the row
    edge) shrinks the hero to a banner. The profile face, top right, opens Profile, Settings and Sign out.
 
@@ -114,7 +113,6 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
 
   const info = h('div', 'hinfo');
   const blurb = h('div', 'hblurb'), meta = h('div', 'hmeta');
-  const play = button('', 'hplay ringed');
   info.append(blurb, meta);
   const rowsEl = h('div', 'hrows');
   box.append(top, info, rowsEl);
@@ -124,7 +122,10 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const empty = !rows.length;
   if (empty){
     blurb.textContent = 'Get your first game: Pop Party is waiting for you in Discover.';
-    if (nav.store){ play.querySelector('.lbl').innerHTML = `${icon('play')}<span>Open Discover</span>`; onPick(play, () => { sfx.select(); nav.store(); }); meta.appendChild(play); }
+    if (nav.store){   /* the one button on Home */
+      const open = button('', 'hplay ringed');
+      open.querySelector('.lbl').innerHTML = `${icon('play')}<span>Open Discover</span>`; onPick(open, () => { sfx.select(); nav.store(); }); meta.appendChild(open);
+    }
     ambience.start();
     return { focus: 0, tick(){}, draw(){}, leave(){} };
   }
@@ -138,6 +139,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   };
   const makeTile = (item) => {
     const el = button('', 'htile ' + item.kind);
+    const hero = heroOf(item);
+    if (hero.cta) el.setAttribute('aria-label', `${hero.cta.label} ${hero.name}`);
     el.querySelector('.lbl').replaceWith(h('span', 'hname'));
     const t = { el, item };
     if (item.kind === 'game' || item.kind === 'get'){
@@ -171,9 +174,6 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     });
   });
   const items = tiles.flat();
-  onPick(play, () => { const t = current(); if (t) activate(t); });
-  play.querySelector('.lbl').innerHTML = `${icon('play')}<span>Play</span>`;
-  play.addEventListener('remotefocus', () => focusAt('top', { remote: true }));
   /* hand mode: the row-edge strip (a pill at the bottom, and one at the top once scrolled) and the "Wave to play" pill */
   const edgeDown = h('div', 'hedge down', `${icon('down')}<span></span>`), edgeUp = h('div', 'hedge up', `${icon('up')}<span></span>`);
   const say = h('div', 'hsay'), sayFace = h('span', 'sface'), sayText = h('span', 'stext');
@@ -185,8 +185,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   let pos = startFocus(rows, { session: sessionPick && sessionPick.id, last: remembered() });
   const mem = {};
   let going = null, getting = false, handActive = false, bg = 0, lastWorld = null;
-  const current = () => (pos === 'top' ? tiles[mem.last ? mem.last.row : 0][mem.last ? mem.last.col : 0] : tiles[pos.row][pos.col]);
-  const currentEl = () => (pos === 'top' ? play : current().el);
+  const current = () => tiles[pos.row][pos.col];
+  const currentEl = () => current().el;
 
   const setWorld = (url) => {
     if (url === lastWorld) return;
@@ -198,16 +198,22 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   };
   function paintHero(t){
     const it = t.item, hero = heroOf(it, { blurb: it.g ? (BLURB[it.g.id] || (it.g.store && it.g.store.blurb) || '') : '', cap: pose.cap });
-    blurb.textContent = hero.line;
-    if (hero.players){ const pl = h('span', 'hplayers'), n = h('span'); n.textContent = hero.players; pl.append(iconEl('player', 48), n); pl.setAttribute('aria-label', `${hero.players} players`); blurb.appendChild(pl); }
-    meta.innerHTML = '';
-    play.setAttribute('aria-label', hero.cta ? `${hero.cta.label} ${hero.name}` : '');
-    if (hero.cta){ play.querySelector('.lbl').innerHTML = `${icon(hero.cta.icon)}<span>${hero.cta.label}</span>`; meta.appendChild(play); }
+    /* the last word and the figures stay together, so the figures sit right after the last word */
+    const cut = hero.players ? hero.line.lastIndexOf(' ') + 1 : hero.line.length, tail = h('span', 'hlast');
+    blurb.textContent = hero.line.slice(0, cut); tail.textContent = hero.line.slice(cut); blurb.appendChild(tail);
+    /* players: one figure, or two overlapping (the back one dimmer) for a game that takes more; no number */
+    if (hero.players){
+      const { lo, hi } = hero.players, pl = h('span', 'hplayers' + (hi > 1 ? ' two' : ''));
+      if (hi > 1) pl.appendChild(iconEl('player', 48));
+      pl.appendChild(iconEl('player', 48));
+      pl.setAttribute('role', 'img'); pl.setAttribute('aria-label', lo === hi ? `${hi} player${hi > 1 ? 's' : ''}` : `${lo} to ${hi} players`);
+      tail.appendChild(pl);
+    }
     s.style.setProperty('--accent', it.g ? iconOf(it.g).cols[0] : 'var(--blue)');
     setWorld(it.g ? worldOf(it.g) : null);
   }
   function layout(){
-    const big = bigHero(pos, rows), r = pos === 'top' ? 0 : pos.row;
+    const big = bigHero(pos, rows), r = pos.row;
     s.classList.toggle('rest', big); s.classList.toggle('scrolled', !big);
     /* the rows: at rest the first sits low with the next one's label peeking; scrolled, the lit row and the one after fill the page */
     const first = big ? 0 : Math.max(1, r - 1);
@@ -226,14 +232,8 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
     t.rowEl.style.transform = `translateX(${-Math.max(0, over)}px)`;
   }
   function focusAt(p, { pointer = false, remote: fromRemote = false, quiet = false } = {}){
-    if (p === 'top'){
-      if (pos === 'top') return;
-      mem.last = pos; pos = 'top'; items.forEach(t => t.el.classList.remove('on')); play.classList.add('on'); layout(); remote.mark(play);
-      if (!quiet) sfx.nav(); return;
-    }
-    if (pos !== 'top' && pos.row === p.row && pos.col === p.col && !quiet){ return; }
-    const was = pos; pos = p; mem[p.row] = p.col; mem.last = p;
-    play.classList.remove('on');
+    if (pos.row === p.row && pos.col === p.col && !quiet){ return; }
+    const was = pos; pos = p; mem[p.row] = p.col;
     items.forEach(t => t.el.classList.toggle('on', t.row === p.row && t.col === p.col));
     const t = current();
     paintHero(t); layout(); slide(t);
@@ -287,7 +287,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   addEventListener('keydown', keys, true);
 
   /* ---------- the first look ---------- */
-  focusAt(pos === 'top' ? { row: 0, col: 0 } : pos, { quiet: true });
+  focusAt(pos, { quiet: true });
   slide(current());
   ambience.start();
   /* this week's featured and challenges, fresh from the server (shown again if they changed - not mid-pick) */
@@ -338,12 +338,12 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       dot.style.left = `${ring.x * 100}%`; dot.style.top = `${ring.y * 100}%`;
       dot.style.setProperty('--k', `${Math.round(ring.progress * 100)}%`);
     } else dot.classList.remove('show');
-    /* the lit one: a tile (or the Play button or the profile face) the cursor has settled on */
-    const hot = [...items.map(t => t.el), play, me].find(el => el.classList.contains('hot')) || null;
-    document.querySelectorAll('.htile, .hplay, .hme').forEach(el => { if (el !== hot) el.classList.remove('lit'); });
+    /* the lit one: a tile (or the profile face) the cursor has settled on */
+    const hot = [...items.map(t => t.el), me].find(el => el.classList.contains('hot')) || null;
+    document.querySelectorAll('.htile, .hme').forEach(el => { if (el !== hot) el.classList.remove('lit'); });
     if (hot && ring){
       hot.classList.add('lit');
-      const word = hot === me ? 'Wave to open' : hot === play ? `Wave to ${play.textContent.trim().toLowerCase()}` : current() && hot === current().el && current().item.kind === 'get' ? 'Wave to get' : current() && hot === current().el && ['make', 'more', 'test'].includes(current().item.kind) ? 'Wave to open' : 'Wave to play';
+      const word = hot === me ? 'Wave to open' : current() && hot === current().el && current().item.kind === 'get' ? 'Wave to get' : current() && hot === current().el && ['make', 'more', 'test'].includes(current().item.kind) ? 'Wave to open' : 'Wave to play';
       sayText.textContent = word;
       if (lit !== ring.id){ sayFace.innerHTML = ''; sayFace.appendChild(faceFor(ring.id)); lit = ring.id; }
       say.style.setProperty('--c', ring.color);
@@ -352,16 +352,16 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       say.classList.add('show');
     } else say.classList.remove('show');
     /* the row-edge strip: the cursor held at the bottom (or top) edge moves between rows */
-    const r = pos === 'top' ? 0 : pos.row;
+    const r = pos.row;
     const e = edge.update(dt, ring && !sheet && !going ? ring.y : null, { canDown: !!rows[r + 1], canUp: !bigHero(pos, rows) && r > 0 });
     edgeDown.style.setProperty('--k', `${Math.round((e.dir > 0 ? e.progress : 0) * 100)}%`); edgeUp.style.setProperty('--k', `${Math.round((e.dir < 0 ? e.progress : 0) * 100)}%`);
     edgeDown.classList.toggle('lit', e.dir > 0); edgeUp.classList.toggle('lit', e.dir < 0);
-    if (e.step){ sfx.nav(); const to = step(rows, pos === 'top' ? { row: 0, col: mem[0] ?? 0 } : pos, e.step > 0 ? 'down' : 'up', mem); if (to && to !== 'top') focusAt(to, { quiet: false }); }
+    if (e.step){ sfx.nav(); const to = step(rows, pos, e.step > 0 ? 'down' : 'up', mem); if (to) focusAt(to, { quiet: false }); }
   }
 
   return {
     leave(){ stopShots(); stopHand(); removeEventListener('keydown', keys, true); cursor.skin = false; cursor.enabled = false; },
-    get focus(){ return pos === 'top' ? 0 : items.indexOf(current()); },
+    get focus(){ return items.indexOf(current()); },
     get pos(){ return pos; },
     get hand(){ return handActive; },
     /* (for the tests and the pictures) */
@@ -373,7 +373,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       hand(dt);
       /* The tile pointed at is the picked one. */
       if (!anchor && !sheet && !going) for (const t of items){
-        const hot = t.el.classList.contains('hot') && !(pos !== 'top' && pos.row === t.row && pos.col === t.col);
+        const hot = t.el.classList.contains('hot') && !(pos.row === t.row && pos.col === t.col);
         t.hot = hot ? (t.hot || 0) + dt : 0;
         if (t.hot >= HOVER_FOCUS){ t.hot = 0; focusAt({ row: t.row, col: t.col }, { pointer: true }); }
       }

@@ -59,22 +59,21 @@ test('focus: left and right stay in the row; up and down change row and keep the
   assert.equal(step(rows, { row: 2, col: 2 }, 'down', mem), null, 'nothing below the last row');
 });
 
-test('up from the first row is the Play button at the top; down from it goes back to the first row', () => {
+test('up from the first row goes nowhere (no Play button); focus never leaves the rows', () => {
   const rows = homeRows({ pool: POOL });
-  assert.equal(step(rows, { row: 0, col: 1 }, 'up', {}), 'top');
-  assert.deepEqual(step(rows, 'top', 'down', { 0: 1 }), { row: 0, col: 1 });
-  assert.equal(step(rows, 'top', 'up', {}), null);
+  assert.equal(step(rows, { row: 0, col: 1 }, 'up', {}), null);
+  assert.deepEqual(startFocus(rows), { row: 0, col: 0 });
 });
 
-test('the hero (0046): no title, one line, players as a number (no time), Play; a game to get says Get; the rest say what they open', () => {
+test('the hero (0046): no title, one line, players as lo and hi (no time), a label for the tile; a game to get says Get; the rest say what they open', () => {
   const pop = heroOf({ kind: 'game', g: { ...POOL[0], minPlayers: 1, maxPlayers: 4 } }, { blurb: 'Reach up and pop the balloons', cap: 4 });
-  assert.deepEqual(pop, { name: 'Pop Party', line: 'Reach up and pop the balloons', players: '1-4', cta: { label: 'Play', icon: 'play' } });
+  assert.deepEqual(pop, { name: 'Pop Party', line: 'Reach up and pop the balloons', players: { lo: 1, hi: 4 }, cta: { label: 'Play', icon: 'play' } });
   assert.ok(!('title' in pop) && !('chips' in pop), 'no title, no chips');
-  assert.equal(heroOf({ kind: 'game', g: { ...POOL[0], minPlayers: 1, maxPlayers: 4 } }, { cap: 2 }).players, '1-2', 'as many as this PC can seat');
-  assert.equal(heroOf({ kind: 'game', g: { name: 'Solo', minPlayers: 1, maxPlayers: 1, secs: 45 } }).players, '1');
+  assert.deepEqual(heroOf({ kind: 'game', g: { ...POOL[0], minPlayers: 1, maxPlayers: 4 } }, { cap: 2 }).players, { lo: 1, hi: 2 }, 'as many as this PC can seat');
+  assert.deepEqual(heroOf({ kind: 'game', g: { name: 'Solo', minPlayers: 1, maxPlayers: 1, secs: 45 } }).players, { lo: 1, hi: 1 });
   assert.equal(heroOf({ kind: 'get', g: GET[0] }).cta.label, 'Get');
   const story = heroOf({ kind: 'game', g: { name: 'Story', passive: true } });
-  assert.equal(story.players, ''); assert.match(story.line, /story/i);
+  assert.equal(story.players, null); assert.match(story.line, /story/i);
   assert.equal(heroOf({ kind: 'make', id: 'requests', name: 'Your requests', line: 'x' }).name, 'Your requests');
   assert.match(heroOf({ kind: 'make', id: 'pro', name: 'Create Pro', line: 'Build', tag: 'Grown-ups' }).line, /grown-ups/);
   assert.equal(heroOf({ kind: 'more' }).name, 'More to try');
@@ -84,6 +83,5 @@ test('the hero (0046): no title, one line, players as a number (no time), Play; 
 test('the hero is big only on the first row (and the top); further down it is a banner', () => {
   const rows = homeRows({ pool: POOL, toGet: GET, more: true });
   assert.equal(bigHero({ row: 0, col: 2 }, rows), true);
-  assert.equal(bigHero('top', rows), true);
   assert.equal(bigHero({ row: 1, col: 0 }, rows), false);
 });

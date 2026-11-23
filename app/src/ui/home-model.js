@@ -7,8 +7,7 @@
    A fourth, "Testing", comes only while a creator has put a game on this TV to try.
 
    Focus is { row, col }. Left and right stay in the row; up and down change row, landing on the column last used there
-   (clamped to the row's length). Moving up from the first row goes to the page's top (the Play button), and down from
-   the Play button goes back to the first row. */
+   (clamped to the row's length). Up from the first row goes nowhere: the tiles themselves start the game (0046), there is no Play button. */
 
 export const TITLES = { games: 'Your games', new: 'New to try', make: 'Make a game', testing: 'Testing' };
 
@@ -47,33 +46,32 @@ export function startFocus(rows, { session = null, last = null } = {}){
   return (session && find(session)) || (last && find(last)) || { row: 0, col: 0 };
 }
 
-/* One step of focus. mem: the column last used in each row (kept by the caller). Returns { row, col } or 'top' (up from the first
-   row: the Play button) or null (nowhere to go). from 'top', 'down' goes to the first row. */
+/* One step of focus. mem: the column last used in each row (kept by the caller). Returns { row, col } or null (nowhere to go). */
 export function step(rows, pos, dir, mem = {}){
-  if (pos === 'top') return dir === 'down' && rows.length ? { row: 0, col: Math.min(mem[0] ?? 0, rows[0].items.length - 1) } : null;
   const { row, col } = pos;
   if (dir === 'left') return col > 0 ? { row, col: col - 1 } : null;
   if (dir === 'right') return col < rows[row].items.length - 1 ? { row, col: col + 1 } : null;
-  if (dir === 'up') return row > 0 ? { row: row - 1, col: Math.min(mem[row - 1] ?? col, rows[row - 1].items.length - 1) } : 'top';
+  if (dir === 'up') return row > 0 ? { row: row - 1, col: Math.min(mem[row - 1] ?? col, rows[row - 1].items.length - 1) } : null;
   if (dir === 'down') return row < rows.length - 1 ? { row: row + 1, col: Math.min(mem[row + 1] ?? col, rows[row + 1].items.length - 1) } : null;
   return null;
 }
 
 /* The hero for whatever is focused (decision 0046): no title (the lit tile shows the name; `name` is for screen readers), one line, how many
-   play (`players`: "1-2", with an icon beside it; no time), and the one big button. cap: how many players this PC can seat. */
+   play (`players`: { lo, hi } or null, drawn as one figure or two; no time), and `cta` (what picking it does: it names the tile for screen readers
+   and the hand's "Wave to ..."; there is no Play button). cap: how many players this PC can seat. */
 export function heroOf(item, { blurb = '', cap = 4 } = {}){
-  const none = { name: '', line: '', players: '', cta: null };
+  const none = { name: '', line: '', players: null, cta: null };
   if (!item) return none;
   if (item.kind === 'game' || item.kind === 'get'){
     const g = item.g, lo = Math.min(g.minPlayers || 1, cap), hi = Math.min(g.maxPlayers || 4, cap);
-    const players = g.passive ? '' : lo === hi ? String(hi) : `${lo}-${hi}`;
-    return { name: g.name, line: g.passive ? (blurb ? `${blurb} A story.` : 'A story') : blurb, players, cta: item.kind === 'get' ? { label: 'Get', icon: 'get' } : { label: 'Play', icon: 'play' } };
+    const players = g.passive ? null : { lo, hi };
+    return { name: g.name, line: blurb || (g.passive ? "A story" : ""), players, cta: item.kind === 'get' ? { label: 'Get', icon: 'get' } : { label: 'Play', icon: 'play' } };
   }
-  if (item.kind === 'more') return { name: 'More to try', line: 'Every game the family can get', players: '', cta: { label: 'Open', icon: 'play' } };
-  if (item.kind === 'make') return { name: item.name, line: item.tag ? `${item.line}, for grown-ups` : item.line, players: '', cta: { label: item.id === 'requests' ? 'Open' : item.id === 'pro' ? 'Open' : 'Ask', icon: 'play' } };
-  if (item.kind === 'test') return { name: item.d.name, line: item.d.asking ? 'On this TV, asking to publish' : 'On this TV to try', players: '', cta: { label: 'Try it', icon: 'play' } };
+  if (item.kind === 'more') return { name: 'More to try', line: 'Every game the family can get', players: null, cta: { label: 'Open', icon: 'play' } };
+  if (item.kind === 'make') return { name: item.name, line: item.tag ? `${item.line}, for grown-ups` : item.line, players: null, cta: { label: item.id === 'requests' ? 'Open' : item.id === 'pro' ? 'Open' : 'Ask', icon: 'play' } };
+  if (item.kind === 'test') return { name: item.d.name, line: item.d.asking ? 'On this TV, asking to publish' : 'On this TV to try', players: null, cta: { label: 'Try it', icon: 'play' } };
   return none;
 }
 
 /* Is the hero big (the page at rest) or a banner (scrolled)? Only the first row keeps it big. */
-export const bigHero = (pos, rows) => pos === 'top' || !rows.length || pos.row === 0;
+export const bigHero = (pos, rows) => !rows.length || pos.row === 0;
