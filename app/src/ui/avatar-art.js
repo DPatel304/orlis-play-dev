@@ -460,14 +460,15 @@ export function cuboFigure(c, x, base, h, pose = 'stand', t = 0, face = null, { 
 }
 
 /* ---------- a portrait: for tiles and name chips ---------- */
-export function portrait(c, x, y, s, look, t = 0){
+export function portrait(c, x, y, s, look, t = 0, { tile = true } = {}){
   const a = resolve(look);
   c.save();
-  c.beginPath(); c.roundRect ? c.roundRect(x - s / 2, y - s / 2, s, s, s * 0.22) : c.rect(x - s / 2, y - s / 2, s, s);
-  c.fillStyle = a.light; c.fill(); c.clip();
-  /* the shoulders, then the cube head */
-  c.fillStyle = a.c; c.beginPath(); c.ellipse(x, y + s * 0.62, s * 0.34, s * 0.2, 0, 0, Math.PI * 2); c.fill();
-  head(c, x, y + s * 0.02, s * 0.36, look, t);
+  if (tile){
+    c.beginPath(); c.roundRect ? c.roundRect(x - s / 2, y - s / 2, s, s, s * 0.22) : c.rect(x - s / 2, y - s / 2, s, s);
+    c.fillStyle = a.light; c.fill(); c.clip();
+  }
+  /* just the cube head, floating (owner, 2026-11-23: no shoulders peeking in at the bottom) */
+  head(c, x, y, s * 0.4, look, t);
   c.restore();
 }
 

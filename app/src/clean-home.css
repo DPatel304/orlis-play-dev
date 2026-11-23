@@ -22,10 +22,10 @@
 .home .htop{ position:absolute; left:0; right:0; top:0; height:calc(var(--u)*15); z-index:5; }
 .home .htop > .lg{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*3.6); }
 .hsys{ position:absolute; right:calc(var(--u)*5); top:calc(var(--u)*2.6); display:flex; align-items:center; gap:calc(var(--u)*2); }
-.btn.hme{ width:calc(var(--u)*10.4); height:calc(var(--u)*10.4); padding:0; border:0; border-radius:28%; background:var(--surface); box-shadow:0 0 0 calc(var(--u)*.5) #fff, var(--soft); overflow:hidden; transition:transform var(--t-fast) var(--ease-pop), width var(--t-base) var(--ease), height var(--t-base) var(--ease); }
+.btn.hme{ width:calc(var(--u)*10.4); height:calc(var(--u)*10.4); padding:0; border:0; border-radius:28%; background:transparent; box-shadow:none; overflow:visible; filter:drop-shadow(0 calc(var(--u)*.6) calc(var(--u)*1.2) rgba(20,18,40,.35)); transition:transform var(--t-fast) var(--ease-pop), width var(--t-base) var(--ease), height var(--t-base) var(--ease); }
 .btn.hme .lbl,.hface{ display:block; width:100%; height:100%; } .hface canvas,.hface .avface{ width:100%; height:100%; display:block; }
 .home.hand .btn.hme{ width:calc(var(--u)*13.6); height:calc(var(--u)*13.6); }
-.btn.hme:hover,.btn.hme.hot,body.remote .btn.hme.kfocus{ transform:scale(1.06); box-shadow:0 0 0 calc(var(--u)*.7) var(--who,var(--blue)), var(--soft); }
+.btn.hme:hover,.btn.hme.hot,body.remote .btn.hme.kfocus{ transform:scale(1.1); }
 .btn.hme .fill{ display:none; }
 
 /* the focused game's name, one line, the chips and the one big Play */

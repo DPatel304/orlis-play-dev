@@ -100,7 +100,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   const who = account.current;
   const me = button('', 'hme');
   me.querySelector('.lbl').replaceWith(h('span', 'hface'));
-  me.querySelector('.hface').appendChild(faceOf(who || {}, 160));
+  me.querySelector('.hface').appendChild(faceOf(who || {}, 160, { tile: false }));   /* a floating head, no tile (owner) */
   me.setAttribute('aria-label', who ? `${who.name}: profile, settings` : 'Menu');
   let sheet = null;
   const openMe = () => {

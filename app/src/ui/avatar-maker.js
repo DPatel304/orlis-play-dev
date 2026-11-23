@@ -30,8 +30,8 @@ function pic(size, fn, cls = 'avpic'){
   return cv;
 }
 
-export function faceOf(profile, size = 48){
-  if (MAKING && profile) return pic(size, (c, s) => portrait(c, s / 2, s / 2, s, normalizeLook(profile.look), 1.3), 'avface');
+export function faceOf(profile, size = 48, { tile = true } = {}){
+  if (MAKING && profile) return pic(size, (c, s) => portrait(c, s / 2, s / 2, tile ? s : s * 1.2, normalizeLook(profile.look), 1.3, { tile }), 'avface');
   const span = document.createElement('span'); span.className = 'av';
   span.innerHTML = iconHTML(AVATARS[profile && profile.avatar] || AVATARS.cube, 128);
   return span;
