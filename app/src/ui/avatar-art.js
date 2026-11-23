@@ -333,6 +333,23 @@ function idleRig(t){
   return rig({ k: 1 - 0.01 * b / BODY.legLen, arms: [AR(sway(-1)), AR(sway(1))] });
 }
 
+/* where an arm's arrow starts (S units, from the arm's joint): beside the arm on its outer side, but never touching the head (or the hat, hair or ears
+   on it): if the outer side would, try the arm's other side, then slide it outward along the arm until it is clear (keeping a gap).
+   head: { x0, x1, y0, y1 } in S units. */
+const HAT_UP = { none: 0, tuft: 0.1, bob: 0.04, cap: 0.06, beanie: 0.11, bow: 0.08, crown: 0.1, phones: 0, ears: 0.17, flower: 0.05 };
+function armArrow(a1, d, sx, sy, head){
+  const u = [Math.sin(a1 * DEG), Math.cos(a1 * DEG)];
+  let px = Math.cos(a1 * DEG), py = -Math.sin(a1 * DEG);
+  if (Math.abs(px) < 0.45 ? py > 0 : px * d < 0){ px = -px; py = -py; }
+  const off = BODY.armW / 2 + 0.09, len = BODY.armLen, m = 0.09;
+  const at = (side, shift) => [sx + side * px * off + u[0] * shift, sy + side * py * off + u[1] * shift];
+  const clear = ([x, y]) => { for (let k = 0; k <= 10; k++){ const f = k / 10, qx = x + u[0] * len * f, qy = y + u[1] * len * f;
+    if (qx > head.x0 - m && qx < head.x1 + m && qy > head.y0 - m && qy < head.y1 + m) return false; } return true; };
+  const tries = [[1, 0], [-1, 0]];
+  for (let sh = 0.03; sh <= 0.45; sh += 0.03) tries.push([1, sh], [-1, sh]);
+  for (const [side, shift] of tries){ const q = at(side, shift); if (clear(q)) return q; }
+  return at(1, 0);
+}
 /* where a pose is drawn, in units of the character's size S measured from the middle of the feet's line (y is down): the box round all four of its
    drawings, with its arrows and marks, for the move cards to centre and size him by */
 const boundsCache = new Map();
@@ -350,8 +367,8 @@ export function poseBounds(pose, arrows = true){
       const sx = d * (rg.sho ? rg.sho.x : 0.265), sy = torsoTop + (rg.sho ? rg.sho.y : 0.055), ar = rg.arms[k], u = dirOf(ar.a1), v = dirOf(ar.a2), el = 0.0675, hd = 0.1325;
       add(sx, sy, 0.06); add(sx + u[0] * el, sy + u[1] * el, 0.07); add(sx + u[0] * el + v[0] * hd, sy + u[1] * el + v[1] * hd, 0.07 + m);
       if (arrows && !rg.sho && Math.abs(ar.a1 - ar.a2) <= 1 && Math.abs(ar.a1) >= 55){
-        let px = Math.cos(ar.a1 * DEG), py = -Math.sin(ar.a1 * DEG); if (Math.abs(px) < 0.45 ? py > 0 : px * d < 0){ px = -px; py = -py; }
-        const off = BODY.armW / 2 + 0.09; add(sx + px * off, sy + py * off, 0.05); add(sx + px * off + u[0] * BODY.armLen, sy + py * off + u[1] * BODY.armLen, 0.07 + m);
+        const st = armArrow(ar.a1, d, sx, sy, { x0: -0.25, x1: 0.25, y0: headTop, y1: headTop + 0.42 });
+        add(st[0], st[1], 0.05); add(st[0] + u[0] * BODY.armLen, st[1] + u[1] * BODY.armLen, 0.07 + m);
       }
     });
     if (arrows && rg.mark === 'down') add(0, headTop - 0.24, 0.07);
@@ -389,12 +406,10 @@ export function body(c, x, base, h, look, t = 0, pose = 'stand', { back = false,
     if (arrows) [-1, 1].forEach((d, i) => { const r = rg.arms[i];
       if (rg.sho || Math.abs(r.a1 - r.a2) > 1 || Math.abs(r.a1) < 55) return;
       /* beside the arm, not on its end: parallel to it, on its outer side (the upper side when it points straight out), one arm-width and a clear gap
-         away, about the arm's own length, pointing the way the arm goes */
-      const th = r.a1 * DEG, ux = Math.sin(th), uy = Math.cos(th);
-      let px = Math.cos(th), py = -Math.sin(th);
-      if (Math.abs(px) < 0.45 ? py > 0 : px * d < 0){ px = -px; py = -py; }
-      const off = S * (BODY.armW / 2 + 0.04 + 0.05), pulse = still ? 1 : 1 + 0.15 * Math.sin(t * Math.PI * 2 * 1.6);
-      motionArrow(cc, S, d * ax + px * off, ay + py * off, r.a1, S * BODY.armLen * pulse); });
+         away, about the arm's own length, pointing the way the arm goes; never over the head or what he wears on it */
+      const head = { x0: a.top === 'phones' ? -0.29 : -0.25, x1: a.top === 'phones' ? 0.29 : 0.25, y0: headTop / S - HAT_UP[a.top || 'none'], y1: headTop / S + 0.42 };
+      const st = armArrow(r.a1, d, d * ax / S, ay / S, head), pulse = still ? 1 : 1 + 0.15 * Math.sin(t * Math.PI * 2 * 1.6);
+      motionArrow(cc, S, st[0] * S, st[1] * S, r.a1, S * BODY.armLen * pulse); });
     /* the move's own marks: a small burst over the clapping hands, a down arrow over a ducking head, a step arrow beside the leg that goes out */
     if (arrows && rg.mark){
       const pulse = still ? 1 : 1 + 0.15 * Math.sin(t * Math.PI * 2 * 1.6);
