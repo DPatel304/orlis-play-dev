@@ -77,7 +77,7 @@ to keep targets out of (`underHud(W, H, x, y, hud())` says whether a point is un
 
 ## The six piece types, in the kit look
 
-Paper (`shade.card`), **one ink border** (`shade.ink`; thin on the small pills, the strongest on the move card), one flat soft shadow, Fredoka,
+Paper (`shade.card`), **one ink border** (`shade.ink`; thin on the small pills, the strongest on the move card), one flat soft shadow, **Outfit** (decision 0045; the games' own painted lettering keeps its own fonts),
 painted icons. No second tone, no emoji.
 
 | Piece | Look | Use it for |

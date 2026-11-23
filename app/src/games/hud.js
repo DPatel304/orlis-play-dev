@@ -1,5 +1,5 @@
 /* The shared HUD (decision 0034, plan package U3): one set of pieces, drawn one way, in the Orlis UI kit's look (paper, one ink border,
-   one soft shadow, Fredoka, painted icons). A game never places or sizes anything: it answers hud() with what it wants in each dock and
+   one soft shadow, Outfit, painted icons). A game never places or sizes anything: it answers hud() with what it wants in each dock and
    the shell (drawShellHud) lays the pieces out on the grid (grid.js), draws them, dims the quiet ones and bounces the changing ones.
 
    Fixed anchors (the same place in every game; a game may give one back, never move it):
@@ -22,7 +22,9 @@ import { color as pal, alpha as palAlpha } from './assets/palette.js';
 import { iconOf, splitHint } from './assets/legacy-emoji.js';
 export const hud = { quiet: false };
 
-const FONT = 'Fredoka, ui-rounded, "Segoe UI", system-ui, sans-serif';
+/* Outfit (decision 0045): the font for everything you read or press, the HUD included; the games' own painted lettering keeps its own fonts */
+const FONT = 'Outfit, ui-rounded, "Segoe UI", system-ui, sans-serif';
+try { if (typeof document !== 'undefined' && document.fonts) document.fonts.load('700 40px Outfit'); } catch (e){}
 const INK = () => pal('shade.ink'), PAPER = () => pal('shade.card'), TRACK = () => pal('shade.line');
 const SHADE = () => palAlpha('shade.shadow', 0.18);
 
@@ -76,7 +78,7 @@ export function sayBubble(c, W, H, { icon = '', text: raw, t = 1, x = null, y = 
     scale = INTRO.scale * (0.6 + 0.4 * ease(t / 0.35)) * (1 - e) + e;
     px = bx + (px - bx) * e; py = by + (py - by) * e;
   }
-  const h = C * 0.86, font = (s) => `600 ${Math.round(s)}px ${FONT}`;
+  const h = C * 0.86, font = (s) => `700 ${Math.round(s)}px ${FONT}`;
   const size = fit(c, text, font, C * 6 - h * (id ? 1.5 : 0.9), C * 0.5);
   c.save(); c.font = font(size);
   const iw = id ? h * 0.78 : 0, w = c.measureText(text).width + h * 0.7 + iw + (id ? h * 0.12 : 0);
@@ -138,7 +140,7 @@ export function underHud(W, H, x, y, spec = null){
    same bounce when it changes (bump: 1 right then, back to 0). */
 export function badge(c, W, H, { icon = '', value = '', bump = 0, r = null } = {}){
   if (hud.quiet || (icon === '' && value === '')) return;
-  const bs = r || slot(W, H, 'badge'), C = unit(W, H), h = bs.h, font = `600 ${Math.round(h * 0.6)}px ${FONT}`, id = iconOf(icon);
+  const bs = r || slot(W, H, 'badge'), C = unit(W, H), h = bs.h, font = `700 ${Math.round(h * 0.6)}px ${FONT}`, id = iconOf(icon);
   c.save(); c.font = font;
   const tw = c.measureText(String(value)).width, iw = id ? h * 0.8 : 0, w = h * 0.7 + iw + tw + (value !== '' && id ? h * 0.1 : 0);
   c.translate(bs.x + bs.w - w / 2, bs.y + h / 2); const k = bounce(bump); c.scale(k, k); c.translate(-w / 2, -h / 2);
@@ -169,7 +171,7 @@ function face(c, cx, cy, s, colour, look, present = true){
    bump: 1 right as the number goes up, easing to 0. mark: { look } (their character). Returns the pill's width. */
 export function scorePill(c, x, y, h, color, n, bump = 0, mark = null, { style = 'face', present = true, bw = null } = {}){
   const bwid = bw || Math.max(2, h * 0.06), look = mark && mark.look ? mark.look : null;
-  const font = `600 ${Math.round(h * 0.6)}px ${FONT}`, s = h * 0.62;
+  const font = `700 ${Math.round(h * 0.6)}px ${FONT}`, s = h * 0.62;
   c.save(); c.font = font;
   const tw = style === 'face' ? c.measureText(String(n)).width : 0;
   const w = style === 'face' ? Math.max(h * 2.4, h * 1.35 + tw + h * 0.45) : h * 1.08;
@@ -184,7 +186,7 @@ export function scorePill(c, x, y, h, color, n, bump = 0, mark = null, { style =
     face(c, w / 2, h / 2, s * (style === 'big' ? 1.1 : 1), color, look, present);
     if (style === 'big'){
       const q = h * 0.34, qx = w - q * 0.55, qy = h - q * 0.5; c.fillStyle = PAPER(); c.beginPath(); c.arc(qx, qy, q * 0.62, 0, 6.2832); c.fill(); c.strokeStyle = INK(); c.lineWidth = bwid * 0.8; c.stroke();
-      c.font = `600 ${Math.round(q * 0.9)}px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = INK(); c.fillText(String(n), qx, qy + q * 0.04);
+      c.font = `700 ${Math.round(q * 0.9)}px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = INK(); c.fillText(String(n), qx, qy + q * 0.04);
     }
   }
   c.restore();
@@ -193,7 +195,7 @@ export function scorePill(c, x, y, h, color, n, bump = 0, mark = null, { style =
 
 /* A chip: a painted icon and a number, for crystals, gold, lives. w: the width to fill (else as wide as its number). Returns the width. */
 export function chip(c, x, y, h, { icon = '', value = '', bump = 0, w = null, bw = null } = {}){
-  const font = `600 ${Math.round(h * 0.6)}px ${FONT}`, bwid = bw || Math.max(2, h * 0.05);
+  const font = `700 ${Math.round(h * 0.6)}px ${FONT}`, bwid = bw || Math.max(2, h * 0.05);
   c.save(); c.font = font; const width = w || h * 1.25 + c.measureText(String(value)).width + h * 0.25;
   scaled(c, x, y, width, h, bump);
   paper(c, 0, 0, width, h, h / 2, bwid);
@@ -232,7 +234,7 @@ export function noticePortrait(c, r, { portrait: id = 'cubo', pose = 'wave', t =
   c.restore();
 }
 function noticePill(c, r, text){
-  const h = r.h, C = h, font = (s) => `600 ${Math.round(s)}px ${FONT}`;
+  const h = r.h, C = h, font = (s) => `700 ${Math.round(s)}px ${FONT}`;
   const size = fit(c, text, font, r.w - h * 0.7, h * 0.46);
   c.save(); paper(c, r.x, r.y, r.w, r.h, h / 2, C * 0.05); c.font = font(size); c.fillStyle = INK(); c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(text, r.x + h * 0.35, r.y + h / 2 + h * 0.03); c.restore();
 }
@@ -241,7 +243,7 @@ function noticePill(c, r, text){
 export function clockPill(c, W, H, secsLeft, total = 0){
   const cs = slot(W, H, 'clock'), C = unit(W, H), t = Math.max(0, Math.ceil(secsLeft));
   const text = t >= 60 ? `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}` : String(t);
-  const h = cs.h, font = `600 ${Math.round(h * 0.62)}px ${FONT}`;
+  const h = cs.h, font = `700 ${Math.round(h * 0.62)}px ${FONT}`;
   c.save(); c.font = font;
   const rr = h * 0.27, w = Math.max(h * 2.6, h * 0.55 + rr * 2 + h * 0.25 + c.measureText(text).width + h * 0.5), x = cs.cx - w / 2;
   paper(c, x, cs.y, w, h, h / 2, C * 0.05);

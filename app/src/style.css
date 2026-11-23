@@ -12,6 +12,9 @@
   font-family:"Fredoka"; font-weight:300 700; font-display:block;
   src:url(fonts/fredoka.woff2) format("woff2");
 }
+/* Outfit (decision 0045): the font for everything you read or press, the in-game HUD and the toasts included. Regular and Bold; OFL (fonts/Outfit-OFL.txt). */
+@font-face{ font-family:"Outfit"; font-weight:400; font-display:block; src:url(fonts/outfit-Regular.woff2) format("woff2"); }
+@font-face{ font-family:"Outfit"; font-weight:700; font-display:block; src:url(fonts/outfit-Bold.woff2) format("woff2"); }
 /* For Last Known Position's title cards: Inter (SIL Open Font License),
    cut down to capitals, digits and a little punctuation. */
 @font-face{ font-family:"Inter Title"; font-weight:600; font-display:block; src:url(fonts/inter-title-600.woff2) format("woff2"); }
@@ -1288,7 +1291,7 @@ canvas.avface{ display:block; border-radius:22%; }
 .toast{
   position:fixed; right:5vh; top:calc(var(--safe) + 5vh); z-index:60;
   max-width:min(60vw, 30em); width:max-content; padding:.6em 1.2em; border-radius:999px;
-  background:#fffdf8; color:#2f2b45; font-family:var(--ui); font-weight:600; font-size:clamp(13px, 2.6vh, 28px); line-height:1.3; text-align:center;
+  background:#fffdf8; color:#2f2b45; font-family:Outfit,var(--ui); font-weight:700; font-size:clamp(13px, 2.6vh, 28px); line-height:1.3; text-align:center;
   border:.45vh solid #2f2b45; box-shadow:0 .7vh 0 rgba(52,40,96,.18); animation:toastin var(--t-base) ease-out both; pointer-events:none;
 }
 .toast .oicon{ width:1.3em; height:1.3em; vertical-align:-.3em; margin-right:.1em; }
