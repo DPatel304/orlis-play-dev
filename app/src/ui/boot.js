@@ -10,7 +10,7 @@ import { color } from '../games/assets/palette.js';
 
 /* Seconds: the blue square arrives; the violet one lands; the name; the squash; where it waits for the camera; the hand-over; the end. */
 /* (owner, 2026-11-23: the name waits a little longer after the squares land - 1.6 s, was 1.15) */
-export const ARRIVE = 0.45, MERGE = 0.95, NAME = 1.6, WINK = 2.15, HOLD = 2.65, BREAK = 2.7, BOOT = 2.95;
+export const ARRIVE = 0.45, MERGE = 0.95, NAME = 1.6, WINK = 2.15, HOLD = 3.65, BREAK = 3.7, BOOT = 3.95;   /* (owner: it rests on the logo a second longer) */
 /* The look: the room (style.css --paper). */
 export const PAPER = tok('--paper', 'white');
 export const SYS = '"Outfit",system-ui,-apple-system,"Segoe UI",sans-serif';
