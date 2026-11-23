@@ -291,7 +291,7 @@ const MOVES = {
   hug: (i) => { const p = P('hug', i); return rig({ sho: { x: Lp(0.265, 0.1, p), y: Lp(0.055, 0.11, p) }, armsFront: true, arms: [AR(Lp(-50, 72, p)), AR(Lp(50, -72, p))] }); },
   /* a duck: the legs get shorter (as in the squat) so he drops low, the head sinks between the shoulders, both hands go up on his head (the arms
      bend at the elbow seam; his arms are short, so they reach the sides of his head), and a small arrow points down over him */
-  duck: (i) => { const p = P('duck', i); return rig({ k: Lp(1, 0.55, p), headDrop: Lp(0, 0.16, p), armsOver: true, mark: 'down', arms: [AR(Lp(0, -150, p), Lp(0, 150, p)), AR(Lp(0, 150, p), Lp(0, -150, p))] }); },
+  duck: (i) => { const p = 0.3 + 0.7 * P('duck', i); return rig({ k: Lp(1, 0.55, p), headDrop: Lp(0, 0.16, p), armsOver: true, mark: 'down', arms: [AR(Lp(0, -150, p), Lp(0, 150, p)), AR(Lp(0, 150, p), Lp(0, -150, p))] }); },
   /* a step sideways: one leg straight down, the other straight out at an angle, the arms out, and an arrow beside the leg that goes out */
   side: (i) => { const p = P('side', i); return rig({ rot: Lp(0, 0.05, p), mark: 'step', legs: [LG(0), LG(Lp(0, 30, p))], arms: [AR(-Lp(10, 74, p)), AR(Lp(10, 74, p))] }); },
   /* frozen: arms out, shivering */
@@ -331,6 +331,34 @@ function rigOf(pose, t, idle){
 function idleRig(t){
   const b = Math.sin(t * Math.PI * 2 / 2.5), sway = (d) => d * (1.5 + 2.2 * Math.sin(t * Math.PI * 2 / 2.5 + 1.3 + d));
   return rig({ k: 1 - 0.01 * b / BODY.legLen, arms: [AR(sway(-1)), AR(sway(1))] });
+}
+
+/* where a pose is drawn, in units of the character's size S measured from the middle of the feet's line (y is down): the box round all four of its
+   drawings, with its arrows and marks, for the move cards to centre and size him by */
+const boundsCache = new Map();
+export function poseBounds(pose, arrows = true){
+  const key = pose + arrows, hit = boundsCache.get(key); if (hit) return hit;
+  let x0 = -0.3, x1 = 0.3, y0 = 0, y1 = 0.04;
+  const add = (x, y, m = 0.06) => { x0 = Math.min(x0, x - m); x1 = Math.max(x1, x + m); y0 = Math.min(y0, y - m); y1 = Math.max(y1, y + m); };
+  const dirOf = (a) => [Math.sin(a * DEG), Math.cos(a * DEG)], L = BODY.legLen, lx = (BODY.legGap + BODY.legW) / 2;
+  for (let i = 0; i < 4; i++){
+    const rg = rigOf(pose, (i + 0.01) / 5), hipY = -L * rg.k + rg.yo, torsoTop = hipY - BODY.bh, headTop = torsoTop + 0.015 - 0.42 + (rg.headDrop || 0), m = rg.rot ? 0.05 : 0;
+    add(-0.23, headTop, 0.04 + m); add(0.23, headTop, 0.04 + m); add(-0.185, torsoTop, 0.04 + m); add(0.185, hipY, 0.04 + m);
+    [-1, 1].forEach((d, k) => {
+      const lg = rg.legs[k], e = L * lg.s * rg.k / 2, q = dirOf(lg.a1), r = dirOf(lg.a2), p1 = [d * lx + q[0] * e, hipY + q[1] * e];
+      add(p1[0], p1[1], 0.085); add(p1[0] + r[0] * e, p1[1] + r[1] * e, 0.085);
+      const sx = d * (rg.sho ? rg.sho.x : 0.265), sy = torsoTop + (rg.sho ? rg.sho.y : 0.055), ar = rg.arms[k], u = dirOf(ar.a1), v = dirOf(ar.a2), el = 0.0675, hd = 0.1325;
+      add(sx, sy, 0.06); add(sx + u[0] * el, sy + u[1] * el, 0.07); add(sx + u[0] * el + v[0] * hd, sy + u[1] * el + v[1] * hd, 0.07 + m);
+      if (arrows && !rg.sho && Math.abs(ar.a1 - ar.a2) <= 1 && Math.abs(ar.a1) >= 55){
+        let px = Math.cos(ar.a1 * DEG), py = -Math.sin(ar.a1 * DEG); if (Math.abs(px) < 0.45 ? py > 0 : px * d < 0){ px = -px; py = -py; }
+        const off = BODY.armW / 2 + 0.09; add(sx + px * off, sy + py * off, 0.05); add(sx + px * off + u[0] * BODY.armLen, sy + py * off + u[1] * BODY.armLen, 0.07 + m);
+      }
+    });
+    if (arrows && rg.mark === 'down') add(0, headTop - 0.24, 0.07);
+    if (arrows && rg.mark === 'burst') add(0, torsoTop + 0.04, 0.05);
+    if (arrows && rg.mark === 'step') add(lx + L * Math.sin(rg.legs[1].a1 * DEG) + 0.17 + 0.16, -0.07, 0.07);
+  }
+  const b = { x0, x1, y0, y1 }; boundsCache.set(key, b); return b;
 }
 
 /* opts.arrows: he is showing a move to copy (a move card, a story beat that says "do this"): a bold arrow beside each straight, stretched-out arm

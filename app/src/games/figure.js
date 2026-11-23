@@ -5,7 +5,7 @@
    Cubo moves like stop-motion: each move is three or four still drawings that repeat, and his face is part of each
    drawing, so he looks excited when his hands go up and strains a little in the squat. */
 import { slot } from './grid.js';
-import { cuboFigure } from '../ui/avatar-art.js';
+import { cuboFigure, poseBounds } from '../ui/avatar-art.js';
 import { color as pal, alpha as palAlpha } from './assets/palette.js';
 const L = (a, b, k) => a + (b - a) * k;
 
@@ -108,7 +108,9 @@ export function drawCard(c, pose, K, cx, cy, t, alpha = 1, face = null){
   c.fillStyle = CARD.fill; c.beginPath(); c.roundRect(-K / 2, -K / 2, K, K, rr); c.fill();
   c.shadowColor = 'transparent';
   c.strokeStyle = CARD.edge; c.lineWidth = e; c.beginPath(); c.roundRect(-K / 2 + e / 2, -K / 2 + e / 2, K - e, K - e, rr - e / 2); c.stroke();
-  cuboFigure(c, 0, K * 0.34, K * 0.6, pose, t, face, { arrows: true });
+  /* him, big in the card: as big as fits his own drawn box (all four drawings, arrows and marks), which is what he is centred on */
+  const b = poseBounds(pose, true), h = Math.min(K * 0.75, K * 0.74 / (b.x1 - b.x0), K * 0.74 / (b.y1 - b.y0));
+  cuboFigure(c, -(b.x0 + b.x1) / 2 * h, -(b.y0 + b.y1) / 2 * h, h, pose, t, face, { arrows: true });
   if (pose === 'freeze') [[-0.34, -0.34], [0.35, -0.26], [-0.35, 0.28], [0.34, 0.22]].forEach(([x, y], j) => { if ((j + fr.i) % 2) return;   /* ice twinkles, a different pair each drawing */
     const r = K * 0.05; c.beginPath(); c.moveTo(x * K, y * K - r * 1.5); c.lineTo(x * K + r, y * K); c.lineTo(x * K, y * K + r * 1.5); c.lineTo(x * K - r, y * K); c.closePath();
     c.fillStyle = CARD.ice; c.fill(); c.strokeStyle = CARD.line; c.lineWidth = K * 0.018; c.lineJoin = 'round'; c.stroke(); });
