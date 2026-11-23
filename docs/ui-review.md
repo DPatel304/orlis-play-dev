@@ -62,3 +62,22 @@ wave" (`app/src/ui/cursor.js`: sticky pointing, a wave clicks). Proposal: bring 
 6. **One driver:** whoever raises a hand first drives, with the cursor in their colour; others take over by waving.
 7. **Back:** one big Home button at the top left on every screen.
 
+
+## The Windows-only screens (U6, reviewed by Opus 2026-11-23)
+Screenshots: 183 shots of every Windows-only screen in Window mode and Big Picture, on the local branch `u6-screenshots` (`docs/u6/`,
+78 MB, not merged); three contact sheets of the main ones in `docs/u6/sheet-{a,b,c}.jpg`. Findings, most important first:
+1. **Two looks, again.** Sign-in, Who's playing?, Play, Discover, Settings and Create Pro still use system type, a purple accent
+   (not the palette), soft gradient blobs and the glossy 3D cube logo in the top-right of every screen. Move them onto the kit (paper,
+   Fredoka, one ink border, palette colours) and the chosen logo (U5 home options and logo, owner to pick).
+2. **Big Picture is too small.** The sign-in card, Who's playing?, Settings and the top-bar chips are desktop-sized on a TV: text around
+   12 to 14 px at 1080p, small avatars, lots of empty screen. In Big Picture: type and targets at TV size (the kit's TV scale), Who's playing?
+   as big faces across the screen, Settings as a full-screen paper sheet.
+3. **Play and Discover:** the dark navy hero with system type and the gradient-and-sparkle placeholder covers for Store games. Replaced by
+   the chosen home option; Store games without art get a painted cover from their palette and icon, not a sparkle.
+4. **Emoji left** (U4 converted the games, Create's steps and the request builder): the child picture picker in "Edit child" (rocket,
+   star, cat...; drop it, the avatar maker is the picture), Create Pro's cards (link, hammer, TV), the "No game slots left" barrier.
+5. **Bugs and words:** under-construction tiles all read "YOUR GAME" (show the game's name); "All 0 are used" (say "You have no game
+   slots yet. Ask the owner."); the cube logo covers the game page's back button; Pending approval is a title on an empty screen (add one
+   line on what happens next and a picture).
+6. **Keep:** the avatar maker (already in the new look), the Create wizard's step card and its flow, the Settings groups, the error
+   messages' wording.
