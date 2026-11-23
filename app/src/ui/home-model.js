@@ -65,7 +65,7 @@ export function heroOf(item, { blurb = '', cap = 4 } = {}){
   if (item.kind === 'game' || item.kind === 'get'){
     const g = item.g, lo = Math.min(g.minPlayers || 1, cap), hi = Math.min(g.maxPlayers || 4, cap);
     const players = g.passive ? null : { lo, hi };
-    return { name: g.name, line: g.passive ? (blurb ? `${blurb} A story.` : 'A story') : blurb, players, cta: item.kind === 'get' ? { label: 'Get', icon: 'get' } : { label: 'Play', icon: 'play' } };
+    return { name: g.name, line: blurb || (g.passive ? "A story" : ""), players, cta: item.kind === 'get' ? { label: 'Get', icon: 'get' } : { label: 'Play', icon: 'play' } };
   }
   if (item.kind === 'more') return { name: 'More to try', line: 'Every game the family can get', players: null, cta: { label: 'Open', icon: 'play' } };
   if (item.kind === 'make') return { name: item.name, line: item.tag ? `${item.line}, for grown-ups` : item.line, players: null, cta: { label: item.id === 'requests' ? 'Open' : item.id === 'pro' ? 'Open' : 'Ask', icon: 'play' } };
