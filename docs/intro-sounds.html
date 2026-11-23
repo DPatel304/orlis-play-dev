@@ -1,0 +1,141 @@
+<title>Orlis Intro Sounds</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&display=swap">
+<style>
+/* Layout: one stage that replays the real two-squares intro, five sound cards under it, play any of them in time with the logo. */
+:root{
+  --bg:#f3f3f8; --card:#ffffff; --ink:#1d1b2e; --muted:#5d5a72; --line:#e2e1ec;
+  --blue:#3aa0ff; --violet:#8b5cf6; --stage:#1d1b2e; --stage-ink:#ffffff;
+  --ui:"Outfit",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#14131f; --card:#1f1d2e; --ink:#f1f0f7; --muted:#a9a6bd; --line:#2e2b42; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#14131f; --card:#1f1d2e; --ink:#f1f0f7; --muted:#a9a6bd; --line:#2e2b42; color-scheme:dark; }
+body{ background:var(--bg); color:var(--ink); font:400 16px/1.5 var(--ui); }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 48px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:grid; gap:22px; }
+h1{ font-weight:700; font-size:clamp(26px,4vw,36px); margin:0; text-wrap:balance; }
+.lede{ margin:4px 0 0; color:var(--muted); max-width:62ch; }
+.stage{ position:relative; background:var(--stage); border-radius:18px; aspect-ratio:16/7; max-width:100%; overflow:hidden; }
+.stage canvas{ width:100%; height:100%; display:block; }
+.stage .now{ position:absolute; left:16px; bottom:12px; color:#ffffffb0; font-size:14px; }
+.grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
+.opt{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 14px 16px; display:grid; gap:8px; align-content:start; text-align:left; font:inherit; color:inherit; cursor:pointer; transition:border-color .15s, transform .15s; }
+.opt:hover{ border-color:var(--violet); }
+.opt:focus-visible{ outline:3px solid var(--blue); outline-offset:2px; }
+.opt.on{ border-color:var(--violet); box-shadow:0 0 0 2px var(--violet) inset; }
+.opt .n{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:18px; }
+.opt .n i{ font-style:normal; width:26px; height:26px; border-radius:8px; display:grid; place-items:center; background:linear-gradient(135deg,var(--blue),var(--violet)); color:#fff; font-size:14px; }
+.opt p{ margin:0; color:var(--muted); font-size:14px; }
+.opt .play{ font-weight:500; font-size:14px; color:var(--violet); }
+.foot{ color:var(--muted); font-size:14px; margin:0; }
+@media (prefers-reduced-motion: reduce){ .opt{ transition:none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Orlis intro sounds</h1>
+    <p class="lede">Each one plays in time with the two-squares intro, the way it opens the app. Turn the sound up, then tap a card. None of them has the extra ding at the end.</p>
+  </header>
+  <div class="stage"><canvas id="cv" width="1600" height="700"></canvas><div class="now" id="now">Tap a sound to play it</div></div>
+  <div class="grid" id="grid"></div>
+  <p class="foot">Today's sound, for comparison: <button class="opt" id="old" style="display:inline-grid;padding:6px 12px;"><span class="play">Play the current intro (with the extra ding)</span></button></p>
+</div>
+
+<script>
+/* ---------- the logo animation (same timings as the app: blue pops in, violet hops on and lands at 0.95 s, the name at 1.15 s) ---------- */
+const ARRIVE = 0.45, MERGE = 0.95, NAME = 1.15, WINK = 1.7, END = 2.6;
+const cv = document.getElementById('cv'), c = cv.getContext('2d');
+const cl = v => Math.max(0, Math.min(1, v)), seg = (t, a, b) => cl((t - a) / (b - a)), eo = k => 1 - Math.pow(1 - k, 3);
+const back = k => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+const lerp = (a, b, k) => a + (b - a) * k;
+function sq(x, y, s, turn, fill){ c.save(); c.translate(x, y); c.rotate(turn); c.fillStyle = fill; c.beginPath(); c.roundRect(-s / 2, -s / 2, s, s, s * 0.27); c.fill(); c.restore(); }
+function draw(t){
+  const W = cv.width, H = cv.height; c.clearRect(0, 0, W, H);
+  const s = H * 0.42, cx = W / 2 - s * 1.6, cy = H / 2;
+  const pop = back(seg(t, 0, ARRIVE)), hop = seg(t, ARRIVE, MERGE), land = seg(t, MERGE, MERGE + 0.25);
+  const k = (hop >= 1 ? Math.sin(land * Math.PI) * 0.08 : 0) + (t >= WINK && t < WINK + 0.3 ? Math.sin(seg(t, WINK, WINK + 0.3) * Math.PI) * 0.05 : 0);
+  const bx = cx - s * 0.18, by = cy + s * 0.2;
+  c.save(); c.translate(bx, by + s * 0.28); c.scale(1 + k, 1 - k); c.translate(-bx, -(by + s * 0.28)); sq(bx, by, s * 0.56 * pop, 0, '#3aa0ff'); c.restore();
+  const fx = bx - s * 0.7, fy = by - s * 0.1, tx = cx + s * 0.12, ty = cy - s * 0.2, e = eo(hop);
+  if (t > ARRIVE * 0.6) sq(lerp(fx, tx, e), lerp(fy, ty, e) - Math.sin(hop * Math.PI) * s * 0.42, s * 0.5 * cl(seg(t, ARRIVE * 0.6, ARRIVE)), lerp(-0.2, 0.17, e), '#8b5cf6');
+  const wa = eo(seg(t, NAME, NAME + 0.4));
+  if (wa > 0){
+    c.save(); c.globalAlpha = wa; c.font = `700 ${Math.round(s * 0.62)}px Outfit, system-ui, sans-serif`; c.textBaseline = 'middle';
+    const x = cx + s * 0.62 + (1 - wa) * s * 0.2; c.fillStyle = '#fff'; c.fillText('Orlis ', x, cy);
+    const w = c.measureText('Orlis ').width, g = c.createLinearGradient(x + w, 0, x + w + s * 1.3, 0); g.addColorStop(0, '#6fb8ff'); g.addColorStop(1, '#b59bff');
+    c.fillStyle = g; c.fillText('Play', x + w, cy); c.restore();
+  }
+}
+draw(END);
+let raf = 0;
+function run(){ cancelAnimationFrame(raf); const t0 = performance.now(); const f = () => { const t = (performance.now() - t0) / 1000; draw(Math.min(t, END)); if (t < END) raf = requestAnimationFrame(f); }; f(); }
+
+/* ---------- the sounds (Web Audio, made on the spot) ---------- */
+let AC = null, out = null, verb = null;
+function ctx(){
+  if (AC) return AC;
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  out = AC.createGain(); out.gain.value = 0.9; out.connect(AC.destination);
+  verb = AC.createConvolver(); const n = AC.sampleRate * 2.2, b = AC.createBuffer(2, n, AC.sampleRate);
+  for (let ch = 0; ch < 2; ch++){ const d = b.getChannelData(ch); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3); }
+  verb.buffer = b; const vg = AC.createGain(); vg.gain.value = 0.35; verb.connect(vg); vg.connect(out);
+  return AC;
+}
+const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+/* one voice: a few sine partials with their own decays; wet = how much goes to the room */
+function voice(t, f, parts, { gain = 0.2, wet = 0.3, attack = 0.004 } = {}){
+  const g = AC.createGain(); g.connect(out); const w = AC.createGain(); w.gain.value = wet; g.connect(w); w.connect(verb);
+  for (const [mul, amp, dec] of parts){
+    const o = AC.createOscillator(), a = AC.createGain(); o.type = 'sine'; o.frequency.value = f * mul;
+    a.gain.setValueAtTime(0.0001, t); a.gain.exponentialRampToValueAtTime(gain * amp, t + attack); a.gain.exponentialRampToValueAtTime(0.0001, t + dec);
+    o.connect(a); a.connect(g); o.start(t); o.stop(t + dec + 0.05);
+  }
+}
+const kalimba = (m, t, gain = 0.22, wet = 0.3) => voice(t, hz(m), [[1, 1, 1.4], [5.4, 0.18, 0.18], [2, 0.12, 0.5]], { gain, wet });
+const marimba = (m, t, gain = 0.22, wet = 0.25) => voice(t, hz(m), [[1, 1, 0.9], [4, 0.35, 0.12], [10, 0.06, 0.05]], { gain, wet });
+const bell = (m, t, gain = 0.14, wet = 0.5) => voice(t, hz(m), [[1, 1, 2.6], [2.76, 0.4, 1.2], [5.4, 0.2, 0.6], [8.9, 0.08, 0.3]], { gain, wet, attack: 0.002 });
+const pluck = (m, t, gain = 0.2, wet = 0.2) => voice(t, hz(m), [[1, 1, 0.35], [2, 0.3, 0.12]], { gain, wet, attack: 0.003 });
+function air(t, dur, { gain = 0.05, from = 600, to = 3000, q = 0.8 } = {}){
+  const n = AC.createBufferSource(), b = AC.createBuffer(1, AC.sampleRate * dur, AC.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; n.buffer = b;
+  const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = q; f.frequency.setValueAtTime(from, t); f.frequency.exponentialRampToValueAtTime(to, t + dur);
+  const g = AC.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + dur * 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  n.connect(f); f.connect(g); g.connect(out); n.start(t); n.stop(t + dur);
+}
+function slide(t, dur, f0, f1, gain = 0.08){
+  const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine';
+  o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05);
+}
+function thud(t, gain = 0.35){ const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.18);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.25); }
+
+/* t0 = when the animation starts; land = when the violet square lands (0.95 s) */
+const SOUNDS = [
+  { name: 'Two notes', what: 'A soft wooden tap as the blue square appears, then a warm two-note lift as the violet one lands. The quietest.',
+    play(t0){ pluck(67, t0 + 0.04, 0.14); marimba(67, t0 + MERGE, 0.22); marimba(72, t0 + MERGE + 0.11, 0.24); } },
+  { name: 'Kalimba hop', what: 'Today’s do-mi-sol, but timed to the hop so the last note is the landing. Nothing after it.',
+    play(t0){ kalimba(72, t0 + ARRIVE, 0.2); kalimba(76, t0 + ARRIVE + 0.25, 0.2); kalimba(79, t0 + MERGE, 0.26); } },
+  { name: 'Marimba chord', what: 'A soft breath of air during the hop and one rounded marimba chord on the landing. Warm and simple.',
+    play(t0){ air(t0 + ARRIVE, MERGE - ARRIVE + 0.05, { gain: 0.035, from: 500, to: 2400 }); [60, 64, 67, 72].forEach((m, i) => marimba(m, t0 + MERGE + i * 0.018, 0.16)); } },
+  { name: 'Glass bell', what: 'A rising shimmer, then one bright, open bell chord that rings out under the name. The most “TV app”.',
+    play(t0){ air(t0 + 0.2, MERGE - 0.15, { gain: 0.03, from: 1200, to: 6000, q: 0.6 }); [72, 76, 79, 86].forEach((m, i) => bell(m, t0 + MERGE + i * 0.012, 0.09)); } },
+  { name: 'Bouncy', what: 'A little whistle that follows the violet square’s arc, a soft bump when it lands, and two sparkles as the name comes in. The most playful.',
+    play(t0){ slide(t0 + ARRIVE, MERGE - ARRIVE, 420, 900, 0.06); thud(t0 + MERGE, 0.28); pluck(79, t0 + MERGE, 0.12, 0.3); bell(91, t0 + NAME + 0.05, 0.05, 0.6); bell(96, t0 + NAME + 0.2, 0.04, 0.6); } }
+];
+const OLD = { name: 'Today', play(t0){ [72, 76, 79].forEach((m, i) => kalimba(m, t0 + MERGE + i * 0.13, 0.3)); kalimba(84, t0 + MERGE + 0.39, 0.22); kalimba(88, t0 + WINK, 0.12); } };
+
+const now = document.getElementById('now'), grid = document.getElementById('grid');
+function go(snd, el){
+  ctx(); if (AC.state === 'suspended') AC.resume();
+  document.querySelectorAll('.opt').forEach(b => b.classList.toggle('on', b === el));
+  const t0 = AC.currentTime + 0.08; snd.play(t0); setTimeout(run, 80);
+  now.textContent = snd === OLD ? 'Playing: today’s intro' : `Playing: ${snd.name}`;
+}
+SOUNDS.forEach((snd, i) => {
+  const b = document.createElement('button'); b.className = 'opt'; b.id = 'opt' + (i + 1);
+  b.innerHTML = `<span class="n"><i>${i + 1}</i>${snd.name}</span><p>${snd.what}</p><span class="play">Play</span>`;
+  b.addEventListener('click', () => go(snd, b)); grid.appendChild(b);
+});
+document.getElementById('old').addEventListener('click', (e) => go(OLD, e.currentTarget));
+</script>
