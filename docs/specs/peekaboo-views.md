@@ -58,3 +58,24 @@ and the pads API at the end of `docs/specs/session.md`. Characters are the one b
   the stick moves the hider on the host, entering a pot then "Step out" works, the found result reaches the tablet.
 - Pictures for the owner at deviceScaleFactor 2: TV in hide, seek with two lanterns and a rustle, reveal; tablet in hide, seek with a
   lantern near (edge glow), inside a pot with the button, a mid-flip frame.
+
+## As built, K5 (Sonnet, 2026-11-23; for Opus to confirm)
+- **Files:** `app/pads/peekaboo/pad.js` (the program), `app/pad/kit.js` (what the page lends a program) and `app/pad/three-lite.js` (the named three.js parts,
+  loaded on demand as their own chunk). `api.kit` = `{ loadThree(), color(name, tone), assets, garden: { createWorld, KINDS, SIZE, SPEED, DEAD_ZONE,
+  LIGHT_RADIUS, FAR, LEN }, character(look) }` (added to `docs/specs/pad-protocol.md`). `kit.character(look)` paints the block-limb character once into one
+  atlas canvas (back and front, stand, march x4, run x4, cheer, wave x2).
+- **Contract the host must meet (K4):** `pads.state({ ...snapshot, lanterns: [{x, z, seat}], rustles: [placeId] })` as the spec says (the tablet shows a
+  lantern pool for each entry while `phase` is `seek`); events `pads.send(seat, { e, ... })` with `e` = `rustle` (`placeId`), `found` (`by`), `hidden`,
+  `phase` (`name`); `enter` and `leave` are accepted and ignored. The result card comes from `found` / `hidden`; if neither arrives, the tablet reads
+  `meter >= 1` in `reveal` as found. The tablet sends `{t:'in', stick:{x,y}}` about 20 a second while held, `y` positive = away from the TV (up), then `{0,0}`
+  twice after release (0 and 160 ms); `{t:'in', act:'out'}` once on "Step out", again every 250 ms (up to 6 times) while the host still says the hider is in a pot.
+  So the host should keep the latest `stick` until a new one arrives, zero it when the pad drops, and treat `act:'out'` as one press (the rules ignore a repeat
+  once the hider is out).
+- **Moving at once:** the tablet runs the same `world.clamp`, `SPEED` and `DEAD_ZONE` on its own copy of the hider, and eases to the host: a long way off (> 2.5
+  steps) it goes there fast; standing still it settles onto the host's point; the host saying "in a pot" is taken at once.
+- **Camera:** behind and a little beside, above, trailing the hider and swinging a little as they turn; the stick stays in world axes (up = away from the TV, as the
+  TV's camera also looks away from the TV), so it matches the screen within a few degrees. Trees, the shed and the place the hider stands in or behind turn
+  see-through so the hider is never lost.
+- **HUD placement follows the owner-approved mockup** (`docs/games/peekaboo-hider.html`): the sun ring top-left, the three leaves top-right (this section's first
+  draft said the other way round). In the seek phase the ring drains and a small sun rides its end.
+- **Sounds:** WebAudio noise puffs only (soft footsteps, quieter in a bush; a rustle on the `rustle` event). No files, no vibration.
