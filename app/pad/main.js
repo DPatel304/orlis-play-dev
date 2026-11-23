@@ -5,6 +5,7 @@ import '../src/ui/paper-cut.js';   /* (the character's paper-cut edge; see avata
 import { createLink, CLOSE } from './link.js';
 import { keepAwake } from './awake.js';
 import { paintPicture, paintCubo, paintPerson, personColour, hasGL } from './art.js';
+import { kit } from './kit.js';
 
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
@@ -191,7 +192,7 @@ async function mountProgram(m, root, look) {
     const start = mod.default || mod.start || mod.mount;
     if (typeof start !== 'function') return;
     const api = {
-      seat: m.seat, colour: m.colour, who: S.me, game: m.game, need: m.need, root,
+      seat: m.seat, colour: m.colour, who: S.me, game: m.game, need: m.need, root, kit,
       send: (o) => link.send({ t: 'in', seq: ++S.seq, ...o }),
       onState: (fn) => { S.stateFns.push(fn); if (S.lastState) fn(S.lastState); },
       onEvent: (fn) => { S.eventFns.push(fn); },
