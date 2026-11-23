@@ -12,6 +12,9 @@
   font-family:"Fredoka"; font-weight:300 700; font-display:block;
   src:url(fonts/fredoka.woff2) format("woff2");
 }
+/* Outfit: the menus' type (decision 0045), for everything you read or press outside a game's own lettering. Bundled; OFL. */
+@font-face{ font-family:"Outfit"; font-weight:400; font-display:block; src:url(fonts/outfit-Regular.woff2) format("woff2"); }
+@font-face{ font-family:"Outfit"; font-weight:700; font-display:block; src:url(fonts/outfit-Bold.woff2) format("woff2"); }
 /* For Last Known Position's title cards: Inter (SIL Open Font License),
    cut down to capitals, digits and a little punctuation. */
 @font-face{ font-family:"Inter Title"; font-weight:600; font-display:block; src:url(fonts/inter-title-600.woff2) format("woff2"); }
@@ -21,11 +24,26 @@
   --fg:#f3f0ff; --dim:#9b94c4; --faint:#635c92;
   --p1:#3da9ff; --p2:#ff8a3d;
   --good:#53e59a; --bad:#ff5d73; --gold:#ffd24a;
-  --ui:"Fredoka",ui-rounded,"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  --ui:"Outfit",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --painted:"Fredoka",ui-rounded,"Segoe UI",system-ui,sans-serif;   /* the games' own painted side keeps Fredoka */
   --safe:clamp(12px,2.6vmin,40px);
-  --sys:"Segoe UI Variable Display","Segoe UI","SF Pro Display",-apple-system,Inter,system-ui,Roboto,Helvetica,Arial,sans-serif;
+  --sys:var(--ui);
   /* light only: the browser's own controls (boxes, ticks, scroll bars) drawn light too */
   color-scheme:light;
+}
+/* ---------- the clean look's tokens (decision 0045) ----------
+   Flat surfaces, soft shadows, near-black ink, a blue to violet accent on a light neutral. The art (covers, worlds, faces) is the colour.
+   --u is one percent of the height of the 16:9 box the screen fits in, so the TV sizes below hold in any window shape. */
+:root{
+  --ink:#1d1b2e; --ink-soft:#6b6a82; --paper:#f4f5f9; --surface:#fff; --line:#e2e4ee;
+  --blue:#3da9ff; --violet:#8b5cf6; --grad:linear-gradient(120deg,#3da9ff,#8b5cf6); --grad-night:linear-gradient(120deg,#7cc4ff,#b79bff);
+  --p1:#3da9ff; --p2:#ff8a3d; --p3:#22c55e; --p4:#a855f7;        /* the four players' colours: the palette's favourites (fav.sky, orange, green, purple) */
+  --u:min(1vh,.5625vw);
+  --soft:0 calc(var(--u)*.9) calc(var(--u)*2.8) rgba(29,27,46,.18); --soft-sm:0 6px 22px rgba(29,27,46,.10);
+  --pill:999px;
+  /* the TV type scale, in --u (Big Picture and the TV; a window uses the same, scaled by its height) */
+  --tv-title:calc(var(--u)*13); --tv-h1:calc(var(--u)*9); --tv-line:calc(var(--u)*4.4); --tv-label:calc(var(--u)*4.2);
+  --tv-btn:calc(var(--u)*4.6); --tv-chip:calc(var(--u)*3.3); --tv-small:calc(var(--u)*2.9);
 }
 *{box-sizing:border-box;margin:0;}
 html,body{height:100%;overflow:hidden;background:var(--bg);}

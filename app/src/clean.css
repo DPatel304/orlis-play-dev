@@ -1,0 +1,52 @@
+/* ---------- The clean look (decision 0045; the approved mockup is docs/screens-mockup.html) ----------
+   Menus, pause, results, sign-in, Settings and Create: flat white surfaces, soft shadows, Outfit, near-black ink, the blue to violet accent
+   on a light neutral. Game art (covers, worlds, faces) is the colour on screen. Loaded after style.css, so where the two meet, this wins.
+   Sizes are in --u (one percent of the height of the 16:9 box the screen fits in; style.css), so the TV scale holds in any window. */
+.u1{ }
+body{ background:var(--paper); color:var(--ink); font-family:var(--ui); }
+.screen{ font-family:var(--ui); color:var(--ink); }
+h1,h2,h3{ font-family:var(--ui); color:var(--ink); font-weight:700; letter-spacing:-.01em; }
+
+/* ---------- the mark: two squares, and the wordmark ---------- */
+.sq-b{ fill:var(--blue); } .sq-v{ fill:var(--violet); }
+.lm{ width:1.25em; height:1.25em; flex:none; display:block; }
+.lm .sq-v{ stroke:#fff; stroke-width:3; }
+.lg{ display:inline-flex; align-items:center; gap:.28em; line-height:1; color:var(--ink); white-space:nowrap; font-family:var(--ui); }
+.lg b{ font-weight:700; letter-spacing:-.01em; }
+.lg i{ font-style:normal; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.lg.light{ color:#fff; } .lg.light i{ background:var(--grad-night); -webkit-background-clip:text; background-clip:text; }
+.tbmark .lm{ width:100%; height:100%; }
+
+/* ---------- buttons ---------- */
+.btn{ font-family:var(--ui); }
+.btn svg.i{ width:1.1em; height:1.1em; flex:none; display:block; }
+/* the big Home button, in the logo's place on every screen but Home */
+.btn.homebtn{
+  position:absolute; z-index:8; left:calc(var(--u)*4); top:calc(var(--u)*2.8);
+  display:inline-flex; align-items:center; padding:calc(var(--u)*1.7) calc(var(--u)*4.4) calc(var(--u)*1.7) calc(var(--u)*3.2);
+  border:none; border-radius:var(--pill); background:var(--surface); color:var(--ink); box-shadow:var(--soft);
+  font:700 calc(var(--u)*3.8)/1 var(--ui);
+}
+.btn.homebtn .lbl{ display:inline-flex; align-items:center; gap:calc(var(--u)*1.4); position:relative; z-index:1; }
+.btn.homebtn svg.i{ width:calc(var(--u)*4.4); height:calc(var(--u)*4.4); }
+.btn.homebtn .fill{ background:var(--grad); opacity:.22; border-radius:var(--pill); }
+.btn.homebtn:hover,.btn.homebtn.hot{ transform:scale(1.04); box-shadow:0 0 0 calc(var(--u)*.6) var(--who,var(--blue)), var(--soft); }
+body.remote .btn.homebtn.kfocus{ box-shadow:0 0 0 calc(var(--u)*.6) var(--blue), var(--soft); }
+
+/* the hand ring: a conic ring in the colour of whoever points, around the button they are waving at (the cursor writes --who) */
+.btn.hot{ --c:var(--who,var(--blue)); }
+
+/* ---------- loading: the two squares hop, and the game's name card ---------- */
+.loadhop{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:calc(var(--u)*7); background:var(--paper); z-index:2; }
+svg.hop{ width:calc(var(--u)*34); height:calc(var(--u)*34); overflow:visible; }
+.hop .v{ transform-box:fill-box; transform-origin:center; animation:hopv 1.5s var(--ease) infinite; }
+.hop .b{ transform-box:fill-box; transform-origin:50% 100%; animation:hopb 1.5s var(--ease) infinite; }
+@keyframes hopv{ 0%{ transform:translate(-34%,-10%) rotate(-12deg); } 35%{ transform:translate(-12%,-50%) rotate(2deg); } 58%,100%{ transform:translate(0,0) rotate(10deg); } }
+@keyframes hopb{ 0%,52%{ transform:scale(1,1); } 62%{ transform:scale(1.06,.92); } 80%,100%{ transform:scale(1,1); } }
+.loadcard{ display:flex; align-items:center; gap:calc(var(--u)*3); padding:calc(var(--u)*2) calc(var(--u)*5) calc(var(--u)*2) calc(var(--u)*2); background:var(--surface); border-radius:calc(var(--u)*3); box-shadow:var(--soft); max-width:88vw; }
+.loadcard .lcv{ flex:none; width:calc(var(--u)*26); aspect-ratio:16/10; border-radius:calc(var(--u)*2); background:var(--line) center/cover no-repeat; box-shadow:0 calc(var(--u)*.6) calc(var(--u)*1.6) rgba(29,27,46,.25); }
+.loadcard b{ display:block; font:700 calc(var(--u)*7.6)/1 var(--ui); color:var(--ink); }
+.loadcard span{ display:block; margin-top:calc(var(--u)*.8); font:400 calc(var(--u)*4)/1.2 var(--ui); color:var(--ink-soft); }
+.launchveil.hascard::before{ display:none; }
+.launchveil.hascard .launchname{ display:none; }
+@media (prefers-reduced-motion: reduce){ .hop .v,.hop .b{ animation:none; } }
