@@ -1,0 +1,324 @@
+<title>Orlis Create Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a TV frame (16:9) showing one Create screen at a time; a strip of screen names under it to jump between them.
+   Inside each building step: the live game preview on the left, the step's picture choices on the right. */
+:root{
+  --paper:#f4f5f9; --ink:#1d1b2e; --soft:#6b6a82; --line:#e2e4ee; --card:#ffffff;
+  --blue:#3da9ff; --violet:#8b5cf6; --gold:#ffc83d; --green:#4cc9a0; --pink:#ff7eb3; --night:#1d1b2e;
+  --ui:"Outfit",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --pagebg:#e9eaf2;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --pagebg:#14131f; color-scheme:dark; } }
+:root[data-theme="dark"]{ --pagebg:#14131f; color-scheme:dark; }
+body{ background:var(--pagebg); font:400 16px/1.5 var(--ui); color:var(--ink); }
+.wrap{ max-width:1280px; margin:0 auto; padding-block:20px 40px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:grid; gap:14px; }
+.intro{ color:var(--soft); margin:0; max-width:70ch; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .intro, :root:not([data-theme="light"]) h1{ color:#e9e8f2; } }
+:root[data-theme="dark"] .intro, :root[data-theme="dark"] h1{ color:#e9e8f2; }
+h1{ margin:0; font-size:clamp(24px,3.4vw,32px); font-weight:700; }
+/* the TV */
+.tv{ position:relative; width:100%; aspect-ratio:16/9; border-radius:18px; overflow:hidden; background:var(--paper); box-shadow:0 18px 40px rgba(20,18,40,.28); container-type:inline-size; }
+.tv *{ box-sizing:border-box; }
+.u{ --u:calc(100cqw / 177.78); }
+.scr{ position:absolute; inset:0; display:none; }
+.scr.on{ display:block; }
+/* top bar */
+.bar{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*3.2); display:flex; align-items:center; gap:calc(var(--u)*3); font:700 calc(var(--u)*3.4)/1 var(--ui); }
+.bar .lg{ display:flex; align-items:center; gap:calc(var(--u)*1.2); color:var(--ink); }
+.bar .lg svg{ width:calc(var(--u)*5); height:calc(var(--u)*5); }
+.bar .lg i{ font-style:normal; background:linear-gradient(120deg,var(--blue),var(--violet)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.tab{ padding:calc(var(--u)*1.1) calc(var(--u)*2.8); border-radius:999px; color:var(--soft); font-weight:600; }
+.tab.on{ background:#fff; color:var(--ink); box-shadow:0 calc(var(--u)*.5) calc(var(--u)*1.6) rgba(29,27,46,.14); }
+.face{ position:absolute; right:calc(var(--u)*5); top:calc(var(--u)*2.6); width:calc(var(--u)*9); height:calc(var(--u)*9); }
+/* Create home */
+.hero{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*15); width:calc(var(--u)*80); height:calc(var(--u)*40); border-radius:calc(var(--u)*3); background:linear-gradient(135deg,var(--blue),var(--violet)); color:#fff; padding:calc(var(--u)*5); display:flex; flex-direction:column; justify-content:flex-end; box-shadow:0 0 0 calc(var(--u)*.7) #fff, 0 0 0 calc(var(--u)*1.4) var(--blue), 0 calc(var(--u)*1) calc(var(--u)*3) rgba(29,27,46,.25); overflow:hidden; }
+.hero h2{ margin:0; font:700 calc(var(--u)*7)/1 var(--ui); }
+.hero p{ margin:calc(var(--u)*1.4) 0 0; font:500 calc(var(--u)*3.2)/1.3 var(--ui); opacity:.92; max-width:30ch; }
+.hero .cubo{ position:absolute; right:calc(var(--u)*5); top:calc(var(--u)*4); width:calc(var(--u)*24); height:calc(var(--u)*24); }
+.side{ position:absolute; left:calc(var(--u)*90); top:calc(var(--u)*15); width:calc(var(--u)*82); display:grid; gap:calc(var(--u)*2.4); }
+.side .how{ background:#fff; border-radius:calc(var(--u)*2.4); padding:calc(var(--u)*3); font:500 calc(var(--u)*2.8)/1.35 var(--ui); color:var(--soft); }
+.side .how b{ color:var(--ink); display:block; font-size:calc(var(--u)*3.4); margin-bottom:calc(var(--u)*.8); }
+.steps-mini{ display:grid; grid-template-columns:repeat(3,1fr); gap:calc(var(--u)*1.6); }
+.steps-mini span{ background:#fff; border-radius:calc(var(--u)*1.8); padding:calc(var(--u)*1.6); text-align:center; font:600 calc(var(--u)*2.4)/1.2 var(--ui); color:var(--ink); }
+.steps-mini svg{ display:block; margin:0 auto calc(var(--u)*.8); width:calc(var(--u)*6); height:calc(var(--u)*6); }
+.rowlab{ position:absolute; left:calc(var(--u)*5); font:700 calc(var(--u)*3.6)/1 var(--ui); color:var(--ink); display:flex; gap:calc(var(--u)*2); align-items:baseline; }
+.rowlab small{ font:500 calc(var(--u)*2.6)/1 var(--ui); color:var(--soft); }
+.slots{ position:absolute; left:calc(var(--u)*5); display:flex; gap:calc(var(--u)*2.2); }
+.slot{ width:calc(var(--u)*26); aspect-ratio:16/10; border-radius:calc(var(--u)*2.2); position:relative; overflow:hidden; }
+.slot.full{ background:linear-gradient(160deg,#9fd8ff,#bfe7c6 60%,#5fae5a); box-shadow:0 calc(var(--u)*.8) calc(var(--u)*2.2) rgba(29,27,46,.25); }
+.slot.full b{ position:absolute; left:calc(var(--u)*1.6); bottom:calc(var(--u)*1.2); color:#fff; font:700 calc(var(--u)*2.8)/1 var(--ui); text-shadow:0 2px 6px rgba(0,0,0,.45); }
+.slot.full .by{ position:absolute; right:calc(var(--u)*1.2); top:calc(var(--u)*1.2); width:calc(var(--u)*5.4); height:calc(var(--u)*5.4); }
+.slot.empty{ border:calc(var(--u)*.45) dashed #b9bccd; display:grid; place-items:center; color:var(--soft); font:600 calc(var(--u)*2.8)/1.2 var(--ui); text-align:center; }
+.slot.empty span{ display:grid; justify-items:center; gap:calc(var(--u)*.6); }
+.slot.empty svg{ width:calc(var(--u)*5); height:calc(var(--u)*5); }
+.slot.more{ background:#fff; border-radius:calc(var(--u)*2.2); display:grid; place-items:center; text-align:center; color:var(--soft); font:500 calc(var(--u)*2.4)/1.3 var(--ui); padding:calc(var(--u)*2); }
+.slot.more b{ color:var(--violet); display:block; font-size:calc(var(--u)*2.8); }
+/* the studio: live preview left, choices right */
+.stepper{ position:absolute; left:calc(var(--u)*5); right:calc(var(--u)*5); top:calc(var(--u)*13); display:flex; gap:calc(var(--u)*1.2); }
+.stepper span{ flex:1; display:flex; align-items:center; gap:calc(var(--u)*1); padding:calc(var(--u)*1) calc(var(--u)*1.4); border-radius:999px; background:#fff; font:600 calc(var(--u)*2.3)/1 var(--ui); color:var(--soft); white-space:nowrap; overflow:hidden; }
+.stepper span i{ font-style:normal; flex:none; width:calc(var(--u)*3.4); height:calc(var(--u)*3.4); border-radius:50%; display:grid; place-items:center; background:var(--line); color:var(--soft); font-size:calc(var(--u)*2); }
+.stepper span.done i{ background:var(--green); color:#fff; }
+.stepper span.cur{ background:var(--ink); color:#fff; }
+.stepper span.cur i{ background:#fff; color:var(--ink); }
+.prev{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*21); width:calc(var(--u)*98); aspect-ratio:16/9; border-radius:calc(var(--u)*2.6); overflow:hidden; box-shadow:0 calc(var(--u)*1) calc(var(--u)*3) rgba(29,27,46,.3); background:#000; }
+.prev canvas{ width:100%; height:100%; display:block; }
+.prev .live{ position:absolute; left:calc(var(--u)*1.6); top:calc(var(--u)*1.4); padding:calc(var(--u)*.5) calc(var(--u)*1.4); border-radius:999px; background:rgba(0,0,0,.45); color:#fff; font:700 calc(var(--u)*1.8)/1 var(--ui); letter-spacing:.06em; display:flex; align-items:center; gap:calc(var(--u)*.8); }
+.prev .live::before{ content:""; width:calc(var(--u)*1.1); height:calc(var(--u)*1.1); border-radius:50%; background:#ff5d6c; }
+.say{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*78); width:calc(var(--u)*98); font:600 calc(var(--u)*3.2)/1.3 var(--ui); color:var(--ink); }
+.say em{ font-style:normal; color:var(--violet); }
+.pick{ position:absolute; left:calc(var(--u)*108); right:calc(var(--u)*5); top:calc(var(--u)*21); bottom:calc(var(--u)*5); display:flex; flex-direction:column; gap:calc(var(--u)*2); }
+.pick h3{ margin:0; font:700 calc(var(--u)*5)/1.05 var(--ui); color:var(--ink); }
+.pick .sub{ margin:calc(var(--u)*-1) 0 0; font:500 calc(var(--u)*2.6)/1.3 var(--ui); color:var(--soft); }
+.grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:calc(var(--u)*1.8); }
+.grid.three{ grid-template-columns:repeat(3,1fr); }
+.opt{ background:#fff; border-radius:calc(var(--u)*2.2); padding:calc(var(--u)*1.8); display:flex; align-items:center; gap:calc(var(--u)*1.6); font:700 calc(var(--u)*3)/1.1 var(--ui); color:var(--ink); border:0; cursor:pointer; text-align:left; box-shadow:0 calc(var(--u)*.5) calc(var(--u)*1.4) rgba(29,27,46,.1); }
+.grid.three .opt{ flex-direction:column; gap:calc(var(--u)*.6); font-size:calc(var(--u)*2.5); padding:calc(var(--u)*1.4); text-align:center; }
+.opt svg{ flex:none; width:calc(var(--u)*7.5); height:calc(var(--u)*7.5); }
+.grid.three .opt svg{ width:calc(var(--u)*6.5); height:calc(var(--u)*6.5); }
+.opt small{ display:block; font:500 calc(var(--u)*2.1)/1.2 var(--ui); color:var(--soft); margin-top:calc(var(--u)*.4); }
+.opt.on{ box-shadow:0 0 0 calc(var(--u)*.6) #fff, 0 0 0 calc(var(--u)*1.2) var(--violet), 0 calc(var(--u)*.8) calc(var(--u)*2) rgba(139,92,246,.35); transform:scale(1.03); }
+.opt:focus-visible{ outline:calc(var(--u)*.6) solid var(--blue); outline-offset:calc(var(--u)*.4); }
+.cats{ display:flex; gap:calc(var(--u)*1); }
+.cats span{ padding:calc(var(--u)*.8) calc(var(--u)*2); border-radius:999px; background:#fff; font:600 calc(var(--u)*2.3)/1 var(--ui); color:var(--soft); }
+.cats span.on{ background:var(--ink); color:#fff; }
+.world{ border-radius:calc(var(--u)*2.2); aspect-ratio:16/9; position:relative; overflow:hidden; border:0; cursor:pointer; padding:0; box-shadow:0 calc(var(--u)*.5) calc(var(--u)*1.4) rgba(29,27,46,.15); }
+.world b{ position:absolute; left:calc(var(--u)*1.4); bottom:calc(var(--u)*1.1); color:#fff; font:700 calc(var(--u)*2.8)/1 var(--ui); text-shadow:0 0 3px rgba(0,0,0,.7), 0 2px 6px rgba(0,0,0,.55); }
+.world.on{ box-shadow:0 0 0 calc(var(--u)*.6) #fff, 0 0 0 calc(var(--u)*1.2) var(--violet); }
+.slider{ background:#fff; border-radius:calc(var(--u)*2); padding:calc(var(--u)*1.6) calc(var(--u)*2.2); display:grid; grid-template-columns:auto 1fr auto; gap:calc(var(--u)*1.6); align-items:center; font:600 calc(var(--u)*2.4)/1 var(--ui); color:var(--soft); }
+.slider .lab{ grid-column:1 / -1; color:var(--ink); font-size:calc(var(--u)*2.8); }
+.slider svg{ width:calc(var(--u)*5); height:calc(var(--u)*5); }
+.track{ position:relative; height:calc(var(--u)*1.6); border-radius:999px; background:var(--line); }
+.track i{ position:absolute; left:0; top:0; bottom:0; border-radius:999px; background:linear-gradient(90deg,var(--blue),var(--violet)); }
+.track b{ position:absolute; top:50%; width:calc(var(--u)*4); height:calc(var(--u)*4); margin:calc(var(--u)*-2) 0 0 calc(var(--u)*-2); border-radius:50%; background:#fff; box-shadow:0 0 0 calc(var(--u)*.5) var(--violet), 0 2px 6px rgba(0,0,0,.2); }
+.toggle{ display:grid; grid-template-columns:1fr 1fr; gap:calc(var(--u)*1.4); }
+.toggle .opt{ justify-content:center; }
+.navs{ position:absolute; right:calc(var(--u)*5); bottom:calc(var(--u)*4); display:flex; gap:calc(var(--u)*1.6); }
+.btn{ padding:calc(var(--u)*1.6) calc(var(--u)*4); border-radius:999px; font:700 calc(var(--u)*3)/1 var(--ui); border:0; cursor:pointer; display:flex; align-items:center; gap:calc(var(--u)*1.2); }
+.btn.ghost{ background:#fff; color:var(--ink); }
+.btn.go{ background:var(--ink); color:#fff; }
+.btn.big{ padding:calc(var(--u)*2.4) calc(var(--u)*6); font-size:calc(var(--u)*4); background:linear-gradient(120deg,var(--blue),var(--violet)); color:#fff; box-shadow:0 calc(var(--u)*1) calc(var(--u)*3) rgba(139,92,246,.4); }
+.btn svg{ width:1em; height:1em; }
+.names{ display:flex; flex-wrap:wrap; gap:calc(var(--u)*1.4); }
+.names span{ padding:calc(var(--u)*1.4) calc(var(--u)*2.6); border-radius:999px; background:#fff; font:700 calc(var(--u)*3)/1 var(--ui); color:var(--ink); box-shadow:0 calc(var(--u)*.5) calc(var(--u)*1.4) rgba(29,27,46,.1); }
+.names span.on{ background:var(--ink); color:#fff; }
+.mic{ display:flex; align-items:center; gap:calc(var(--u)*1.6); background:#fff; border-radius:calc(var(--u)*2.2); padding:calc(var(--u)*1.6) calc(var(--u)*2); font:500 calc(var(--u)*2.6)/1.3 var(--ui); color:var(--soft); }
+.mic .dot{ flex:none; width:calc(var(--u)*7); height:calc(var(--u)*7); border-radius:50%; background:linear-gradient(135deg,var(--blue),var(--violet)); display:grid; place-items:center; box-shadow:0 0 0 calc(var(--u)*1) rgba(139,92,246,.2); }
+.mic .dot svg{ width:calc(var(--u)*3.4); height:calc(var(--u)*3.4); }
+/* change it with Cubo */
+.talk{ position:absolute; left:calc(var(--u)*108); right:calc(var(--u)*5); top:calc(var(--u)*21); display:grid; gap:calc(var(--u)*2.2); }
+.bubble{ background:#fff; border-radius:calc(var(--u)*2.4); padding:calc(var(--u)*2.4); font:600 calc(var(--u)*3)/1.3 var(--ui); color:var(--ink); position:relative; }
+.bubble .who{ display:flex; align-items:center; gap:calc(var(--u)*1.2); font:600 calc(var(--u)*2.2)/1 var(--ui); color:var(--soft); margin-bottom:calc(var(--u)*1); }
+.bubble .who svg{ width:calc(var(--u)*4); height:calc(var(--u)*4); }
+.bubble.cubo{ background:var(--ink); color:#fff; }
+.bubble.cubo .who{ color:#c9c6dc; }
+.chips{ display:flex; flex-wrap:wrap; gap:calc(var(--u)*1.2); margin-top:calc(var(--u)*1.4); }
+.chips span{ display:flex; align-items:center; gap:calc(var(--u)*.8); padding:calc(var(--u)*1) calc(var(--u)*1.8); border-radius:999px; background:rgba(76,201,160,.18); color:#9ff0cf; font:600 calc(var(--u)*2.3)/1 var(--ui); }
+.chips span.no{ background:rgba(255,200,61,.16); color:#ffe08a; }
+/* Play page: the third row */
+.play{ background:#1d1b2e; }
+.play .bar .lg, .play .bar .tab.on{ color:var(--ink); }
+.play .bar .tab{ color:#ffffffcc; }
+.play .bar .lg b{ color:#fff; }
+.prow{ position:absolute; left:calc(var(--u)*5); display:grid; gap:calc(var(--u)*1.4); }
+.prow h4{ margin:0; font:700 calc(var(--u)*3.4)/1 var(--ui); color:#fff; }
+.prow .tiles{ display:flex; gap:calc(var(--u)*2); }
+.ptile{ width:calc(var(--u)*24); aspect-ratio:16/10; border-radius:calc(var(--u)*2); position:relative; overflow:hidden; }
+.ptile b{ position:absolute; left:calc(var(--u)*1.4); bottom:calc(var(--u)*1.1); color:#fff; font:700 calc(var(--u)*2.6)/1 var(--ui); text-shadow:0 2px 6px rgba(0,0,0,.45); }
+.ptile .by{ position:absolute; right:calc(var(--u)*1); top:calc(var(--u)*1); width:calc(var(--u)*5); height:calc(var(--u)*5); }
+.ptile.lit{ box-shadow:0 0 0 calc(var(--u)*.6) #fff, 0 0 0 calc(var(--u)*1.2) var(--blue); }
+.pnote{ position:absolute; right:calc(var(--u)*5); bottom:calc(var(--u)*5); width:calc(var(--u)*60); color:#c9c6dc; font:500 calc(var(--u)*2.4)/1.4 var(--ui); }
+/* screen chooser under the TV */
+.nav{ display:flex; flex-wrap:wrap; gap:8px; }
+.nav button{ font:600 14px/1 var(--ui); padding:10px 14px; border-radius:999px; border:1px solid #cfd1de; background:#fff; color:#1d1b2e; cursor:pointer; }
+.nav button.on{ background:#1d1b2e; color:#fff; border-color:#1d1b2e; }
+.notes{ background:#fff; border-radius:14px; padding:16px 18px; color:#1d1b2e; }
+.notes h2{ margin:0 0 6px; font-size:18px; }
+.notes p{ margin:0; color:#4b4a63; max-width:80ch; }
+@media (prefers-reduced-motion: reduce){ .opt.on{ transform:none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Create, redesigned</h1>
+    <p class="intro">A clickable mockup of the new Create mode on the TV. Kids build a first-person game by picking pictures; the real game runs live on the left and changes the moment they pick; then they play it and change it by talking to Cubo. Use the buttons under the screen (or the arrow keys) to step through.</p>
+  </header>
+  <div class="tv u" id="tv"></div>
+  <nav class="nav" id="nav" aria-label="Screens"></nav>
+  <section class="notes" id="note"><h2></h2><p></p></section>
+</div>
+
+<script>
+/* ---------- little painted pictures (flat, palette colours, ink outline) ---------- */
+const INK = '#1d1b2e';
+const P = {
+  bee: `<svg viewBox="0 0 64 64"><ellipse cx="22" cy="20" rx="10" ry="8" fill="#e8f3ff" stroke="${INK}" stroke-width="3"/><ellipse cx="40" cy="20" rx="10" ry="8" fill="#e8f3ff" stroke="${INK}" stroke-width="3"/><ellipse cx="32" cy="38" rx="20" ry="16" fill="#ffd24d" stroke="${INK}" stroke-width="3"/><path d="M26 23v30M38 23v30" stroke="${INK}" stroke-width="5"/><circle cx="47" cy="34" r="2.6" fill="${INK}"/></svg>`,
+  apple: `<svg viewBox="0 0 64 64"><path d="M32 18c-14-8-26 4-22 20 3 13 12 20 22 18 10 2 19-5 22-18 4-16-8-28-22-20z" fill="#ff5d6c" stroke="${INK}" stroke-width="3"/><path d="M32 18c0-6 2-10 6-12" stroke="${INK}" stroke-width="3" fill="none"/><path d="M34 12c6-6 14-4 16 0-6 4-12 4-16 0z" fill="#4cc9a0" stroke="${INK}" stroke-width="3"/><ellipse cx="22" cy="30" rx="4" ry="6" fill="#fff" opacity=".5"/></svg>`,
+  star: `<svg viewBox="0 0 64 64"><path d="M32 6l7.6 15.8 17.4 2.3-12.7 12 3.2 17.3L32 45l-15.5 8.4 3.2-17.3-12.7-12 17.4-2.3z" fill="#ffc83d" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/></svg>`,
+  balloon: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="26" rx="17" ry="20" fill="#8b5cf6" stroke="${INK}" stroke-width="3"/><path d="M29 46l3 4 3-4z" fill="#8b5cf6" stroke="${INK}" stroke-width="3"/><path d="M32 50c-4 6 4 8 0 12" stroke="${INK}" stroke-width="2" fill="none"/><ellipse cx="25" cy="18" rx="4" ry="6" fill="#fff" opacity=".45"/></svg>`,
+  fish: `<svg viewBox="0 0 64 64"><path d="M8 32c10-14 30-16 42-4l8-8v24l-8-8C38 48 18 46 8 32z" fill="#3da9ff" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><circle cx="20" cy="29" r="3" fill="${INK}"/></svg>`,
+  snow: `<svg viewBox="0 0 64 64"><g stroke="#cfe8ff" stroke-width="6" stroke-linecap="round"><path d="M32 8v48M11 20l42 24M53 20L11 44"/></g><g stroke="${INK}" stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M32 8v48M11 20l42 24M53 20L11 44"/></g></svg>`,
+  rock: `<svg viewBox="0 0 64 64"><path d="M10 44l8-20 16-8 16 10 6 16-10 10H20z" fill="#9b98ad" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/></svg>`,
+  ball: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" fill="#ff7eb3" stroke="${INK}" stroke-width="3"/><path d="M12 28c14 6 26 6 40 0M18 46c10-8 18-8 28 0" stroke="#fff" stroke-width="4" fill="none"/></svg>`,
+  /* how it plays */
+  catch: `<svg viewBox="0 0 64 64"><path d="M14 36h36l-5 20H19z" fill="#e8a36a" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><circle cx="32" cy="14" r="8" fill="#ff5d6c" stroke="${INK}" stroke-width="3"/><path d="M32 26v6" stroke="${INK}" stroke-width="3" stroke-dasharray="3 3"/></svg>`,
+  pop: `<svg viewBox="0 0 64 64"><ellipse cx="30" cy="30" rx="15" ry="18" fill="#ff5d6c" stroke="${INK}" stroke-width="3"/><g stroke="#ffc83d" stroke-width="4" stroke-linecap="round"><path d="M50 12l4-4M54 24h6M48 4v-0"/></g></svg>`,
+  dodge: `<svg viewBox="0 0 64 64"><circle cx="20" cy="40" r="10" fill="#3da9ff" stroke="${INK}" stroke-width="3"/><path d="M38 14l16 4-8 14z" fill="#9b98ad" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><path d="M8 24c4-6 10-8 14-6" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+  collect: `<svg viewBox="0 0 64 64"><path d="M32 8l5 10 11 1.5-8 7.6 2 11L32 33l-10 5 2-11-8-7.6L27 18z" fill="#ffc83d" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><circle cx="14" cy="50" r="5" fill="#ffc83d" stroke="${INK}" stroke-width="3"/><circle cx="50" cy="50" r="5" fill="#ffc83d" stroke="${INK}" stroke-width="3"/></svg>`,
+  keepup: `<svg viewBox="0 0 64 64"><circle cx="32" cy="18" r="12" fill="#ff7eb3" stroke="${INK}" stroke-width="3"/><path d="M14 56c4-10 10-14 18-14s14 4 18 14" fill="#8b5cf6" stroke="${INK}" stroke-width="3"/><path d="M32 34v4" stroke="${INK}" stroke-width="3"/></svg>`,
+  /* moves */
+  reach: `<svg viewBox="0 0 64 64"><circle cx="32" cy="12" r="6" fill="#3da9ff" stroke="${INK}" stroke-width="3"/><path d="M32 20v20M32 40l-8 16M32 40l8 16M32 24L20 6M32 24l12-18" stroke="${INK}" stroke-width="4" stroke-linecap="round" fill="none"/></svg>`,
+  wave: `<svg viewBox="0 0 64 64"><circle cx="28" cy="14" r="6" fill="#3da9ff" stroke="${INK}" stroke-width="3"/><path d="M28 22v20M28 42l-8 14M28 42l8 14M28 26l-10 10M28 26l14-12" stroke="${INK}" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M48 6c4 2 6 6 6 10M52 4c5 3 8 8 8 14" stroke="#8b5cf6" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+  squat: `<svg viewBox="0 0 64 64"><circle cx="32" cy="18" r="6" fill="#3da9ff" stroke="${INK}" stroke-width="3"/><path d="M32 26v14M32 40l-12 2-2 14M32 40l12 2 2 14M32 30l-14 4M32 30l14 4" stroke="${INK}" stroke-width="4" stroke-linecap="round" fill="none"/></svg>`,
+  jump: `<svg viewBox="0 0 64 64"><circle cx="32" cy="10" r="6" fill="#3da9ff" stroke="${INK}" stroke-width="3"/><path d="M32 18v18M32 36l-10 10M32 36l10 10M32 22l-14-6M32 22l14-6" stroke="${INK}" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M16 58h32" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 4"/></svg>`,
+  /* rules */
+  snail: `<svg viewBox="0 0 64 64"><circle cx="34" cy="32" r="14" fill="#e8a36a" stroke="${INK}" stroke-width="3"/><path d="M8 48h46" stroke="${INK}" stroke-width="4" stroke-linecap="round"/><path d="M14 48c0-6 2-10 6-12M16 36l-4-8M20 36l2-8" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+  rocket: `<svg viewBox="0 0 64 64"><path d="M32 6c10 8 12 22 8 34H24C20 28 22 14 32 6z" fill="#ff5d6c" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><circle cx="32" cy="22" r="5" fill="#cfe8ff" stroke="${INK}" stroke-width="3"/><path d="M26 40l-2 14 8-6 8 6-2-14" fill="#ffc83d" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/></svg>`,
+  few: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="8" fill="#ffc83d" stroke="${INK}" stroke-width="3"/></svg>`,
+  lots: `<svg viewBox="0 0 64 64">${[[16,16],[40,14],[28,32],[50,36],[14,46],[36,52]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="6" fill="#ffc83d" stroke="${INK}" stroke-width="3"/>`).join('')}</svg>`,
+  together: `<svg viewBox="0 0 64 64"><circle cx="22" cy="20" r="7" fill="#3da9ff" stroke="${INK}" stroke-width="3"/><circle cx="42" cy="20" r="7" fill="#ff7eb3" stroke="${INK}" stroke-width="3"/><path d="M8 54c2-12 8-18 14-18s10 4 12 8c2-4 6-8 10-8 6 0 12 6 14 18z" fill="#8b5cf6" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/></svg>`,
+  versus: `<svg viewBox="0 0 64 64"><circle cx="14" cy="24" r="7" fill="#3da9ff" stroke="${INK}" stroke-width="3"/><circle cx="50" cy="24" r="7" fill="#ff7eb3" stroke="${INK}" stroke-width="3"/><path d="M26 42l12-16M38 42L26 26" stroke="${INK}" stroke-width="4" stroke-linecap="round"/></svg>`,
+  golden: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="18" fill="#ffc83d" stroke="${INK}" stroke-width="3"/><path d="M32 22l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="#fff6d6"/></svg>`,
+  bomb: `<svg viewBox="0 0 64 64"><circle cx="30" cy="38" r="18" fill="#4b4a63" stroke="${INK}" stroke-width="3"/><path d="M42 24l8-8" stroke="${INK}" stroke-width="4" stroke-linecap="round"/><path d="M52 10l4-4M56 16h4" stroke="#ffc83d" stroke-width="3" stroke-linecap="round"/></svg>`,
+  plus: `<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>`,
+  mic: `<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="#fff"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>`,
+  play: `<svg viewBox="0 0 24 24"><path d="M7 4.6v14.8L19 12z" fill="currentColor"/></svg>`,
+  back: `<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  pencil: `<svg viewBox="0 0 24 24"><path d="M14.5 4.5l5 5L9 20H4v-5z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg>`,
+  again: `<svg viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.1-5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><path d="M19.6 3.6v4.8h-4.8" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>`
+};
+const cubo = (sz = 64) => `<svg viewBox="0 0 64 64" width="${sz}" height="${sz}"><rect x="6" y="6" width="52" height="52" rx="14" fill="#3da9ff" stroke="${INK}" stroke-width="3"/><path d="M46 6h-2a10 10 0 0 1 14 14v-2" fill="#2f8fe0"/><ellipse cx="24" cy="30" rx="4" ry="5.6" fill="${INK}"/><ellipse cx="40" cy="30" rx="4" ry="5.6" fill="${INK}"/><circle cx="25.4" cy="28" r="1.4" fill="#fff"/><circle cx="41.4" cy="28" r="1.4" fill="#fff"/><path d="M25 41c4 4 10 4 14 0" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
+const mark = `<svg viewBox="0 0 100 100"><rect fill="#3da9ff" x="4" y="40" width="56" height="56" rx="15"/><g transform="rotate(10 66 34)"><rect fill="#8b5cf6" stroke="#fff" stroke-width="3" x="40" y="8" width="52" height="52" rx="14"/></g></svg>`;
+const kidFace = (col) => `<svg viewBox="0 0 64 64"><rect x="6" y="6" width="52" height="52" rx="14" fill="${col}" stroke="${INK}" stroke-width="3"/><ellipse cx="24" cy="30" rx="3.4" ry="4.6" fill="${INK}"/><ellipse cx="40" cy="30" rx="3.4" ry="4.6" fill="${INK}"/><path d="M26 41c3 3 9 3 12 0" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
+
+/* ---------- the game being made (what each step changes) ---------- */
+const S = { how: 'catch', what: 'apple', where: 'meadow', move: 'reach', speed: 0.45, many: 0.5, mode: 'together', golden: true, bomb: false, name: 'Apple Catch' };
+const HOW = { catch: ['Catch the', 'They fall; catch them'], pop: ['Pop the', 'They float up; pop them'], dodge: ['Dodge the', 'They fly at you; dodge them'], collect: ['Collect the', 'They sit around; collect them all'], keepup: ['Keep up the', 'Keep it in the air'] };
+const WHAT = { apple: 'apples', bee: 'bees', star: 'stars', balloon: 'balloons', fish: 'fish', snow: 'snowflakes', rock: 'rocks', ball: 'balls' };
+const WORLDS = { meadow: ['Sunny meadow', ['#8fd0ff', '#e8f6ff'], ['#9ad37a', '#6fbf5a']], night: ['Starry night', ['#1b1f5e', '#5a4fb0'], ['#2f5b4a', '#244a3c']], beach: ['Sunny beach', ['#7cc8ff', '#e9f8ff'], ['#5fb7e8', '#f3d9a0']], snow: ['Snowy hills', ['#9ec4f0', '#eef6ff'], ['#e9f3ff', '#ffffff']] };
+const MOVES = { reach: 'reaching up', wave: 'waving', squat: 'squatting', jump: 'jumping' };
+const sentence = () => `<em>${HOW[S.how][0]} ${WHAT[S.what]}</em> in the ${WORLDS[S.where][0].toLowerCase()} by <em>${MOVES[S.move]}</em>${S.golden ? ', with a golden one worth 5' : ''}${S.bomb ? ', and a bomb to avoid' : ''}. ${S.mode === 'together' ? 'Play together.' : 'Who gets the most?'}`;
+
+/* ---------- the screens ---------- */
+const bar = (tab = 'create', dark = false) => `<div class="bar"><span class="lg">${mark}<b style="color:${dark ? '#fff' : INK}">Orlis <i>Play</i></b></span><span class="tab ${tab === 'play' ? 'on' : ''}">Play</span><span class="tab ${tab === 'create' ? 'on' : ''}">Create</span></div><div class="face">${cubo('100%')}</div>`;
+const STEPS = [['how', 'How it plays'], ['what', 'What'], ['where', 'Where'], ['move', 'Your move'], ['rules', 'Rules'], ['name', 'Name & play']];
+const stepper = (cur) => `<div class="stepper">${STEPS.map(([k, t], i) => { const ci = STEPS.findIndex(s => s[0] === cur); return `<span class="${i < ci ? 'done' : i === ci ? 'cur' : ''}"><i>${i < ci ? '✓' : i + 1}</i>${t}</span>`; }).join('')}</div>`;
+const studio = (cur, title, sub, body, nextLabel = 'Next') => `${bar()}${stepper(cur)}<div class="prev"><canvas width="960" height="540"></canvas><span class="live">LIVE</span></div><p class="say">${sentence()}</p>
+  <div class="pick"><h3>${title}</h3>${sub ? `<p class="sub">${sub}</p>` : ''}${body}</div>
+  <div class="navs"><button class="btn ghost" data-go="-1">${P.back}Back</button><button class="btn go" data-go="1">${nextLabel}</button></div>`;
+const opt = (group, key, pic, label, small = '') => `<button class="opt ${S[group] === key ? 'on' : ''}" data-set="${group}" data-val="${key}">${pic}<span>${label}${small ? `<small>${small}</small>` : ''}</span></button>`;
+const worldCard = (k) => { const [n, sky, g] = WORLDS[k]; return `<button class="world ${S.where === k ? 'on' : ''}" data-set="where" data-val="${k}" style="background:linear-gradient(180deg,${sky[0]},${sky[1]} 62%,${g[0]} 62%,${g[1]})"><b>${n}</b></button>`; };
+const slider = (lab, a, b, v) => `<div class="slider"><span class="lab">${lab}</span>${a}<div class="track"><i style="width:${v * 100}%"></i><b style="left:${v * 100}%"></b></div>${b}</div>`;
+
+const SCREENS = [
+  { id: 'home', label: 'Create home', title: 'The Create tab', note: 'One big "Make a game" card with Cubo, a three-picture reminder of how it works, and the family\'s three slots underneath (one used, two free). A fourth "More slots" card explains the subscription for families who want more. Kids\' faces show who made each game.',
+    html: () => `${bar()}<div class="hero"><div class="cubo">${cubo('100%')}</div><h2>Make a game</h2><p>Pick pictures, play it, then tell Cubo how to change it.</p></div>
+      <div class="side"><div class="how"><b>How it works</b>Choose how it plays, what's in it and where. Then play, and change it any time.</div>
+      <div class="steps-mini"><span>${P.catch}Pick</span><span>${P.reach}Play</span><span>${cubo(40)}Change</span></div></div>
+      <div class="rowlab" style="top:calc(var(--u)*62)">Our games <small>2 of 3 slots free</small></div>
+      <div class="slots" style="top:calc(var(--u)*67.5)"><div class="slot full"><span class="by">${kidFace('#ff7eb3')}</span><b>Bee Catch</b></div><div class="slot empty"><span>${P.plus}Make a game</span></div><div class="slot empty"><span>${P.plus}Make a game</span></div><div class="slot more"><span><b>Want more slots?</b>Orlis Plus gives your family 10.</span></div></div>` },
+  { id: 'how', label: '1. How it plays', title: 'Step 1: how it plays', note: 'Five ways to play (the Phase 1 recipes). The live game on the left already runs with a starting pick, so something is moving from the first second. Picking a card changes the game straight away.',
+    html: () => studio('how', 'How does it play?', '', `<div class="grid">${opt('how', 'catch', P.catch, 'Catch', 'They fall')}${opt('how', 'pop', P.pop, 'Pop', 'They float up')}${opt('how', 'dodge', P.dodge, 'Dodge', 'Watch out!')}${opt('how', 'collect', P.collect, 'Collect', 'Get them all')}${opt('how', 'keepup', P.keepup, 'Keep it up', 'Don\'t let it drop')}</div>`) },
+  { id: 'what', label: '2. What', title: 'Step 2: what is in it', note: 'Picture grids from the asset library, in categories. Only library pieces exist, so there is nothing to draw and nothing to type: no loopholes.',
+    html: () => studio('what', 'What do you catch?', '', `<div class="cats"><span class="on">Food</span><span>Animals</span><span>Sky</span><span>Toys</span></div><div class="grid three">${opt('what', 'apple', P.apple, 'Apples')}${opt('what', 'bee', P.bee, 'Bees')}${opt('what', 'star', P.star, 'Stars')}${opt('what', 'balloon', P.balloon, 'Balloons')}${opt('what', 'fish', P.fish, 'Fish')}${opt('what', 'snow', P.snow, 'Snowflakes')}</div>`) },
+  { id: 'where', label: '3. Where', title: 'Step 3: the world', note: 'Real worlds you can see, not mood words. The live game swaps its world as you move between them.',
+    html: () => studio('where', 'Where is it?', '', `<div class="grid">${worldCard('meadow')}${worldCard('night')}${worldCard('beach')}${worldCard('snow')}</div>`) },
+  { id: 'move', label: '4. Your move', title: 'Step 4: your move', note: 'Only the existing move cards, so every game uses a move the camera already knows well. The card shows in the game\'s corner like in Pop Party.',
+    html: () => studio('move', 'How do you move?', 'This card shows in the corner of your game.', `<div class="grid">${opt('move', 'reach', P.reach, 'Reach up')}${opt('move', 'wave', P.wave, 'Wave')}${opt('move', 'squat', P.squat, 'Squat')}${opt('move', 'jump', P.jump, 'Jump')}</div>`) },
+  { id: 'rules', label: '5. Rules', title: 'Step 5: rules and difficulty', note: 'Picture sliders (snail to rocket, a few to lots), together or against each other, and two specials to switch on. This is where the depth lives: the same picks plus different rules make very different games.',
+    html: () => studio('rules', 'Make the rules', '', `${slider('How fast', P.snail, P.rocket, S.speed)}${slider('How many', P.few, P.lots, S.many)}
+      <div class="toggle">${opt('mode', 'together', P.together, 'Together')}${opt('mode', 'versus', P.versus, 'Who wins?')}</div>
+      <div class="toggle"><button class="opt ${S.golden ? 'on' : ''}" data-flip="golden">${P.golden}<span>Golden one<small>worth 5</small></span></button><button class="opt ${S.bomb ? 'on' : ''}" data-flip="bomb">${P.bomb}<span>A bomb<small>to avoid</small></span></button></div>`) },
+  { id: 'name', label: '6. Name & play', title: 'Step 6: name it and play', note: 'Three suggested names to pick (or say one), the maker\'s face, and one big Play button. No waiting: the game is already built.',
+    html: () => studio('name', 'Name your game', 'Pick one, or say a name.', `<div class="names"><span class="on">Apple Catch</span><span>Apple Rain</span><span>Golden Apples</span></div>
+      <div class="mic"><span class="dot">${P.mic}</span>Hold OK and say a name</div>
+      <div style="display:flex;align-items:center;gap:calc(var(--u)*1.6);font:600 calc(var(--u)*2.6)/1 var(--ui);color:var(--soft)"><span style="width:calc(var(--u)*6);height:calc(var(--u)*6);display:block">${kidFace('#ff7eb3')}</span>Made by Mia</div>
+      `, 'Play it!') },
+  { id: 'change', label: 'Change it with Cubo', title: 'After playing: change it with Cubo', note: 'Kids say what they want; Cubo turns it into changes from the same picture vocabulary, checks them, and shows what it did as ticked chips. Anything it can\'t do (a word not in the vocabulary, or not allowed) it says kindly. Or they redo any step.',
+    html: () => `${bar()}<div class="prev" style="top:calc(var(--u)*15)"><canvas width="960" height="540"></canvas><span class="live">LIVE</span></div><p class="say" style="top:calc(var(--u)*72)">${sentence()}</p>
+      <div class="talk" style="top:calc(var(--u)*15)">
+        <div class="bubble"><div class="who"><span style="width:calc(var(--u)*4);height:calc(var(--u)*4);display:block">${kidFace('#ff7eb3')}</span>Mia said</div>"Make them faster and add a giant apple, and can it be at night?"</div>
+        <div class="bubble cubo"><div class="who">${cubo(30)}Cubo</div>Done! Try it now.<div class="chips"><span>✓ Faster</span><span>✓ A giant apple worth 10</span><span>✓ Starry night</span></div></div>
+        <div class="mic"><span class="dot">${P.mic}</span>Hold OK and tell Cubo what to change</div>
+      </div>
+      <div class="navs"><button class="btn ghost">${P.pencil}Change a step</button><button class="btn ghost">${P.again}Undo</button><button class="btn go">${P.play}Play again</button></div>` },
+  { id: 'play', label: 'Play page: third row', title: 'The Play page: a third row', note: 'Games the family made get their own row, "Made by us", with each maker\'s face on the tile. Phase 1 keeps them in the family; Phase 2 adds Publish.',
+    html: () => `<div class="scr-bg" style="position:absolute;inset:0;background:radial-gradient(120% 120% at 100% 0%, #3b4a8a, #1d1b2e 55%)"></div>${bar('play', true)}
+      <div class="prow" style="top:calc(var(--u)*22)"><h4>Featured</h4><div class="tiles">${['#ffb84d', '#4cc9a0', '#ff7eb3'].map((c, i) => `<div class="ptile" style="background:linear-gradient(160deg,${c},#1d1b2e)"><b>${['Comet Catch', 'Bubble Dash', 'Moon Hop'][i]}</b></div>`).join('')}<div class="ptile" style="background:linear-gradient(135deg,#3da9ff,#8b5cf6)"><b>Discover</b></div></div></div>
+      <div class="prow" style="top:calc(var(--u)*45)"><h4>Your games</h4><div class="tiles">${['#ff5d6c', '#8a5a3b', '#e2702a', '#18a596'].map((c, i) => `<div class="ptile" style="background:linear-gradient(160deg,${c},#1d1b2e)"><b>${['Pop Party', 'Sleepy Bear', 'Leaf Pile', 'Stack It High'][i]}</b></div>`).join('')}</div></div>
+      <div class="prow" style="top:calc(var(--u)*68)"><h4>Made by us</h4><div class="tiles"><div class="ptile lit" style="background:linear-gradient(160deg,#9fd8ff,#bfe7c6 60%,#5fae5a)"><span class="by">${kidFace('#ff7eb3')}</span><b>Apple Catch</b></div><div class="ptile" style="background:linear-gradient(160deg,#1b1f5e,#5a4fb0)"><span class="by">${kidFace('#ffc83d')}</span><b>Bee Catch</b></div></div></div>` }
+];
+
+/* ---------- the live preview (a tiny version of the real engine: the picks drive it) ---------- */
+const imgs = {};
+const pic = (k) => imgs[k] || (imgs[k] = Object.assign(new Image(), { src: 'data:image/svg+xml;utf8,' + encodeURIComponent(P[k].replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')) }));
+let things = [], last = 0, spawnT = 0, raf = 0, hands = 0;
+function reset(){ things = []; spawnT = 0; }
+function spawn(W, H){
+  const s = 0.6 + S.speed * 2.2, size = H * 0.11;
+  const golden = S.golden && Math.random() < 0.12, bomb = S.bomb && Math.random() < 0.14;
+  const t = { x: 0, y: 0, vx: 0, vy: 0, size: golden ? size * 1.3 : size, golden, bomb, age: 0, k: bomb ? 'rock' : S.what };
+  if (S.how === 'catch'){ t.x = W * (0.1 + Math.random() * 0.8); t.y = -size; t.vy = H * 0.12 * s; }
+  else if (S.how === 'pop'){ t.x = W * (0.1 + Math.random() * 0.8); t.y = H + size; t.vy = -H * 0.1 * s; }
+  else if (S.how === 'dodge'){ t.x = W + size; t.y = H * (0.25 + Math.random() * 0.55); t.vx = -W * 0.12 * s; }
+  else if (S.how === 'collect'){ t.x = W * (0.1 + Math.random() * 0.8); t.y = H * (0.2 + Math.random() * 0.55); t.life = 3 + Math.random() * 2; }
+  else { t.x = W * 0.5; t.y = H * 0.3; t.vx = W * 0.05 * s; t.vy = 0; t.ball = true; }
+  things.push(t);
+}
+function draw(c, W, H, now){
+  const dt = Math.min(0.05, (now - last) / 1000 || 0.016); last = now; hands += dt;
+  const [, sky, g] = WORLDS[S.where];
+  const sg = c.createLinearGradient(0, 0, 0, H); sg.addColorStop(0, sky[0]); sg.addColorStop(1, sky[1]); c.fillStyle = sg; c.fillRect(0, 0, W, H);
+  if (S.where === 'night'){ c.fillStyle = '#fff'; for (let i = 0; i < 40; i++){ const x = (i * 97) % W, y = (i * 53) % (H * 0.6); c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(now / 900 + i)); c.fillRect(x, y, 2, 2); } c.globalAlpha = 1; }
+  else { c.fillStyle = 'rgba(255,255,255,.85)'; [[0.2, 0.18], [0.62, 0.12], [0.85, 0.24]].forEach(([x, y], i) => { const cx = ((x * W + now / 60 * (i + 1)) % (W + 200)) - 100; c.beginPath(); c.ellipse(cx, y * H, W * 0.07, H * 0.04, 0, 0, 7); c.fill(); }); }
+  c.fillStyle = g[0]; c.beginPath(); c.moveTo(0, H * 0.78); for (let x = 0; x <= W; x += 40) c.lineTo(x, H * 0.74 + Math.sin(x / 120) * H * 0.03); c.lineTo(W, H); c.lineTo(0, H); c.fill();
+  c.fillStyle = g[1]; c.fillRect(0, H * 0.88, W, H * 0.12);
+  /* the player's hands (a scripted wave, standing in for the camera) */
+  const hx = W * (0.5 + 0.32 * Math.sin(hands * 0.9)), hy = H * (S.how === 'catch' ? 0.62 : 0.35 + 0.15 * Math.sin(hands * 1.7));
+  const n = 3 + Math.round(S.many * 9), every = 1.4 - S.speed * 0.9;
+  if (S.how === 'keepup'){ if (!things.length) spawn(W, H); }
+  else if ((spawnT += dt) > every && things.length < n){ spawnT = 0; spawn(W, H); }
+  for (const t of things){
+    t.age += dt;
+    if (t.ball){ t.vy += H * 0.5 * dt; t.x += t.vx * dt; t.y += t.vy * dt; if (t.x < t.size || t.x > W - t.size) t.vx *= -1; if (Math.hypot(t.x - hx, t.y - hy) < t.size * 1.2 && t.vy > 0) t.vy = -H * (0.55 + S.speed * 0.4); if (t.y > H * 0.86){ t.y = H * 0.86; t.vy = -H * 0.6; } }
+    else { t.x += t.vx * dt; t.y += t.vy * dt; }
+    if (!t.ball && Math.hypot(t.x - hx, t.y - hy) < t.size * 0.9) t.hit = true;
+    if (S.how === 'collect' && t.age > t.life) t.gone = true;
+  }
+  things = things.filter(t => !t.hit && !t.gone && t.y > -t.size * 2 && t.y < H + t.size * 2 && t.x > -t.size * 2 && t.x < W + t.size * 2);
+  for (const t of things){
+    const im = pic(t.k); if (!im.complete) continue;
+    if (t.golden){ c.save(); c.shadowColor = '#ffc83d'; c.shadowBlur = 24; }
+    c.drawImage(im, t.x - t.size / 2, t.y - t.size / 2, t.size, t.size);
+    if (t.golden) c.restore();
+  }
+  if (S.how === 'catch'){ const b = pic('catch'); if (b.complete) c.drawImage(b, hx - H * 0.09, hy - H * 0.04, H * 0.18, H * 0.18); }
+  else { c.fillStyle = 'rgba(255,255,255,.9)'; c.strokeStyle = '#8b5cf6'; c.lineWidth = 5; c.beginPath(); c.arc(hx, hy, H * 0.035, 0, 7); c.fill(); c.stroke(); }
+  /* the move card, bottom left */
+  c.fillStyle = '#fff'; c.strokeStyle = INK; c.lineWidth = 4; const cs = H * 0.2; c.beginPath(); c.roundRect(H * 0.04, H - cs - H * 0.04, cs, cs, cs * 0.18); c.fill(); c.stroke();
+  const mv = pic(S.move); if (mv.complete) c.drawImage(mv, H * 0.06, H - cs - H * 0.02, cs - H * 0.04, cs - H * 0.04);
+}
+function loop(now){ document.querySelectorAll('.scr.on canvas').forEach(cv => draw(cv.getContext('2d'), cv.width, cv.height, now)); raf = requestAnimationFrame(loop); }
+
+/* ---------- wiring ---------- */
+const tv = document.getElementById('tv'), nav = document.getElementById('nav'), note = document.getElementById('note');
+let cur = 0;
+function render(){
+  const s = SCREENS[cur];
+  tv.innerHTML = `<div class="scr on ${s.id === 'play' ? 'play' : ''}">${s.html()}</div>`;
+  nav.querySelectorAll('button').forEach((b, i) => b.classList.toggle('on', i === cur));
+  note.querySelector('h2').textContent = s.title; note.querySelector('p').textContent = s.note;
+}
+SCREENS.forEach((s, i) => { const b = document.createElement('button'); b.textContent = s.label; b.addEventListener('click', () => { cur = i; render(); }); nav.appendChild(b); });
+tv.addEventListener('click', (e) => {
+  const set = e.target.closest('[data-set]'), flip = e.target.closest('[data-flip]'), go = e.target.closest('[data-go]');
+  if (set){ S[set.dataset.set] = set.dataset.val; if (set.dataset.set === 'how' || set.dataset.set === 'what') reset(); render(); }
+  if (flip){ S[flip.dataset.flip] = !S[flip.dataset.flip]; render(); }
+  if (go){ cur = Math.max(0, Math.min(SCREENS.length - 1, cur + Number(go.dataset.go))); render(); }
+});
+addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' && !e.target.closest('input')){ cur = Math.min(SCREENS.length - 1, cur + 1); render(); } if (e.key === 'ArrowLeft'){ cur = Math.max(0, cur - 1); render(); } });
+render();
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) raf = requestAnimationFrame(loop);
+else requestAnimationFrame((t) => document.querySelectorAll('.scr.on canvas').forEach(cv => draw(cv.getContext('2d'), cv.width, cv.height, t)));
+</script>
