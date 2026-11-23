@@ -20,6 +20,7 @@ import { banner as wideBanner, discoverCoverUrl, seeAllCoverUrl } from './covers
 import { buildingRow, testingRow } from './building.js';
 import { openTrustedPhones } from './trusted-phones.js';
 import { createTrust } from '../session/trust.js';
+import { color as paletteColor } from '../games/assets/palette.js';
 
 /* Home: Orlis Play's front room, the way a TV box does it. Along the top, the
    name, who's here (a bubble each, with their face), whether the camera's
@@ -44,6 +45,7 @@ export const BLURB = {
   'animal-gym': 'Move like the animals: stretch, hop, flap, squat and stomp',
   'keep-it-up': 'Keep the big beach ball floating up together',
   'ptero-flight': 'Spread your arms like wings and glide over a world of dinosaurs',
+  'peekaboo': 'One hides with a tablet, the others find them with a lantern hand',
   'save-the-harvest': 'Everyone moves together to pick the fruit before the cheeky raven arrives',
   'cubions-long-way-home': 'Sit back and listen: a funny story about a little cube who comes to Earth to learn how to move'
 };
@@ -63,6 +65,7 @@ export const ICONS = {
   'save-the-harvest': { cols: ['#e0603a', '#ffd35c'], glyph: 'apple' },
   'cubions-long-way-home': { cols: ['#7b6cf6', '#f2b8ff'], glyph: 'book' }
 };
+ICONS.peekaboo = { cols: [paletteColor('meadow.fresh'), paletteColor('sky.sun')], glyph: 'leaf' };
 const GLYPHS = {
   balloon: '<path d="M50 14c15 0 25 11 25 26 0 17-14 30-25 33-11-3-25-16-25-33 0-15 10-26 25-26z" fill="#fff"/><path d="M46 73h8l-4 6z" fill="#fff"/><path d="M50 79c-5 6 5 9 0 16" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="41" cy="31" rx="5" ry="8" transform="rotate(-25 41 31)" fill="#000" opacity=".12"/>',
   rocket: '<path d="M50 10c11 9 16 24 16 40 0 9-2 17-5 24H39c-3-7-5-15-5-24 0-16 5-31 16-40z" fill="#fff"/><circle cx="50" cy="40" r="7" fill="#000" opacity=".16"/><path d="M34 56l-11 16 13-3zM66 56l11 16-13-3z" fill="#fff"/><path d="M43 78h14l-7 12z" fill="#fff" opacity=".8"/>',

@@ -44,7 +44,7 @@ test('usesPads: only a game whose manifest has pad seats; games without behave a
   assert.equal(usesPads(LAB), true); assert.equal(usesPads(POPPY), true);
   assert.equal(usesPads(NOPADS), false); assert.equal(usesPads({ id: 'old' }), false); assert.equal(usesPads(null), false);
   assert.equal(usesPads({ seats: { tracked: [1, 1], pads: [0, 0] } }), false);
-  assert.ok(GAMES.every(g => !usesPads(g)), 'no catalogue game uses phones yet');
+  assert.deepEqual(GAMES.filter(usesPads).map(g => g.id), ['peekaboo'], 'only Peekaboo Garden uses phones so far');
 });
 test('the pad lab is an owner-only lab with a manifest the session understands', () => {
   assert.ok(LABS.includes(padLab) && !GAMES.includes(padLab));
