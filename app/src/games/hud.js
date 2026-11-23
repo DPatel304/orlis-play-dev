@@ -3,11 +3,11 @@
    the shell (drawShellHud) lays the pieces out on the grid (grid.js), draws them, dims the quiet ones and bounces the changing ones.
 
    Fixed anchors (the same place in every game; a game may give one back, never move it):
-     clock (8,0,4,1)   hint words (6,2,8,1; row 1 when there is no goal)   move card (1,7,3,3)
+     clock (16,0,4,1, top right, no pill)   hint words (6,1,8,1; row 0 when there is no goal; they ease away after the start)   move card (1,7,3,3)
    Docks (a game chooses what goes in; each has a cap):
-     goal    (8,1,4,1)    one bar with three stars                              hud().goal    0..1, or { fill, color }
+     goal    (8,0,4,1)    one bar with three stars                              hud().goal    0..1, or { fill, color }
      corner  (1,0,6,4)    score pills (2 to a row), then chips and bars         hud().corner  [{ icon, value } | { icon, fill, color }]
-     top     (13,0,6,3)   up to three badges, or one portrait with a notice    hud().top     { badges: [{ icon, value }] } | { portrait, pose, notice }
+     top     (13,1,6,3)   up to three badges, or one portrait with a notice    hud().top     { badges: [{ icon, value }] } | { portrait, pose, notice }
      left    (0,4,1,3)    one tall meter                                         hud().left    { icon, fill, color }
      right   (19,4,1,3)   one tall meter                                         hud().right   { icon, fill, color }
      bottom  (5,10,10,1)  one wide bar, or the players' faces                    hud().bottom  { icon, fill, color } | { faces: true }
@@ -34,6 +34,9 @@ const ease = (k) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
 /* the first words of a round arrive big, in the middle of the screen, then shrink and dock into their place; the shell clears this at each round's start */
 hud.introText = null; hud.spoken = false; hud.speak = null;   /* (the shell sets speak: the first words of a round are said once, as the game starts) */
 const INTRO = { scale: 2, hold: 2.0, travel: 0.55 };
+/* how long hint words with no `until` of their own stay up once they have arrived (decision 0046): then they ease away and come back only when the text changes */
+export const HINT_SECS = 4;
+hud.introDone = false;   /* (the big arrival happens once per round, for the first words only; the shell's reset of introText starts it again) */
 
 /* ---------- the kit's one piece look ---------- */
 
@@ -60,20 +63,24 @@ const fit = (c, text, font, maxW, size) => { c.font = font(size); const w = c.me
 /* ---------- the hint words (a fixed anchor) ---------- */
 
 /* icon: a library icon id (or none). text: the words. t: seconds since they changed (they ease in). x, y: where, as a share of the screen. until: seconds
-   after which they ease away (a hint that has done its job). The first words of a round arrive big and dock. */
-export function sayBubble(c, W, H, { icon = '', text: raw, t = 1, x = null, y = null, until = Infinity, row = 2 }){
+   after which they ease away (a hint that has done its job; with none given the words ease away HINT_SECS after they arrive, 0046). The first words of a round arrive big and dock. */
+export function sayBubble(c, W, H, { icon = '', text: raw, t = 1, x = null, y = null, until = null, row = 1 }){
   if (hud.quiet || !raw) return;
   const old = splitHint(raw), text = old.text; if (!icon) icon = old.icon;   /* (a hint from an older game may still start with an emoji: it becomes the icon that says the same) */
   if (!text) return;
-  const C = unit(W, H), ws = slot(W, H, 'words'), rowShift = row === 2 ? 0 : (2 - row) * C;
+  const C = unit(W, H), ws = slot(W, H, 'words'), rowShift = (1 - row) * C;   /* (row 1 under the goal bar; row 0 when there is no goal) */
   if (x === null) x = ws.cx / W; if (y === null) y = (ws.cy - rowShift) / H;   /* the words' place in the grid (a game can still nudge it) */
   const id = iconOf(icon);
-  if (hud.introText === null) hud.introText = text;
+  if (hud.introText === null){ hud.introText = text; hud.introDone = false; }
+  const intro = text === hud.introText && !hud.introDone, arrived = INTRO.hold + INTRO.travel;   /* (intro: these are the round's first words, not yet docked for good) */
+  if (text !== hud.introText || (intro && t >= arrived)) hud.introDone = true;
   if (text === hud.introText && t > 0.05 && !hud.spoken){ hud.spoken = true; if (hud.speak) hud.speak(spoken(text)); }
-  const out = isFinite(until) ? Math.max(0, Math.min(1, (until - t) / 0.5)) : 1;
+  /* no `until` from the game: the first words stay up HINT_SECS after they have docked, any later words HINT_SECS after they arrive */
+  const gone = until == null ? (intro ? arrived : 0) + HINT_SECS : until;
+  const out = isFinite(gone) ? Math.max(0, Math.min(1, (gone - t) / 0.5)) : 1;
   if (out <= 0) return;
   let k = Math.min(1, t / 0.25), scale = 0.9 + 0.1 * k, px = W * x, py = H * y;
-  if (text === hud.introText && t < INTRO.hold + INTRO.travel){
+  if (intro && t < arrived){
     const e = ease((t - INTRO.hold) / INTRO.travel), bx = W / 2, by = H * 0.42;
     scale = INTRO.scale * (0.6 + 0.4 * ease(t / 0.35)) * (1 - e) + e;
     px = bx + (px - bx) * e; py = by + (py - by) * e;
@@ -118,13 +125,14 @@ export function goalBar(c, W, H, k, { x = null, y = null, r = null } = {}){
 export function hudZones(W, H, spec = null){
   const z = (...b) => { const r = block(W, H, ...b); return { x: r.x, y: r.y, w: r.w, h: r.h }; };
   const out = {
-    top:   z(7, 0, 6, 3),         /* the clock, the goal bar and the hint words */
+    top:   z(7, 0, 6, 2),         /* the goal bar and the hint words */
+    clock: z(16, 0, 4, 1),        /* the time, top right */
     score: z(0, 0, 7, 4),         /* the game's own corner: scores, chips, bars */
     card:  z(1, 7, 3, 3),         /* the move card, bottom left */
     badge: z(14, 9, 5, 1),        /* the game's one badge, bottom right */
   };
   if (spec){
-    if (spec.top) out.topright = z(13, 0, 6, 3);
+    if (spec.top) out.topright = z(13, 1, 6, 3);
     if (spec.left) out.left = z(0, 4, 1, 3);
     if (spec.right) out.right = z(19, 4, 1, 3);
     if (spec.bottom) out.bottom = z(5, 10, 10, 1);
@@ -239,19 +247,19 @@ function noticePill(c, r, text){
   c.save(); paper(c, r.x, r.y, r.w, r.h, h / 2, C * 0.05); c.font = font(size); c.fillStyle = INK(); c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(text, r.x + h * 0.35, r.y + h / 2 + h * 0.03); c.restore();
 }
 
-/* The clock: numbers beside a thin sun-coloured ring that empties as the time runs out (an anchor: it never dims). */
+/* The clock (0046): a thin sun-coloured ring that empties as the time runs out, and the numbers, top right, ending at the right margin. No pill: a soft white
+   glow behind them lets them read on any background (an anchor: it never dims). */
 export function clockPill(c, W, H, secsLeft, total = 0){
-  const cs = slot(W, H, 'clock'), C = unit(W, H), t = Math.max(0, Math.ceil(secsLeft));
+  const cs = slot(W, H, 'clock'), t = Math.max(0, Math.ceil(secsLeft));
   const text = t >= 60 ? `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}` : String(t);
   const h = cs.h, font = `700 ${Math.round(h * 0.62)}px ${FONT}`;
   c.save(); c.font = font;
-  const rr = h * 0.27, w = Math.max(h * 2.6, h * 0.55 + rr * 2 + h * 0.25 + c.measureText(text).width + h * 0.5), x = cs.cx - w / 2;
-  paper(c, x, cs.y, w, h, h / 2, C * 0.05);
-  const rx = x + h * 0.32 + rr, ry = cs.cy, k = total > 0 ? Math.min(1, Math.max(0, secsLeft / total)) : 1;
+  const right = cs.x + cs.w, tw = c.measureText(text).width, rr = h * 0.27, rx = right - tw - h * 0.3 - rr, ry = cs.cy, k = total > 0 ? Math.min(1, Math.max(0, secsLeft / total)) : 1;
+  c.shadowColor = palAlpha('earth.snow', 0.9);   /* (white, soft) */ c.shadowBlur = h * 0.25;
   c.lineWidth = h * 0.11; c.lineCap = 'round'; c.strokeStyle = TRACK(); c.beginPath(); c.arc(rx, ry, rr, 0, 6.2832); c.stroke();
   if (k > 0.001){ c.strokeStyle = pal('ui.gold'); c.beginPath(); c.arc(rx, ry, rr, -Math.PI / 2, -Math.PI / 2 + k * 6.2832); c.stroke(); }
-  c.font = font; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillStyle = t <= 10 ? pal('touch.cherry', 'shade') : INK();
-  c.fillText(text, rx + rr + h * 0.3, cs.cy + h * 0.04);
+  c.font = font; c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillStyle = t <= 10 ? pal('touch.cherry', 'shade') : INK();
+  c.fillText(text, right, cs.cy + h * 0.04);
   c.restore();
 }
 
@@ -260,7 +268,8 @@ export function clockPill(c, W, H, secsLeft, total = 0){
 /* the dock cells: [column, row, columns wide, rows tall] (the fixed anchors are in grid.js SLOTS too) */
 export const DOCKS = {
   clock: SLOTS.clock, goal: SLOTS.goal, words: SLOTS.words, card: SLOTS.card,
-  corner: [1, 0, 6, 4], top: [13, 0, 6, 3], left: [0, 4, 1, 3], right: [19, 4, 1, 3], bottom: [5, 10, 10, 1], badge: SLOTS.badge,
+  corner: [1, 0, 6, 4], top: [13, 1, 6, 3],   /* (the top dock starts a row down: the clock is above it) */
+  left: [0, 4, 1, 3], right: [19, 4, 1, 3], bottom: [5, 10, 10, 1], badge: SLOTS.badge,
 };
 /* what each dock holds, at most */
 export const CAPS = { scores: 4, cornerRows: PANEL_ROWS, badges: 3, rail: 1, bottom: 1, badge: 1, goal: 1 };
@@ -291,7 +300,7 @@ export function layoutDocks(W, H, spec, env = {}){
     else { out.push({ key: 'c' + out.length, kind: 'chip', ...r, rect: at(W, H, 'corner', (k % 2) * 3, row, 3, 1) }); k++; if (k === 2){ row++; k = 0; } }
   }
   if (s.goal != null && s.goal !== false) out.push({ key: 'goal', kind: 'goal', fill: typeof s.goal === 'object' ? s.goal.fill : s.goal, rect: at(W, H, 'goal') });
-  if (s.words && s.words.text) out.push({ key: 'words', kind: 'words', anchor: true, row: s.goal != null && s.goal !== false ? 2 : 1, ...s.words });
+  if (s.words && s.words.text) out.push({ key: 'words', kind: 'words', anchor: true, row: s.goal != null && s.goal !== false ? 1 : 0, ...s.words });
   const t = s.top;
   if (t && t.portrait){
     const talk = !!t.notice;
