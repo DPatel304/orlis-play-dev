@@ -10,6 +10,7 @@ import { sfx } from '../audio/sound.js';
 import { assets } from '../games/assets/index.js';
 import { qrMatrix, drawQR } from '../session/qr.js';
 import { WIFI_HINT_AFTER } from '../session/pads.js';
+import { iconEl } from './icons.js';
 import { faceChip } from './pad-faces.js';
 import { color, alpha } from '../games/assets/palette.js';
 
@@ -28,7 +29,7 @@ export function joinCard({ rt, onStart }) {
   const game = rt.game, session = rt.session;
   const s = screen('joinscreen');
   const card = h('div', 'joincard');
-  card.append(h('div', 'jk', 'Join with a phone'));
+  const jk = h('div', 'jk'); jk.append(iconEl('tabletgrip', 128, color('shade.ink')), 'Join with a PlayPad'); card.append(jk);
 
   /* the QR (opens the pad page only), then the three pictures */
   const row = h('div', 'jrow');
@@ -48,7 +49,7 @@ export function joinCard({ rt, onStart }) {
   const hint = h('div', 'jwifi hide');
   const bulb = document.createElement('canvas'); bulb.width = bulb.height = Math.round(60 * dpr());
   try { assets.draw(bulb.getContext('2d'), 'lightbulb', bulb.width / 2, bulb.height / 2, bulb.width * 0.8); } catch { /* no icon */ }
-  hint.append(bulb, h('span', '', 'Phone can’t connect? It needs the same Wi-Fi as Orlis. Some guest Wi-Fi blocks this.'));
+  hint.append(bulb, h('span', '', 'PlayPad can’t connect? It needs the same Wi-Fi as Orlis. Some guest Wi-Fi blocks this.'));
   card.appendChild(hint);
   s.appendChild(card);
 

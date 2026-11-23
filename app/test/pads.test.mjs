@@ -195,7 +195,7 @@ test('the running pads are findable (Settings uses it) until stopped', () => {
 
 /* ---------- the pause pill ---------- */
 test('the pill words: "Waiting for Sam\'s phone", or "a phone" when no name is known', () => {
-  assert.equal(waitingText('Sam'), "Waiting for Sam's phone"); assert.equal(waitingText(null), 'Waiting for a phone'); assert.equal(waitingText(''), 'Waiting for a phone');
+  assert.equal(waitingText('Sam'), "Waiting for Sam's PlayPad"); assert.equal(waitingText(null), 'Waiting for a PlayPad'); assert.equal(waitingText(''), 'Waiting for a PlayPad');
 });
 test('pause pill logic: a needed phone dropping while playing shows who we wait for; its return clears it; 120 s offers to end, once', () => {
   const r = rig(LAB); const w = r.rt.pause; const seen = [];
@@ -203,7 +203,7 @@ test('pause pill logic: a needed phone dropping while playing shows who we wait 
   const tok = r.joinPhone('c1', 'sam'); r.rt.go();
   assert.equal(w.waiting, null);
   r.s.close('c1');
-  assert.deepEqual(w.waiting, { who: 'sam', name: 'Sam' }); assert.equal(w.text, "Waiting for Sam's phone"); assert.equal(w.offered, false);
+  assert.deepEqual(w.waiting, { who: 'sam', name: 'Sam' }); assert.equal(w.text, "Waiting for Sam's PlayPad"); assert.equal(w.offered, false);
   r.advance(119_000); assert.equal(w.offered, false, 'not yet');
   r.advance(1_000); assert.equal(w.offered, true, '120 s: offer to end'); assert.equal(w.waiting.name, 'Sam');
   const offers = seen.filter(x => x[1]).length; r.s.tick(); assert.equal(seen.filter(x => x[1]).length, offers, 'offered once');
@@ -221,7 +221,7 @@ test('pause pill logic: a phone the game can do without, or one that drops in th
 test('pause pill logic: removing the needed phone in Settings while playing also waits; the pill names who', () => {
   const r = rig(LAB); const tok = r.joinPhone('c1', 'mia'); r.rt.go();
   r.s.forget(tok);
-  assert.equal(r.s.phase, 'paused'); assert.equal(r.rt.pause.text, 'Waiting for a phone', 'the seat is empty, nobody to name');
+  assert.equal(r.s.phase, 'paused'); assert.equal(r.rt.pause.text, 'Waiting for a PlayPad', 'the seat is empty, nobody to name');
 });
 test('the wifi line comes after 90 s (a constant the card uses)', () => { assert.equal(WIFI_HINT_AFTER, 90); });
 

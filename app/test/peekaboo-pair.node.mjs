@@ -98,7 +98,7 @@ test('6. the tablet drops: the TV pauses with "Waiting for … phone"; it rejoin
   await P.tv.page.evaluate(() => { window.__seen = new Set(); setInterval(() => window.__seen.add(window.__pads.session.phase), 15); });   /* (it comes back fast: keep a record) */
   await P.tv.page.evaluate((n) => window.__pads.link.send.close(window.__pads.connOf(n)), seat);
   await P.tv.page.locator('.waitpill').waitFor({ timeout: 8000 });
-  assert.match((await P.tv.page.locator('.waitpill .wt').innerText()).trim(), /^Waiting for .+'s phone$/);
+  assert.match((await P.tv.page.locator('.waitpill .wt').innerText()).trim(), /^Waiting for .+'s PlayPad$/);
   assert.ok(await P.tv.page.evaluate(() => window.__seen.has('paused')), 'the session paused');
   /* (the tablet comes back within a second, so look while the pill is up: the round clock does not move) */
   const t0 = (await P.state()).t; await sleep(120); const t1 = (await P.state()).t;

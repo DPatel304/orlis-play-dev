@@ -148,7 +148,7 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
       el.style.setProperty('--c1', ic.cols[0]); el.style.setProperty('--c2', ic.cols[1] || ic.cols[0]);
       el.querySelector('.hname').textContent = item.g.name;
       paintTile(t);
-      if (needsTablet(item.g)){ const b = h('span', 'tabmark'); b.setAttribute('role', 'img'); b.setAttribute('aria-label', 'Needs a tablet'); b.appendChild(iconEl('tabletgrip', 96)); el.appendChild(b); }
+      if (needsTablet(item.g)){ const b = h('span', 'tabmark'); b.setAttribute('role', 'img'); b.setAttribute('aria-label', 'Needs an Orlis PlayPad'); b.appendChild(iconEl('tabletgrip', 96, color('shade.ink'))); el.appendChild(b); }
       if (item.kind === 'get') el.insertAdjacentHTML('beforeend', `<span class="getpill">${icon('get')}Get</span><span class="gotbar"><i></i></span>`);
     } else if (item.kind === 'more'){
       el.classList.add('mk', 'm4'); el.appendChild(propIcon('star')); el.querySelector('.hname').textContent = 'More to try';
@@ -194,10 +194,10 @@ export function menu({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, o
   function paintHero(t){
     const it = t.item, hero = heroOf(it, { blurb: it.g ? (BLURB[it.g.id] || (it.g.store && it.g.store.blurb) || '') : '', cap: pose.cap });
     blurb.textContent = hero.line;
-    /* the "how you play" row on its own line: players (the people icon and the number), then Tablet (0052) */
+    /* the "how you play" row on its own line: players (the people icon and the number), then PlayPad (0052, 0054); both icons white here */
     how.textContent = '';
     for (const x of it.g ? howYouPlay(it.g, { cap: pose.cap }) : []){
-      const e = h('span', 'hhow hh-' + x.id); e.appendChild(iconEl(x.icon, 64)); e.append(x.text);
+      const e = h('span', 'hhow hh-' + x.id); e.appendChild(iconEl(x.icon, x.icon === 'tabletgrip' ? 128 : 96, color('earth.snow'))); e.append(x.text);
       if (x.label) e.setAttribute('aria-label', x.label);
       how.appendChild(e);
     }

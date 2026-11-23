@@ -77,7 +77,7 @@ export function heroOf(item, { blurb = '', cap = 4 } = {}){
 export const bigHero = (pos, rows) => !rows.length || pos.row === 0;
 
 /* The "how you play" row (decisions 0052, trimmed by the owner 2026-11-23): only the players (people icon and number) and, when a tablet
-   plays a part, Tablet / Tablet optional. A story (`passive`) shows no row. Read from `seats` ({ pads: [lo, hi] }), `requiredPads`, and the counts. */
+   plays a part, PlayPad / PlayPad optional (0054). A story (`passive`) shows no row. Read from `seats` ({ pads: [lo, hi] }), `requiredPads`, and the counts. */
 export const padsOf = (g) => { const p = g && g.seats && Array.isArray(g.seats.pads) ? g.seats.pads : null; return p ? { lo: Math.max(p[0] | 0, (g.requiredPads | 0) > 0 || Array.isArray(g.requiredPads) ? 1 : 0), hi: p[1] | 0 } : { lo: 0, hi: 0 }; };
 /* does the game need a tablet? (the mark on its tile) */
 export const needsTablet = (g) => { const p = padsOf(g); return !!g && !g.passive && p.hi === 1 && p.lo >= 1; };
@@ -86,6 +86,6 @@ export function howYouPlay(g, { cap = 4 } = {}){
   if (!g || g.passive) return [];
   const lo = Math.min(g.minPlayers || 1, cap), hi = Math.min(g.maxPlayers || 4, cap);
   const items = [{ id: 'players', icon: 'people', lo, hi, text: playersText(lo, hi), label: lo === hi ? `${hi} player${hi > 1 ? 's' : ''}` : `${lo} to ${hi} players` }];
-  if (padsOf(g).hi === 1) items.push({ id: 'tablet', icon: 'tabletgrip', text: padsOf(g).lo >= 1 ? 'Tablet' : 'Tablet optional' });
+  if (padsOf(g).hi === 1) items.push({ id: 'tablet', icon: 'tabletgrip', text: padsOf(g).lo >= 1 ? 'PlayPad' : 'PlayPad optional' });
   return items;
 }

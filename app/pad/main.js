@@ -60,7 +60,7 @@ const dots = () => el('span', 'dots', [el('i'), el('i'), el('i')]);
 const showOpening = () => message('opening', { cubo: 'freeze', twirl: true }, 'Finding the TV');
 const showStart = () => message('start', { id: 'house' }, 'Start Orlis\non the TV', "We'll join when it's on", dots());
 const showFull = () => message('full', { id: 'tent' }, 'This game\nis full', 'Wait for the next one');
-const showNoPhones = () => message('nophones', { id: 'tent' }, "This game doesn't\nuse phones", 'Look at the TV!');
+const showNoPhones = () => message('nophones', { id: 'tent' }, "This game doesn't\nuse a PlayPad", 'Look at the TV!');
 const showVersion = () => message('version', { id: 'rocket' }, 'Orlis got\nan update', 'Getting it now');
 
 function showWait() {

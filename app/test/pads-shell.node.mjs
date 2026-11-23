@@ -56,11 +56,11 @@ test('a phone joins with the pictures on the TV card, Start, the stick moves the
   await until(async () => { const a = await dotX(tv); await new Promise(r => setTimeout(r, 200)); return Math.abs((await dotX(tv)) - a) < 1e-6; }, 5000, 'the dot to stop');
   assert.ok((await tv.page.evaluate(() => window.__round().heard)) >= 2, 'the game heard the phone');
 
-  /* the phone drops: the TV pauses with "Waiting for Sam's phone", and the dot stops being steppable */
+  /* the phone drops: the TV pauses with "Waiting for Sam's PlayPad", and the dot stops being steppable */
   const seat = await tv.page.evaluate(() => window.__pads.session.seats.find(s => s.kind === 'pad').n);
   await tv.page.evaluate((n) => window.__pads.link.send.close(window.__pads.connOf(n)), seat);
   await tv.page.locator('.waitpill').waitFor({ timeout: 5000 });
-  assert.equal((await tv.page.locator('.waitpill .wt').innerText()).trim(), "Waiting for Sam's phone");
+  assert.equal((await tv.page.locator('.waitpill .wt').innerText()).trim(), "Waiting for Sam's PlayPad");
   assert.equal(await tv.page.locator('.waitpill .padface canvas').count(), 1, 'with Sam’s face');
   assert.equal(await tv.page.evaluate(() => window.__pads.session.phase), 'paused');
   /* the phone comes back by itself, the pill goes and the game carries on */

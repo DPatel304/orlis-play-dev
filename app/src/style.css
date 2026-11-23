@@ -1879,7 +1879,8 @@ body.remote .btn.slock.kfocus:not(.tvtile):not(.play){ outline:none; box-shadow:
 .joincard{ width:min(136vh, 92vw); padding:4vh 5vh 4.4vh; background:#fffdf8; color:#2f2b45; border-radius:4vh; border:.5vh solid #2f2b45; box-shadow:0 1.4vh 0 rgba(52,40,96,.18);
   font-family:var(--ui); text-align:center; margin-top:-5vh; transition:margin-top var(--t-base) var(--ease); animation:popin var(--t-base) var(--ease) both; }
 .joincard.small{ margin-top:-9vh; }
-.jk{ font-size:6vh; font-weight:600; margin-bottom:2.4vh; }
+.jk{ font-size:6vh; font-weight:600; margin-bottom:2.4vh; display:flex; align-items:center; justify-content:center; gap:.4em; }
+.jk .oicon{ width:1.5em; height:1.5em; display:block; }
 .jrow{ display:flex; align-items:center; justify-content:center; gap:3vh; }
 .jqr{ display:flex; flex-direction:column; align-items:center; gap:.6vh; font-size:3.2vh; font-weight:500; color:#6b6680; }
 .jqr canvas{ width:24vh; height:24vh; border-radius:1.6vh; background:#fff; border:.4vh solid #e6dcc7; }

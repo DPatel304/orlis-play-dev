@@ -87,7 +87,7 @@ test('the hero is big only on the first row (and the top); further down it is a 
 });
 
 import { howYouPlay, needsTablet } from '../src/ui/home-model.js';
-test('how you play (0052, trimmed): players, then Tablet / Tablet optional; nothing else; a story shows no row', () => {
+test('how you play (0052, trimmed): players, then PlayPad / PlayPad optional; nothing else; a story shows no row', () => {
   const ids = (x, o) => howYouPlay(x, o).map(i => i.id);
   assert.deepEqual(ids({ id: 'a', minPlayers: 1, maxPlayers: 2 }), ['players'], 'a camera game: players only (no Move)');
   assert.equal(howYouPlay({ id: 'a', minPlayers: 1, maxPlayers: 2 })[0].text, '1–2', 'the en dash');
@@ -97,10 +97,10 @@ test('how you play (0052, trimmed): players, then Tablet / Tablet optional; noth
   assert.deepEqual(howYouPlay({ id: 's', passive: true }), [], 'a story: no row at all');
   const peek = { id: 'p', seats: { tracked: [1, 2], pads: [1, 1] }, requiredPads: 1 };
   assert.deepEqual(ids(peek), ['players', 'tablet']);
-  assert.equal(howYouPlay(peek)[1].text, 'Tablet');
+  assert.equal(howYouPlay(peek)[1].text, 'PlayPad');
   assert.ok(needsTablet(peek));
   const opt = { id: 'o', seats: { tracked: [1, 2], pads: [0, 1] } };
-  assert.equal(howYouPlay(opt)[1].text, 'Tablet optional'); assert.ok(!needsTablet(opt), 'optional: no mark on the tile');
+  assert.equal(howYouPlay(opt)[1].text, 'PlayPad optional'); assert.ok(!needsTablet(opt), 'optional: no mark on the tile');
   assert.deepEqual(ids({ id: 'f', seats: { tracked: [0, 0], pads: [1, 4] } }), ['players'], 'phones are not shown');
   assert.ok(!needsTablet({ id: 'n' }) && !needsTablet(null) && !needsTablet({ passive: true, seats: { pads: [1, 1] } }));
   assert.deepEqual(howYouPlay(null), []);

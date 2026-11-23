@@ -75,7 +75,7 @@ export function colourFor(who, taken) {
 
 /* ----- the pause pill ----- */
 /* "Waiting for Sam's phone" (no name known: "Waiting for a phone") */
-export const waitingText = (name) => (name ? `Waiting for ${name}'s phone` : 'Waiting for a phone');
+export const waitingText = (name) => (name ? `Waiting for ${name}'s PlayPad` : 'Waiting for a PlayPad');
 
 /* What the TV shows while the session is paused: who we are waiting for, and (after 120 s) the offer to end. Plain state, fed by session events. */
 export function pauseWatch(session) {

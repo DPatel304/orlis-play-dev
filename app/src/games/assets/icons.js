@@ -497,26 +497,22 @@ def('player', 'Player', 'person people', (c, s) => {
   part(c, s, SNOW, circ(c, 0, -s * 0.22, s * 0.2));
 });
 
-/* ---------- how you play (decision 0052): people and tablet in a grip ---------- */
-const bust = (c, s, x, y, k, col) => {
-  part(c, s, col, () => { c.beginPath(); c.moveTo(x - s * 0.3 * k, y + s * 0.36 * k); c.quadraticCurveTo(x - s * 0.3 * k, y + s * 0.02 * k, x, y + s * 0.02 * k); c.quadraticCurveTo(x + s * 0.3 * k, y + s * 0.02 * k, x + s * 0.3 * k, y + s * 0.36 * k); c.closePath(); });
-  part(c, s, col, circ(c, x, y - s * 0.19 * k, s * 0.17 * k));
+/* ---------- how you play (decisions 0052, 0054): the people and the Orlis PlayPad ----------
+   Two flat, one-colour icons translated from the approved SVG drawings in docs/icon-mockups.html (symbols p1 and t3), drawn with Path2D into the
+   icon box. The colour is o.tint (a palette colour, default the ink); the "lighter" parts are the same colour at 55% opacity, and the PlayPad's
+   screen is a real hole (even-odd), so whatever is behind shows through. */
+const MONO = (c, s, o, vw, vh, parts) => {
+  if (typeof Path2D === 'undefined') return;
+  const k = s / Math.max(vw, vh);
+  c.save(); c.translate(-vw * k / 2, -vh * k / 2); c.scale(k, k);
+  c.fillStyle = o.tint || INK;
+  const a = c.globalAlpha;
+  for (const [d, op, rule] of parts){ c.globalAlpha = a * op; c.fill(new Path2D(d), rule || 'nonzero'); }
+  c.globalAlpha = a; c.restore();
 };
-def('people', 'People', 'person players', (c, s) => {
-  bust(c, s, s * 0.2, -s * 0.06, 0.9, pal('shade.light'));
-  bust(c, s, -s * 0.12, s * 0.06, 1.05, SNOW);
-});
-def('tabletgrip', 'Tablet in a grip', 'thing controller tablet', (c, s) => {
-  const dark = pal('fur.charcoal'), mid = pal('shade.mid');
-  const handle = (sx) => part(c, s, dark, () => { c.beginPath(); c.moveTo(sx * s * 0.24, -s * 0.2); c.quadraticCurveTo(sx * s * 0.44, -s * 0.24, sx * s * 0.44, -s * 0.04); c.quadraticCurveTo(sx * s * 0.46, s * 0.3, sx * s * 0.36, s * 0.38); c.quadraticCurveTo(sx * s * 0.27, s * 0.43, sx * s * 0.24, s * 0.2); c.closePath(); }, { shade: false });
-  handle(-1); handle(1);
-  /* left handle: stick above, D-pad below; right handle: four buttons above, stick below */
-  dot(c, -s * 0.355, -s * 0.1, s * 0.055, mid); dot(c, -s * 0.355, -s * 0.1, s * 0.034, dark);
-  c.fillStyle = SNOW; c.fillRect(-s * 0.405, s * 0.12, s * 0.1, s * 0.03); c.fillRect(-s * 0.37, s * 0.085, s * 0.03, s * 0.1);
-  for (const [x, y, col] of [[0.385, -0.2, 'touch.sunflower'], [0.345, -0.14, 'touch.skyBlue'], [0.425, -0.14, 'touch.cherry'], [0.385, -0.08, 'touch.mint']]) dot(c, x * s, y * s, s * 0.032, pal(col));
-  dot(c, s * 0.345, s * 0.16, s * 0.055, mid); dot(c, s * 0.345, s * 0.16, s * 0.034, dark);
-  const g = c.createLinearGradient(-s * 0.25, -s * 0.3, s * 0.25, s * 0.3); g.addColorStop(0, pal('touch.skyBlue', 'light')); g.addColorStop(1, pal('touch.grape', 'light'));
-  part(c, s, dark, rrect(c, -s * 0.27, -s * 0.3, s * 0.54, s * 0.6, s * 0.05), { shade: false });
-  rrect(c, -s * 0.23, -s * 0.26, s * 0.46, s * 0.52, s * 0.025)(); c.fillStyle = g; c.fill();
-  c.beginPath(); c.ellipse(-s * 0.08, -s * 0.12, s * 0.16, s * 0.05, -0.5, 0, 7); wash(c, SNOW, 0.45);
-});
+const PEOPLE_BEHIND = 'M25.1 10 a4.6 4.6 0 1 1 -9.2 0 a4.6 4.6 0 1 1 9.2 0 Z M12.5 27 c0-5.6 3.6-9.4 8-9.4 s8 3.8 8 9.4 z';
+const PEOPLE_FRONT = 'M17 11.5 a5 5 0 1 1 -10 0 a5 5 0 1 1 10 0 Z M2.5 28.5 c0-6.2 4.2-10.4 9.5-10.4 s9.5 4.2 9.5 10.4 z';
+def('people', 'People', 'person players', (c, s, o) => MONO(c, s, o, 32, 32, [[PEOPLE_BEHIND, 0.55], [PEOPLE_FRONT, 1]]));
+const PAD_GRIPS = 'M14 7 L9 7 C7.4 7 6.6 8 6.2 9.4 L2.6 22.4 C1.4 27 6 29.6 9 26.6 L12.6 23 H14 Z M34 7 L39 7 C40.6 7 41.4 8 41.8 9.4 L45.4 22.4 C46.6 27 42 29.6 39 26.6 L35.4 23 H34 Z';
+const PAD_FRAME = 'M16 5 H32 A3 3 0 0 1 35 8 V21 A3 3 0 0 1 32 24 H16 A3 3 0 0 1 13 21 V8 A3 3 0 0 1 16 5 Z M17.2 8 H30.8 A1.2 1.2 0 0 1 32 9.2 V19.8 A1.2 1.2 0 0 1 30.8 21 H17.2 A1.2 1.2 0 0 1 16 19.8 V9.2 A1.2 1.2 0 0 1 17.2 8 Z';
+def('tabletgrip', 'Orlis PlayPad', 'thing controller tablet playpad', (c, s, o) => MONO(c, s, o, 48, 32, [[PAD_GRIPS, 1], [PAD_FRAME, 0.55, 'evenodd']]));

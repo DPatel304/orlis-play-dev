@@ -1,7 +1,7 @@
 /* The owner's pictures for the TV side of phones (plan package P5) into docs/p5/, at device scale 2, from the real shell:
      join-card.png    the join card with two phones joined (one ready)
      wifi-hint.png    no phone after 90 seconds: the one Wi-Fi line
-     waiting-pill.png "Waiting for Sam's phone", in a game
+     waiting-pill.png "Waiting for Sam's PlayPad", in a game
      trusted-phones.png  Settings > Trusted phones
    Run:  cd app && node test/preview/pads-shots.mjs */
 import path from 'node:path';
