@@ -235,12 +235,12 @@ const SCREENS = [
       <div class="mic"><span class="dot">${P.mic}</span>Hold OK and say a name</div>
       <div style="display:flex;align-items:center;gap:calc(var(--u)*1.6);font:600 calc(var(--u)*2.6)/1 var(--ui);color:var(--soft)"><span style="width:calc(var(--u)*6);height:calc(var(--u)*6);display:block">${kidFace('#ff7eb3')}</span>Made by Mia</div>
       `, 'Play it!') },
-  { id: 'change', label: 'Change it with Cubo', title: 'After playing: change it with Cubo', note: 'Kids say what they want; Cubo turns it into changes from the same picture vocabulary, checks them, and shows what it did as ticked chips. Anything it can\'t do (a word not in the vocabulary, or not allowed) it says kindly. Or they redo any step.',
+  { id: 'change', label: 'Change it with Cubo', title: 'After playing: change it with Cubo', note: 'No AI (decision 0056): Cubo understands a fixed set of short commands (faster, slower, more, fewer, bigger, smaller, make it night/snowy/beach, add a golden one, add a bomb...) and each one changes one setting, shown as a ticked chip. Anything else, Cubo says kindly which words it knows. Or kids redo any step.',
     html: () => `${bar()}<div class="prev" style="top:calc(var(--u)*15)"><canvas width="960" height="540"></canvas><span class="live">LIVE</span></div><p class="say" style="top:calc(var(--u)*72)">${sentence()}</p>
       <div class="talk" style="top:calc(var(--u)*15)">
-        <div class="bubble"><div class="who"><span style="width:calc(var(--u)*4);height:calc(var(--u)*4);display:block">${kidFace('#ff7eb3')}</span>Mia said</div>"Make them faster and add a giant apple, and can it be at night?"</div>
-        <div class="bubble cubo"><div class="who">${cubo(30)}Cubo</div>Done! Try it now.<div class="chips"><span>✓ Faster</span><span>✓ A giant apple worth 10</span><span>✓ Starry night</span></div></div>
-        <div class="mic"><span class="dot">${P.mic}</span>Hold OK and tell Cubo what to change</div>
+        <div class="bubble"><div class="who"><span style="width:calc(var(--u)*4);height:calc(var(--u)*4);display:block">${kidFace('#ff7eb3')}</span>Mia said</div>"Faster!"</div>
+        <div class="bubble cubo"><div class="who">${cubo(30)}Cubo</div>Zoom! Try it now.<div class="chips"><span>✓ Faster</span></div></div>
+        <div class="mic"><span class="dot">${P.mic}</span>Hold OK and say: faster, slower, more, fewer, bigger, make it night, add a golden one…</div>
       </div>
       <div class="navs"><button class="btn ghost">${P.pencil}Change a step</button><button class="btn ghost">${P.again}Undo</button><button class="btn go">${P.play}Play again</button></div>` },
   { id: 'play', label: 'Play page: third row', title: 'The Play page: a third row', note: 'Games the family made get their own row, "Made by us", with each maker\'s face on the tile. Phase 1 keeps them in the family; Phase 2 adds Publish.',
