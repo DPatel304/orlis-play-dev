@@ -32,7 +32,7 @@ home Wi-Fi** - it is not on the internet.
 free app that links computers privately over the internet. Set it up once:
 
 1. On this laptop, install Tailscale (tailscale.com/download) and sign in.
-   The management page's Overview then shows **Tailscale is on**.
+   The management page's Settings then show the address under **Internet (Funnel)**.
 2. Share this laptop with them: Tailscale's admin console > Machines > this
    laptop > **Share**, and send them the link. (Sharing one machine is free.
    They can reach this laptop only - nothing else on your network - and it
@@ -69,18 +69,19 @@ With it on and Funnel on (below), your address
 (`https://orlis.<your-tailnet>.ts.net/`) shows a small page:
 **Orlis Play - closed beta**, with one box for an email.
 
-1. Someone asks there. A note pops up by the clock, and they're under
-   **Approvals > Closed beta** on the management page.
+1. Someone asks there. A note pops up by the clock, and they're in the
+   **Queue** on the management page.
 2. **Approve** emails them the download link. (Or type someone's email into
-   **Add someone's email** - your family, say - to approve them straight away.)
+   **Add email to allowlist** at the top of the Queue - your family, say -
+   to approve them straight away.)
 3. They install Orlis Play and make an account **with that email**: they're
    straight in, nothing to wait for.
 
 Anyone who signs up in the app without being approved waits for you under
-**Approvals > Waiting to join**, playing two starter games meanwhile.
+the **Queue**, playing two starter games meanwhile.
 
-**Sending the emails** uses your Gmail: on the management page, **Overview >
-Email**, type your Gmail address and an **app password** - in your Google
+**Sending the emails** uses your Gmail: on the management page, **Settings >
+Heads-ups > SMTP**, type your Gmail address and an **app password** - in your Google
 Account, **Security > App passwords** (it needs 2-Step Verification on), make
 one called Orlis, and paste the 16 letters. It's kept on this laptop only
 (`mail.json` in the data folder). **Send a test** checks it works. Without
@@ -145,7 +146,7 @@ The server backs up the family's things into `Orlis Server data\backups`:
   scores and settings.
 - **When:** once a day at a quiet moment (a week of them is kept), before
   every update, and whenever you pick **Back up now** on the management page
-  (double-click the cube > Backups).
+  (double-click the cube > Settings > Backups).
 - **Restoring:** on the management page, pick a backup's **Restore** (twice). The
   server restarts with the data as it was then; what it had a moment before
   is kept as one more backup, so a restore can be undone.
