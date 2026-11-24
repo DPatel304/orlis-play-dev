@@ -126,13 +126,30 @@ export async function call(url, method, path, body, token){
       body: body ? JSON.stringify(body) : undefined
     });
   } catch (e){
-    const err = new Error('Couldn\'t reach the Orlis server. Is it running, and is this PC on its Wi-Fi (or on Tailscale)?');
+    const err = new Error('Orlis is asleep right now. Try again in a little while.');
     err.status = 0; throw err;
   }
   let data = {};
   try { data = await r.json(); } catch {}
   if (!r.ok){ const err = new Error(data.message || 'Something went wrong.'); err.status = r.status; err.code = data.error; throw err; }
   return data;
+}
+
+/* Is this PC on the internet at all? (Microsoft's own connection-check
+   address: any answer means yes, even one we may not read.) Kept on an object
+   so the tests can swap it. */
+export const net = {
+  online: async () => {
+    try { await fetch('https://www.msftconnecttest.com/connecttest.txt', { mode: 'no-cors', signal: AbortSignal.timeout(4000) }); return true; }
+    catch { return false; }
+  }
+};
+/* What the "can't find Orlis" screen says: this PC is offline, or Orlis (the
+   owner's laptop) is just asleep. */
+export function notFoundWords(online){
+  return online
+    ? { asleep: true, heading: 'Orlis is asleep right now', lede: 'It’ll wake up soon and connect by itself - no need to do anything.' }
+    : { asleep: false, heading: 'This laptop isn’t online', lede: 'Connect to Wi-Fi - Orlis will carry on by itself.' };
 }
 
 /* Orlis servers on the Wi-Fi, found by the app (a broadcast) - each with its
@@ -257,15 +274,16 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
   }
   /* Not found: most likely no internet just now. It keeps trying by itself,
      and connects as soon as the server answers; or type its address. */
-  function notFound(){
+  async function notFound(){
+    let words = notFoundWords(await net.online());
     const addr = form([['url', 'Server address', 'text']], 'Connect', async ({ url }) => {
       const u = serverUrl(url);
       const r = await hello(u);
       connect({ url: u, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false });
     });
     const typed = h('details', 'setuptype'); typed.append(h('summary', '', 'Type an address'), addr);
-    show(h('h2', '', 'Can’t reach your Orlis server'),
-      h('p', 'lede', 'Check this PC is online. It’ll keep trying.'),
+    const head = h('h2', '', words.heading), lede = h('p', 'lede', words.lede);
+    show(head, lede,
       msg, onPick(button('Try again', 'wide'), () => { sfx.select(); find(); }), typed);
     const me = card.lastChild;
     const tick = async () => {
@@ -273,6 +291,10 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
       const found = await look();
       if (!s.contains(me)) return;
       if (found.length){ sfx.gold?.(); return found.length === 1 ? connect(found[0]) : choose(found); }
+      /* (still not there: say again which it is - the words may have changed) */
+      words = notFoundWords(await net.online());
+      if (!s.contains(me)) return;
+      head.textContent = words.heading; lede.textContent = words.lede;
       watching = setTimeout(tick, 8000);
     };
     watching = setTimeout(tick, 8000);
@@ -324,14 +346,14 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
         return r.exists ? signIn(sv, email.trim()) : join(sv, email.trim());
       });
     f.classList.add('getin');
-    show(h('h2', '', 'Sign in'), h('p', 'lede', `To ${esc(sv.name || 'your Orlis')} on your Wi-Fi`), f, msg);
+    show(h('h2', '', 'Sign in'), h('p', 'lede', `To ${esc(sv.name || 'your Orlis')}`), f, msg);
   }
   /* the card's corner icons: back (top-left), help (top-right) - small, so
      the form is what you see */
   const corner = (label, cls, title, fn) => { const b = onPick(button(label, 'cardicon ' + cls), fn); b.title = title; b.setAttribute('aria-label', title); return b; };
   const another = (sv, email) => corner(icon('back'), 'back', 'Use a different email', () => { sfx.back?.(); getIn(sv, email); });
   function signIn(sv, email){
-    show(h('h2', '', 'Sign in'), h('p', 'lede', `To ${esc(sv.name || 'your Orlis')} on your Wi-Fi`),
+    show(h('h2', '', 'Sign in'), h('p', 'lede', `To ${esc(sv.name || 'your Orlis')}`),
       form([
         ['email', 'Email', 'email', 'username', { value: email }],
         ['password', 'Password', 'password', 'current-password']

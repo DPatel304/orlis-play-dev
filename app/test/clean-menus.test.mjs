@@ -151,7 +151,7 @@ test('U6: Pending approval says what happens next; the back button is a Home but
 
 test('error messages keep their wording', () => {
   const acc = read('ui/account.js');
-  for (const w of ['Type your email first.', 'That email needs an @ and a dot.', 'Type your password first.', "Couldn\\'t reach the Orlis server. Is it running, and is this PC on its Wi-Fi (or on Tailscale)?", 'The Orlis server needs an update.']) assert.ok(acc.includes(w), w);
+  for (const w of ['Type your email first.', 'That email needs an @ and a dot.', 'Type your password first.', "Orlis is asleep right now. Try again in a little while.", 'The Orlis server needs an update.']) assert.ok(acc.includes(w), w);
   assert.ok(read('ui/kid-editor.js').includes('That didn’t work.'));
 });
 
