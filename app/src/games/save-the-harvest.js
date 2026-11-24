@@ -6,12 +6,17 @@
    the basket. For the raven, everyone flaps to shoo him: he hops two steps closer, and the shooing sends him one step back.
    There is nothing to lose. If the raven reaches the tree he nibbles one fruit back onto the tree and hops home to start
    again (no game over, no telling-off); the game ends when the basket is full, and the raven gets the last apple as a treat.
+   It also ends, warmly, when TIME_LIMIT is up: "You saved N fruit!" (so a round is about two to two and a half minutes, however it goes).
+
+   Waiting is short: the wheel spins for a second, the cheer is over in a second and a bit, and the next move starts. The pear's
+   hop relies on the jump detector, so if no try has come in HOP_FALLBACK seconds a reach up counts as well (and the words say so).
 
    Moves are the body's, from the camera's landmarks, by the same detectors Animal Gym uses (with no landmarks - the mouse,
    in testing - a fast hand is a try). A try is a try: anyone's counts toward the same bar. */
 import { color, alpha } from './assets/palette.js';
 import { assets } from './assets/index.js';
 import { Juice } from './common.js';
+import { Avatars } from '../ui/avatars.js';
 
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
@@ -20,8 +25,12 @@ import { triesOf } from './animal-gym.js';
 
 export const FRUIT_EACH = 4, PER_PICK = 2, RAVEN_STEPS = 6, RAVEN_START = 1;
 /* tries a round needs: this many per player present, and never fewer than the least */
-export const TRIES_EACH = 2, TRIES_LEAST = 3;
-export const SPIN = 2.4, MOVE_MAX = 11, RESULT = 2.2, END = 5;
+export const TRIES_EACH = 3, TRIES_LEAST = 4;
+export const SPIN = 0.9, MOVE_MAX = 9, RESULT = 1, END = 5;
+/* the whole game's time limit (seconds): the round is over at the next gap after it, with the fruit saved so far */
+export const TIME_LIMIT = 130;
+/* a pear round with no try yet after this long: reaching up counts too */
+export const HOP_FALLBACK = 3.5;
 /* which move picks what */
 export const KINDS = {
   apple: { e: 'apple', move: 'reach', text: 'Reach for apples!' },
@@ -35,7 +44,7 @@ const LEAF = color('meadow.fresh'), LEAF_SHADE = color('meadow.fresh', 'shade');
 const WHEEL_COL = [color('touch.cherry', 'light'), color('touch.sunflower', 'light'), color('touch.bubblegum', 'light'), color('touch.grape', 'light'), color('touch.cherry', 'light'), color('touch.grape', 'light')];
 
 export default {
-  id: 'save-the-harvest', unit: 'fruit', name: 'Save the Harvest', stars: 1, accent: color('earth.brick'), secs: 300, endless: true,
+  id: 'save-the-harvest', unit: 'fruit', name: 'Save the Harvest', stars: 1, accent: color('earth.brick'), secs: 150, endless: true,
   moves: ['reach', 'jump', 'squat', 'flap'], keepSitters: true,
   create(n){ return new SaveTheHarvest(n); }
 };
@@ -67,6 +76,8 @@ class SaveTheHarvest {
     this.st = Array.from({ length: MAX_PLAYERS }, () => ({}));
     this.jw = new JumpWatch({ rise: 0.08, speed: 0.5 });
     this.j = new Juice();
+    this.avatars = new Avatars();
+    this.reachOk = false;      /* a pear round where reaching up counts too (the hop wasn't seen) */
     this.say = { icon: 'dice', text: 'Spin the wheel!', t: 0 };
     this._spin();
   }
@@ -79,7 +90,7 @@ class SaveTheHarvest {
     this.last = this.kind;
     this.sector = WHEEL.map((k, i) => k === this.kind ? i : -1).filter(i => i >= 0);
     this.sector = this.sector[Math.floor(Math.random() * this.sector.length)];
-    this.phase = 'spin'; this.pt = 0; this.tries = 0; this.fill = 0;
+    this.phase = 'spin'; this.pt = 0; this.tries = 0; this.fill = 0; this.reachOk = false;
     this._say('Spin the wheel!', 'dice');
   }
   _say(text, icon = ''){ this.say = { icon, text, t: 0 }; }
@@ -104,18 +115,24 @@ class SaveTheHarvest {
     }
     else if (this.phase === 'move') this._move(dt, W, H);
     else if (this.phase === 'result' && this.pt >= RESULT) this._after();
-    else if (this.phase === 'snack' && this.pt >= 2.4) this._after(true);
+    else if (this.phase === 'snack' && this.pt >= 1.8) this._after(true);
     else if (this.phase === 'end' && this.pt >= END) this.over = true;
+    this.avatars.step(dt, this.players);
   }
 
   /* everyone does the move: every try, by anyone, fills the same bar */
   _move(dt, W, H){
     const move = KINDS[this.kind].move, present = this._present();
     const jumpers = move === 'jump' ? this.jw.step(dt, pose.players, this.players) : [];
+    /* the pear: the hop is the move, but if it isn't being seen, a reach up does as well */
+    if (move === 'jump' && !this.reachOk && this.pt >= HOP_FALLBACK && this.fill < 1){
+      this.reachOk = true; this._say('Hop or reach up high!', KINDS.pear.e);
+    }
     for (let i = 0; i < this.players; i++){
       const p = pose.players[i];
       let n = move === 'jump' ? (jumpers.includes(i) ? 1 : 0) : triesOf(move, p, this.st[i], dt);
       if (move === 'jump' && p && p.present && !p.lm) n = triesOf('jump', p, this.st[i], dt);   /* (with no landmarks a jump is a fast hand) */
+      else if (move === 'jump' && this.reachOk) n += triesOf('reach', p, this.st[i].reach || (this.st[i].reach = {}), dt);
       if (!n) continue;
       this.score[i] += n; this.tries += n;
       const c = p.centre || { x: 0.5, y: 0.5 };
@@ -147,6 +164,12 @@ class SaveTheHarvest {
     if (this.taken.apple + this.taken.pear + this.taken.berry >= FRUIT_EACH * 3 && !this.flights.length && !this.win){
       this.win = true; this.phase = 'end'; this.pt = 0; this._say('Harvest saved!', 'confetti'); sfx.fanfare?.(); return;
     }
+    /* time's up: no more spins; say what the family saved */
+    if (this.t >= TIME_LIMIT && !this.win){
+      const n = this.value();
+      this.phase = 'end'; this.pt = 0;
+      this._say(n > 0 ? `You saved ${n} fruit!` : 'What a team!', 'confetti'); sfx.fanfare?.(); return;
+    }
     /* the raven made it to the tree: he nibbles one fruit back on, then hops home to try again */
     if (!snacked && this.raven >= RAVEN_STEPS){
       const have = ['apple', 'pear', 'berry'].filter(k => this.taken[k] > 0 && this.picked[k] > 0);
@@ -168,6 +191,8 @@ class SaveTheHarvest {
     c.save(); c.translate(ox, oy); c.scale(s, s);
     this._world(c);
     c.restore();
+    /* the players' hands, so everyone sees where they are */
+    this.avatars.drawMitts(c, W, H, this.players);
     this.j.draw(c, H);
     if (shook) c.restore();
   }
@@ -224,7 +249,7 @@ class SaveTheHarvest {
     const t = this.t, rs = clamp(this.ravenShown, 0, RAVEN_STEPS), i = Math.min(RAVEN_STEPS - 1, Math.floor(rs)), f = rs - i;
     let x = RAVEN[i][0] + (RAVEN[i + 1][0] - RAVEN[i][0]) * f, y = RAVEN[i][1] + (RAVEN[i + 1][1] - RAVEN[i][1]) * f + Math.sin(t * 6) * 5;
     let flap = Math.sin(t * (this.phase === 'move' && this.kind === 'raven' ? 16 : 7)) * 0.5 + 0.5;
-    if (this.phase === 'end'){ const k = ease(clamp(this.pt / 2.6)); x += (BASKET[0] - 30 - x) * k; y += (BASKET[1] - 120 - y) * k; flap = Math.sin(t * 14) * 0.5 + 0.5; }
+    if (this.phase === 'end' && this.win){ const k = ease(clamp(this.pt / 2.6)); x += (BASKET[0] - 30 - x) * k; y += (BASKET[1] - 120 - y) * k; flap = Math.sin(t * 14) * 0.5 + 0.5; }
     if (this.phase === 'snack'){ x = TREE[0] + 90; y = TREE[1] - 150 + Math.sin(t * 8) * 4; flap = Math.sin(t * 12) * 0.5 + 0.5; }
     c.save(); c.translate(x, y); c.scale(0.9, 0.9); c.lineJoin = 'round'; c.strokeStyle = color('shade.ink'); c.lineWidth = 5; c.fillStyle = color('fur.charcoal');
     c.beginPath(); c.ellipse(0, 0, 44, 30, 0, 0, 7); c.fill(); c.stroke();
@@ -233,12 +258,12 @@ class SaveTheHarvest {
     c.fillStyle = color('earth.peach'); c.beginPath(); c.moveTo(-52, -18); c.lineTo(-72, -10); c.lineTo(-52, -8); c.closePath(); c.fill(); c.stroke();
     c.fillStyle = color('earth.snow'); c.beginPath(); c.arc(-38, -24, 7, 0, 7); c.fill(); c.fillStyle = color('shade.ink'); c.beginPath(); c.arc(-40, -24, 3.5, 0, 7); c.fill();
     c.restore();
-    if (this.phase === 'end' && this.pt > 2.6) this._emoji(c, KINDS.apple.e, BASKET[0] + 30, BASKET[1] - 110, 40);
+    if (this.phase === 'end' && this.win && this.pt > 2.6) this._emoji(c, KINDS.apple.e, BASKET[0] + 30, BASKET[1] - 110, 40);
   }
 
   _wheel(c){
-    const R = 130, cx = VW / 2 + 60, cy = 420, k = clamp(this.pt / SPIN), a = this.pt < SPIN - 0.5 ? 1 : 1 - (this.pt - (SPIN - 0.5)) / 0.5;
-    const rest = -Math.PI / 2 - (this.sector + 0.5) * (Math.PI * 2 / 6), ang = rest - (1 - ease(clamp(this.pt / 2))) * Math.PI * 6;
+    const R = 130, cx = VW / 2 + 60, cy = 420, k = clamp(this.pt / SPIN), a = this.pt < SPIN - 0.25 ? 1 : 1 - (this.pt - (SPIN - 0.25)) / 0.25;
+    const rest = -Math.PI / 2 - (this.sector + 0.5) * (Math.PI * 2 / 6), ang = rest - (1 - ease(clamp(this.pt / (SPIN * 0.85)))) * Math.PI * 6;
     c.save(); c.globalAlpha = Math.max(0, a); c.translate(cx, cy);
     c.shadowColor = alpha('shade.shadow', 0.4); c.shadowBlur = 24; c.shadowOffsetY = 10; c.fillStyle = color('earth.snow'); c.beginPath(); c.arc(0, 0, R + 14, 0, 7); c.fill(); c.shadowBlur = 0; c.shadowOffsetY = 0;
     c.rotate(ang);
@@ -271,5 +296,5 @@ class SaveTheHarvest {
   /* a team game: nobody wins against anybody */
   winner(){ return this.players >= 2 ? 0 : null; }
   value(){ return this.picked.apple + this.picked.pear + this.picked.berry; }
-  summary(){ return this.win ? 'You saved the whole harvest together!' : null; }
+  summary(){ return this.win ? 'You saved the whole harvest together!' : this.phase === 'end' && this.value() > 0 ? `You saved ${this.value()} fruit!` : null; }
 }

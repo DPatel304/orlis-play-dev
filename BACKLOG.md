@@ -777,3 +777,10 @@ Designed and mocked up (`docs/create-mockup.html`, the "1.5" screens), not built
 reach a score, don't drop them with 3 hearts, survive), up to 5 levels in a row ("Add a level" copies the last a notch harder),
 1 to 3 stars per level with a "Level 2!" card between levels. Open questions: does a lost level retry or end the game; are best stars
 saved on the game's tile. Engine work needed: hearts, and playing levels in a row (the goal bar for "reach a score" exists).
+
+## Showing yourself on screen (shelved by the owner, 2026-11-24)
+Nex Playground shows the live camera picture with the game on top; Orlis shows paper figures and a hand star (decision 0035). Options
+weighed, none chosen: (1) the live camera only on the get-ready screen, with an outline of where to stand; (2) a small corner view,
+switchable in Settings; (3) each player's paper figure copying their whole body during play (no video); (4) full camera background,
+Nex-style (would replace 0035's player line). Pros of showing the camera: you can see you're seen, framing fixes itself, fun. Cons:
+kids and the room on the big screen, clashes with the painted look, lag shows, future privacy care if clips are ever shared.
