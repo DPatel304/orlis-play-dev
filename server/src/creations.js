@@ -10,7 +10,7 @@ import { badWords } from './words.js';
 import { validate } from '../../app/src/games/play/validate.js';
 import { playEnv } from '../../app/src/games/play/env.js';
 
-export const LIMITS = { slots: 3, name: [1, 24], picks: 2000, desc: 20000 };
+export const LIMITS = { slots: 3, name: [1, 40], picks: 2000, desc: 20000, things: 5 };
 
 export function creations(db){
   const q = (sql) => db.prepare(sql);
@@ -33,7 +33,7 @@ export function creations(db){
         const a = who(headers), b = body || {};
         const name = typeof b.name === 'string' ? b.name.replace(/\s+/g, ' ').trim() : '';
         if (name.length < LIMITS.name[0] || name.length > LIMITS.name[1]) throw new Fail(400, 'bad_name', `A game's name is ${LIMITS.name[0]} to ${LIMITS.name[1]} letters.`);
-        if (!b.picks || typeof b.picks !== 'object' || Array.isArray(b.picks) || JSON.stringify(b.picks).length > LIMITS.picks) throw new Fail(400, 'bad_picks', 'Those picks could not be kept.');
+        if (!b.picks || typeof b.picks !== 'object' || Array.isArray(b.picks) || JSON.stringify(b.picks).length > LIMITS.picks || (Array.isArray(b.picks.things) && (!b.picks.things.length || b.picks.things.length > LIMITS.things))) throw new Fail(400, 'bad_picks', 'Those picks could not be kept.');
         const text = JSON.stringify(b.desc ?? null);
         if (text.length > LIMITS.desc) throw new Fail(400, 'bad_game', 'That game is too big.');
         const problems = validate(b.desc, env);

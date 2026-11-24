@@ -57,10 +57,11 @@ export function validate(spec, env){
         const a = t.appears;
         if (!a || typeof a !== 'object') bad(where + ': "appears" is { "every": seconds, "from": "top" }.');
         else {
-          for (const k of Object.keys(a)) if (!['every', 'everyEnd', 'from', 'max'].includes(k)) unknown('appears setting', k, ['every', 'everyEnd', 'from', 'max'], where);
+          for (const k of Object.keys(a)) if (!['every', 'everyEnd', 'from', 'max', 'wait'].includes(k)) unknown('appears setting', k, ['every', 'everyEnd', 'from', 'max', 'wait'], where);
           num(a.every, 'every', where + ': appears');
           if (a.everyEnd !== undefined) num(a.everyEnd, 'every', where + ': appears "everyEnd"');
           if (a.max !== undefined) num(a.max, 'max', where + ': appears');
+          if (a.wait !== undefined) num(a.wait, 'wait', where + ': appears');
           if (a.from !== undefined && !FROM.includes(a.from)) unknown('place for things to appear from', a.from, FROM, where + ': appears');
         }
       }
@@ -76,12 +77,13 @@ export function validate(spec, env){
           const key = typeof res === 'string' ? res : res && typeof res === 'object' ? Object.keys(res)[0] : null;
           if (!(key in RESULTS)) return unknown('result', key, Object.keys(RESULTS), rw + ': "then"');
           const v = typeof res === 'object' ? res[key] : undefined;
-          if (typeof res === 'string' && RESULTS[key].value && !['score', 'grow'].includes(key)) bad(`${rw}: "${key}" needs a value, like { "${key}": ... }.`);
+          if (typeof res === 'string' && RESULTS[key].value && !['score', 'grow', 'stack'].includes(key)) bad(`${rw}: "${key}" needs a value, like { "${key}": ... }.`);
           if (key === 'become' && !env.has(v)) unknown('piece in the library', v, env.pieceNames || [], rw + ': "become"');
           if (key === 'sound' && !SOUNDS.includes(v)) unknown('sound', v, SOUNDS, rw + ': "sound"');
           if (key === 'say'){ const t = v && typeof v === 'object' ? v.text : v; if (typeof t !== 'string' || words(t) > 4) bad(rw + ': "say" is up to four words ({ "say": "Well done!" }).'); else if (v && typeof v === 'object' && v.icon !== undefined && (typeof v.icon !== 'string' || !env.has(v.icon))) unknown('icon in the library', v.icon, env.pieceNames || [], rw + ': "say" icon'); }
           if (key === 'spawn' && !names.includes(v)) unknown('thing (give it a "name")', v, names, rw + ': "spawn"');
           if ((key === 'score' || key === 'grow') && typeof res === 'object' && !isNum(v)) bad(rw + `: "${key}" is a number.`);
+          if (key === 'stack' && typeof res === 'object') num(v, 'tower', rw + ': "stack"');
           if (key === 'kickUp' && moves !== 'bounce') bad(rw + ': "kickUp" is for a ball (moves: "bounce").');
         });
       });

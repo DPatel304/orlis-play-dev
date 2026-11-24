@@ -8,7 +8,7 @@
      creations.save(game)   { id?, name, picks, makerId } -> the saved game   creations.remove(id)
    A game: { id, name, makerId, picks, desc, createdAt, updatedAt, pending? } */
 import { account } from '../ui/account.js';
-import { build, clean } from './recipe.js';
+import { build, clean, NAME_MAX } from './recipe.js';
 import { MAX_SLOTS, FULL_LINE } from './slots.js';
 
 const KEY = 'orlis.creations';
@@ -57,8 +57,8 @@ export const creations = {
     const whole = clean(picks), now = new Date().toISOString();
     const mine = id ? this.byId(id) : null;
     if (!mine && this.full) throw fail(FULL_LINE, 409);
-    const game = { id: mine ? mine.id : 'local-' + Math.random().toString(36).slice(2, 10), name: String(name || whole.name || 'My game').slice(0, 24), makerId: makerId || (mine && mine.makerId) || null,
-      picks: { ...whole, name: String(name || whole.name || '').slice(0, 24) || undefined }, desc: null, createdAt: mine ? mine.createdAt : now, updatedAt: now };
+    const game = { id: mine ? mine.id : 'local-' + Math.random().toString(36).slice(2, 10), name: String(name || whole.name || 'My game').slice(0, NAME_MAX), makerId: makerId || (mine && mine.makerId) || null,
+      picks: { ...whole, name: String(name || whole.name || '').slice(0, NAME_MAX) || undefined }, desc: null, createdAt: mine ? mine.createdAt : now, updatedAt: now };
     if (!game.picks.name) delete game.picks.name;
     game.desc = build(game.picks);
     const put = (g) => this.replace(mine ? this.items.map(x => x.id === g.id ? g : x) : [...this.items, g]);

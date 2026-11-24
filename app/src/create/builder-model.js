@@ -1,15 +1,13 @@
-/* The builder's state, with no DOM (decisions 0056 and 0057; the look is docs/create-mockup.html): six steps, the picks, and what each
-   move does. The screen (ui/create-studio.js) draws this and calls these; the tests walk it.
+/* The builder's state, with no DOM (decisions 0056, 0057, 0059; the look is docs/create-mockup.html): four steps (Where, What, Rules,
+   Name & play), the picks, and what each move does. The screen (ui/create-studio.js) draws this and calls these; the tests walk it.
 
-     state = { step: 0..5, picks, name: the name picked (or null), editing: the id of the game being changed (or null) }
+     state = { step: 0..4, picks, name: the name picked (or null), editing: the id of the game being changed (or null) }
    Every function gives back a new state. */
-import { defaultPicks, clean, build, sentence, suggestNames, choices } from './recipe.js';
+import { defaultPicks, clean, build, sentence, suggestNames, addThing, removeThing, setJob, setAllJobs, gameJob, hasThing, goldenOn, bombOn, MAX_THINGS } from './recipe.js';
 
 export const STEPS = [
-  { id: 'how', label: 'How it plays' },
-  { id: 'what', label: 'What' },
   { id: 'where', label: 'Where' },
-  { id: 'move', label: 'Your move' },
+  { id: 'what', label: 'What' },
   { id: 'rules', label: 'Rules' },
   { id: 'name', label: 'Name & play' }
 ];
@@ -18,7 +16,7 @@ export const LAST = STEPS.length - 1;
 export const RULE_KEYS = ['speed', 'many', 'size', 'minutes', 'mode', 'golden', 'bomb'];
 export const SKIP_LABEL = 'Skip, use the usual rules';
 
-/* a new game, or (with a creation) the builder opened on the game's own picks, to save back into its slot */
+/* a new game, or (with a creation) the builder opened on the game's own picks, to save back into its slot (a game made before 0059 opens as one thing with its job) */
 export function newBuilder(creation = null){
   if (!creation) return { step: 0, picks: defaultPicks(), name: null, editing: null };
   const { name: _n, ...picks } = clean({ ...creation.picks });
@@ -31,6 +29,19 @@ export function pick(state, key, value){
   return { ...state, picks: clean({ ...rest, [key]: value }) };
 }
 export const flip = (state, key) => pick(state, key, !state.picks[key]);
+
+/* the things (What): add one (up to five, each once), take one off (one always stays), give one its job */
+const withPicks = (state, make) => { const { name: _n, ...rest } = state.picks; return { ...state, picks: make(clean(rest)) }; };
+export const addPiece = (state, id) => withPicks(state, (p) => addThing(p, id));
+export const removePiece = (state, id) => withPicks(state, (p) => removeThing(p, id));
+export const togglePiece = (state, id) => hasThing(state.picks, id) ? removePiece(state, id) : addPiece(state, id);
+/* the game's one job, for every thing (the builder asks for this; each thing can still hold its own) */
+export const jobAll = (state, job) => withPicks(state, (p) => setAllJobs(p, job));
+export const jobNow = (state) => gameJob(state.picks);
+export const jobOf = (state, id, job) => withPicks(state, (p) => setJob(p, id, job));
+export const isPicked = (state, id) => hasThing(state.picks, id);
+export const canAdd = (state) => state.picks.things.length < MAX_THINGS;
+export const canRemove = (state) => state.picks.things.length > 1;
 
 export const go = (state, by) => ({ ...state, step: Math.max(0, Math.min(LAST, state.step + by)) });
 export const next = (state) => go(state, 1);
@@ -45,22 +56,21 @@ export function skipRules(state){
   return { ...state, picks: clean({ ...rest, ...usual }), step: LAST };
 }
 
-/* what the specials of this recipe can be (Keep it up has none) */
-export const hasSpecials = (picks) => (choices.how.find(h => h.id === picks.how) || {}).specials !== false;
+/* which specials make sense for the things picked: a golden one needs something to Collect; a bomb needs something that moves about (not only a ball to keep up) */
+export const hasGolden = (picks) => goldenOn(picks);
+export const hasBomb = (picks) => bombOn(picks);
+export const hasSpecials = (picks) => goldenOn(picks) || bombOn(picks);
 
 /* the step's title and line, as the right-hand side opens */
-const PLURAL_ASK = { catch: 'catch', pop: 'pop', dodge: 'dodge', collect: 'collect', keepup: 'keep up' };
+const STEP_INFO = {
+  where: { title: 'Where is it?', sub: '' },
+  what: { title: 'What is in it?', sub: 'Pick a job, then up to 5 things.' },
+  rules: { title: 'Make the rules', sub: '' },
+  name: { title: 'Name your game', sub: 'Pick one.' }
+};
 export function stepInfo(state){
-  const s = STEPS[state.step], p = state.picks;
-  const info = {
-    how: { title: 'How does it play?', sub: '' },
-    what: { title: `What do you ${PLURAL_ASK[p.how]}?`, sub: '' },
-    where: { title: 'Where is it?', sub: '' },
-    move: { title: 'How do you move?', sub: 'This card shows in the corner of your game.' },
-    rules: { title: 'Make the rules', sub: '' },
-    name: { title: 'Name your game', sub: 'Pick one.' }
-  }[s.id];
-  return { id: s.id, index: state.step, label: s.label, ...info, nextLabel: s.id === 'name' ? 'Play it!' : 'Next' };
+  const s = STEPS[state.step];
+  return { id: s.id, index: state.step, label: s.label, ...STEP_INFO[s.id], nextLabel: s.id === 'name' ? 'Play it!' : 'Next' };
 }
 /* the strip on top: done (ticked), current, to come */
 export const stripOf = (state) => STEPS.map((s, i) => ({ id: s.id, label: s.label, n: i + 1, status: i < state.step ? 'done' : i === state.step ? 'cur' : 'todo' }));
