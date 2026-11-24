@@ -139,6 +139,16 @@ export function hudZones(W, H, spec = null){
   }
   return out;
 }
+/* how low (a fraction of the height) the shell's areas along the top reach at this x (a fraction of the width): the clock, the goal bar
+   and the words, and the score chips - up to the second row of them, which is as far as four players' go. A ball or a block that
+   stays below it is never behind them. `gap` is the room to leave under them. */
+export function clearOf(W, H, x, gap = 0.04){
+  const z = hudZones(W, H), px = x * W;
+  let low = 0;
+  for (const k of ['top', 'clock']) if (px >= z[k].x && px <= z[k].x + z[k].w) low = Math.max(low, (z[k].y + z[k].h) / H + gap);
+  if (px <= z.score.x + z.score.w) low = Math.max(low, Math.min((z.score.y + z.score.h) / H, 0.22) + gap);
+  return low;
+}
 /* is this point (pixels) under one of the shell's areas? (for placing targets) */
 export function underHud(W, H, x, y, spec = null){
   return Object.values(hudZones(W, H, spec)).some(z => x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h);

@@ -613,28 +613,29 @@ export const BRAINS = {
     act(ctx, p, now){
       const g = ctx.inst; p.mem.now = now;
       const slot = p.slot;
-      const mine = slot >= 0 ? g.blocks.find(b => b.held && String(b.held.key).startsWith(String(slot)) && b.held.who === slot) : null;
+      if (slot < 0){ p.state = 'idle'; p.releaseHands(now); return; }
+      /* (each player has their own blocks and tower: only those count) */
+      const mine = g.blocks.find(b => b.held && b.owner === slot && b.held.who === slot);
       if (mine){
         p.state = 'on';
         const side = String(mine.held.key).endsWith('l') ? 'l' : 'r', Hd = side === 'l' ? p.L : p.R;
-        const top = g._top(), ty = top - 0.12, tx = 0.5;
-        p.walkTo(tx + (p.sx < 0.5 ? -1 : 1) * 0.045);
+        /* the hand only has to get to the top of the tower and a little over (HAND_OVER); no further */
+        const tx = g.towerX(slot), ty = g._top(slot) + 0.09;
+        p.walkTo(tx + (p.sx < tx ? -1 : 1) * 0.045);
         Hd.goal(tx, ty, now); p.other(side).release(now);
-        p.mem.reachFail = Math.abs(Hd.y - ty) > 0.04 ? (p.mem.reachFail || 0) + 1 : 0;
         const r = p.reach(tx, ty); if (r.kind === 'hop' && Math.abs(p.sx - tx) < 0.12) p.hop(p.kind.hopM);
-                return;
+        return;
       }
       let best = null, bc = 1e9;
       for (const b of g.blocks){
-        if (b.held || b.y < 0.0) continue;
+        if (b.held || b.y < 0.0 || b.owner !== slot) continue;
         const r = p.reach(b.x, b.y);
         const walk = Math.max(0, Math.abs(b.x - p.sx) * A - p.armLen * p.k * 0.8);
-        let cost = walk * 2.0 + (r.kind === 'hop' ? 0.5 : r.kind === 'bend' ? 0.3 : 0) + Math.abs(b.x - 0.5) * 0.3;
+        let cost = walk * 2.0 + (r.kind === 'hop' ? 0.5 : r.kind === 'bend' ? 0.3 : 0);
         if (r.kind === 'no' || walk > 0.6) continue;
-        for (const q of ctx.world.persons) if (q !== p && q.tgt === b) cost += 0.8;
         if (cost < bc){ bc = cost; best = { b, r }; }
       }
-      if (!best){ p.tgt = null; p.state = 'idle'; idleStance(p, now, 0.5 + (p.idx - (ctx.world.persons.length - 1) / 2) * 0.2); return; }
+      if (!best){ p.tgt = null; p.state = 'idle'; idleStance(p, now, g.towerX(slot)); return; }
       p.tgt = best.b; p.state = 'on';
       const l = lead(p, 'bk', best.b, p.delay);
       p.approach(l.x, l.y, now, { hand: best.r.side });

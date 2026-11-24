@@ -116,7 +116,7 @@ const PROBES = {
           reachCeilingY: r2(p.J.shY - p.armLen * p.k * 1.08)
         }));
         const by = {};
-        for (const r of recs){ const k = by[r.kind] || (by[r.kind] = { n: 0, popped: 0, anyReach: 0 }); k.n++; if (r.popped) k.popped++; if (r.dwell.some(d => d >= 0.3)) k.anyReach++; }
+        for (const r of recs){ const k = by[r.kind] || (by[r.kind] = { n: 0, popped: 0, anyReach: 0, above: n ? ctx.world.persons.map(() => 0) : [] }); k.n++; r.above.forEach((a, i) => { k.above[i] = r2(k.above[i] + a / Math.max(0.1, r.life)); }); if (r.popped) k.popped++; if (r.dwell.some(d => d >= 0.3)) k.anyReach++; }
         return { balloons: recs.length, popped: recs.filter(r => r.popped).length, escaped: recs.filter(r => !r.popped && !r.open).length,
           medianPopHeightY: r2(med(recs.filter(r => r.popped).map(r => r.lastY))),
           underHudShare: r2(recs.reduce((s, r) => s + r.hud, 0) / Math.max(0.01, recs.reduce((s, r) => s + r.life, 0))),
@@ -165,6 +165,7 @@ const PROBES = {
   },
   'stack-it-high'(ctx){
     const seen = new Map(), done = []; let prevT = 0;
+    const reachT = ctx.world.persons.map(() => ({ t: 0, n: 0, ok: 0, full: 0 }));
     return {
       frame(dt, t){
         const g = ctx.inst, live = new Set();
@@ -174,11 +175,18 @@ const PROBES = {
         }
         for (const [b, rec] of seen) if (!live.has(b)){ rec.placed = !!b.placed; rec.end = t; done.push(rec); seen.delete(b); }
         prevT = g.towers;
+        ctx.world.persons.forEach((p, i) => {
+          if (p.slot < 0) return;
+          const r = g.reach[p.slot], lane = g.lanes[p.slot];
+          reachT[i].t += dt; reachT[i].full = lane.full;
+          for (const b of g.blocks) if (b.owner === p.slot && !b.held && b.y >= b.settle - 0.01){ const k = p.reach(b.x, b.y).kind; reachT[i].n += dt; if (k !== 'no') reachT[i].ok += dt; }
+        });
       },
       finish(){
         const g = ctx.inst, recs = done;
         const grabbed = recs.filter(r => r.grabbedAt != null);
-        return { blocksSpawned: recs.length + seen.size, placed: recs.filter(r => r.placed).length, towersBlastedOff: g.towers, towerHeightAtEnd: g.tower.length,
+        return { blocksSpawned: recs.length + seen.size, placed: recs.filter(r => r.placed).length, towersBlastedOff: g.towers, towerHeightAtEnd: g.lanes.map(l => l.tower.length).join('/'),
+          towerFull: reachT.map(r => r.full).join('/'), blockReachableShare: reachT.map(r => r.n ? r2(r.ok / r.n) : "-").join('/'),
           wastedInGrass: recs.filter(r => !r.placed && r.grabbedAt == null).length, grabbedNotPlaced: grabbed.filter(r => !r.placed).length,
           meanSecondsToGrab: r2(mean(grabbed.map(r => r.grabbedAt - r.born))), meanSecondsToPlace: r2(mean(recs.filter(r => r.placed).map(r => r.end - r.grabbedAt))) };
       }
@@ -229,18 +237,20 @@ const PROBES = {
     };
   },
   'keep-it-up'(ctx){
-    const s = { drops: 0, lostBalls: 0, maxBalls: 1, prevStreak: 0, prevBalls: 1, lastHitT: 0, longestNoHit: 0, hitAt: [], bestAt: null };
+    const s = { drops: 0, lostBalls: 0, maxBalls: 1, prevStreak: 0, prevBalls: 1, lastHitT: 0, longestNoHit: 0, hitAt: [], bestAt: null, ballT: 0, ballOk: 0 };
     let prevHits = 0;
     return {
       frame(dt, t){
         const g = ctx.inst;
+        /* ball time where its player (anybody, for a ball that's anybody's) could get a hand to it, standing where they are (a hop, bend or walk allowed) */
+        for (const b of g.balls){ s.ballT += dt; if (ctx.world.persons.some(p => (b.owner == null || b.owner === p.slot) && p.reach(b.x, b.y).kind !== 'no')) s.ballOk += dt; }
         if (g.streak === 0 && s.prevStreak > 0) s.drops++;
         s.prevStreak = g.streak;
         if (g.balls.length < s.prevBalls) s.lostBalls += s.prevBalls - g.balls.length;
         s.prevBalls = g.balls.length; s.maxBalls = Math.max(s.maxBalls, g.balls.length);
         if (g.hits > prevHits){ s.longestNoHit = Math.max(s.longestNoHit, t - s.lastHitT); s.lastHitT = t; prevHits = g.hits; }
       },
-      finish(t){ const g = ctx.inst; s.longestNoHit = Math.max(s.longestNoHit, t - s.lastHitT); return { bestStreak: g.best, totalHits: g.hits, streakResets: s.drops, ballsPopped: s.lostBalls, maxBalls: s.maxBalls, longestNoHit: r2(s.longestNoHit) }; }
+      finish(t){ const g = ctx.inst; s.longestNoHit = Math.max(s.longestNoHit, t - s.lastHitT); return { bestStreak: g.best, totalHits: g.hits, streakResets: s.drops, ballsPopped: s.lostBalls, maxBalls: s.maxBalls, longestNoHit: r2(s.longestNoHit), ballReachableShare: r2(s.ballOk / Math.max(1e-6, s.ballT)) }; }
     };
   },
   'ptero-flight'(ctx){

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import popParty, { SIZES, MOTIONS, GIANT_R, GIANT_WINDOWS, GIANT_SLAPS,
   SLOW, SLOW_SECS, PARADE_N, PARADE_BONUS, ANIMAL_WORTH, EVENTS, EVENT_GAP, planEvents,
-  ROUND, FINALE, OPENING, BOUQUET } from '../src/games/pop-party.js';
+  ROUND, FINALE, OPENING, BOUQUET, HOVER, AWAY, APPROACH, COMFY, NEAR_X } from '../src/games/pop-party.js';
 import { pose } from '../src/tracking/pose.js';
 import { ANIMALS } from '../src/games/pop-party-animals.js';
 
@@ -97,6 +97,7 @@ test('a streak ends if you pause too long', () => {
 
 test('the sky starts nearly empty and fills up as the round goes', () => {
   onePlayer();
+  pose.players[0].present = false;      /* (it is the spawner's schedule: with somebody there, balloons wait for them and then leave faster) */
   const inst = popParty.create(1);
   inst.events = [];   /* a parade would hold regular spawns back on purpose */
   const count = () => inst.balloons.filter(b => !b.giant).length;
@@ -255,6 +256,7 @@ const run = (inst, secs) => { for (let i = 0; i < Math.round(secs * 60); i++) in
 
 test('popping the giant slows the world, but not the round clock', () => {
   const inst = quiet();
+  pose.players[0].present = false;      /* (nobody's reach is slowing or speeding the balloon we time) */
   inst._hit(inst._giant(), 0, 1920, 1080);
   run(inst, 0.5);   /* let it ease in */
 
@@ -545,4 +547,90 @@ test('the breeze is light and uneven: small, never a steady sweep', () => {
   assert.ok(flips < 60, 'slow waves, not a quick back and forth');
   const a = popParty.create(1), b = popParty.create(1);
   assert.notEqual(a._breeze(20), b._breeze(20), 'different every round');
+});
+
+/* ---------- one sky, within everyone's reach ---------- */
+/* player i is a body of this size standing here, hands out of the way (a child: shoulders at 0.62, about 0.5 reach; a grown-up: 0.33, 0.12) */
+const BODY = { child: { y: 0.70, scale: 0.357 }, adult: { y: 0.451, scale: 0.595 } };
+function standing(...who){
+  pose.mouse.active = false;
+  pose.players.forEach((p, i) => {
+    const w = who[i];
+    p.present = !!w; p.lm = null;
+    if (w){ p.centre = { x: w.x, y: BODY[w.kind].y }; p.scale = BODY[w.kind].scale; }
+    p.hands.left = { x: -1, y: -1, vx: 0, vy: 0, speed: 0 }; p.hands.right = { x: -1, y: -1, vx: 0, vy: 0, speed: 0 };
+  });
+}
+/* a game with nothing in it but what we put there */
+function bare(n){ const inst = popParty.create(n); inst.events = []; inst.spawn = 99; return inst; }
+/* a balloon at (x, y), rising at its own pace 0.2, level otherwise */
+function floating(inst, x, y){ const b = parked(inst, x, y); b.rise = 0.2; inst.balloons.push(b); return b; }
+/* how fast it would rise there, as a share of its own pace (set its place first: the rise is worked out from where it is) */
+function pace(inst, b){ inst.step(1 / 60, 1920, 1080); return inst._rise(b); }
+
+test('a balloon slows to a hover in its nearest player\'s reach, speeds to it from below, and is off once above them all', () => {
+  standing({ kind: 'child', x: 0.5 });
+  const inst = bare(1);
+  run(inst, 0.5);                       /* (their reach is known) */
+  const r = inst.reach[0];
+  assert.ok(r.top > 0.4 && r.top < 0.6, `a child reaches up to about the middle: ${r.top}`);
+  assert.equal(pace(inst, floating(inst, 0.5, r.at(COMFY / 2))), HOVER, 'hovering in reach');
+  assert.equal(pace(inst, floating(inst, 0.5, 0.97)), APPROACH, 'coming up to them at speed');
+  assert.equal(pace(inst, floating(inst, 0.5, r.top - 0.2)), AWAY, 'gone over their heads');
+  /* and the balloons really do rise at that pace */
+  const b = floating(inst, 0.5, r.at(0.3)), y0 = b.by;
+  run(inst, 1);
+  assert.ok(y0 - b.by < 0.2 * HOVER * 1.5, `it hovers: rose ${(y0 - b.by).toFixed(3)} in a second`);
+  /* nobody there: the sky is as it was */
+  standing();
+  assert.equal(pace(inst, floating(inst, 0.5, 0.5)), 1, 'no players, no change');
+});
+
+test('it waits for the player it is nearest: a tall one\'s balloons are not held at a short one\'s height', () => {
+  standing({ kind: 'adult', x: 0.2 }, { kind: 'child', x: 0.8 });
+  const inst = bare(2);
+  run(inst, 0.5);
+  const [a, c] = inst.reach;
+  assert.ok(a.top < c.top - 0.25);
+  assert.ok(pace(inst, floating(inst, 0.2, c.at(0.4))) > HOVER * 2, 'at the child\'s height by the grown-up it is on its way up to them');
+  assert.equal(pace(inst, floating(inst, 0.8, c.at(0.4))), HOVER, 'by the child it hovers');
+  assert.equal(pace(inst, floating(inst, 0.2, a.at(0.2))), HOVER, 'and high up by the grown-up it hovers');
+});
+
+test('every balloon spends most of its rise where someone can reach it: a child alone, a grown-up alone, and a family', () => {
+  for (const who of [[{ kind: 'child', x: 0.5 }], [{ kind: 'adult', x: 0.5 }], [{ kind: 'adult', x: 0.2 }, { kind: 'child', x: 0.4 }, { kind: 'child', x: 0.6 }, { kind: 'adult', x: 0.8 }]]){
+    standing(...who);
+    const inst = bare(who.length);
+    inst.spawn = 0;
+    run(inst, 0.3);
+    let life = 0, high = 0, seen = new Set();
+    for (let k = 0; k < 60 * 90; k++){
+      inst.step(1 / 60, 1920, 1080);
+      inst.spawn = Math.min(inst.spawn, 0.2);
+      const tallest = Math.min(...inst.reach.slice(0, who.length).map(r => r.top));
+      for (const b of inst.balloons){
+        if (b.giant || b.parade || b.y > 1) continue;
+        life++;
+        if (b.y < tallest - 0.02) high++;
+        seen.add(b);
+      }
+    }
+    assert.ok(seen.size > 40, `plenty of balloons: ${seen.size}`);
+    assert.ok(high / life < 0.2, `${who.length} players: ${(100 * high / life).toFixed(1)}% of balloon time above everyone's reach`);
+  }
+});
+
+test('new balloons come up by the players, and by whoever has popped the fewest', () => {
+  standing({ kind: 'adult', x: 0.2 }, { kind: 'child', x: 0.8 });
+  const inst = bare(2);
+  run(inst, 0.5);
+  inst.score[0] = 0; inst.score[1] = 200;
+  let near0 = 0, near1 = 0, n = 2000;
+  for (let k = 0; k < n; k++){ const x = inst._lane(); if (Math.abs(x - 0.2) < NEAR_X) near0++; if (Math.abs(x - 0.8) < NEAR_X) near1++; }
+  assert.ok(near0 + near1 > n * 0.8, 'mostly by somebody');
+  assert.ok(near0 > near1 * 2, `more by the one who is behind: ${near0} vs ${near1}`);
+  /* the parade marches at a height both can reach */
+  inst._parade();
+  const y = inst.balloons.find(b => b.parade).by;
+  assert.ok(inst.reach.every(r => r.has(y)), `parade at ${y.toFixed(2)}`);
 });
