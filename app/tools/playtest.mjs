@@ -185,17 +185,26 @@ const PROBES = {
     };
   },
   'sky-painter'(ctx){
-    const s = { doneAt: [], topRow: 99, cov: [], lastDone: 0 };
+    const s = { doneAt: [], topRow: 99, cov: [], lastDone: 0, grew: 0, longestStall: 0, lastPainted: 0, stallsOver10: 0, inStall: false, handGrew: 0, lastHand: 0, longestHandStall: 0 };
     return {
       frame(dt, t, step){
         const g = ctx.inst;
+        /* a stall: nobody (and no watercolour) has added a bit of paper for this long; a finished picture starts it afresh */
+        if (g.painted > s.lastPainted || g.alive || g.done > s.lastDone) s.grew = t;
+        s.lastPainted = g.painted;
+        /* (hands only: the watercolour doesn't count) */
+        const hand = g.score.reduce((a, b) => a + b, 0);
+        if (hand > s.lastHand || g.alive) s.handGrew = t;
+        s.lastHand = hand; s.longestHandStall = Math.max(s.longestHandStall, t - s.handGrew);
+        const stall = t - s.grew; s.longestStall = Math.max(s.longestStall, stall);
+        if (stall > 10 && !s.inStall){ s.stallsOver10++; s.inStall = true; } else if (stall < 1) s.inStall = false;
         if (g.done > s.lastDone){ s.doneAt.push(r2(t)); s.lastDone = g.done; }
         if (step % 150 === 0) s.cov.push([Math.round(t), r2(g.covered)]);
         for (let c = 0; c < g.cells.length; c += 1){ if (g.cells[c]){ const row = (c / 48) | 0; if (row < s.topRow) s.topRow = row; break; } }
       },
       finish(){
         const g = ctx.inst, handCells = g.score.reduce((a, b) => a + b, 0), allCells = g.done * g.cells.length + g.painted;
-        return { pictures: g.done, doneAt: s.doneAt, paintedFinal: r2(g.covered), spreadShare: r2(1 - handCells / Math.max(1, allCells)), cells: allCells, handCells, covAt: s.cov };
+        return { pictures: g.done, longestStall: r2(s.longestStall), longestHandStall: r2(s.longestHandStall), stallsOver10s: s.stallsOver10, doneAt: s.doneAt, paintedFinal: r2(g.covered), spreadShare: r2(g.spreadN != null ? g.spreadN / Math.max(1, g.spreadN + handCells) : 1 - handCells / Math.max(1, allCells)), cells: allCells, handCells, covAt: s.cov };
       }
     };
   },

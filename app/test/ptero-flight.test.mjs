@@ -71,12 +71,12 @@ test('too high above a wonder is a near miss, not a find', () => {
   assert.equal(g.found.length, 0);
 });
 
-test('nobody in the room: it drifts gently and keeps flying; the round is three minutes', () => {
+test('nobody in the room: it drifts gently and keeps flying; the round is a minute and a half', () => {
   setup([]);
   const g = ptero.create(2);
   for (let t = 0; t < ROUND - 1; t += DT) g.step(DT, W, H);
   assert.equal(g.over, false); assert.ok(g.z > 0);
   for (let t = 0; t < 2; t += DT) g.step(DT, W, H);
   assert.equal(g.over, true);
-  assert.equal(ROUND, 180);
+  assert.equal(ROUND, 90);
 });
