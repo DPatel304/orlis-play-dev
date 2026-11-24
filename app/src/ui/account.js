@@ -13,7 +13,8 @@ import { frontScene } from './front.js';
 import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx } from '../audio/sound.js';
-import { withFace } from './avatar-maker.js';
+import { withFace, faceOf } from './avatar-maker.js';
+import { CUBO } from './look.js';
 import { editProfile, renameFamily } from './kid-editor.js';
 import { setup } from './setup.js';
 import { claudeChecklist } from './connect-claude.js';
@@ -152,6 +153,15 @@ export function notFoundWords(online){
     : { asleep: false, heading: 'This laptop isn’t online', lede: 'Connect to Wi-Fi - Orlis will carry on by itself.' };
 }
 
+/* Cubo asleep: his head with closed eyes and a small round mouth, and three z's that float up (still with reduced motion) */
+export function sleepyCubo(){
+  const el = h('div', 'napcubo');
+  el.setAttribute('aria-hidden', 'true');
+  el.appendChild(faceOf({ look: { ...CUBO, face: { eyes: 'sleepy', mouth: 'o' } } }, 160, { tile: false, bare: true }));
+  for (let i = 0; i < 3; i++) el.appendChild(h('i', 'z', 'z'));
+  return el;
+}
+
 /* Orlis servers on the Wi-Fi, found by the app (a broadcast) - each with its
    name and address. */
 async function findServers(){
@@ -283,7 +293,9 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
     });
     const typed = h('details', 'setuptype'); typed.append(h('summary', '', 'Type an address'), addr);
     const head = h('h2', '', words.heading), lede = h('p', 'lede', words.lede);
-    show(head, lede,
+    /* asleep: Cubo dozing above the heading, eyes shut, a few z's drifting up (owner, 2026-11-24) */
+    const nap = sleepyCubo(); nap.hidden = !words.asleep;
+    show(nap, head, lede,
       msg, onPick(button('Try again', 'wide'), () => { sfx.select(); find(); }), typed);
     const me = card.lastChild;
     const tick = async () => {
@@ -294,7 +306,7 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
       /* (still not there: say again which it is - the words may have changed) */
       words = notFoundWords(await net.online());
       if (!s.contains(me)) return;
-      head.textContent = words.heading; lede.textContent = words.lede;
+      head.textContent = words.heading; lede.textContent = words.lede; nap.hidden = !words.asleep;
       watching = setTimeout(tick, 8000);
     };
     watching = setTimeout(tick, 8000);

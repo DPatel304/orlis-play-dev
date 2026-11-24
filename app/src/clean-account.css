@@ -71,3 +71,19 @@
 .fpop .btn.setbtn.danger{ background:#fff1f2; color:#be123c; }
 .fpop .btn.setbtn:hover,.fpop .btn.setbtn.hot,body.remote .fpop .btn.setbtn.kfocus{ box-shadow:0 0 0 calc(var(--u)*.5) var(--who,var(--blue)); transform:none; }
 .fpop .favrow{ display:flex; align-items:center; gap:calc(var(--u)*2.4); margin:calc(var(--u)*1.2) 0; } .fpop .favrow canvas.avface{ width:calc(var(--u)*14); height:calc(var(--u)*14); border-radius:28%; background:var(--paper); }
+
+/* "Orlis is asleep": Cubo dozing above the heading - a slow breath, and z's drifting up and away */
+.screen.account .napcubo{ position:relative; width:calc(var(--u)*14); height:calc(var(--u)*14); margin:0 0 calc(var(--u)*1.5); }
+.screen.account .napcubo canvas{ width:100%; height:100%; display:block; transform-origin:50% 90%; animation:napbreath 4s ease-in-out infinite; }
+.screen.account .napcubo .z{ position:absolute; left:78%; top:18%; font:700 calc(var(--u)*3.4)/1 var(--ui); font-style:normal; color:var(--violet); opacity:0; animation:napz 3.6s ease-out infinite; }
+.screen.account .napcubo .z:nth-of-type(2){ animation-delay:-1.2s; font-size:calc(var(--u)*2.8); }
+.screen.account .napcubo .z:nth-of-type(3){ animation-delay:-2.4s; font-size:calc(var(--u)*2.2); }
+@keyframes napbreath{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.035,.975); } }
+@keyframes napz{ 0%{ opacity:0; transform:translate(0,0); } 15%{ opacity:.9; } 100%{ opacity:0; transform:translate(calc(var(--u)*5),calc(var(--u)*-8)); } }
+@media (prefers-reduced-motion:reduce){
+  .screen.account .napcubo canvas{ animation:none; }
+  .screen.account .napcubo .z{ animation:none; opacity:.85; }
+  .screen.account .napcubo .z:nth-of-type(1){ transform:translate(0,0); }
+  .screen.account .napcubo .z:nth-of-type(2){ transform:translate(calc(var(--u)*2.4),calc(var(--u)*-3)); }
+  .screen.account .napcubo .z:nth-of-type(3){ transform:translate(calc(var(--u)*4.4),calc(var(--u)*-6)); }
+}
