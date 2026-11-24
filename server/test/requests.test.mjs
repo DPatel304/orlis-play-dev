@@ -55,7 +55,7 @@ test('the whole way: asked for, read and made on the owner’s laptop, OK’d, i
     const asked = await call('POST', '/api/requests', fireflies, bro.token);
     assert.equal(asked.status, 201);
     assert.equal(asked.state, 'waiting');
-    assert.deepEqual(said[0], ['New game request from Uncle B', asked.sentence.slice(0, 120)], 'a note by the clock');
+    assert.deepEqual(said.find(([t]) => /^New game request/.test(t)), ['New game request from Uncle B', asked.sentence.slice(0, 120)], 'a note by the clock');
     /* the owner reads it, and changes the prompt a little */
     const list = await manage('GET', '/api/requests');
     assert.equal(list.requests.length, 1);

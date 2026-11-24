@@ -18,6 +18,7 @@ import { api } from './api.js';
 import { listenForApps, DISCOVERY_PORT } from './discovery.js';
 import { store } from './store.js';
 import { weekly } from './weekly.js';
+import { headsUp } from './heads.js';
 import { folderFiles } from './files.js';
 import { requests } from './requests.js';
 import { creations } from './creations.js';
@@ -68,9 +69,13 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   /* a note for the owner, by the clock (the cube shows it - supervisor.js) */
   const tell = notify || ((title, text) => console.log(`@@say ${String(title).replace(/[|\n]/g, ' ')}|${String(text).replace(/\n/g, ' ')}`));
   const asked = requests(db, keep, shop, sent, log, tell);
-  info.tell = tell;              /* (someone asking to join: a note by the clock) */
+  const post = mail || mailer({ dataDir });
+  /* a heads-up for the owner: the note by the clock, and an email when mail is set up (heads.js) */
+  const heads = headsUp(db, tell, post);
+  info.tell = tell;
+  info.heads = heads;            /* (someone asking to join, or joined: heads-ups) */
   /* the closed beta: its page, its requests, and the email that says you're in */
-  const club = beta(db, { mail: mail || mailer({ dataDir }), log, notify: tell, downloadUrl, open: betaPage });
+  const club = beta(db, { mail: post, log, notify: tell, downloadUrl, open: betaPage });
   info.beta = club;
   /* who sees which game in the Store (db.js, step 9) */
   const reach = {
@@ -90,7 +95,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
       return new Page(managePage());
     }],
     ...shop.routes(who, owner, log, reach, week),
-    ...week.routes(who, owner, log),
+    ...week.routes(who, owner, log, async (id) => { const g = (await shop.games()).find(x => x.id === id); return g ? g.name : null; }, heads),
     ...club.routes(owner),
     /* the server's name, as families see it - the owner's to change (kept in
        settings.json, so it stays after a restart) */

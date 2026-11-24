@@ -169,7 +169,9 @@ export function api(db, info, extra = () => [], manageKey = null){
         if (fromBeta){ info.beta.joined(e); history(db).add({ id, email: e }, 'joined', { note: `${e} · from the beta` }); }
         if (asks) history(db).add({ id, email: e }, 'asked-to-join', { note: `${e} · ${familyName(body.family, `${n}'s family`)}` });
       } catch (err){ db.exec('ROLLBACK'); throw err; }
-      if (asks) info.tell?.(`${n} wants to join`, `${e} - open Manage Orlis Server to let them in`);
+      const heads = info.heads || info.tell;
+      if (asks) heads?.(`${n} wants to join`, `${e} - open Manage Orlis Server to let them in`);
+      else if (!first) heads?.(`${n} joined Orlis`, `${e} made their account - they're in.`);
       return [201, signIn(id, body.device)];
     }],
 

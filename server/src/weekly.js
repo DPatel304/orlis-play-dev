@@ -59,7 +59,7 @@ export function weekly(db, { now = () => new Date() } = {}){
   return {
     pins,
     featured: (ids) => featuredIds(ids, pins(), now()),
-    routes(who, owner, log, gameName = () => null){
+    routes(who, owner, log, gameName = () => null, heads = () => {}){
       return [
         /* a round's over: which game, the best score, how long, how many played */
         ['POST', '/api/plays', ({ headers, body }) => {
@@ -69,8 +69,19 @@ export function weekly(db, { now = () => new Date() } = {}){
           const secs = Math.max(0, Math.min(3600, Math.round(Number(body.secs) || 0)));
           const value = Math.max(0, Math.min(1e9, Math.round(Number(body.value) || 0)));
           const players = Math.max(1, Math.min(4, Math.round(Number(body.players) || 1)));
+          const before = q('SELECT COUNT(*) AS n FROM plays WHERE household_id = ?').get(a.household_id).n;
           q('INSERT INTO plays (household_id, account_id, game_id, value, secs, players, at) VALUES (?, ?, ?, ?, ?, ?, ?)')
             .run(a.household_id, a.id, id, value, secs, players, now().toISOString());
+          /* a family's very first game (not the owner's own): a heads-up for the owner */
+          if (before === 0){
+            const mine = q("SELECT household_id AS h FROM accounts WHERE role = 'owner' ORDER BY created_at LIMIT 1").get();
+            const fam = q('SELECT name FROM households WHERE id = ?').get(a.household_id);
+            if (!mine || mine.h !== a.household_id){
+              Promise.resolve().then(() => gameName(id)).catch(() => null).then((n) => {
+                try { heads(`${(fam && fam.name) || 'A family'} played their first game`, `${n || id}${players > 1 ? ` with ${players} players` : ''}`); } catch {}
+              });
+            }
+          }
           return { ok: true };
         }],
         /* this week's challenges, and how far the family's got */
@@ -86,12 +97,12 @@ export function weekly(db, { now = () => new Date() } = {}){
           return { week, ends: to.toISOString(), challenges: list, stars, trophies: stars };
         }],
         /* the owner puts a Discover game up front, or lets it take turns */
-        ['POST', '/api/store/:id/feature', ({ headers, params, body, ip }) => {
+        ['POST', '/api/store/:id/feature', async ({ headers, params, body, ip }) => {
           const me = owner(headers, ip);
           const on = body.on === true;
           if (on) q('INSERT OR IGNORE INTO featured (game_id, pinned_at) VALUES (?, ?)').run(params.id, now().toISOString());
           else q('DELETE FROM featured WHERE game_id = ?').run(params.id);
-          log.add(me, on ? 'featured' : 'unfeatured', { gameId: params.id, name: gameName(params.id) });
+          log.add(me, on ? 'featured' : 'unfeatured', { gameId: params.id, name: await gameName(params.id) });
           return { id: params.id, featured: on };
         }]
       ];
