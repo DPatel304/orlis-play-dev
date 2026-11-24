@@ -206,6 +206,18 @@ export const STEPS = [
     updated_at   TEXT NOT NULL
   );
   CREATE INDEX creations_household ON creations(household_id, created_at);
+  `,
+  /* 14: indexes for the management page's lists, which page, search and sort
+     on the server (admin.js) over thousands of families and a long history.
+     (plays by family and time - plays_week - and accounts by family -
+     accounts_household - are already there.) */
+  `
+  CREATE INDEX plays_game_at ON plays (game_id, at);
+  CREATE INDEX plays_at ON plays (at, game_id, household_id, secs);
+  CREATE INDEX households_created ON households (created_at);
+  CREATE INDEX accounts_pending ON accounts (created_at) WHERE pending = 1;
+  CREATE INDEX history_what ON history (what, id);
+  CREATE INDEX submissions_status ON submissions (status, created_at);
   `
 ];
 

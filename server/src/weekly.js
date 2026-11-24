@@ -78,6 +78,8 @@ export function weekly(db, { now = () => new Date() } = {}){
             const fam = q('SELECT name FROM households WHERE id = ?').get(a.household_id);
             if (!mine || mine.h !== a.household_id){
               Promise.resolve().then(() => gameName(id)).catch(() => null).then((n) => {
+                /* (kept in the history too, for the management page's Activity) */
+                try { log.add(a, 'first-play', { gameId: id, name: n || id, note: `${(fam && fam.name) || 'A family'}${players > 1 ? ` · ${players} players` : ''}` }); } catch {}
                 try { heads(`${(fam && fam.name) || 'A family'} played their first game`, `${n || id}${players > 1 ? ` with ${players} players` : ''}`); } catch {}
               });
             }

@@ -52,6 +52,29 @@ export class Raw {
    moment). */
 export const activity = { last: 0 };
 
+/* How the server's been doing, kept in memory only (gone on a restart): the
+   5xx answers of the last 24 hours and the last ~2,000 response times, for
+   the management page's health strip (errors, p95). */
+export const stats = (() => {
+  const SIZE = 2000, MAX_ERRORS = 5000;
+  let dur = new Float64Array(SIZE), n = 0, at = 0, errors = [], lastInternet = 0;
+  return {
+    record(status, ms, internet = false){
+      dur[at] = ms; at = (at + 1) % SIZE; if (n < SIZE) n++;
+      if (status >= 500){ errors.push(Date.now()); if (errors.length > MAX_ERRORS) errors.shift(); }
+      if (internet) lastInternet = Date.now();
+    },
+    snapshot(now = Date.now()){
+      const cut = now - 864e5;
+      while (errors.length && errors[0] < cut) errors.shift();
+      const sorted = Array.from(dur.subarray(0, n)).sort((a, b) => a - b);
+      const p95 = sorted.length ? sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * 0.95) - 1)] : null;
+      return { errors24h: errors.length, p95, samples: n, lastInternet: lastInternet || null };
+    },
+    reset(){ dur = new Float64Array(SIZE); n = 0; at = 0; errors = []; lastInternet = 0; }
+  };
+})();
+
 /* routes: [method, '/api/thing/:id', handler(req) -> body | [status, body]] */
 export function makeServer(routes){
   const handle = handler(routes);
@@ -68,6 +91,8 @@ function handler(routes){
   });
   return async (req, res, internet) => {
     activity.last = Date.now();
+    const t0 = performance.now();
+    res.once('finish', () => stats.record(res.statusCode, performance.now() - t0, whoFrom(req, internet) === INTERNET));
     /* The app is a page from its own address (tauri.localhost), so it needs
        permission to call this one. Sign-in uses a token in a header, not a
        cookie, so allowing any page to ask doesn't let one act as somebody. */
@@ -94,7 +119,7 @@ function handler(routes){
     }
     /* a page: only ever its own, with nothing from anywhere else */
     if (body instanceof Page){
-      res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src data:", 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' });
+      res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src data:; font-src data:", 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' });
       res.end(body.html);
       return;
     }

@@ -22,6 +22,8 @@ import { headsUp } from './heads.js';
 import { folderFiles } from './files.js';
 import { requests } from './requests.js';
 import { creations } from './creations.js';
+import { admin } from './admin.js';
+import { startup } from './startup.js';
 
 /* The server's version: 0.1 and the build number, stamped in when the exe
    is built (build-exe.mjs); run from the code, plain 0.1.0. */
@@ -41,7 +43,7 @@ const BACKUP_LOOK = 60 * 60 * 1000, QUIET = 2 * 60 * 1000;
 /* restart(): how to start this server again (to finish a restore) - given
    when something's there to do it. status.update: what the updater last
    found, for the owner's page. */
-export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, approveJoins = false, betaPage = false, downloadUrl = 'https://github.com/DPatel304/orlis-play-dev/releases/download/beta/Orlis-Play-Beta-Setup.exe', publicUrl = null, mail = null, internetPort = null, files = null, notify = null } = {}){
+export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, approveJoins = false, betaPage = false, downloadUrl = 'https://github.com/DPatel304/orlis-play-dev/releases/download/beta/Orlis-Play-Beta-Setup.exe', publicUrl = null, mail = null, internetPort = null, files = null, notify = null, statfs = null } = {}){
   mkdirSync(dataDir, { recursive: true });
   const safe = backups(dataDir, { version: VERSION });
   /* a restore the owner asked for, done before anything is opened */
@@ -70,6 +72,13 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const tell = notify || ((title, text) => console.log(`@@say ${String(title).replace(/[|\n]/g, ' ')}|${String(text).replace(/\n/g, ' ')}`));
   const asked = requests(db, keep, shop, sent, log, tell);
   const post = mail || mailer({ dataDir });
+  /* when it last sent, and what went wrong, for the management page (memory only) */
+  const mailState = { last: null, error: null };
+  const sendMail = post.send.bind(post);
+  post.send = async (m) => {
+    try { const r = await sendMail(m); mailState.last = Date.now(); mailState.error = null; return r; }
+    catch (e){ mailState.error = e && e.message; throw e; }
+  };
   /* a heads-up for the owner: the note by the clock, and an email when mail is set up (heads.js) */
   const heads = headsUp(db, tell, post);
   info.tell = tell;
@@ -83,7 +92,12 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
     mine: (a, id) => { const r = db.prepare('SELECT household_id FROM reach WHERE game_id = ?').get(id); return !!r && r.household_id === a.household_id; },
     canSee: (a, id) => { const r = db.prepare('SELECT household_id FROM reach WHERE game_id = ?').get(id); return !r || r.household_id === a.household_id; }
   };
+  const startedAt = Date.now();
+  let door = null;
+  const desk = admin({ db, info, dataDir, ...(statfs ? { statfs } : {}), shop, week, log, mail: post, mailState, safe, status, startedAt, version: VERSION,
+    lan: () => lan(info.port), tailscale: tailscaleAt, startupOn: process.platform === 'win32' ? () => startup({ exe: process.execPath, dataDir }).on() : null, internetPort: () => door ? door.address().port : null });
   const owners = (who, owner) => [
+    ...desk.routes(owner),
     ...sent.routes(who, owner, (h, ip) => h['x-orlis-manage'] !== undefined ? owner(h, ip) : who(h)),
     ...tv.routes(who),
     ...made.routes(who),
@@ -133,7 +147,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
       owner(headers, ip);
       return { name: info.name, version: VERSION, maker: status.maker || { state: 'off' }, addresses: lan(at), tailscale: tailscaleAt(), awayJoins: info.tailscaleJoin !== false, update: status.update, backups: safe.list(), restoring: safe.pending(), restored: restored ? restored.id : null, canRestart: !!restart };
     }],
-    ['POST', '/api/backups', ({ headers, ip }) => { owner(headers, ip); return [201, safe.make('manual', db)]; }],
+    ['POST', '/api/backups', ({ headers, ip }) => { owner(headers, ip); const b = safe.make('manual', db); backedUp(b); return [201, b]; }],
     ['POST', '/api/backups/:id/restore', ({ headers, params, ip }) => {
       owner(headers, ip);
       let b;
@@ -142,13 +156,15 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
       return { ok: true, backup: b, restarting: !!restart };
     }]
   ];
+  /* a backup made: in the history too (Activity) */
+  const backedUp = (b) => { try { log.add(null, 'backup', { note: `${b.reason} · ${Math.max(1, Math.round(b.bytes / 1024))} KB` }); } catch {} };
   const web = makeServer(api(db, info, owners, manageKey));
   await new Promise((ok, no) => { web.once('error', no); web.listen(port, host, ok); });
   const at = web.address().port;
+  info.port = at;
   /* the internet door: for a tunnel (Tailscale Funnel) to hand in requests
      from the internet. Only this laptop can reach it, and everyone through it
      counts as the internet - never the owner, never the home Wi-Fi. */
-  let door = null;
   if (internetPort !== null && internetPort !== false){
     door = web.internetDoor();
     /* (taken by something else: the server still starts, just without it) */
@@ -158,7 +174,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const udp = discoveryPort === false ? null
     : await listenForApps({ port: discoveryPort, answer: () => ({ id: info.id, name: info.name, port: at, version: VERSION }) });
   /* the daily backup, at a quiet moment */
-  const look = () => { if (Date.now() - activity.last > QUIET) try { safe.daily(db); } catch (e){ console.error(`(backup didn't work: ${e.message})`); } };
+  const look = () => { if (Date.now() - activity.last > QUIET) try { const b = safe.daily(db); if (b) backedUp(b); } catch (e){ console.error(`(backup didn't work: ${e.message})`); } };
   const first = setTimeout(look, 60 * 1000), every = setInterval(look, BACKUP_LOOK);
   first.unref?.(); every.unref?.();
   return {
