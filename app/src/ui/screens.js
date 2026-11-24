@@ -173,7 +173,10 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null, ex
     if (summary && summary.line && summary.line.length > 0 && !/^(You|Together you) got /.test(summary.line)){ const l = h('p', 'gline'); l.textContent = summary.line; c.appendChild(l); }
   } else if (summary && summary.line){ const l = h('p', 'gline big'); l.textContent = summary.line; c.appendChild(l); }
   const row = h('div', 'btnrow');
-  row.append(bigButton('again', game.passive ? 'Read again' : 'Play again', 'go', onAgain), bigButton('house', back, 'ghost', onMenu));
+  row.append(bigButton('again', game.passive ? 'Read again' : 'Play again', 'go', onAgain));
+  /* a game the family made (0057): Change it, between Play again and Home - the builder again on that game */
+  if (extra && typeof extra.change === 'function') row.appendChild(bigButton('pencil', 'Change it', 'ghost', extra.change));
+  row.appendChild(bigButton('house', back, 'ghost', onMenu));
   c.appendChild(row);
   /* each child: their face, name and count */
   const kids = extra && extra.kids || [];

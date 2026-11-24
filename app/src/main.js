@@ -130,7 +130,7 @@ function toMenu(arrive = false){
     onFresh: () => { if (mode === 'menu') toMenu(false); } }));
 }
 /* Where the Play and Create tabs, the Discover tile and the pages' Home buttons go. */
-function tabs(){ return { home: () => toMenu(false), store: toStore, create: () => toCreate(), requests: () => toCreate('requests'), pro: toPro }; }
+function tabs(){ return { home: () => toMenu(false), store: toStore, create: () => toCreate(), pro: toPro }; }
 function toStore(){
   if (appMode.creator()) return toStart();
   music.stop(); voice.hush();
@@ -152,8 +152,9 @@ addEventListener('orlisletin', () => {
 function toStart(){
   if (account.signedIn && !account.isKid && ['creator', 'owner'].includes(account.role)) toPro(); else toCreate();
 }
-function toCreate(view = ''){
-  go('create', () => createPage({ view, nav: tabs(), onPlay: toGame, onWho: () => toWho(false), onRecalibrate: toCalibration }));
+/* Create (decision 0057): everyone makes games from pictures here; opts.edit is the id of a game to change (from its results) */
+function toCreate(opts = {}){
+  go('create', () => createPage({ edit: opts && opts.edit || null, nav: tabs(), onPlay: toGame, onWho: () => toWho(false), onRecalibrate: toCalibration }));
 }
 /* the mode was switched (Settings, in a testing build): that mode's first page */
 addEventListener('orlismode', (e) => {
@@ -174,7 +175,7 @@ function toWho(arrive, glide = false){
   const PAGES = { menu: () => toMenu(false), store: toStore, create: toCreate, pro: toPro };
   const back = !arrive && PAGES[mode] ? PAGES[mode] : null;
   /* (a new creator who picked "Make my first game": straight to Create, where it's made) */
-  go('who', () => welcome(() => (account.state && account.state.firstGame ? toCreate() : toMenu(arrive)), { auto: arrive, glide, onBack: back }));
+  go('who', () => welcome(() => (account.state && account.state.firstGame === true ? toPro() : account.state && account.state.firstGame ? toCreate() : toMenu(arrive)), { auto: arrive, glide, onBack: back }));
 }
 
 function toCalibration(){
@@ -363,14 +364,16 @@ function showResults(){
   }
   /* told to the family's server, for this week's challenges (not a game
      being tried out - from Create, or waiting for the owner's OK) */
-  const toldWeek = !game.back && !game.trial && !game.passive
+  const toldWeek = !game.back && !game.trial && !game.passive && !game.made
     ? week.played({ gameId: game.id, value: inst.value(), secs: Math.round(played), players: Math.max(1, joined.size) }) : null;
   /* (a game being tried goes back where it came from: Create) */
   /* each child's face, name and count (in seat order; the counts only when the game's tally lines up with who played) */
   const seats = [...joined].filter(i => i < players).sort((x, y) => x - y);
   let rows = []; try { rows = inst.tally(); } catch {}
   const kids = seats.map((i, k) => ({ i, name: crew.nameOf(i) || `Player ${i + 1}`, look: crew.lookOf(i), color: crew.colorOf(i, PLAYER_COLORS[i]), value: rows.length === seats.length ? Number(rows[k].value) || 0 : null }));
-  go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'Home', summary, { total, kids: game.passive ? [] : kids }));
+  go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'Home', summary, { total, kids: game.passive ? [] : kids,
+    /* a game the family made: its results have a third button, Change it (the builder again, on this game's picks, saving into the same slot) */
+    change: game.made ? () => toCreate({ edit: game.made.id }) : null }));
   /* (a challenge this round moved shows on the results screen once the server has answered - if that is still the page up) */
   if (toldWeek) deliverRoundNews(toldWeek, () => (mode === 'results' ? scene : null));
 }

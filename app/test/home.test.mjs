@@ -30,9 +30,9 @@ test('at most three featured games; fewer if fewer are featured', () => {
   assert.equal(homeRows({ pool: POOL, featured: GET.slice(0, 1), discover: true })[0].items.length, 2);
 });
 
-test('the tabs (0055): Play and Create for a grown-up in the Player app; none for a child, a profile waiting to be let in, or the Creator app', () => {
+test('the tabs (0055, 0057): Play and Create for everyone in the Player app, children too; none for a profile waiting to be let in, or the Creator app', () => {
   assert.deepEqual(tabsFor({}), ['play', 'create']);
-  assert.deepEqual(tabsFor({ kid: true }), [], 'children do not make games: no tabs bar at all');
+  assert.deepEqual(tabsFor({ kid: true }), ['play', 'create'], 'children make games too (0057)');
   assert.deepEqual(tabsFor({ waiting: true }), []);
   assert.deepEqual(tabsFor({ creatorApp: true, modeTabs: ['create', 'pro'] }), []);
   assert.deepEqual(tabsFor({ modeTabs: ['create', 'pro'] }), []);

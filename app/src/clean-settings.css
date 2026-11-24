@@ -33,5 +33,4 @@
 .fpop{ width:min(92vw, calc(var(--u)*92)); padding:calc(var(--u)*3.4) calc(var(--u)*4) calc(var(--u)*3); font-size:calc(var(--u)*3.4); }
 .fpop h2{ font-size:calc(var(--u)*5.6); margin:0 0 calc(var(--u)*2); }
 .fpop .fnote{ color:var(--ink-soft); } .fpop .ferr{ color:#be123c; }
-.fpop.reqpop{ width:min(94vw, calc(var(--u)*130)); }
 .fbtns{ gap:calc(var(--u)*1.6); }

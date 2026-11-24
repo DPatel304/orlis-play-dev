@@ -14,25 +14,21 @@ export const week = {
   challenges: null,     /* { week, ends, challenges, stars } */
   drafts: [],           /* the games a creator in the family is testing on this TV (kept by tvwatch.js) */
   waiting: [],          /* the owner only: games creators sent, waiting for the owner's OK (submissions.js) */
-  requests: [],         /* the games this account asked to have made, and how each is going */
   at: 0,
 
   /* true if anything changed */
   async refresh({ force = false } = {}){
     if (!account.needed || !account.signedIn) return false;
-    /* (a game on its way is looked at more often: how it's going is news) */
-    if (!force && Date.now() - this.at < (this.building().length ? 15000 : 60000)) return false;
+    if (!force && Date.now() - this.at < 60000) return false;
     this.at = Date.now();
     const was = this.key();
-    const [st, ch, rq, wt] = await Promise.all([
+    const [st, ch, wt] = await Promise.all([
       account.waiting ? null : account.call('GET', '/api/store').catch(() => null),
       account.call('GET', '/api/challenges').catch(() => null),
-      account.waiting || account.isKid ? null : account.call('GET', '/api/requests').catch(() => null),
       seesWaiting() ? account.call('GET', '/api/submissions?all=1').catch(() => null) : null
     ]);
     if (st) this.store = st;
     if (ch) this.challenges = ch;
-    if (rq) this.requests = rq.requests || [];
     if (wt) this.waiting = waitingEntries(wt.submissions);
     else if (!seesWaiting()) this.waiting = [];
     /* a game the family's own creator published: it comes down to this TV by itself (and a newer version of one) */
@@ -47,12 +43,7 @@ export const week = {
     }
     return got || this.key() !== was;
   },
-  key(){ return JSON.stringify([this.store && this.store.featured, this.store && this.store.games && this.store.games.map(g => g.id + g.version), this.challenges, this.requests.map(x => x.id + x.state), this.waiting.map(x => x.submission), this.drafts.map(d => d.id + d.version + d.sha256)]); },
-
-  /* the ones still being made (or not going to be), for Play's Under construction row */
-  building(){
-    return (this.requests || []).filter(x => ['waiting', 'making', 'made', 'ready', 'declined'].includes(x.state));
-  },
+  key(){ return JSON.stringify([this.store && this.store.featured, this.store && this.store.games && this.store.games.map(g => g.id + g.version), this.challenges, this.waiting.map(x => x.submission), this.drafts.map(d => d.id + d.version + d.sha256)]); },
 
   /* this week's featured Discover games, as entries */
   featured(){

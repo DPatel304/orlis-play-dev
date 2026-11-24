@@ -27,7 +27,7 @@ function build(extra = {}){
   const ui = resetDom(); El.prototype.getContext = () => null;
   keyHandlers.length = 0;
   const calls = [];
-  const nav = { home: () => calls.push('home'), store: () => calls.push('store'), create: () => calls.push('create'), requests: () => calls.push('requests'), pro: () => calls.push('pro') };
+  const nav = { home: () => calls.push('home'), store: () => calls.push('store'), create: () => calls.push('create'), pro: () => calls.push('pro') };
   const page = (extra.discover ? discoverPage : menu)({ onPlay: (g) => calls.push('play:' + g.id), onRecalibrate(){}, onWho: () => calls.push('who'), nav, ...extra });
   return { ui, page, calls, s: q(ui, '.home') };
 }
@@ -185,15 +185,12 @@ test('picking Create (OK or a click) goes to Create; picking Play, the tab you a
   page.leave();
 });
 
-test('a child sees no tabs bar at all, just the logo; the Creator app has none either', () => {
+test('a child sees the Play and Create tabs too (0057); the Creator app has no tabs bar', () => {
   withKid(() => {
     const { s, page } = build();
-    assert.equal(qa(s, '.ptab').length, 0); assert.ok(!q(s, '.ptabs'));
+    assert.deepEqual(qa(s, '.ptab').map(t => t.getAttribute('aria-label')), ['Play', 'Create']);
     assert.ok(q(s, '.lg'), 'the logo stays');
-    assert.deepEqual(page.tabs, []);
-    press('ArrowUp'); press('ArrowUp'); press('ArrowUp');
-    assert.ok(!remote.cur || !remote.cur.classList.contains('ptab'), 'Up from the first row goes nowhere');
-    assert.equal(page.pos.row, 0);
+    assert.equal(page.tabs.length, 2);
     page.leave();
   });
   const was = appMode.get;
