@@ -99,11 +99,19 @@ test('families: pages, counts and the status rules', async () => {
     /* a row */
     const row = all.rows.find(r => r.name === 'The Active');
     assert.deepEqual(Object.keys(row).sort(), ['accounts', 'emails', 'id', 'joined', 'last', 'made', 'name', 'plays', 'profiles', 'slots', 'status']);
+    assert.equal(row.slots, 3, 'Create\'s slots: 3 a family');
     assert.equal(row.plays, 2); assert.ok(Date.parse(row.last) > Date.now() - 3.5 * DAY && Date.parse(row.last) < Date.now() - 1.5 * DAY, 'its latest play');
-    assert.equal(row.slots, 3); assert.equal(row.made, 0);
+    assert.equal(row.made, 0);
     assert.deepEqual(row.profiles.map(p => p.name), ['Sam']); assert.match(row.profiles[0].colour, /^#[0-9a-f]{6}$/);
-    /* the owner's own family: no slots to count */
-    assert.equal(all.rows.find(r => r.name === 'The Patels').slots, 0);
+    assert.equal(all.rows.find(r => r.name === 'The Patels').slots, 3, 'the owner\'s family too');
+    /* games made in Create (the creations table), out of 3; sortable */
+    const mk = (hid, name) => s.db.prepare("INSERT INTO creations (id, household_id, maker_id, name, picks, description, created_at, updated_at) VALUES (?, ?, 'm', ?, '{}', '{}', ?, ?)").run(`c-${hid}-${name}`, hid, name, ago(1), ago(1));
+    const act = all.rows.find(r => r.name === 'The Active').id, qui = all.rows.find(r => r.name === 'The Quiet').id;
+    mk(act, 'a'); mk(qui, 'a'); mk(qui, 'b');
+    const byMade = await call('GET', '/api/admin/families?per=100&sort=made&dir=desc');
+    assert.deepEqual(byMade.rows.slice(0, 2).map(r => [r.name, r.made]), [['The Quiet', 2], ['The Active', 1]]);
+    assert.deepEqual(byMade.rows.at(-1).made, 0);
+    assert.equal((await call('GET', `/api/admin/families/${qui}`)).made, 2);
   } finally { await s.close(); }
 });
 
@@ -144,13 +152,13 @@ test('families: search by name, email, id and kids\' names; the sort whitelist',
 test('one family, for the side panel: its accounts, kids and most played games', async () => {
   const { s, call } = await fresh();
   try {
-    const f = addFamily(s.db, { name: 'The Chens', plays: [ago(1), ago(1), ago(2)], look: JSON.stringify({ colour: 'teal' }), slots: 5 });
+    const f = addFamily(s.db, { name: 'The Chens', plays: [ago(1), ago(1), ago(2)], look: JSON.stringify({ colour: 'teal' }) });
     s.db.prepare("INSERT INTO plays (household_id, account_id, game_id, value, secs, players, at) VALUES (?, ?, 'sky-painter', 1, 10, 1, ?)").run(f.hid, f.aid, ago(1));
     const r = await call('GET', `/api/admin/families/${f.hid}`);
     assert.equal(r.http, undefined);
     assert.equal(r.name, 'The Chens'); assert.equal(r.json.status, 'active');
-    assert.equal(r.accounts.length, 1); assert.deepEqual(Object.keys(r.accounts[0]).sort(), ['createdAt', 'email', 'id', 'role', 'slots', 'waiting']);
-    assert.equal(r.accounts[0].slots, 5); assert.equal(r.accounts[0].role, 'creator');
+    assert.equal(r.accounts.length, 1); assert.deepEqual(Object.keys(r.accounts[0]).sort(), ['createdAt', 'email', 'id', 'role', 'waiting']);
+    assert.equal(r.accounts[0].role, 'creator'); assert.deepEqual([r.made, r.slots], [0, 3]);
     assert.deepEqual(r.profiles, [{ name: 'Sam', avatar: 'cube', colour: '#14b8a6' }], 'the look\'s favourite colour, as a colour');
     assert.deepEqual(r.top.map(g => [g.id, g.plays]), [['pop-party', 3], ['sky-painter', 1]]);
     assert.equal(r.top[1].title, 'Sky Painter', 'an app game\'s name, when the Store hasn\'t it');
@@ -523,5 +531,6 @@ test('the lists\' indexes: an older database gets them, and the queries use them
   assert.match(plan('SELECT * FROM history WHERE what IN (?) ORDER BY id DESC LIMIT 30', 'x'), /history_what|SCAN history/);
   assert.match(plan('SELECT * FROM history WHERE id < ? ORDER BY id DESC LIMIT 31', 5), /SEARCH history USING INTEGER PRIMARY KEY/);
   assert.match(plan('SELECT COUNT(*) FROM accounts WHERE household_id = ? AND pending = 1', 'h'), /accounts_household/);
+  assert.match(plan('SELECT COUNT(*) FROM creations WHERE household_id = ?', 'h'), /creations_household/, 'games made, per family');
   db.close();
 });

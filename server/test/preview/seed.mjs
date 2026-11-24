@@ -63,6 +63,8 @@ export function seed(dir, { families = 2500, plays = 200000, games = 150, now = 
       addProfile.run(id('p', i * 10 + k), aid, pick(FIRST), pick(AVATARS), r() < .8 ? JSON.stringify({ colour: pick(COLOURS) }) : null, iso(joinedAt + k));
     }
     if (r() < .3){ addAccount.run(id('b', i), `partner${i}@example.com`, hash, 'creator', iso(joinedAt + 1000), hid, 0, 3); }
+    const made = r() < .25 ? 1 + Math.floor(r() * 3) : 0;
+    for (let c = 0; c < made; c++) db.prepare('INSERT INTO creations (id, household_id, maker_id, name, picks, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id('c', i * 10 + c), hid, aid, `Made ${c + 1}`, '{}', '{}', iso(joinedAt + 5000), iso(joinedAt + 5000));
     fams.push({ hid, aid, joined: joinedAt, pending, active: r() < .92 });
   }
   /* plays: heavy-tailed over families and games, most of them recent */

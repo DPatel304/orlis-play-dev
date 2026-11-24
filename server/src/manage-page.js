@@ -163,8 +163,6 @@ td.cb, th.cb{ width:34px; padding-right:0 }
 .seg{ display:inline-flex; padding:2px; border-radius:999px; background:var(--paper) }
 .seg button{ border:0; background:transparent; font-size:12px; font-weight:600; padding:3px 11px; border-radius:999px; cursor:pointer; color:var(--soft) }
 .seg button.on{ background:var(--surface); color:var(--ink); box-shadow:0 1px 4px rgba(20,24,50,.12) }
-.slots{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--soft) }
-.slots button{ border:1px solid var(--line); background:var(--surface); border-radius:8px; width:26px; height:26px; cursor:pointer }
 .pw{ display:flex; gap:6px; flex-wrap:wrap }
 .pw input, .form input{ flex:1 1 150px; min-width:0; border:1px solid var(--line); border-radius:10px; padding:6px 10px; background:var(--surface) }
 .cover{ width:44px; height:26px; border-radius:6px; vertical-align:middle; margin-right:8px; display:inline-block; background-size:cover; background-position:center }
@@ -231,7 +229,7 @@ const BODY = String.raw`
       <span class="chips" id="fchips"></span>
       <button class="btn ghost" id="fcsv">Export CSV</button>
     </div>
-    <div class="bulk" id="fbulk"><b id="nsel">0</b> selected<button class="btn ghost" data-act="bulk-pw">New passwords</button><button class="btn ghost" data-act="bulk-slots" data-by="-1">Slots &minus;</button><button class="btn ghost" data-act="bulk-slots" data-by="1">Slots +</button><button class="btn ghost" data-act="bulk-clear">Clear</button></div>
+    <div class="bulk" id="fbulk"><b id="nsel">0</b> selected<button class="btn ghost" data-act="bulk-pw">New passwords</button><button class="btn ghost" data-act="bulk-clear">Clear</button></div>
     <div id="fbulkmsg"></div>
     <div class="scroll"><table><thead><tr id="fhead"></tr></thead><tbody id="fbody"></tbody></table></div>
     <div class="pager" id="fpager"></div>
@@ -466,13 +464,13 @@ const SCRIPT = String.raw`
   var FSTAT = [['all', 'All'], ['active', 'Active'], ['new', 'New (7d)'], ['waiting', 'Waiting'], ['inactive', 'Inactive 30d+']];
   var fam = Table({ key: 'f', path: '/api/admin/families', sort: ['last', 'desc'], select: true, none: 'No families yet.',
     chips: FSTAT, id: function(x){ return x.id; },
-    cols: [{ k: 'name', l: 'Family', sort: 1 }, { k: 'ppl', l: 'Profiles' }, { k: 'status', l: 'Status', sort: 1 }, { k: 'last', l: 'Last played', sort: 1 }, { k: 'plays', l: 'Plays', num: 1, sort: 1 }, { k: 'made', l: 'Made' }, { k: 'joined', l: 'Joined', sort: 1 }],
+    cols: [{ k: 'name', l: 'Family', sort: 1 }, { k: 'ppl', l: 'Profiles' }, { k: 'status', l: 'Status', sort: 1 }, { k: 'last', l: 'Last played', sort: 1 }, { k: 'plays', l: 'Plays', num: 1, sort: 1 }, { k: 'made', l: 'Made', num: 1, sort: 1 }, { k: 'joined', l: 'Joined', sort: 1 }],
     row: function(f){
       var shown = f.profiles.slice(0, 6).map(face).join('') + (f.profiles.length > 6 ? '<i>+' + (f.profiles.length - 6) + '</i>' : '');
       var owner = f.accounts.some(function(a){ return a.role === 'owner'; });
       return T('<td><b>{name}</b>{!you}<br><span class="id">{email}{more}</span></td><td><span class="faces">{!faces}</span></td><td>{!st}</td><td>{!last}</td><td class="num">{plays}</td><td class="num">{made}</td><td>{joined}</td>',
         { name: f.name, you: owner ? ' <span class="tag">you</span>' : '', email: f.emails[0] || '', more: f.emails.length > 1 ? ' +' + (f.emails.length - 1) : '', faces: shown, st: tag(f.status),
-          last: f.last ? esc(ago(f.last)) : '<span class="sub">never</span>', plays: fmt(f.plays), made: f.slots ? f.made + '/' + f.slots : '–', joined: dateOf(f.joined) });
+          last: f.last ? esc(ago(f.last)) : '<span class="sub">never</span>', plays: fmt(f.plays), made: f.made + '/' + f.slots, joined: dateOf(f.joined) });
     },
     open: function(f){ openFamily(f.id); },
     after: function(r){ $('fcount').textContent = fmt(r.counts.all) + (famSearching() ? ' match' : ' total'); }
@@ -487,10 +485,9 @@ const SCRIPT = String.raw`
 
   function acctRow(a){
     var isOwner = a.role === 'owner';
-    return T('<div class="acct" data-acct="{id}"><div><span class="em">{email}</span> {!st}</div><div class="acts">{!role}{!slots}<button class="btn ghost sm" data-act="pw-open" data-id="{id}">New password</button></div><div class="pw" data-pw="{id}" hidden><input type="text" placeholder="8+ characters" minlength="8" aria-label="New password for {email}" autocomplete="off"><button class="btn sm" data-act="pw-set" data-id="{id}">Set</button><button class="btn ghost sm" data-act="pw-rand" data-id="{id}">Random</button></div></div>',
+    return T('<div class="acct" data-acct="{id}"><div><span class="em">{email}</span> {!st}</div><div class="acts">{!role}<button class="btn ghost sm" data-act="pw-open" data-id="{id}">New password</button></div><div class="pw" data-pw="{id}" hidden><input type="text" placeholder="8+ characters" minlength="8" aria-label="New password for {email}" autocomplete="off"><button class="btn sm" data-act="pw-set" data-id="{id}">Set</button><button class="btn ghost sm" data-act="pw-rand" data-id="{id}">Random</button></div></div>',
       { id: a.id, email: a.email, st: isOwner ? '<span class="tag new">owner</span>' : a.waiting ? tag('waiting') : '',
-        role: isOwner ? '' : '<span class="seg" data-role="' + esc(a.id) + '"><button data-act="role" data-id="' + esc(a.id) + '" data-role="player"' + (a.role === 'player' ? ' class="on"' : '') + '>Player</button><button data-act="role" data-id="' + esc(a.id) + '" data-role="creator"' + (a.role === 'creator' ? ' class="on"' : '') + '>Creator</button></span>',
-        slots: isOwner ? '' : '<span class="slots"><button data-act="slots" data-id="' + esc(a.id) + '" data-by="-1" aria-label="One fewer slot">−</button><span data-n="' + esc(a.id) + '">' + a.slots + '</span> slots<button data-act="slots" data-id="' + esc(a.id) + '" data-by="1" aria-label="One more slot">+</button></span>' });
+        role: isOwner ? '' : '<span class="seg" data-role="' + esc(a.id) + '"><button data-act="role" data-id="' + esc(a.id) + '" data-role="player"' + (a.role === 'player' ? ' class="on"' : '') + '>Player</button><button data-act="role" data-id="' + esc(a.id) + '" data-role="creator"' + (a.role === 'creator' ? ' class="on"' : '') + '>Creator</button></span>' });
   }
   function openFamily(id){
     P = { kind: 'f', id: id };
@@ -643,7 +640,7 @@ const SCRIPT = String.raw`
         set('Data folder', code(s.dataDir)) + '</div>' +
       '<div class="card"><h2>Joining</h2>' +
         set('Mode', code(s.joining.mode) + '<br><small class="sub">' + (s.joining.approveJoins ? 'Emails on the allowlist are straight in; anyone else asks, and waits in the Queue.' : 'Emails on the allowlist are straight in; everyone else needs an invite code.') + (s.joining.awayJoins ? ' People on Tailscale join freely.' : '') + '</small>') +
-        set('Default game slots', code(s.defaultSlots), '<span class="sub">per grown-up; change one in a family’s panel</span>') + '</div>' +
+        set('Game slots', code(s.defaultSlots), '<span class="sub">per family, for games made in Create (fixed)</span>') + '</div>' +
       '<div class="card"><h2>Heads-ups</h2>' + smtp + set('Email me on', code(s.heads.join(', ')), '<span class="sub">by the clock; and by email when SMTP is set up</span>') + '<div id="mailmsg"></div></div>' +
       '<div class="card"><h2>Backups</h2>' +
         set('Schedule', code('daily, at a quiet moment'), '<button class="btn ghost" data-act="backup-now">Back up now</button>', '<span class="sub" style="grid-column:2 / 4">Also before each update and each restore. Keeps ' + Object.keys(s.backups.keep).map(function(k){ return s.backups.keep[k] + ' ' + (KINDS[k] || k).toLowerCase(); }).join(', ') + '.</span>') +
@@ -687,10 +684,6 @@ const SCRIPT = String.raw`
         [].forEach.call(b.parentNode.children, function(x){ x.classList.toggle('on', x === b); }); var a = acctOf(b.dataset.id); if (a) a.role = b.dataset.role; toast('Now a ' + b.dataset.role + '.');
       });
     },
-    slots: function(b){
-      var a = acctOf(b.dataset.id), n = a ? a.slots + Number(b.dataset.by) : 0; if (n < 0 || n > 99) return;
-      return api('POST', '/api/accounts/' + enc(b.dataset.id) + '/slots', { slots: n }).then(function(r){ a.slots = r.slots; document.querySelector('[data-n="' + b.dataset.id + '"]').textContent = r.slots; fam.load(); });
-    },
     'pw-open': function(b){ var box = document.querySelector('[data-pw="' + b.dataset.id + '"]'); box.hidden = !box.hidden; if (!box.hidden) box.firstChild.focus(); },
     'pw-rand': function(b){ document.querySelector('[data-pw="' + b.dataset.id + '"] input').value = randomPassword(); },
     'pw-set': function(b){
@@ -699,13 +692,6 @@ const SCRIPT = String.raw`
       return setPassword(a, input.value).then(function(){ toast('Password set for ' + a.email + ': ' + input.value + ' (every device signed in as them needs it)'); input.value = ''; });
     },
     'bulk-clear': function(){ fam.S.sel = {}; fam.load(); $('fbulkmsg').innerHTML = ''; },
-    'bulk-slots': function(b){
-      var by = Number(b.dataset.by), todo = [];
-      Object.keys(fam.S.sel).forEach(function(k){ fam.S.sel[k].accounts.forEach(function(a){ if (a.role !== 'owner' && a.slots + by >= 0 && a.slots + by <= 99) todo.push([a, a.slots + by]); }); });
-      if (!todo.length){ toast('Nothing to change.'); return; }
-      return todo.reduce(function(p, x){ return p.then(function(){ return api('POST', '/api/accounts/' + enc(x[0].id) + '/slots', { slots: x[1] }).then(function(r){ x[0].slots = r.slots; }); }); }, Promise.resolve())
-        .then(function(){ toast('Slots ' + (by > 0 ? '+1' : '−1') + ' for ' + todo.length + ' grown-up' + (todo.length === 1 ? '' : 's') + '.'); fam.load(); });
-    },
     'bulk-pw': function(b){
       var todo = [];
       Object.keys(fam.S.sel).forEach(function(k){ fam.S.sel[k].accounts.forEach(function(a){ if (a.role !== 'owner') todo.push(a); }); });

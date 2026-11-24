@@ -20,11 +20,13 @@ import { Fail, Raw, stats } from './http.js';
 import { AVATARS } from './api.js';
 import { BUILT_IN } from './weekly.js';
 import { KEEP } from './backup.js';
+import { LIMITS as CREATE } from './creations.js';
 
-export const DEFAULT_SLOTS = 3;
+/* game slots: the games a family can keep that it made in Create - 3 each, fixed (creations.js) */
+export const DEFAULT_SLOTS = CREATE.slots;
 const DAY = 864e5;
 export const PER = { default: 25, max: 100 };
-export const FAMILY_SORTS = { name: 'name COLLATE NOCASE', status: 'status', last: 'last', plays: 'plays', joined: 'joined' };
+export const FAMILY_SORTS = { name: 'name COLLATE NOCASE', status: 'status', last: 'last', plays: 'plays', made: 'made', joined: 'joined' };
 export const GAME_SORTS = ['title', 'cat', 'maker', 'status', 'plays', 'fams', 'feat'];
 export const FAMILY_STATUS = ['active', 'new', 'waiting', 'inactive'];
 export const GAME_STATUS = ['live', 'featured', 'review', 'hidden'];
@@ -88,7 +90,8 @@ export function admin({ db, info, dataDir, shop, week, log, mail, mailState = { 
     const d7 = new Date(t() - 7 * DAY).toISOString(), d30 = new Date(t() - 30 * DAY).toISOString();
     const text = search ? like(search) : null;
     const rows = q(`SELECT h.id, h.name, h.created_at AS joined, (SELECT COUNT(*) FROM plays WHERE household_id = h.id) AS plays, (SELECT MAX(at) FROM plays WHERE household_id = h.id) AS last,
-        (SELECT COUNT(*) FROM accounts WHERE household_id = h.id AND pending = 1) AS waiting
+        (SELECT COUNT(*) FROM accounts WHERE household_id = h.id AND pending = 1) AS waiting,
+        (SELECT COUNT(*) FROM creations WHERE household_id = h.id) AS made
       FROM households h
       WHERE EXISTS (SELECT 1 FROM accounts a WHERE a.household_id = h.id)
         AND (:q IS NULL OR h.name LIKE :q ESCAPE '\\' OR h.id LIKE :q ESCAPE '\\'
@@ -128,16 +131,12 @@ export function admin({ db, info, dataDir, shop, week, log, mail, mailState = { 
     /* a page's families by id; all of them (the CSV) by the whole tables - either way grouped here, not searched for one by one */
     const some = base.length <= 100, ids = base.map(r => r.id), marks = ids.map(() => '?').join(','), where = some ? `WHERE a.household_id IN (${marks})` : '', args = some ? ids : [];
     const group = (rows) => { const m = new Map(); for (const r of rows){ if (!m.has(r.h)) m.set(r.h, []); m.get(r.h).push(r); } return m; };
-    const accounts = group(q(`SELECT a.id, a.email, a.role, a.slots, a.pending, a.created_at AS createdAt, a.household_id AS h FROM accounts a ${where} ORDER BY a.created_at, a.rowid`).all(...args));
+    const accounts = group(q(`SELECT a.id, a.email, a.role, a.pending, a.created_at AS createdAt, a.household_id AS h FROM accounts a ${where} ORDER BY a.created_at, a.rowid`).all(...args));
     const profiles = group(q(`SELECT f.id, f.name, f.avatar, f.look, a.household_id AS h FROM profiles f JOIN accounts a ON a.id = f.account_id ${where} ORDER BY f.created_at, f.rowid`).all(...args));
-    const made = new Map(q(`SELECT a.household_id AS h, COUNT(*) AS n FROM requests r LEFT JOIN submissions s ON s.id = r.submission_id JOIN accounts a ON a.id = r.account_id
-      WHERE r.kind = 'new' AND (r.status IN ('waiting', 'making') OR (r.status = 'made' AND (s.status IS NULL OR s.status != 'declined'))) ${some ? `AND a.household_id IN (${marks})` : ''} GROUP BY a.household_id`).all(...args).map(m => [m.h, m.n]));
     return base.map(r => {
-      const acc = (accounts.get(r.id) || []).map(a => ({ id: a.id, email: a.email, role: a.role, slots: a.slots, waiting: !!a.pending, createdAt: a.createdAt }));
+      const acc = (accounts.get(r.id) || []).map(a => ({ id: a.id, email: a.email, role: a.role, waiting: !!a.pending, createdAt: a.createdAt }));
       return { id: r.id, name: r.name, status: r.status, last: r.last || null, plays: r.plays, joined: r.joined, accounts: acc, emails: acc.map(a => a.email),
-        profiles: (profiles.get(r.id) || []).map(faceOf), made: made.get(r.id) || 0,
-        /* (the owner's own aren't counted: slots are for the families who ask for games) */
-        slots: acc.filter(a => a.role !== 'owner').reduce((n, a) => n + a.slots, 0) };
+        profiles: (profiles.get(r.id) || []).map(faceOf), made: r.made, slots: CREATE.slots };
     });
   }
   const lookOf = (v) => { try { return v ? JSON.parse(v) : null; } catch { return null; } };
@@ -330,7 +329,7 @@ export function admin({ db, info, dataDir, shop, week, log, mail, mailState = { 
       ['GET', '/api/admin/families/:id', ({ headers, ip, params }) => {
         owner(headers, ip);
         const one = q(`SELECT h.id, h.name, h.created_at AS joined, (SELECT COUNT(*) FROM plays WHERE household_id = h.id) AS plays, (SELECT MAX(at) FROM plays WHERE household_id = h.id) AS last,
-            (SELECT COUNT(*) FROM accounts WHERE household_id = h.id AND pending = 1) AS waiting FROM households h WHERE h.id = ? AND EXISTS (SELECT 1 FROM accounts a WHERE a.household_id = h.id)`).get(params.id);
+            (SELECT COUNT(*) FROM accounts WHERE household_id = h.id AND pending = 1) AS waiting, (SELECT COUNT(*) FROM creations WHERE household_id = h.id) AS made FROM households h WHERE h.id = ? AND EXISTS (SELECT 1 FROM accounts a WHERE a.household_id = h.id)`).get(params.id);
         if (!one) throw new Fail(404, 'no_family', 'No such family.');
         one.status = statusOf(one, new Date(t() - 7 * DAY).toISOString(), new Date(t() - 30 * DAY).toISOString());
         const [row] = familyDetail([one]);
