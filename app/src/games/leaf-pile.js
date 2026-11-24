@@ -16,7 +16,7 @@ import { color, alpha } from './assets/palette.js';
 import { Juice } from './common.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
-import { JumpWatch } from '../tracking/jump.js';
+import { JumpWatch, HOP } from '../tracking/jump.js';
 import { Scene, rgbOf } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
 
@@ -75,7 +75,7 @@ class LeafPile {
     this.fallT = 1;
     this.t = 0; this.over = false;
     this.j = new Juice();
-    this.jumps = new JumpWatch({ rise: 0.08, speed: 0.5 });
+    this.jumps = new JumpWatch(HOP);
     this.scene = new Scene(AUTUMN);
     this.avatars = new Avatars();
     this.say = { icon: LEAF, text: 'Sweep to the pile!', t: 0 };

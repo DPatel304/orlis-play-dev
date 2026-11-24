@@ -44,11 +44,41 @@ const LOST_AFTER = 0.6;     /* seconds without a detection before a player count
    joins in: a grown-up on the sofa is sitting, and further back. Once in, a
    player is followed by where they are rather than by their place in the
    line, so a squat in Animal Copycat doesn't drop them; sitting down or
-   stepping back for WATCH_AFTER seconds does. */
+   stepping back for WATCH_AFTER seconds does.
+
+   What tells a player from a watcher (three things, none of them clever):
+   1. SIZE, as a share of the biggest body in view (torso, shoulders to hips).
+      A 6 to 8 year old beside a parent is 49 to 60% of them, so the bar is
+      low: JOIN_CLOSE 0.46 to take a place, and, once in, only STAY_CLOSE 0.38
+      to keep it (a child who bends, squats or leans in toward the screen
+      comes and goes through the 50s; someone on the sofa or at the back of
+      the room is 35 to 45%). Size is never decided in one frame - a player
+      has to be under STAY_CLOSE for WATCH_AFTER seconds to be dropped.
+   2. STANDING. A seated body has its knees level with its hips (seated()).
+      A body whose knees are in the picture but can't be seen is behind
+      someone or something in front of it, so it doesn't join (legs below the
+      bottom of the picture are fine: a child up close).
+   3. STILL FOR A MOMENT. To join you stand still for JOIN_AFTER seconds: a
+      body that keeps moving more than STEADY torso lengths across the picture
+      is walking through, not joining.
+   Position in the frame is not used: a grown-up's hips are higher than a
+   child's however far back each stands. And once in, a player is followed by
+   body, not just hips (SIZE_COST, SAT_COST, UPPER_COST below), so someone
+   walking by behind them can't take their place when they cross. */
 export const SEEN_MAX = 4;          /* people the camera looks for at once */
-export const CLOSE = 0.6;           /* body size, as a share of the biggest in view, to count as close */
+export const JOIN_CLOSE = 0.46;     /* body size, as a share of the biggest in view, to take a place */
+export const STAY_CLOSE = 0.38;     /* ...and to keep it */
+export const CLOSE = JOIN_CLOSE;    /* (the old name: what it takes to count as close) */
 export const SEATED = 0.45;         /* knee drop below the hips, in torso lengths, under which you're sitting */
+const STEADY = 0.4;                 /* torso lengths a joiner may wander while they wait the JOIN_AFTER seconds */
 export const WATCH_AFTER = 4;       /* seconds sitting or back before a player becomes a watcher */
+const REFIND_SIZE = 1.8;            /* a body picked up again by its head is within this factor of the player's own size */
+/* Following a player from frame to frame is nearest hips, but with costs added (picture heights of distance) so that a body walking past
+   behind them, or sitting behind them, doesn't take over their place when it crosses their hips: */
+const SIZE_COST = 0.3;              /* ...per unit of log size ratio (a doubling in size is worth 0.2) */
+const SAT_COST = 0.3;               /* ...a seated body, for a player who isn't sitting */
+const UPPER_COST = 0.5;             /* ...the shoulders and head not being where this player's were (mean distance, after the hips' own move) */
+const upper = (lm) => ({ sh: { x: (lm[L.L_SHOULDER].x + lm[L.R_SHOULDER].x) / 2, y: (lm[L.L_SHOULDER].y + lm[L.R_SHOULDER].y) / 2 }, hd: headOf(lm) });
 const MATCH = 0.25;                 /* how far a player can move between detections and still be them */
 const SAME = 0.5;                   /* torso lengths apart under which two skeletons are one person */
 /* One head, one person. Two skeletons whose heads are within HEAD_SAME
@@ -122,6 +152,15 @@ export function seated(lm){
   const hipY = (lm[L.L_HIP].y + lm[L.R_HIP].y) / 2;
   const drop = knees.reduce((a, k) => a + lm[k].y, 0) / knees.length - hipY;
   return drop < SEATED * sizeOf(lm);
+}
+
+/* Legs that are in the picture but can't be seen: both knees low in confidence while their place is inside the frame, so something
+   - a person, a table - is in front. (Knees below the bottom of the picture aren't hidden, just not there.) Such a body doesn't join. */
+export function legsHidden(lm){
+  const vis = (k) => (lm[k].v ?? lm[k].visibility ?? 1) > 0.5;
+  const kn = [L.L_KNEE, L.R_KNEE];
+  if (kn.some(vis)) return false;
+  return kn.every(k => lm[k].y < 0.97);
 }
 
 
@@ -458,9 +497,10 @@ export const pose = {
     const dets = people.map(lm => ({
       lm, taken: false,
       x: (lm[L.L_HIP].x + lm[L.R_HIP].x) / 2, y: (lm[L.L_HIP].y + lm[L.R_HIP].y) / 2,
-      playing: !seated(lm) && sizeOf(lm) >= CLOSE * biggest,
-      close: sizeOf(lm) >= CLOSE * biggest,
-      face: faceSeen(lm), head: headOf(lm), size: sizeOf(lm)
+      playing: !seated(lm) && sizeOf(lm) >= STAY_CLOSE * biggest,
+      close: sizeOf(lm) >= STAY_CLOSE * biggest,
+      joinable: !seated(lm) && !legsHidden(lm) && sizeOf(lm) >= JOIN_CLOSE * biggest,
+      face: faceSeen(lm), head: headOf(lm), size: sizeOf(lm), up: upper(lm), sat: seated(lm)
     }));
 
     /* Players already in keep following their own body: whoever is nearest
@@ -469,7 +509,18 @@ export const pose = {
     this.players.forEach((p, i) => {
       if (!p.present || !p.at) return;
       const k = Math.min(p.lostFor + dt, 0.5), px = p.at.x + p.at.vx * k, py = p.at.y + p.at.vy * k;
-      dets.forEach((d, j) => { const dist = Math.hypot(d.x - px, d.y - py); if (dist < MATCH) pairs.push({ i, j, dist }); });
+      /* nearest hips win - but the shoulders and head have to agree too, and the size: someone walking past at the back crosses a
+         player's hips without taking their place (a smaller body, its head and shoulders somewhere else) */
+      const sz = p.at.size, dx = px - p.at.x, dy = py - p.at.y, ps = p.lm && upper(p.lm), psat = !!p.lm && seated(p.lm);
+      dets.forEach((d, j) => {
+        const dist = Math.hypot(d.x - px, d.y - py);
+        if (dist >= MATCH) return;
+        let cost = dist;
+        if (d.sat && !psat) cost += SAT_COST;      /* someone sitting is not a standing player who has bent down beside them */
+        if (sz) cost += SIZE_COST * Math.abs(Math.log(d.size / sz));
+        if (ps){ const du = d.up; cost += UPPER_COST * (apart({ x: du.sh.x - dx, y: du.sh.y - dy }, ps.sh) + apart({ x: du.hd.x - dx, y: du.hd.y - dy }, ps.hd)) / 2; }
+        pairs.push({ i, j, dist: cost });
+      });
     });
     pairs.sort((a, b) => a.dist - b.dist);
     const matched = new Set();
@@ -491,7 +542,11 @@ export const pose = {
     this.players.forEach((p, i) => {
       if (matched.has(i) || !p.present || !p.head) return;
       let best = null, bd = REFIND;
-      for (const d of dets){ if (d.taken) continue; const dist = apart(d.head, p.head); if (dist < bd){ bd = dist; best = d; } }
+      for (const d of dets){
+        if (d.taken) continue;
+        if (p.at && p.at.size && (d.size > p.at.size * REFIND_SIZE || d.size * REFIND_SIZE < p.at.size)) continue;   /* (not someone twice or half their size) */
+        const dist = apart(d.head, p.head); if (dist < bd){ bd = dist; best = d; }
+      }
       if (!best) return;
       matched.add(i); best.taken = true; p.head = best.head;
       this._apply(p, best.lm, dt); p.at = null; this._track(p, best, dt);
@@ -513,11 +568,13 @@ export const pose = {
        that player, never a newcomer. */
     const heads = this.players.filter(p => p.present && p.head).map(p => p.head);
     for (const d of dets){
-      if (d.taken || !d.playing || !d.face) continue;
+      if (d.taken || !d.joinable || !d.face) continue;
       if (heads.some(h => apart(h, d.head) < d.size * HEAD_TAKEN)) continue;
       let best = null, bd = MATCH;
       for (const c of cands){ const dist = Math.hypot(d.x - c.x, d.y - c.y); if (!c.hit && dist < bd){ bd = dist; best = c; } }
-      if (!best){ best = { x: d.x, y: d.y, seen: 0, miss: 0 }; cands.push(best); }
+      if (!best){ best = { x: d.x, y: d.y, ax: d.x, ay: d.y, seen: 0, miss: 0 }; cands.push(best); }
+      /* walking through: moved on from where the wait began, so the wait starts again */
+      if (Math.hypot((d.x - best.ax) * 16 / 9, d.y - best.ay) > STEADY * d.size){ best.ax = d.x; best.ay = d.y; best.seen = 0; }
       best.hit = d; best.x = d.x; best.y = d.y; best.seen += dt; best.miss = 0;
     }
     for (const c of cands) if (!c.hit) c.miss += dt;
@@ -537,7 +594,8 @@ export const pose = {
 
   /* Where a player's hips are and how they're moving, unsmoothed. */
   _track(p, d, dt){
-    if (!p.at){ p.at = { x: d.x, y: d.y, vx: 0, vy: 0 }; return; }
+    if (!p.at){ p.at = { x: d.x, y: d.y, vx: 0, vy: 0, size: d.size }; return; }
+    if (d.size){ const m = p.at.size || d.size; p.at.size = d.size > m ? m + (d.size - m) * 0.3 : m + (d.size - m) * Math.min(1, dt * 0.2); }   /* (their standing size: a crouch doesn't shrink it for long) */
     const t = Math.max(dt, 1 / 120), k = 0.5;
     p.at.vx += ((d.x - p.at.x) / t - p.at.vx) * k; p.at.vy += ((d.y - p.at.y) / t - p.at.vy) * k;
     p.at.x = d.x; p.at.y = d.y;

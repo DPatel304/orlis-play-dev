@@ -7,13 +7,19 @@
                                                                #   turn away or drop is let in anyway, so the game itself can be judged)
      node tools/playtest.mjs --jitter 0.004                    # camera jitter (picture widths, one sigma; default 0.0018)
      node tools/playtest.mjs --admission                       # only who the tracker lets in, for each line-up and for cap 2 and 4
+     node tools/playtest.mjs --watchers                        # the sofa person and the passer-by (lineups s, p, sp, 1c+s ... 4m+sp): share of 3 minutes they were a player
      node tools/playtest.mjs --tables                          # print the summary tables from results.json (nothing is run)
      node tools/playtest.mjs --calibrate                       # how big a hop / squat / lean / knee lift must be to count (game detectors)
      node tools/playtest.mjs --sensitivity                     # Sleepy Bear: stars against reaction time and camera jitter
+     node tools/playtest.mjs --falsejumps                      # moves that must NOT count as a hop (squat, bend, tiptoe, reach, lean, march, flap), 3 min each; --blind hides the ankles
+     --jp rise,speed                                           # try other hop thresholds in --calibrate / --falsejumps / game runs (default: jump.js HOP); --oldjump the old 0.08 / 0.5
+     (every game run also reports, per player, jumpsDetected / falseJumps / falseJumpsPer3min: a second hop detector looking on)
      other flags: --cap N (places that can fill; 4 default, the app ships 2), --react X (scale reaction times), --seeds 1,2,3, --force, --fresh
    (the full set in results.json was made with: --fresh; --calibrate; --sensitivity; --admission; --real --lineups 1c,4c,4m; --real --cap 2 --lineups 4c,4m)
 
-   Line-ups: 1c one child, 1a one adult, 4c four children, 4m two adults + two children (the family: children in front, lower).
+   Line-ups: 1c one child, 1a one adult, 4c four children, 4m two adults + two children (the family: children in front, lower), 2m an adult and
+   a child, 3m two adults and a child; add +s (a person seated on the sofa behind, 35-45% of an adult's size, mostly still, sometimes an arm up),
+   +p (someone walking across the back of the room) or +sp to any of them (s, p, sp alone too): watchers, who must never play (see --watchers).
    Deterministic: a fixed seed gives the same round (the games' dice and the bodies' dice both come from it). 30 fps steps.
    Not a test; it changes no game code. See tools/playtest/rig.mjs for the bodies and how each game is played, and
    docs/playtest/REPORT.md for what the numbers mean (what is measured, what is assumed). */
@@ -32,14 +38,17 @@ const OUT = resolve(HERE, opt('out', '../../docs/playtest/results.json'));
 if (opt('tables')){ const { tables } = await import('./playtest/tables.mjs'); tables(JSON.parse(readFileSync(OUT, 'utf8'))); process.exit(0); }
 
 const poseMod = await import('../src/tracking/pose.js');
-const { pose, sizeOf, seated, CLOSE, WATCH_AFTER, headOf } = poseMod;
+const { pose, sizeOf, seated, CLOSE, STAY_CLOSE, WATCH_AFTER, headOf } = poseMod;
 const { L } = await import('../src/tracking/pose-shared.js');
 const { music } = await import('../src/audio/sound.js');
 const { byId } = await import('../src/games/index.js');
 const { underHud } = await import('../src/games/hud.js');
 const rig = await import('./playtest/rig.mjs');
+const jumpMod = await import('../src/tracking/jump.js');
+/* --jp rise,speed: try other hop thresholds (default: the games' HOP) */
+const JP = opt('jp') ? (([a, b]) => ({ rise: +a, speed: +b, feet: !opt('nofeet') }))(String(opt('jp')).split(',')) : null;
 const { makeWorld, Feeder, resetPose, BRAINS, mulberry32, W, H, A } = rig;
-const lib = { sizeOf, seated, CLOSE, WATCH_AFTER, headOf };
+const lib = { sizeOf, seated, CLOSE, STAY: STAY_CLOSE ?? CLOSE, WATCH_AFTER, headOf };
 music.hold = () => {};
 
 const DT = 1 / 30;
@@ -304,6 +313,8 @@ function runOne(gid, lineup, seed, o = {}){
   const n = world.persons.length;
   const stat = world.persons.map(p => ({ score: 0, firstPoint: null, lastPoint: 0, longestNoPoints: 0, present: 0, lost: 0, wasPresent: p.present, scoreWhileAway: 0, offTarget: 0, longestOff: 0, curOff: 0 }));
   const limit = game.endless ? (gid === 'save-the-harvest' ? 340 : 420) : game.secs + 5;
+  /* a second hop detector looking on (the games' own is HOP): a detection with no real hop in the second before is a false jump */
+  const { JumpWatch: JW, HOP: HOPP } = jumpMod, obs = new JW(JP || HOPP), jstat = world.persons.map(() => ({ jumps: 0, false: 0, lastLift: -9 }));
   let prev = inst.score ? inst.score.slice() : [], step = 0, t = 0, issues = [], scoreDown = 0, stuckFor = 0, longestStuck = 0, lastSum = 0, nonFin = null;
   let ended = 'time';
   for (;;){
@@ -312,6 +323,11 @@ function runOne(gid, lineup, seed, o = {}){
     const before = inst.score ? inst.score.slice() : [];
     inst.step(DT, W, H);
     t += DT; step++;
+    world.persons.forEach((p, i) => { if (p.lift > 0.001) jstat[i].lastLift = t; });
+    for (const slot of obs.step(DT, pose.players, 4)){
+      const i = world.persons.findIndex(p => p.slot === slot); if (i < 0) continue;
+      jstat[i].jumps++; if (t - jstat[i].lastLift > 1){ jstat[i].false++; }
+    }
     if (inst.score){
       for (let s = 0; s < inst.score.length; s++){
         if (inst.score[s] < before[s]) scoreDown++;
@@ -356,6 +372,7 @@ function runOne(gid, lineup, seed, o = {}){
       onShare: r2((ps.on || 0) / tot), idleShare: r2((ps.idle || 0) / tot), waitShare: r2((ps.wait || 0) / tot), lapseShare: r2((ps.lapse || 0) / tot),
       longestOffTarget: r2(st.longestOff),
       presentShare: r2(st.present / frames), timesLost: st.lost, slotChanges: p.slotChanges || 0, forcedIn: p.forced || 0, wouldBeDropped: p.ejections || 0,
+      jumpsDetected: jstat[i].jumps, falseJumps: jstat[i].false, falseJumpsPer3min: r2(jstat[i].false / (roundSecs / 180)),
       armsUpShare: r2(ps.armsUp / tot), bentShare: r2(ps.bent / tot), hops: ps.hops, handPathM: r2((p.L.path + p.R.path)), handsOrHeadOffPictureShare: r2(ps.offFrame / tot), tooCloseShare: r2(ps.closeTime / roundSecs)
     };
   });
@@ -369,6 +386,7 @@ function runOne(gid, lineup, seed, o = {}){
     childMeanScore: r2(mean(kids.map(k => k.score))), adultMeanScore: r2(mean(adults.map(k => k.score))),
     topTied: tieTop > 1 && top > 0, spread: Math.max(...scores) - Math.min(...scores),
     issues: { nonFinite: nonFin, scoreWentDown: scoreDown, longestSecondsNoScoreAnywhere: r2(longestStuck), roundEndedEarly: ended === 'over' && !game.endless && roundSecs < game.secs - 1 ? r2(roundSecs) : null, neverEnded: ended === 'cap', anyoneNeverJoined: joinedAtStart.some(j => !j) && !passive },
+    watchers: world.watchers.map(w => ({ role: w.role, frames: w.frames || 0, playerShare: r2((w.playerFrames || 0) / Math.max(1, w.frames || 0)) })),
     game_: ex
   };
   return res;
@@ -393,9 +411,9 @@ function admission(lineup, seed, cap){
 /* ---------------------------------------------------------------- how big a move has to be to count (the game's own detectors, on bodies of each size) */
 async function calibrate(){
   const { triesOf } = await import('../src/games/animal-gym.js');
-  const { JumpWatch } = await import('../src/tracking/jump.js');
+  const { JumpWatch, HOP } = await import('../src/tracking/jump.js');
   const out = [];
-  const sets = [['jump', [0.25, 0.4, 0.6, 0.8, 1, 1.25, 1.5, 2]], ['squat', [0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.2]], ['lean', [0.3, 0.5, 0.7, 0.9, 1.2, 1.5]], ['march', [0.3, 0.5, 0.7, 1]]];
+  const sets = [['jump', [0.25, 0.4, 0.6, 0.75, 0.82, 1, 1.25, 1.5, 2]], ['squat', [0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.2]], ['lean', [0.3, 0.5, 0.7, 0.9, 1.2, 1.5]], ['march', [0.3, 0.5, 0.7, 1]]];
   for (const kind of ['child', 'adult']) for (const [move, amps] of sets) for (const amp of amps){
     let reps = 0, tries = 0;
     for (const seed of [1, 2, 3]){
@@ -404,18 +422,19 @@ async function calibrate(){
       const p = world.persons[0]; p.amp[move] = amp; p.closeNext = 1e9;
       const feeder = new Feeder(pose, lib, { assist: true, cap: 4 });
       for (let i = 0; i < 45; i++){ world.step(DT, null, null); feeder.step(world, DT); }
-      world.t = 0; const jw = new JumpWatch({ rise: 0.08, speed: 0.5 }), st = {};
+      world.t = 0; const jw = new JumpWatch(JP || (opt('oldjump') ? { rise: 0.08, speed: 0.5 } : HOP)), st = {};
       const mover = { act(c, q, now, dt){ rig.doMove(q, move, now, dt); } };
       let n = 0;
       for (let i = 0; i < 30 * 30; i++){
         world.step(DT, mover, {}); feeder.step(world, DT);
         const slot = p.slot >= 0 ? p.slot : 0, q = pose.players[slot];
+        if (opt('blind')) for (const q of pose.players) if (q.lm){ q.lm[27].v = 0; q.lm[28].v = 0; }
         if (move === 'jump') n += jw.step(DT, pose.players, 4).filter(k => k === slot).length;
         else n += triesOf(move, q, st, DT);
       }
       const period = { jump: [1.1, 1.6], squat: [1.2, 2.0], lean: [1.3, 2.0], march: [0.9, 1.3] }[move][kind === 'child' ? 0 : 1];
       const per = move === 'march' || move === 'lean' ? 2 : 1;
-      tries += n; reps += Math.floor(30 / period) * per;
+      tries += n; reps += move === 'jump' ? p.stats.hops : Math.floor(30 / period) * per;        /* (a hop is counted when the body really left the floor) */
     }
     const real = kind === 'child' ? 1.2 : 1.75;
     const cm = { jump: (kind === 'child' ? 20 : 22) * amp, squat: 0.85 * amp * 0.30 * real * 100, lean: 0.9 * amp * 0.22 * real * 100, march: amp * 0.5 * 0.30 * real * 100 }[move];
@@ -434,6 +453,47 @@ if (opt('admission')){
   prior.meta.admissionNote = 'The tracker\'s own rules, nothing assisted: 40 s standing in view. cap 2 is what ships today (PLAYING = 2); cap 4 is what the games are built for.';
   writeFileSync(OUT, JSON.stringify(prior, null, 1));
   console.log('admission written', OUT);
+  process.exit(0);
+}
+if (opt('watchers')){
+  /* who must never play: a person seated on the sofa behind, someone walking across the back; alone, with a child, with a grown-up, with the family */
+  prior.watchers = [];
+  for (const lu of ['s', 'p', 'sp', '1c+s', '1c+p', '1a+s', '1a+p', '4m+s', '4m+p', '4m+sp']) for (const keep of [false, true]) for (const s of seeds){
+    resetPose(pose); pose.keepSitters = keep;
+    const world = makeWorld(lu, s, { jitter }), feeder = new Feeder(pose, lib, { assist: false, cap: CAP });
+    for (let i = 0; i < 30 * 180; i++){ world.step(DT, null, null); feeder.step(world, DT); }
+    for (const w of world.watchers) prior.watchers.push({ lineup: lu, keepSitters: keep, seed: s, role: w.role, size: r2(w.sizeRatio), inPictureSecs: r2((w.frames || 0) * DT), playerSecs: r2((w.playerFrames || 0) * DT) });
+  }
+  const bad = prior.watchers.filter(w => w.playerSecs > 0);
+  console.log('watchers: ' + prior.watchers.length + ' runs of 180 s, ' + bad.length + ' with any time as a player');
+  for (const w of bad) console.log(' ', w.lineup, 'keepSitters', w.keepSitters, 'seed', w.seed, w.role, 'player for', w.playerSecs, 's of', w.inPictureSecs);
+  writeFileSync(OUT, JSON.stringify(prior, null, 1));
+  process.exit(0);
+}
+if (opt('falsejumps')){
+  /* the moves that must NOT count as a jump, done for 3 minutes each by one body (3 seeds): squat, bend, up on tiptoe, reach, lean, march, walk about */
+  const { JumpWatch, HOP } = jumpMod, rows = [];
+  for (const kind of ['child', 'adult']) for (const move of ['squat', 'bend', 'tiptoe', 'reach', 'lean', 'march', 'flap']){
+    let n = 0, secs = 0;
+    for (const seed of [1, 2, 3]){
+      resetPose(pose);
+      const world = makeWorld(kind === 'child' ? '1c' : '1a', seed, { jitter, noLapse: true });
+      const p = world.persons[0]; p.closeNext = 1e9;
+      const feeder = new Feeder(pose, lib, { assist: true, cap: 4 });
+      for (let i = 0; i < 45; i++){ world.step(DT, null, null); feeder.step(world, DT); }
+      world.t = 0; const jw = new JumpWatch(JP || HOP), mover = { act(c, q, now, dt){ rig.doMove(q, move, now, dt); } };
+      for (let i = 0; i < 30 * 180; i++){
+        world.step(DT, mover, {}); feeder.step(world, DT);
+        if (opt('blind')) for (const q of pose.players) if (q.lm){ q.lm[27].v = 0; q.lm[28].v = 0; }
+        n += jw.step(DT, pose.players, 4).length;
+      }
+      secs += 180;
+    }
+    rows.push({ kind, move, jumpsPer3min: r2(n / (secs / 180)) });
+  }
+  prior.falseJumps = rows;
+  for (const r of rows) console.log(r.kind.padEnd(6), r.move.padEnd(7), 'false jumps per 3 min', r.jumpsPer3min);
+  writeFileSync(OUT, JSON.stringify(prior, null, 1));
   process.exit(0);
 }
 if (opt('sensitivity')){

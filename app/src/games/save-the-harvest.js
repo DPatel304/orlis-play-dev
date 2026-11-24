@@ -15,7 +15,7 @@ import { Juice } from './common.js';
 
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
-import { JumpWatch } from '../tracking/jump.js';
+import { JumpWatch, HOP } from '../tracking/jump.js';
 import { triesOf } from './animal-gym.js';
 
 export const FRUIT_EACH = 4, PER_PICK = 2, RAVEN_STEPS = 6, RAVEN_START = 1;
@@ -65,7 +65,7 @@ class SaveTheHarvest {
     this.kind = null; this.last = null; this.phase = 'spin'; this.pt = 0;
     this.tries = 0; this.need = TRIES_LEAST; this.win = false; this.snack = 0;
     this.st = Array.from({ length: MAX_PLAYERS }, () => ({}));
-    this.jw = new JumpWatch({ rise: 0.08, speed: 0.5 });
+    this.jw = new JumpWatch(HOP);
     this.j = new Juice();
     this.say = { icon: 'dice', text: 'Spin the wheel!', t: 0 };
     this._spin();

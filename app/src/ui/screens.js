@@ -164,7 +164,7 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null, ex
   c.appendChild(kick);
   const total = extra && Number.isFinite(extra.total) && extra.total > 0 ? Math.round(extra.total) : 0;
   if (total && !game.passive){
-    const big = h('div', 'gbig');
+    const big = h('div', 'gbig'); big.setAttribute('data-nocursor', '');       /* (a hand's ring or mitt is never drawn over the count) */
     const [prop, opts] = game.prop || GAME_PROP[game.id] || [];
     big.appendChild(prop ? propIcon(prop, 240, opts || {}, 'gico') : looks({ id: game.id, icon: game.store && game.store.icon }).icon('gico sicon'));
     const num = h('b'); num.textContent = String(total);
@@ -181,13 +181,14 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null, ex
   /* each child: their face, name and count */
   const kids = extra && extra.kids || [];
   if (kids.length){
-    const crewEl = h('div', 'gkids');
+    const crewEl = h('div', 'gkids'); crewEl.setAttribute('data-n', String(Math.min(4, kids.length)));
     for (const k of kids){
       const pill = h('div', 'gkid'); pill.style.setProperty('--c', k.color);
       const face = h('span', 'gkface'); face.appendChild(faceOf({ look: k.look }, 96));
       const nm = h('span', 'gkname'); nm.textContent = k.name;
-      pill.append(face, nm);
-      if (k.value != null){ const n = h('b'); n.textContent = String(Math.round(k.value)); pill.appendChild(n); }
+      const txt = h('span', 'gktext'); txt.appendChild(nm);
+      if (k.value != null){ const n = h('b'); n.textContent = String(Math.round(k.value)); txt.appendChild(n); }
+      pill.append(face, txt);
       crewEl.appendChild(pill);
     }
     s.appendChild(crewEl);

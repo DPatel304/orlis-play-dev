@@ -1,6 +1,7 @@
 import { pose, L, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { figure } from './avatar-art.js';
 import { handsMode } from './handsmode.js';
+import { keepOut } from './cursor.js';
 
 /* The players, in the picture. Two layers, drawn by the game at different
    depths:
@@ -140,6 +141,7 @@ export class Avatars {
     this._drawSparks(c, W, H, 1);
 
     for (const [i, h] of this._hands(players)){
+      if (keepOut(h.x, h.y)) continue;
       const x = h.x * W, y = h.y * H, col = PLAYER_COLORS[i];
       const g = this.glow[i], f = this.flash[i];
       const r = H * 0.03 * (1 + g * 0.25 + f * 0.3);

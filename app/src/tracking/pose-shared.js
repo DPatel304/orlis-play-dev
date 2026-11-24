@@ -19,10 +19,11 @@ export const BONES = [
 ];
 
 /* Up to four can play at once, each in their own colour - the games are
-   made for four. For now, while we play-test with our own children, two do
-   (PLAYING): only the first two places ever fill. Change it to open up. */
+   made for four. PLAYING is how many places the camera fills (it was 2
+   while we play-tested with our own children; now all four). Lower it to
+   seat fewer. */
 export const MAX_PLAYERS = 4;
-export const PLAYING = 2;
+export const PLAYING = 4;
 /* The player colours are favourites (0040), by default the first four; player-colours.js re-fills this one array in place when it is known
    who is playing (U8), so every game that reads PLAYER_COLORS[i] gets that player's avatar colour. */
 export const DEFAULT_PLAYER_FAVS = ['sky', 'orange', 'green', 'purple'];
