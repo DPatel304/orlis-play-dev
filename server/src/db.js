@@ -218,6 +218,23 @@ export const STEPS = [
   CREATE INDEX accounts_pending ON accounts (created_at) WHERE pending = 1;
   CREATE INDEX history_what ON history (what, id);
   CREATE INDEX submissions_status ON submissions (status, created_at);
+  `,
+  /* 15: Featured is three numbered slots the owner fills (decision 0058), not on/off pins. The pins become slots in pin order
+     (a fourth pin or later gets no slot). A fresh server starts with none. */
+  `
+  CREATE TABLE featured_slots (
+    slot    INTEGER PRIMARY KEY CHECK (slot BETWEEN 1 AND 3),
+    game_id TEXT NOT NULL UNIQUE,
+    set_at  TEXT NOT NULL
+  );
+  INSERT INTO featured_slots (slot, game_id, set_at)
+    SELECT n, game_id, pinned_at FROM (SELECT ROW_NUMBER() OVER (ORDER BY pinned_at, rowid) AS n, game_id, pinned_at FROM featured) WHERE n <= 3;
+  /* the owner's starting picks (2026-11-24): a server already in use (it has accounts) with no pins to carry over gets Sky Painter,
+     Keep It Up! and Stack It High, so its owner sees them as soon as it updates. A brand-new server starts with none. */
+  INSERT INTO featured_slots (slot, game_id, set_at)
+    SELECT n, g, strftime('%Y-%m-%dT%H:%M:%fZ', 'now') FROM (SELECT 1 AS n, 'sky-painter' AS g UNION ALL SELECT 2, 'keep-it-up' UNION ALL SELECT 3, 'stack-it-high')
+    WHERE EXISTS (SELECT 1 FROM accounts) AND NOT EXISTS (SELECT 1 FROM featured);
+  DROP TABLE featured;
   `
 ];
 

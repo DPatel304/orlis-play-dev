@@ -216,7 +216,8 @@ test('games: status, featured slot, plays and families in the last week, categor
     await call('POST', '/api/store/leaf-pile/feature', { on: true });
     const all = await call('GET', '/api/admin/games?per=100&sort=title&dir=asc');
     assert.equal(all.status, 200);
-    assert.deepEqual(all.rows.map(g => g.title), ['Frog Hop', 'Leaf Pile', 'New Game', 'Pop Party', 'Rocket Garden']);
+    assert.deepEqual(all.rows.filter(g => g.version !== 'built in').map(g => g.title), ['Frog Hop', 'Leaf Pile', 'New Game', 'Pop Party', 'Rocket Garden']);
+    assert.deepEqual(all.rows.filter(g => g.version === 'built in').map(g => g.title).sort(), ['Animal Gym', 'Cubion’s Long Way Home', 'Keep It Up!', 'Peekaboo Garden', 'Pterry Flight', 'Save the Harvest', 'Sky Painter', 'Sleepy Bear', 'Stack It High'], 'the games built into Orlis Play are listed too (a Store game of the same id stands for it)');
     const g = Object.fromEntries(all.rows.map(x => [x.title, x]));
     assert.deepEqual([g['Pop Party'].plays, g['Pop Party'].fams], [5, 2], 'plays and families in the last 7 days only');
     assert.deepEqual([g['Leaf Pile'].plays, g['Leaf Pile'].fams], [1, 1]);
@@ -224,8 +225,8 @@ test('games: status, featured slot, plays and families in the last week, categor
     assert.deepEqual([g['Pop Party'].status, g['Frog Hop'].status, g['New Game'].status], ['live', 'hidden', 'review']);
     assert.equal(g['Pop Party'].key, 'pop-party@1.0'); assert.equal(g['Rocket Garden'].key, 'rocket-garden@1.2');
     assert.equal(g['Pop Party'].maker, 'Orlis'); assert.equal(g['Frog Hop'].maker, 'The Smiths'); assert.equal(g['New Game'].maker, 'The Smiths', 'a waiting game: its maker\'s family');
-    assert.deepEqual(all.counts, { all: 5, live: 3, featured: 2, review: 1, hidden: 1 });
-    assert.deepEqual(all.cats, ['Calm', 'In review', 'Other', 'Party']);
+    assert.deepEqual(all.counts, { all: 14, live: 12, featured: 2, review: 1, hidden: 1 });
+    assert.deepEqual(all.cats, ['Built in', 'Calm', 'In review', 'Other', 'Party']);
     assert.equal(all.featuredTotal, 2);
     /* chips, category, search, sort */
     assert.deepEqual((await call('GET', '/api/admin/games?status=featured&sort=feat&dir=desc')).rows.map(x => x.title), ['Pop Party', 'Leaf Pile']);

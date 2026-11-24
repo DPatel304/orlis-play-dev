@@ -1,8 +1,8 @@
-/* Play's rows (decision 0055): Featured (this week's games to get, then the Discover tile) and My library; who sees the tabs; where focus
+/* Play's rows (decisions 0055, 0058): Featured (Play again, the owner's three slots, then the Discover tile) and My library; who sees the tabs; where focus
    starts and how it moves; what the hero says; the Discover page's rows. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { homeRows, discoverRows, tabsFor, startFocus, step, heroOf, bigHero, PLAY_BIG } from '../src/ui/home-model.js';
+import { homeRows, discoverRows, featuredItems, tabsFor, startFocus, step, heroOf, bigHero, PLAY_BIG } from '../src/ui/home-model.js';
 
 const g = (id, name, more = {}) => ({ id, name, ...more });
 const POOL = [g('pop-party', 'Pop Party', { secs: 120 }), g('sky-painter', 'Sky Painter', { secs: 120 }), g('leaf-pile', 'Leaf Pile', { secs: 120 }), g('sleepy-bear', 'Sleepy Bear', { secs: 180 })];
@@ -116,4 +116,46 @@ test('how you play (0052, trimmed): players, then PlayPad / PlayPad optional; no
   assert.deepEqual(ids({ id: 'f', seats: { tracked: [0, 0], pads: [1, 4] } }), ['players'], 'phones are not shown');
   assert.ok(!needsTablet({ id: 'n' }) && !needsTablet(null) && !needsTablet({ passive: true, seats: { pads: [1, 1] } }));
   assert.deepEqual(howYouPlay(null), []);
+});
+
+/* ---- Featured: Play again, the owner's slots, Discover (decision 0058) ---- */
+const HERE = new Map([...POOL, g('bought', 'Bought Game')].map(x => [x.id, x]));
+const have = (id) => HERE.get(id) || null;
+const stand = (s) => s.builtIn || !s.version ? null : g(s.id, s.name, { discover: s });
+const sl = (n, id, more = {}) => ({ slot: n, id, name: id, builtIn: false, rotating: false, version: '1.0', ...more });
+const gids = (items) => items.map(i => i.g.id);
+
+test('Featured row: the last game played first (Play again), then slots 1 to 3 in order, then Discover', () => {
+  const items = featuredItems({ last: 'pop-party', slots: [sl(1, 'sleepy-bear', { builtIn: true }), sl(2, 'comet'), sl(3, 'bubble', { rotating: true })], have, stand });
+  assert.deepEqual(gids(items), ['pop-party', 'sleepy-bear', 'comet', 'bubble']);
+  assert.deepEqual(items.map(i => i.kind), ['game', 'game', 'get', 'get'], 'on this PC plays (built in too); not on this PC is a Get');
+  assert.deepEqual(items.map(i => !!i.again), [true, false, false, false]);
+  assert.deepEqual(items.map(i => i.slot), [undefined, 1, 2, 3]);
+  assert.equal(items[3].rotating, true, 'an empty slot filled from the rotation is marked');
+  const rows = homeRows({ pool: POOL, featuredItems: items, discover: true });
+  assert.deepEqual(rows[0].items.map(i => i.kind), ['game', 'game', 'get', 'get', 'discover']);
+});
+
+test('Featured row: no Play again when nothing was played, when that game is already in a slot (no game twice), or when it is not on this PC', () => {
+  const slots = [sl(1, 'sleepy-bear', { builtIn: true }), sl(2, 'comet'), sl(3, 'bubble')];
+  assert.deepEqual(gids(featuredItems({ last: null, slots, have, stand })), ['sleepy-bear', 'comet', 'bubble']);
+  assert.deepEqual(gids(featuredItems({ last: 'sleepy-bear', slots, have, stand })), ['sleepy-bear', 'comet', 'bubble'], 'in a slot: only the slot');
+  assert.deepEqual(gids(featuredItems({ last: 'gone', slots, have, stand })), ['sleepy-bear', 'comet', 'bubble']);
+});
+
+test('Featured row: a slot game that is on this PC plays, one that is not is a Get; a built-in game this PC does not list is skipped; at most three slots', () => {
+  const items = featuredItems({ slots: [sl(1, 'bought'), sl(2, 'comet'), sl(3, 'hidden-builtin', { builtIn: true }), sl(4, 'bubble')], have, stand });
+  assert.deepEqual(items.map(i => [i.g.id, i.kind]), [['bought', 'game'], ['comet', 'get']], 'a Store game downloaded plays; a built-in one that is not here has nothing to get; a fourth slot is ignored');
+  assert.deepEqual(featuredItems({ slots: [], have, stand }), [], 'no server: nothing but what was played');
+  assert.deepEqual(gids(featuredItems({ last: 'leaf-pile', have, stand })), ['leaf-pile'], 'no server: Play again, then (in homeRows) Discover');
+  assert.deepEqual(gids(featuredItems({ slots: [null, sl(2, 'comet'), null], have, stand })), ['comet']);
+});
+
+test('focus after a round: back on the game just played, in the row it was picked in (it can be in Featured and My library)', () => {
+  const items = featuredItems({ last: 'pop-party', slots: [sl(1, 'sleepy-bear', { builtIn: true })], have, stand });
+  const rows = homeRows({ pool: POOL, featuredItems: items, discover: true });
+  assert.deepEqual(startFocus(rows, { session: 'sleepy-bear', sessionRow: 'games' }), { row: 1, col: 3 });
+  assert.deepEqual(startFocus(rows, { session: 'sleepy-bear', sessionRow: 'featured' }), { row: 0, col: 1 });
+  assert.deepEqual(startFocus(rows, { session: 'sleepy-bear' }), { row: 0, col: 1 }, 'no row said: the first');
+  assert.deepEqual(startFocus(rows), { row: 0, col: 0 }, 'Home opens on the first Featured tile');
 });

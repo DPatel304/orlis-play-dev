@@ -43,13 +43,23 @@ export const week = {
     }
     return got || this.key() !== was;
   },
-  key(){ return JSON.stringify([this.store && this.store.featured, this.store && this.store.games && this.store.games.map(g => g.id + g.version), this.challenges, this.waiting.map(x => x.submission), this.drafts.map(d => d.id + d.version + d.sha256)]); },
+  key(){ return JSON.stringify([this.store && this.store.featured, this.store && this.store.featuredSlots && this.store.featuredSlots.map(s => [s.slot, s.id, s.rotating]),this.store && this.store.games && this.store.games.map(g => g.id + g.version), this.challenges, this.waiting.map(x => x.submission), this.drafts.map(d => d.id + d.version + d.sha256)]); },
 
   /* this week's featured Discover games, as entries */
   featured(){
     const st = this.store;
     if (!st || !st.featured) return [];
     return st.featured.map(id => st.games.find(g => g.id === id)).filter(Boolean);
+  },
+
+  /* Home's Featured slots (decision 0058): [slot 1, 2, 3], each { id, name, builtIn, rotating, ...the Store entry, for a Store game }, as the server
+     sends them (the owner's picks, an empty slot filled from the weekly rotation). An older server sends only the list of Discover ids: those become
+     rotating slots. No server (or nothing cached yet): none. */
+  featuredSlots(){
+    const st = this.store;
+    if (!st) return [];
+    if (Array.isArray(st.featuredSlots)) return st.featuredSlots;
+    return this.featured().slice(0, 3).map((e, i) => ({ ...e, slot: i + 1, builtIn: false, rotating: true }));
   },
 
   /* a round's over: which game, its best score, how long, how many played.
