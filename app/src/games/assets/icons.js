@@ -284,6 +284,17 @@ def('musicnote', 'Music note', 'music', (c, s) => {
   part(c, s, pal('touch.grape'), ell(c, -s * 0.12, s * 0.28, s * 0.17, s * 0.12, -0.4));
   part(c, s, pal('touch.grape'), poly(c, [[s * 0.06, -s * 0.34], [s * 0.34, -s * 0.2], [s * 0.34, -s * 0.06], [s * 0.06, -s * 0.2]]));
 });
+def('bomb', 'Bomb', 'thing toy', (c, s) => {
+  /* a round toy bomb: dark body with a big soft shine, a little cap, a curly fuse and a friendly spark */
+  const body = pal('fur.charcoal');
+  part(c, s, body, circ(c, -s * 0.04, s * 0.1, s * 0.36));
+  c.save(); circ(c, -s * 0.04, s * 0.1, s * 0.36)(); c.clip(); ell(c, -s * 0.16, -s * 0.04, s * 0.11, s * 0.07, -0.6)(); wash(c, SNOW, 0.75); circ(c, -s * 0.24, s * 0.12, s * 0.035)(); wash(c, SNOW, 0.75); c.restore();
+  part(c, s, pal('shade.mid'), rrect(c, s * 0.02, -s * 0.34, s * 0.2, s * 0.12, s * 0.04), { shade: true });
+  c.beginPath(); c.moveTo(s * 0.12, -s * 0.34); c.quadraticCurveTo(s * 0.12, -s * 0.42, s * 0.24, -s * 0.38);
+  c.lineWidth = s * 0.1; c.strokeStyle = INK; c.lineCap = 'round'; c.stroke(); c.lineWidth = s * 0.05; c.strokeStyle = pal('earth.bark'); c.stroke();
+  part(c, s, pal('touch.sunflower'), sparkle4(c, s * 0.3, -s * 0.36, s * 0.16), { shade: false, w: 0.028 });
+  dot(c, s * 0.3, -s * 0.36, s * 0.035, pal('touch.tangerine'));
+});
 def('rocket', 'Rocket', 'thing space', (c, s) => {
   c.save(); c.rotate(0.6);
   part(c, s, pal('touch.tangerine'), poly(c, [[-s * 0.1, s * 0.3], [0, s * 0.5], [s * 0.1, s * 0.3]]), { shade: false });

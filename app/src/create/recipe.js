@@ -152,7 +152,7 @@ export function build(picks){
     rules: [{ when: 'touched', then: ['sparkle', 'pop', { score: 5 }, { sound: 'gold' }, 'vanish'] }, ...leave(life * 0.7)]
   }));
   if (bomb) game.things.push(base({
-    name: 'bomb', piece: 'rock', appears: appears(every * 2.5, Math.max(1, Math.round(max / 3)), from),
+    name: 'bomb', piece: 'bomb', appears: appears(every * 2.5, Math.max(1, Math.round(max / 3)), from),
     rules: [{ when: 'touched', then: ['pop', { score: -3 }, { sound: 'plop' }, 'vanish'] }, ...leave(life)]
   }));
   return game;

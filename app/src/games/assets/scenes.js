@@ -12,12 +12,11 @@ const hexA = (a, al = 1) => '#' + [...a, al * 255].map(v => Math.round(Math.max(
 /* top/low: the sky; hills: far to near; ground: the grass (or sand, or snow); sun: 'sun' | 'moon' | null; stars: how many; cloud: their colour */
 export const SCENES = {
   meadow:  { name: 'Sunny meadow', tags: 'day outdoors', top: pal('sky.high'), low: pal('sky.horizon'), hills: [pal('meadow.lawn'), pal('meadow.grass'), pal('meadow.fresh')], ground: pal('meadow.fresh'), sun: 'sun', stars: 0, cloud: pal('earth.snow') },
-  /* the evening, autumn, snow and beach worlds keep their own colours until Phase 2 (palette page, decision 0040): legacy */
-  sunset:  { name: 'Evening sky', tags: 'evening outdoors', top: '#8aa8d6', low: '#f6ead2', hills: ['#c0cf9b', '#a9c98f', '#8fbf6a'], ground: '#8fbf6a', sun: 'sun', stars: 0, cloud: '#fff1e2', warm: true, legacy: true },
-  autumn:  { name: 'Autumn afternoon', tags: 'autumn outdoors', top: '#9fb4d6', low: '#f6e2c4', hills: ['#c8c07c', '#b9b06a', '#a8a05c'], ground: '#a8a05c', sun: 'sun', stars: 0, cloud: '#fff5ea', legacy: true },
+  sunset:  { name: 'Evening sky', tags: 'evening outdoors', top: pal('dusk.high'), low: pal('earth.peach', 'light'), hills: [pal('meadow.far'), pal('meadow.soft'), pal('meadow.grass')], ground: pal('meadow.grass'), sun: 'sun', stars: 0, cloud: pal('earth.peach', 'light'), warm: true },
+  autumn:  { name: 'Autumn afternoon', tags: 'autumn outdoors', top: pal('dusk.high'), low: pal('earth.path', 'light'), hills: [pal('autumn.straw'), pal('autumn.straw', 'shade'), pal('autumn.hay')], ground: pal('autumn.hay'), sun: 'sun', stars: 0, cloud: pal('earth.path', 'light') },
   night:   { name: 'Starry night', tags: 'night outdoors', top: N.sky, low: N.dusk, hills: [N.farHills, N.hills, N.grass], ground: N.grass, sun: 'moon', moon: N.moon, star: N.star, edge: N.shade, stars: 40, cloud: hexA(hexOf(PALETTE.shade.light), 0.3) },
-  snow:    { name: 'Snowy hills', tags: 'winter outdoors', top: '#9ec4f0', low: '#eef6ff', hills: ['#dbe8f7', '#e9f3ff', '#ffffff'], ground: '#ffffff', sun: 'sun', stars: 0, cloud: '#ffffff', legacy: true },
-  beach:   { name: 'Sunny beach', tags: 'summer sea', top: '#7cc8ff', low: '#e9f8ff', hills: ['#5fb7e8', '#4aa7dc', '#f3d9a0'], ground: '#f3d9a0', sun: 'sun', stars: 0, cloud: '#ffffff', sea: true, legacy: true }
+  snow:    { name: 'Snowy hills', tags: 'winter outdoors', top: pal('sky.high'), low: pal('sky.low', 'light'), hills: [pal('sky.low'), pal('sky.low', 'light'), pal('earth.snow')], ground: pal('earth.snow'), sun: 'sun', stars: 0, cloud: pal('earth.snow') },
+  beach:   { name: 'Sunny beach', tags: 'summer sea', top: pal('sky.high'), low: pal('sky.low', 'light'), hills: [pal('sea.sunlit'), pal('sea.far'), pal('earth.path')], ground: pal('earth.path'), sun: 'sun', stars: 0, cloud: pal('earth.snow'), sea: true }
 };
 
 /* p: how far through the day, 0..1 (nudges the light warmer toward 1); t: seconds */
@@ -33,9 +32,9 @@ export function drawScene(c, W, H, id, { t = 0, p = 0 } = {}){
   /* the sun or the moon, high on the right, out of the shared screen's way */
   if (S.sun){
     const x = W * 0.84, y = H * 0.24, r = H * 0.07;
-    const glow = c.createRadialGradient(x, y, r * 0.5, x, y, r * 3.2); const gc = hexOf(S.sun === 'moon' ? S.moon : S.legacy ? '#ffecaa' : PALETTE.sky.sunGlow); glow.addColorStop(0, hexA(gc, S.sun === 'moon' ? 0.4 : 0.55)); glow.addColorStop(1, hexA(gc, 0));
+    const glow = c.createRadialGradient(x, y, r * 0.5, x, y, r * 3.2); const gc = hexOf(S.sun === 'moon' ? S.moon : PALETTE.sky.sunGlow); glow.addColorStop(0, hexA(gc, S.sun === 'moon' ? 0.4 : 0.55)); glow.addColorStop(1, hexA(gc, 0));
     c.fillStyle = glow; c.fillRect(x - r * 3.2, y - r * 3.2, r * 6.4, r * 6.4);
-    c.fillStyle = S.sun === 'moon' ? S.moon : S.legacy ? '#ffe08a' : pal('sky.sunGlow'); c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+    c.fillStyle = S.sun === 'moon' ? S.moon : pal('sky.sunGlow'); c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
   }
   /* clouds drift left to right, slowly */
   c.fillStyle = S.cloud;
@@ -55,6 +54,6 @@ export function drawScene(c, W, H, id, { t = 0, p = 0 } = {}){
   });
   /* the ground band at the bottom */
   c.fillStyle = S.ground; c.fillRect(0, H * 0.9, W, H * 0.1);
-  c.fillStyle = S.edge ? hexA(hexOf(S.edge), 0.35) : S.legacy ? hexA([0, 0, 0], 0.07) : hexA(hexOf(PALETTE.shade.shadow), 0.12); c.fillRect(0, H * 0.9, W, H * 0.006);
+  c.fillStyle = S.edge ? hexA(hexOf(S.edge), 0.35) : hexA(hexOf(PALETTE.shade.shadow), 0.12); c.fillRect(0, H * 0.9, W, H * 0.006);
   return true;
 }

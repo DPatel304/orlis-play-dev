@@ -26,7 +26,7 @@ test('the menus: five recipes, pieces that exist in the library, worlds, moves a
   for (const c of choices.what){ assert.ok(c.pieces.length >= 6 && c.pieces.length <= 10, c.id); for (const p of c.pieces) assert.ok(env0.has(p.id), p.id + ' is in the library'); }
   assert.equal(new Set(ALL).size, ALL.length, 'no piece twice');
   for (const w of choices.where) assert.ok(env0.scenes.includes(w.id), w.id);
-  assert.ok(choices.where.some(w => w.palette) && choices.where.some(w => !w.palette), 'palette worlds are marked');
+  assert.ok(choices.where.every(w => w.palette), 'every world is on the master palette (decision 0040)');
   for (const m of choices.move) assert.ok(env0.poses.includes(m.id), m.id);
   assert.equal(choices.rules.speed.steps, 5); assert.equal(choices.rules.many.steps, 5);
   assert.deepEqual(choices.rules.minutes.options, [1, 2, 3]);
@@ -75,7 +75,7 @@ test('recipes map onto the vocabulary', () => {
   const g = t('catch', { golden: true, bomb: true });
   assert.equal(g.length, 3);
   assert.ok(JSON.stringify(g[1].rules).includes('{"score":5}') && g[1].color === 'gold' && g[1].appears.every > g[0].appears.every);
-  assert.ok(JSON.stringify(g[2].rules).includes('"score":-3') && g[2].piece === 'rock');
+  assert.ok(JSON.stringify(g[2].rules).includes('"score":-3') && g[2].piece === 'bomb');
   assert.equal(t('catch', { golden: false, bomb: false }).length, 1);
   assert.equal(t('keepup', { golden: true, bomb: true }).length, 1, 'a ball has no specials');
   /* together is the shared score, versus has a score for each player */

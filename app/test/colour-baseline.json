@@ -1,5 +1,4 @@
 {
- "src/games/assets/scenes.js": 30,
  "src/games/castle-art.js": 188,
  "src/games/castle-defense.js": 76,
  "src/games/common.js": 2,
@@ -40,18 +39,15 @@
  "src/games/pop-party-scene.js": 1,
  "src/games/pop-party.js": 9,
  "src/ui/avatars.js": 3,
- "src/ui/building.js": 2,
- "src/ui/covers.js": 93,
+ "src/ui/covers.js": 84,
  "src/ui/create.js": 5,
  "src/ui/cursor.js": 2,
- "src/ui/kids.js": 11,
- "src/ui/launch.js": 1,
+ "src/ui/kids.js": 8,
  "src/ui/lineup.js": 5,
  "src/ui/menu.js": 69,
  "src/ui/posters.js": 13,
  "src/ui/request.js": 48,
  "src/ui/sandbox.js": 2,
  "src/ui/shots.js": 4,
- "src/ui/store.js": 9,
  "src/ui/trailer.js": 1
 }
