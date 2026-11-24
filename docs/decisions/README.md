@@ -78,6 +78,7 @@ Date: YYYY-MM-DD
 | 0052 | Home: players as an icon and a number; a "how you play" row (Move, Tablet, Phones, Sit back); the tablet icon is a tablet in a controller grip; a tablet mark on tiles (replaces 0048's figures) | Accepted |
 | 0053 | Two phases: a small PC beta with two families now (today's sign-in, a one-page guide, no new setup flow); Orlis as a box later (setup on the phone, an online service) | Accepted |
 | 0054 | The controller is the "Orlis PlayPad" ("PlayPad" on screen); two-tone icon with a see-through screen; people icon A (replaces 0052's "Tablet" label and icon) | Accepted |
-| 0055 | Top tabs Play and Create; Play opens with a Featured row (three featured games, then a Discover tile to the store page); Discover is its own page (replaces 0045's one page with no tabs) | Accepted |
+| 0055 | Top tabs Play and Create; Play opens with a Featured row (three featured games, then a Discover tile to the store page); Discover is its own page (replaces 0045's one page with no tabs) | Accepted; its Featured rule replaced by 0058 |
 | 0056 | Create in Phase 1 is picture-built with no AI: six steps with a live preview, simple voice commands, 3 slots per family, a "Made by us" row; AI, publishing and Create Pro wait | Accepted |
 | 0057 | Create screens for Phase 1: kids can create; live game on the left; Rules skippable; no Surprise me; "Your slots are full"; voice commands paused; no subscription yet | Accepted |
+| 0058 | Featured opens with the last game played ("Play again"), then the owner's three numbered slots (any game; Play if owned, Get if not), then Discover; Home opens on Featured with "My library" peeking below (replaces 0055's "not yet on this PC" rule) | Accepted |
