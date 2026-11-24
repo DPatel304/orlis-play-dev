@@ -21,6 +21,9 @@ import { MEADOW, AHEAD, PLACES } from '../stories/cubions-long-way-home.js';
 const FONT = '"Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif';
 const GROUND = 500, UNIT = 720;                 /* the world is drawn 720 high, scaled to the screen */
 const CUBO_AT = 0.48;                            /* where Cubo stands across the screen */
+/* at the very end the "The end" card goes over the left half of the screen (about to 0.47 of the width): Cubo steps across to the right of it,
+   and the animals standing round him with him (the world stays put, so the house is still all in view) */
+const END_STEP = 0.1;
 const byte = (v) => Math.max(0, Math.min(255, v | 0)).toString(16).padStart(2, '0');
 const css = (a) => '#' + byte(a[0]) + byte(a[1]) + byte(a[2]);
 const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
@@ -60,7 +63,7 @@ class Story {
     this.i = -1; this.age = 0; this.t = 0; this.done = 0;     /* the beat, seconds in it, seconds in the story, seconds of story finished */
     this.pos = PLACES.planet; this.from = this.pos; this.speed = 0;
     this.over = false; this.heard = false; this.spoke = false; this.wait = 0; this.thumped = false;
-    this.flash = 0; this.shake = 0; this.wob = 0; this.gather = 0; this.cardPose = null;
+    this.flash = 0; this.shake = 0; this.wob = 0; this.gather = 0; this.cardPose = null; this.endShift = 0;
     this.ax = ANIMALS.map(a => a.at);               /* the animals' places in the world */
     /* ?beat=N in the address starts the story at beat N (for looking at a scene without sitting through the rest) */
     const skip = typeof location !== 'undefined' ? Number(new URLSearchParams(location.search).get('beat')) : 0;
@@ -85,6 +88,8 @@ class Story {
     if (b.gather) this.gathering = true;
   }
   step(dt){
+    /* in the last beat, and after it, Cubo makes room for the card (he's standing clear of it by the time it's up) */
+    if (this.over || this.i >= this.beats.length - 1) this.endShift = Math.min(1, this.endShift + dt * 0.8);
     if (this.over) return;
     this.t += dt; this.age += dt;
     const b = this.beat; if (!b) return;
@@ -216,20 +221,23 @@ class Story {
   emoji(c, e, x, y, size, rot = 0, flip = false){ assets.draw(c, e, x, y - size * 0.45, size * 0.95, { rotate: rot, flip }); }
   animals(c, cam, vw){
     const b = this.beat, ease = this.gather * this.gather * (3 - 2 * this.gather);
+    const step = this.endStep(vw) * ease;                                      /* (and they go with him when he steps aside at the end) */
     ANIMALS.forEach((a, i) => {
-      const x = a.at + (this.pos + a.off - a.at) * ease;                      /* gathered, they stand around Cubo */
+      const x = a.at + (this.pos + a.off - a.at) * ease + step;               /* gathered, they stand around Cubo */
       const sx = x - cam; if (sx < -200 || sx > vw + 200) return;
       const bob = a.id === 'bird' ? Math.sin(this.t * 3 + i) * 10 : 0;
       const w = this.wob * (0.22 * Math.sin(this.t * 5 + i * 1.7)), hop = this.wob * Math.abs(Math.sin(this.t * 4 + i)) * 24;
       this.emoji(c, a.e, sx, GROUND + a.y - bob - hop, a.size, w, a.id !== 'frog' && a.id !== 'bunny' ? false : false);
     });
   }
+  /* how far (in world units) Cubo has stepped to the right at the end, to clear the card */
+  endStep(vw){ const k = this.endShift; return END_STEP * vw * k * k * (3 - 2 * k); }
   /* Cubo, the flat sticker, on the shell's own figure */
   cubo(c, vw){
     const b = this.beat, moving = this.speed > 12;
     let pose = b && (b.card || b.pose) || (moving ? (this.speed > 240 ? 'run' : 'march') : 'freeze');
     if (b && b.card && !(this.age > 0.2)) pose = 'freeze';
-    const x = CUBO_AT * vw + (b && b.wobble ? Math.sin(this.t * 14) * 3 * this.wob : 0), h = 210;
+    const x = CUBO_AT * vw + this.endStep(vw) + (b && b.wobble ? Math.sin(this.t * 14) * 3 * this.wob : 0), h = 210;
     const about = !!(b && b.t && voice.speaking && !/^[“"]/.test(b.t) && /\b(Cubo|he|He|his|him)\b/.test(b.t));
     cuboFigure(c, x, GROUND + 22, h, pose, this.t, b && b.face || null, { look: moving ? [1, 0] : null, talk: about, arrows: !!(b && b.card) });
   }

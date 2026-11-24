@@ -53,8 +53,8 @@ export const state = () => ({ t: ctx.inst && ctx.inst.t, score: ctx.inst && ctx.
 
 /* the middle of a round: a moment worth a picture (a freeze, a flap, a card), after a time that suits the game */
 const MID = {
-  'pop-party': [60, null], 'sky-painter': [90, null], 'sleepy-bear': [70, (g) => g.phase === 'freeze' && g.inPhase > 1.5], 'leaf-pile': [100, null],
-  'stack-it-high': [90, null], 'animal-gym': [70, (g) => g.move === 'flap' && g.segT > 4], 'keep-it-up': [90, null], 'ptero-flight': [90, null],
+  'pop-party': [60, null], 'sky-painter': [50, (g) => !g.alive && g.covered > 0.4 && g.covered < 0.7], 'sleepy-bear': [70, (g) => g.phase === 'freeze' && g.inPhase > 1.5], 'leaf-pile': [100, null],
+  'stack-it-high': [90, null], 'animal-gym': [70, (g) => g.move === 'flap' && g.segT > 4], 'keep-it-up': [90, null], 'ptero-flight': [45, null],
   'save-the-harvest': [20, (g) => g.phase === 'move' && g.pt > 1.2 && g.kind !== 'raven'], 'cubions-long-way-home': [90, (g) => !!g.card()]
 };
 export function toMid(){

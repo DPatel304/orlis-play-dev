@@ -47,9 +47,9 @@ async function shoot(game, lineup){
   await ctx.close();
 }
 /* a story has no bodies (nobody has to do anything), so one set of pictures does for every line-up: its first page, a page with a move card
-   (beat 13: "Reach up high!"), and the end. The ?beat=N address starts the story at beat N. */
+   (beat 7: "Reach up high!"), and the end (the last beat). The ?beat=N address starts the story at beat N. */
 async function shootStory(game){
-  const BEATS = { early: 0, mid: 13, end: 41 };
+  const BEATS = { early: 0, mid: 7, end: 29 };
   for (const [moment, beat] of Object.entries(BEATS)){
     const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
     const page = await ctx.newPage();

@@ -15,7 +15,7 @@
      gather  the animals come to Cubo; wobble: how much everything wobbles (0..1)
      shake   the screen thuds */
 export const REFRAIN = 'Cubes don’t do that. But Cubo does.';
-const R = { t: REFRAIN, refrain: true, face: 'smirk', hold: 1.6 };
+const R = { t: REFRAIN, refrain: true, face: 'smirk', hold: 1.2 };
 
 /* where Cubo stands in the world (the Cube Planet is at the very start; the meadow begins at MEADOW) */
 export const PLACES = { planet: 300, meadow: 2300, giraffe: 3100, bunny: 3800, bird: 4500, frog: 5200, home: 6100 };
@@ -27,56 +27,44 @@ export default {
   id: 'cubions-long-way-home', name: 'Cubion’s Long Way Home',
   blurb: 'A funny story about a little cube learning to move.',
   beats: [
-    /* page 1: the Cube Planet */
-    { t: 'Far, far away there is a planet where everything is square.' },
-    { t: 'The houses are square. The hills are square. Even the clouds sit in neat little stacks.' },
-    { t: 'Nothing ever moves, because moving is messy.' },
-    { t: 'Click, click, said the tall, stern Cube Elders. That means, “Please stay exactly where you are.”', fx: [[0.2, 'tick'], [0.45, 'tick']] },
+    /* page 1: the Cube Planet - and the first move, almost at once: be a cube */
+    { t: 'Far away is a planet where everything is square.' },
+    { t: 'Nothing moves here. The Cube Elders click: “Be a cube! Stand still!”', card: 'freeze', hold: 1.2, fx: [[1.5, 'tick'], [1.75, 'tick']] },
     /* page 2: Cubion */
-    { t: 'One small cube was different. His name was Cubion!#&-551.', say: 'One small cube was different. His name was Cubion. Bleep, bloop, five five one!', face: 'grin', fx: [[2.7, 'beep'], [3, 'beep', true], [3.3, 'beep']] },
-    { t: '(Say it fast, with lots of bleeps.) On Earth, everyone would call him Cubo.', say: 'Say it fast, with lots of bleeps. On Earth, everyone would call him Cubo.' },
-    { t: 'Cubo wondered what it would feel like to move. The Elders did not like wondering.', face: 'wow', wobble: 0.35 },
-    { t: 'Click-click-CLICK. That means, “Go to Earth, where everything wiggles, and learn how.”', fx: [[0.1, 'tick'], [0.35, 'tick'], [0.6, 'clank']], wobble: 0.5 },
+    { t: 'One small cube was different. Cubion!#&-551. Call him Cubo.', say: 'One small cube was different. Cubion. Bleep, bloop, five five one! Call him Cubo.', face: 'grin', fx: [[1.7, 'beep'], [2, 'beep', true], [2.3, 'beep']] },
+    { t: 'Cubo wondered how it felt to move. Click-click-CLICK! “Go to Earth. Learn to wiggle.”', face: 'wow', wobble: 0.45, fx: [[2.2, 'tick'], [2.45, 'tick'], [2.7, 'clank']] },
     { jump: true, to: PLACES.meadow, fx: [[0, 'windup'], [0.5, 'whoosh']] },
     /* page 3: the landing */
-    { t: 'Cubo landed on Earth with a great big THUD.', face: 'wow', shake: true, fx: [[0, 'thud']] },
-    { t: 'Cubes don’t land softly. Cubes land squarely.' },
-    { t: 'He looked around. Everything here was moving! Leaves wiggled. Clouds drifted.', to: PLACES.giraffe - 300, pose: 'march', face: 'grin' },
-    { t: 'And a very tall giraffe was stretching up to the sky.', to: PLACES.giraffe, pose: 'march', face: 'wow' },
+    { t: 'Cubo landed on Earth. THUD! Cubes don’t land softly.', face: 'wow', shake: true, fx: [[0, 'thud']] },
+    { t: 'A tall giraffe was stretching up to the sky.', to: PLACES.giraffe, pose: 'march', face: 'wow' },
     /* page 4: the giraffe */
-    { t: '“Reach up high!” said the giraffe.', card: 'reach', hold: 1.5 },
-    { t: 'Cubo reached with all his might. He was exactly as tall as before.', card: 'reach', face: 'tongue', hold: 1 },
-    { t: 'He reached harder and tipped right over. THUD.', pose: 'lean', shake: true, fx: [[2.4, 'thud']] },
-    { t: 'Then he looked up. He was a teeny bit taller. A hair taller.', face: 'joy' },
+    { t: '“Reach up high!” said the giraffe.', card: 'reach', hold: 0.8 },
+    { t: 'Cubo reached with all his might. No taller.', card: 'reach', face: 'tongue', hold: 0.6 },
+    { t: 'He reached harder and tipped over. THUD! A hair taller!', pose: 'lean', shake: true, face: 'joy', fx: [[2.0, 'thud']] },
     R,
     /* page 5: the bunny */
-    { t: 'Next came a bunny.', to: PLACES.bunny, pose: 'march', face: 'grin' },
-    { t: '“Hop!” said the bunny.', card: 'jump', hold: 1.5 },
-    { t: 'Cubo hopped. Flop. Cubo hopped again. Flop.', card: 'jump', face: 'grin', fx: [[1.1, 'land'], [2.3, 'land']], hold: 1 },
-    { t: 'Then, for one wonderful second, he was off the ground. By the width of a daisy.', pose: 'jump', face: 'joy', fx: [[0.2, 'boing']] },
+    { t: 'Next, a bunny.', to: PLACES.bunny, pose: 'march', face: 'grin' },
+    { t: '“Hop!” said the bunny.', card: 'jump', hold: 0.8 },
+    { t: 'Cubo hopped. Flop. Hopped again. Flop.', card: 'jump', face: 'grin', fx: [[1.0, 'land'], [2.0, 'land']], hold: 0.6 },
+    { t: 'For one wonderful second, he was off the ground. By a daisy’s width!', pose: 'jump', face: 'joy', fx: [[0.2, 'boing']] },
     R,
     /* page 6: the bird */
-    { t: 'A little bird fluttered by.', to: PLACES.bird, pose: 'march', face: 'wow', fx: [[0.5, 'chirp']] },
-    { t: '“Flap!” chirped the bird. But Cubo has no wings, so he flapped his corners.', card: 'flap', hold: 1.5, fx: [[0.3, 'chirp', 2]] },
-    { t: 'Flap, flap, flap. Nothing. Flap, flap, FLAP!', card: 'flap', face: 'tongue', hold: 1 },
-    { t: 'He rose up a whole inch, and landed in a bush.', pose: 'flap', face: 'wow', fx: [[1.5, 'rustle'], [1.65, 'rustle']] },
-    R,
+    { t: 'Then a bird fluttered by.', to: PLACES.bird, pose: 'march', face: 'wow', fx: [[0.5, 'chirp']] },
+    { t: '“Flap!” chirped the bird.', card: 'flap', hold: 0.8, fx: [[0.3, 'chirp', 2]] },
+    { t: 'No wings, so Cubo flapped his corners. Up an inch! Then, a bush.', card: 'flap', face: 'wow', hold: 0.6, fx: [[3.2, 'rustle'], [3.35, 'rustle']] },
     /* page 7: the frog */
-    { t: 'Last came a frog.', to: PLACES.frog, pose: 'march', face: 'grin' },
-    { t: '“Squat down low,” said the frog.', card: 'squat', hold: 1.5 },
-    { t: 'Cubo squatted down low. He was very, very good at this. He was so good that he couldn’t get back up.', card: 'squat', face: 'smirk', hold: 1 },
-    { t: '“Cubes do that,” said the frog. “And Cubo does it VERY well.”', refrain: true, face: 'smirk', hold: 1.6 },
+    { t: 'Last, a frog.', to: PLACES.frog, pose: 'march', face: 'grin' },
+    { t: '“Squat down low,” said the frog.', card: 'squat', hold: 0.8 },
+    { t: 'Cubo squatted. He was so good, he couldn’t get back up.', card: 'squat', face: 'smirk', hold: 0.6 },
+    { t: '“Cubes do that,” said the frog. “And Cubo does it VERY well.”', refrain: true, face: 'smirk', hold: 1.2 },
     /* page 8: everyone wobbles */
-    { t: 'Then something wonderful happened.', gather: true, face: 'wow' },
-    { t: 'The giraffe tripped over her own feet. The bunny landed in a pond. The bird missed her branch. The frog flopped on his back.', wobble: 0.7, fx: [[0.6, 'uhoh'], [2.4, 'splash'], [4.2, 'rustle'], [6, 'land']] },
+    { t: 'Something wonderful happened! The giraffe tripped. The bunny splashed. The frog flopped.', gather: true, face: 'wow', wobble: 0.7, fx: [[2.4, 'uhoh'], [4.2, 'splash'], [5.4, 'land']] },
     { t: 'They were all wobbling! Cubo laughed his very first laugh.', wobble: 1, pose: 'dance', face: 'joy', fx: [[1.5, 'hooray']] },
-    { t: '“Everybody wobbles,” said the giraffe. “That’s the fun of it.”', wobble: 0.5, face: 'joy' },
+    { t: '“Everybody wobbles,” said the giraffe. “That’s the fun!”', wobble: 0.5, face: 'joy' },
     /* page 9: the long way home */
-    { t: 'Far away, the Elders clicked, asking if he’d learned the secret.', fx: [[0.3, 'tick'], [0.6, 'tick']], face: 'smile', wobble: 0 },
-    { t: 'Cubo thought about it. The secret was wobbling, and wobbling is better with friends.', face: 'smirk' },
-    { t: 'Then he saw a warm glow in a window.', to: PLACES.home, pose: 'march', face: 'wow' },
-    { t: 'A TV! With children in front of it, wobbling and laughing.', face: 'joy' },
-    { t: 'It was a very long way home. Just not the way he’d planned. So Cubo stayed.', face: 'smile' },
-    { t: REFRAIN, refrain: true, face: 'joy', hold: 3.5, pose: 'wave' }
+    { t: 'The Elders clicked: had he learned the secret? Yes! Wobbling is better with friends.', fx: [[0.3, 'tick'], [0.6, 'tick']], face: 'smile', wobble: 0 },
+    { t: 'A warm glow in a window: a TV, with children wobbling and laughing!', to: PLACES.home, pose: 'march', face: 'joy' },
+    { t: 'A long way home. Not the way he’d planned. So Cubo stayed.', face: 'smile' },
+    { t: REFRAIN, refrain: true, face: 'joy', hold: 2.5, pose: 'wave' }
   ]
 };
