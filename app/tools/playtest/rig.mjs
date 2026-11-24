@@ -572,7 +572,7 @@ export const BRAINS = {
       if (!p.leaf || p.leaf.inPile || p.leaf.air || now > p.mem.leafUntil){
         let best = null, bc = 1e9;
         for (const L of g.leaves){
-          if (L.inPile || L.air || L.y < 0.68 || L.x < 0.03 || L.x > 0.97) continue;
+          if (L.inPile || L.air || L.y < 0.4 || L.x < 0.03 || L.x > 0.97) continue;
           if (Math.abs(L.x - 0.5) < 0.05) continue;
           const startX = L.x - dirOf(L) * 0.09;
           const dwalk = Math.max(0, Math.abs(startX - p.sx) * A - p.armLen * p.k * 0.8);
@@ -586,7 +586,7 @@ export const BRAINS = {
       const Lf = p.leaf;
       if (!Lf){ p.state = 'idle'; idleStance(p, now, 0.5 + (p.idx - (ctx.world.persons.length - 1) / 2) * 0.2); return; }
       p.state = 'on';
-      const dir = dirOf(Lf), sx0 = Lf.x - dir * 0.10, y0 = clamp(Lf.y, 0.7, 0.92), hand = p.nearestSide(sx0);
+      const dir = dirOf(Lf), sx0 = Lf.x - dir * 0.10, y0 = clamp(Lf.y, 0.4, 0.92), hand = p.nearestSide(sx0);
       const Hd = hand === 'l' ? p.L : p.R;
       p.other(hand).release(now);
       const needWalk = p.reach(sx0, y0, true, hand).kind === 'walk';
@@ -753,7 +753,8 @@ export const BRAINS = {
       if (p.mem.armed !== false){ p.mem.armed = false; p.mem.startAt = now + 0.2 + p.rng() * 0.4; p.mem.movePh = 0; }
       if (now < p.mem.startAt){ p.state = 'wait'; p.releaseHands(now); return; }
       p.state = 'on';
-      const move = { apple: 'reach', pear: 'jump', berry: 'squat', raven: 'flap' }[g.kind];
+      let move = { apple: 'reach', pear: 'jump', berry: 'squat', raven: 'flap' }[g.kind];
+      if (g.kind === 'pear' && g.reachOk) move = 'reach';       /* the words say "Hop or reach up high!": a person who can't hop reaches */
       doMove(p, move, now, dt);
     }
   },

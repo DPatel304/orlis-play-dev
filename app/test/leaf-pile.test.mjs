@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { pose } from '../src/tracking/pose.js';
-import leafPile, { PILE, GROW, BIG, SWEEP_END, FINALE, JUMP_WAIT, SWEEP_SPEED, SWEEP_GAP, MAX_SLIDE } from '../src/games/leaf-pile.js';
+import leafPile, { bandOf, BAND, ROUND, PILE, GROW, BIG, SWEEP_END, FINALE, JUMP_WAIT, SWEEP_SPEED, SWEEP_GAP, MAX_SLIDE } from '../src/games/leaf-pile.js';
 
 const DT = 1 / 30, W = 1920, H = 1080;
 function players(n){
@@ -121,4 +121,71 @@ test('a sweep is one gentle push: capped speed, once per sweep, only the way in,
   assert.ok(L.vy > 0, 'nudged down toward the pile, which is lower than the leaf');
 });
 
-test('the sweeping lasts most of the game, and the finale fits inside it', () => { assert.ok(SWEEP_END > 120 && SWEEP_END + JUMP_WAIT + FINALE < 180); });
+test('the sweeping lasts most of the game, and the jump-in and the finale fill the rest: the round is exactly ROUND long', () => {
+  assert.ok(SWEEP_END > 150);
+  assert.equal(SWEEP_END + JUMP_WAIT + FINALE, ROUND);
+  assert.equal(ROUND, 180);
+});
+
+test('the round runs its full length, however soon everyone jumped', () => {
+  players(1);
+  const g = leafPile.create(1);
+  g.pile = 30; g.fallT = 99; g.t = SWEEP_END;
+  g.step(DT, W, H);
+  assert.ok(g.ready > 0);
+  /* (a jump: the body rises fast above where it has been standing) */
+  const h = pose.players[0];
+  for (let k = 0; k < 20; k++){ h.centre = { x: 0.3, y: 0.5 }; g.step(DT, W, H); }
+  for (let k = 0; k < 6; k++){ h.centre = { x: 0.3, y: 0.5 - 0.06 * (k + 1) }; g.step(DT, W, H); }
+  for (let k = 0; k < 6; k++){ h.centre = { x: 0.3, y: 0.5 }; g.step(DT, W, H); }
+  let t = g.t;
+  while (t < ROUND - 0.1 && !g.over){ g.step(DT, W, H); t = g.t; }
+  assert.equal(g.over, false, 'still going just before ROUND (burst: ' + g.piles + ')');
+  while (t < ROUND + 0.2){ g.step(DT, W, H); t = g.t; }
+  assert.equal(g.over, true);
+});
+
+/* a standing body: shoulders at y 0.3, hips at y hip, knees further down; the torso is the hips minus the shoulders */
+const standing = (x, hip, torso) => {
+  const lm = Array.from({ length: 33 }, () => ({ x, y: 0.5, v: 1 }));
+  Object.assign(lm[11], { x: x - 0.04, y: hip - torso }); Object.assign(lm[12], { x: x + 0.04, y: hip - torso });
+  Object.assign(lm[23], { x: x - 0.03, y: hip }); Object.assign(lm[24], { x: x + 0.03, y: hip });
+  return lm;
+};
+
+test('each player has their own reach band, from their hips, so a grown-up sweeps higher than a child', () => {
+  pose.mouse.active = false;
+  const adult = { present: true, lm: standing(0.25, 0.575, 0.25), centre: { x: 0.25, y: 0.45 }, scale: 0.6 };
+  const child = { present: true, lm: standing(0.7, 0.77, 0.15), centre: { x: 0.7, y: 0.7 }, scale: 0.36 };
+  const a = bandOf(adult), c = bandOf(child);
+  assert.ok(a.top < 0.6 && a.bottom < 0.68, 'a grown-up: about hip to upper thigh ' + JSON.stringify(a));
+  assert.ok(c.top > 0.7, 'a child: lower ' + JSON.stringify(c));
+  assert.ok(a.bottom < c.top, 'and the two bands are different heights');
+  assert.ok(a.bottom - a.top > 0.05 && BAND[0] < 0 && BAND[1] > 0);
+  assert.equal(bandOf({ present: false }), null);
+});
+
+test('leaves land and settle in the reach band of the player they are for', () => {
+  pose.mouse.active = false;
+  pose.players.forEach((p, i) => { p.present = i < 2; p.lm = null; p.hands.left = { x: 0.1, y: 0.2, vx: 0, vy: 0, speed: 0 }; p.hands.right = { x: 0.9, y: 0.2, vx: 0, vy: 0, speed: 0 }; });
+  pose.players[0].lm = standing(0.25, 0.575, 0.25); pose.players[0].centre = { x: 0.25, y: 0.45 }; pose.players[0].scale = 0.6;
+  pose.players[1].lm = standing(0.7, 0.77, 0.15); pose.players[1].centre = { x: 0.7, y: 0.7 }; pose.players[1].scale = 0.36;
+  const g = leafPile.create(2);
+  g.step(DT, W, H);
+  const A = bandOf(pose.players[0]), C = bandOf(pose.players[1]);
+  g.leaves = [];
+  for (let k = 0; k < 40; k++){ g._leaf(true, 0.25, null, 0); g._leaf(true, 0.7, null, 1); }
+  for (const L of g.leaves.filter(L => L.own === 0)) assert.ok(L.y >= A.top - 1e-9 && L.y <= A.bottom + 1e-9, 'the grown-up\'s leaf at ' + L.y);
+  for (const L of g.leaves.filter(L => L.own === 1)) assert.ok(L.y >= C.top - 1e-9 && L.y <= C.bottom + 1e-9, 'the child\'s leaf at ' + L.y);
+  /* falling leaves come to rest there too */
+  g.leaves = []; g.fallT = 0; g.step(DT, W, H);
+  const fell = g.leaves.find(L => L.air);
+  assert.ok(fell, 'one came down');
+  const b = fell.own === 0 ? A : C;
+  assert.ok(fell.rest >= b.top - 1e-9 && fell.rest <= b.bottom + 1e-9, 'it will lie in the band of the player it came down for');
+  /* a leaf lying out of its player's band drifts into it, even a leaf left over from the start of the game */
+  g.leaves = []; g.fallT = 99; g._leaf(true, 0.25, 0.86, 0);
+  for (let k = 0; k < 30 * 8; k++) g.step(DT, W, H);
+  const L0 = g.leaves.find(L => L.own === 0);
+  assert.ok(L0 && L0.y <= A.bottom + 0.01, 'it settled up to ' + (L0 && L0.y));
+});

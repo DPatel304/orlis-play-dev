@@ -1,9 +1,12 @@
 /* Animal Gym: a gentle workout, led by an animal coach. Each stretch of the round is one animal's move - stretch up like
    a giraffe, hop like a bunny, flap like a bird, squat like a frog, stomp like an elephant, wobble like a penguin - and
-   every try fills the same energy bar, whoever does it. When the bar's full the coach cheers and the next animal comes;
-   when the time's up it comes anyway. Nothing to lose, no wrong moves: a try is a try.
+   every try fills the same energy bar, whoever does it. When the bar's full the coach cheers ("Great job!") and, after a short
+   well-done beat (BEAT), the next animal comes; if nothing is happening (no try for STUCK seconds - the move isn't being seen, or
+   nobody is trying) or the animal has had CAP seconds, it changes anyway. Nothing to
+   lose, no wrong moves: a try is a try.
 
-   Three minutes: a warm-up stretch, six animals, and a slow cool-down stretch to finish.
+   Three minutes: a warm-up stretch, as many animals as fit (they come as fast as the family fills the bars; about a dozen and
+   a half), and the last COOL seconds are a slow cool-down stretch to finish, so the round is always ROUND seconds long.
 
    The moves are the body's, from the camera's landmarks (a jump uses the jump watch the other games use). With no
    landmarks - the mouse, in testing - a fast hand counts as a try, so the game can still be played. */
@@ -28,15 +31,14 @@ export const MOVES = {
   march: { animal: 'elephant', name: 'Elephant', text: 'Lift your knees!' },
   lean:  { animal: 'penguin', name: 'Penguin', text: 'Wobble side to side!' }
 };
-/* 15 + 6 x 24 + 21 = 180 seconds */
-export const SCHEDULE = [
-  { move: 'reach', len: 15, text: 'Stretch up tall!' },
-  { move: 'jump', len: 24 }, { move: 'flap', len: 24 }, { move: 'squat', len: 24 },
-  { move: 'march', len: 24 }, { move: 'lean', len: 24 }, { move: 'jump', len: 24 },
-  { move: 'reach', len: 21, text: 'Slow stretch…', icon: 'giraffe' }
-];
+/* the warm-up is a stretch; then the animals come round in this order, over and over (a hop first, then a different move each
+   time); the last COOL seconds of the round are a slow stretch */
+export const WARMUP = 'reach', ORDER = ['jump', 'flap', 'squat', 'march', 'lean'];
+/* seconds of "well done" between a full bar and the next animal; with no try at all for STUCK seconds, or after CAP seconds
+   however it is going, on to the next animal; the cool-down */
+export const BEAT = 2, STUCK = 8, CAP = 24, COOL = 20;
 /* thresholds, in body sizes (pose's scale) */
-export const T = { reachUp: 0.15, flapUp: 0.05, flapDown: 0.1, squatDown: 0.16, squatUp: 0.07, kneeUp: 0.2, lean: 0.1, handFast: 0.5 };
+export const T = { reachUp: 0.15, flapUp: 0.05, flapDown: 0.1, squatDown: 0.13, squatUp: 0.06, kneeUp: 0.2, lean: 0.1, handFast: 0.5 };
 
 export default {
   id: 'animal-gym', unit: 'moves', name: 'Animal Gym', stars: 1, accent: color('touch.mint', 'shade'),
@@ -110,7 +112,7 @@ class AnimalGym {
     this.players = players;
     this.score = Array.from({ length: MAX_PLAYERS }, () => 0);
     this.t = 0; this.over = false;
-    this.seg = -1; this.segT = 0;
+    this.seg = -1; this.segT = 0; this.cool = false; this.cheerT = 0; this.quiet = 0;
     this.fill = 0; this.cheered = false; this.circuits = 0;
     this.st = Array.from({ length: MAX_PLAYERS }, () => ({}));
     this.jw = new JumpWatch({ rise: 0.08, speed: 0.5 });
@@ -122,25 +124,27 @@ class AnimalGym {
     this._enter(0);
   }
 
-  /* which stretch of the schedule a time falls in */
-  static segAt(t){ let a = 0; for (let i = 0; i < SCHEDULE.length; i++){ a += SCHEDULE[i].len; if (t < a) return i; } return SCHEDULE.length - 1; }
-  get move(){ return SCHEDULE[Math.max(0, this.seg)].move; }
+  /* the move of the i-th animal: the warm-up, then the animals in turn (the cool-down is a stretch too) */
+  static moveOf(i, cool = false){ return cool || i <= 0 ? WARMUP : ORDER[(i - 1) % ORDER.length]; }
+  get move(){ return AnimalGym.moveOf(Math.max(0, this.seg), this.cool); }
 
-  _enter(i){
-    this.seg = i; this.segT = 0; this.fill = 0; this.cheered = false;
+  _enter(i, cool = false){
+    this.seg = i; this.segT = 0; this.fill = 0; this.cheered = false; this.cheerT = 0; this.quiet = 0; this.cool = cool;
     this.st.forEach((s, k) => { for (const key of Object.keys(s)) delete s[key]; });
-    const seg = SCHEDULE[i];
-    this.say = { icon: seg.icon || MOVES[seg.move].animal, text: seg.text || MOVES[seg.move].text, t: 0 };
+    const mv = this.move;
+    this.say = cool ? { icon: 'giraffe', text: 'Slow stretch…', t: 0 } : { icon: MOVES[mv].animal, text: MOVES[mv].text, t: 0 };
     if (i > 0) sfx.whoosh?.();
   }
 
   step(dt, W, H){
     this.t += dt; this.segT += dt; this.say.t += dt;
+    if (this.cheered) this.cheerT += dt; else this.quiet += dt;
     this.j.step(dt);
     this.pulse = Math.max(0, this.pulse - dt * 3);
     if (this.t >= ROUND){ this.over = true; }
-    const at = AnimalGym.segAt(this.t);
-    if (at !== this.seg) this._enter(at);
+    /* the next animal: soon after the bar is full, or when this one has had its time; the last COOL seconds are the stretch */
+    if (!this.cool && this.t >= ROUND - COOL) this._enter(this.seg + 1, true);
+    else if (!this.cool && ((this.cheered && this.cheerT >= BEAT) || this.quiet >= STUCK || this.segT >= CAP)) this._enter(this.seg + 1);
 
     const present = pose.players.slice(0, this.players).filter(p => p && p.present).length;
     const jumpers = this.jw.step(dt, pose.players, this.players);
@@ -150,6 +154,7 @@ class AnimalGym {
       /* (with no landmarks a jump is a fast hand too) */
       if (this.move === 'jump' && p && p.present && !p.lm) n = triesOf('jump', p, this.st[i], dt);
       if (!n) continue;
+      this.quiet = 0;
       this.score[i] += n;
       this.fill = Math.min(1, this.fill + n / (REPS * Math.max(1, present)));
       this.pulse = 1;
@@ -189,11 +194,11 @@ class AnimalGym {
     c.save(); c.textAlign = 'center'; c.textBaseline = 'middle';
     c.font = `800 ${Math.round(H * 0.045)}px Inter, Segoe UI, sans-serif`; c.fillStyle = color('shade.ink');
     c.fillText(m.name, W * 0.5, H * 0.8);
-    const n = SCHEDULE.length, gap = H * 0.045, x0 = W * 0.5 - (n - 1) * gap / 2;
-    for (let i = 0; i < n; i++){
-      c.fillStyle = i < this.seg ? color('touch.mint', 'shade') : i === this.seg ? color('ui.gold') : alpha('earth.snow', 0.8);
-      c.beginPath(); c.arc(x0 + i * gap, H * 0.87, H * (i === this.seg ? 0.014 : 0.011), 0, 6.2832); c.fill();
-    }
+    /* where we are in the workout: a track that fills as the minutes go, with the animals done so far as dots on it */
+    const tw = W * 0.26, tx = W * 0.5 - tw / 2, ty = H * 0.87, th = H * 0.014, k = Math.min(1, this.t / ROUND);
+    c.fillStyle = alpha('earth.snow', 0.8); c.beginPath(); c.roundRect(tx, ty - th / 2, tw, th, th / 2); c.fill();
+    c.fillStyle = color('touch.mint', 'shade'); c.beginPath(); c.roundRect(tx, ty - th / 2, Math.max(th, tw * k), th, th / 2); c.fill();
+    c.fillStyle = color('ui.gold'); c.beginPath(); c.arc(tx + Math.max(th / 2, tw * k), ty, th * 0.9, 0, 6.2832); c.fill();
     c.restore();
     this.j.draw(c, H);
     if (shook) c.restore();
