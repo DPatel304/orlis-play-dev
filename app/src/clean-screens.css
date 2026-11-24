@@ -35,8 +35,19 @@
 .btn.whochip2 canvas.avface,.btn.whochip2 .av{ width:calc(var(--u)*6.8); height:calc(var(--u)*6.8); border-radius:30%; box-shadow:0 0 0 calc(var(--u)*.5) var(--who,var(--blue)); background:var(--surface); display:block; }
 .btn.whochip2 .fill{ display:none; }
 .btn.whochip2:hover,.btn.whochip2.hot{ background:var(--surface); box-shadow:0 0 0 calc(var(--u)*.5) var(--who,var(--blue)); transform:none; }
-/* results: each child's face, name and count along the bottom, in their colour */
-.gkids{ position:absolute; left:calc(var(--u)*88); right:calc(var(--u)*3); bottom:calc(var(--u)*2); display:flex; justify-content:space-around; gap:calc(var(--u)*1.5); z-index:2; }
-.gkid{ display:flex; align-items:center; gap:calc(var(--u)*1); padding:calc(var(--u)*.5) calc(var(--u)*2.6) calc(var(--u)*.5) calc(var(--u)*.5); font:400 calc(var(--u)*4.2) var(--ui); white-space:nowrap; border-radius:var(--pill); background:var(--surface); box-shadow:var(--soft); }
+/* results: each child's face, name and count along the bottom, in their colour; one column each, the row centred (the figures above stand
+   in the same columns: ui/results-row.js). With one or two the chip is on one line; with three or four it is two (name over count). */
+.gkids{ --col:calc(var(--u)*38); position:absolute; left:0; right:0; bottom:calc(var(--u)*2); display:flex; justify-content:center; gap:calc(var(--u)*2); z-index:2; pointer-events:none; }
+.gkids[data-n="3"]{ --col:calc(var(--u)*28); }
+.gkids[data-n="4"]{ --col:calc(var(--u)*22); }
+.gkid{ box-sizing:border-box; flex:none; width:var(--col); display:flex; align-items:center; gap:calc(var(--u)*1); padding:calc(var(--u)*.5) calc(var(--u)*2) calc(var(--u)*.5) calc(var(--u)*.5); font:400 calc(var(--u)*4.2) var(--ui); white-space:nowrap; border-radius:var(--pill); background:var(--surface); box-shadow:var(--soft); overflow:hidden; }
 .gkid .gkface{ display:block; width:calc(var(--u)*7); height:calc(var(--u)*7); border-radius:30%; box-shadow:0 0 0 calc(var(--u)*.5) var(--c); overflow:hidden; background:var(--paper); flex:none; } .gkid .gkface canvas{ width:100%; height:100%; display:block; }
-.gkid b{ font-weight:700; margin-left:calc(var(--u)*1); }
+.gkid .gktext{ flex:1 1 auto; min-width:0; display:flex; align-items:baseline; justify-content:space-between; gap:calc(var(--u)*1); }
+.gkid .gkname{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.gkid b{ font-weight:700; flex:none; }
+.gkids[data-n="3"] .gkid,.gkids[data-n="4"] .gkid{ padding-right:calc(var(--u)*1.4); }
+.gkids[data-n="3"] .gktext,.gkids[data-n="4"] .gktext{ flex-direction:column; align-items:flex-start; justify-content:center; gap:0; line-height:1.05; }
+.gkids[data-n="3"] .gkname,.gkids[data-n="4"] .gkname{ font-size:calc(var(--u)*3); max-width:100%; }
+.gkids[data-n="3"] .gkid b,.gkids[data-n="4"] .gkid b{ font-size:calc(var(--u)*4.6); }
+/* the results card sits high enough that the figures standing in the row below it are never behind it */
+.screen.end.gamecard .gcard{ top:33%; }

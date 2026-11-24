@@ -107,21 +107,24 @@ export class Person {
     const K = KINDS[spec.kind];
     this.spec = spec; this.kind = K; this.name = spec.kind; this.isChild = spec.kind === 'child'; this.idx = idx; this.rng = rng;
     this.layer = spec.layer ?? (this.isChild ? 1 : 0);
-    this.h = spec.h ?? K.pic;                                    /* height in the picture (H) */
+    this.h = spec.h ?? K.pic;
+    this.feetY = spec.feetY ?? K.feetY;                          /* where the feet stand in the picture (a body further back stands higher) */
+    this.role = spec.role || null;                               /* 'sofa' | 'passer': a watcher, never driven by a game */
+    this.seat = spec.role === 'sofa';                                    /* height in the picture (H) */
     this.realM = spec.realM ?? K.realM;
     this.ppm = this.h / this.realM;                              /* picture heights per metre */
     this.armLen = K.arm * this.h;                                /* shoulder to wrist (H) */
     this.x = spec.x; this.homeX = spec.x;                        /* hip centre, before the "closer" scale */
     this.k = 1; this.kGoal = 1;
     this.lift = 0; this.liftV = 0;                               /* jump height (m) */
-    this.cmd = { crouch: 0, bend: 0, lean: 0, kl: 0, kr: 0, hold: false };
-    this.cur = { crouch: 0, bend: 0, lean: 0, kl: 0, kr: 0 };
+    this.cmd = { crouch: 0, bend: 0, lean: 0, kl: 0, kr: 0, tip: 0, hold: false };     /* tip: up on tiptoe (m) */
+    this.cur = { crouch: 0, bend: 0, lean: 0, kl: 0, kr: 0, tip: 0 };
     this.walkGoal = null; this.walkSpeedMul = 1; this.cmdQ = []; this.evQ = []; this._wantWalk = null; this.now = 0;
     this.reactScale = spec.react ?? 1; this.delay = between(rng, ...K.delay) * this.reactScale; this.delayT = 0;
     this.lapse = null; this.attnNext = between(rng, ...K.lapseEvery) * (this.isChild ? 0.6 : 1);
     this.closeNext = this.isChild ? between(rng, 20, 45) : 1e9; this.closeUntil = 0;
     this.L = new Hand(this, 'l'); this.R = new Hand(this, 'r');
-    this.amp = { jump: 1, squat: 1, lean: 1, march: 1 }; this.state = 'idle'; this.slot = -1; this.present = false; this.inScene = true;
+    this.amp = { jump: 1, squat: 1, lean: 1, march: 1, tiptoe: 1 }; this.state = 'idle'; this.slot = -1; this.present = false; this.inScene = true;
     this.breath = rng() * 6; this.fid = { x: 0, y: 0 };
     this.stats = { frames: 0, on: 0, idle: 0, wait: 0, lapse: 0, armsUp: 0, bent: 0, hops: 0, closeTime: 0, offFrame: 0 };
     this.J = null; this.mem = {};
@@ -132,8 +135,8 @@ export class Person {
   /* inverse of T for x */
   untx(sx){ return 0.5 + (sx - 0.5) / this.k; }
   _joints(now){
-    const P = this, K = this.kind, c = this.cur, h = this.h, liftH = this.lift * this.ppm;
-    const top = K.feetY - h - liftH, yOf = (f) => top + f * h;
+    const P = this, K = this.kind, c = this.cur, h = this.h, liftH = (this.lift + c.tip) * this.ppm;
+    const top = this.feetY - h - liftH, yOf = (f) => top + f * h;
     const crouchDrop = c.crouch * 0.30 * h, bendSh = c.bend * 0.26 * h, bendHead = c.bend * 0.30 * h, bendHip = c.bend * 0.05 * h;
     const lean = c.lean * 0.22 * h / A;
     const hipY = yOf(K.hip) + crouchDrop + bendHip, shY = yOf(K.shoulder) + crouchDrop + bendSh, noseY = yOf(K.nose) + crouchDrop + bendHead;
@@ -142,7 +145,9 @@ export class Person {
     const shX = hx + lean, hdX = hx + lean * 1.25;
     const kneeRest = yOf(K.knee) + crouchDrop * 0.5, ankRest = yOf(K.ankle);
     const lift = (kl) => ({ ky: kneeRest - kl * (kneeRest - hipY) * 0.5, ay: ankRest - kl * 0.16 * h });
-    const kl = lift(c.kl), kr = lift(c.kr);
+    let kl = lift(c.kl), kr = lift(c.kr);
+    /* seated on a sofa: the thighs point at the camera, so the knees are nearly level with the hips; the shins hang straight down */
+    if (this.seat){ const ky = hipY + 0.035 * h, ay = ky + 0.21 * h; kl = { ky, ay }; kr = { ky, ay }; }
     const j = {
       nose: this.T(hdX, noseY + fy), lEye: this.T(hdX - 0.02 * h / A, noseY - 0.012 * h + fy), rEye: this.T(hdX + 0.02 * h / A, noseY - 0.012 * h + fy),
       lEar: this.T(hdX - 0.045 * h / A, noseY - 0.004 * h + fy), rEar: this.T(hdX + 0.045 * h / A, noseY - 0.004 * h + fy),
@@ -162,7 +167,7 @@ export class Person {
   torso(){ const j = this.J; return Math.hypot(((j.lHip.x + j.rHip.x) - (j.lSh.x + j.rSh.x)) / 2, (j.hipY - j.shY)); }
   /* ---- reaching: can this body get a hand to (tx, ty) where it stands? */
   /* where the shoulders are when standing straight (no bend, squat or hop) */
-  restShY(){ const K = this.kind; return this.T(0.5, K.feetY - this.h + K.shoulder * this.h).y; }
+  restShY(){ const K = this.kind; return this.T(0.5, this.feetY - this.h + K.shoulder * this.h).y; }
   /* can this body get a hand to (tx, ty) where it stands? rest: judge from standing straight (what it could do if it bent or hopped) */
   nearestSide(tx){ return Math.abs(tx - this.J.lSh.x) < Math.abs(tx - this.J.rSh.x) ? 'l' : 'r'; }
   reach(tx, ty, rest = false, hand = null){
@@ -209,7 +214,7 @@ export class Person {
     while (this.evQ.length && this.evQ[0].at <= now) this.evQ.shift().fn();
     /* the body's own moves (squat, bend, lean, knees) arrive a reaction time after they are asked for, like the hands' goals */
     this.cmdQ.push({ t: now, ...this.cmd }); while (this.cmdQ.length > 2 && this.cmdQ[1].t <= now - this.delay) this.cmdQ.shift();
-    const dc = this.cmdQ[0].t <= now - this.delay || this.cmdQ.length === 1 ? this.cmdQ[0] : { crouch: 0, bend: 0, lean: 0, kl: 0, kr: 0 };
+    const dc = this.cmdQ[0].t <= now - this.delay || this.cmdQ.length === 1 ? this.cmdQ[0] : { crouch: 0, bend: 0, lean: 0, kl: 0, kr: 0, tip: 0 };
     /* reaction time wanders between its limits */
     this.delayT -= dt; if (this.delayT <= 0){ this.delayT = between(rng, 1, 3); this.delayTarget = between(rng, ...K.delay) * this.reactScale; }
     this.delay += ((this.delayTarget ?? this.delay) - this.delay) * Math.min(1, dt);
@@ -240,7 +245,7 @@ export class Person {
     if (this.lift > 0){ this.liftV -= 9.81 * dt; this.lift += this.liftV * dt; if (this.lift <= 0){ this.lift = 0; this.liftV = 0; } }
     /* body modifiers ease toward what's asked */
     const c = this.cur, g = dc.hold ? this.cur : dc, ks = this.isChild ? 9 : 6;
-    for (const key of ['crouch', 'bend', 'lean', 'kl', 'kr']) c[key] += (g[key] - c[key]) * Math.min(1, dt * ks);
+    for (const key of ['crouch', 'bend', 'lean', 'kl', 'kr', 'tip']) c[key] += (g[key] - c[key]) * Math.min(1, dt * ks);
     this._joints(now);
     this.L.step(dt, now, rng); this.R.step(dt, now, rng);
     /* the effort counters */
@@ -278,22 +283,52 @@ export class World {
   constructor(specs, seed, { jitter = 0.0018, noLapse = false } = {}){
     this.seed = seed; this.t = 0; this.jitter = jitter; this.noLapse = noLapse;
     this.rng = mulberry32(seed * 7919 + 13);
+    /* watchers (a person on the sofa behind, someone walking across the back) are in the picture but never play: the tracker sees them,
+       no game drives them, and nothing is scored for them. */
+    this.watchers = specs.filter(s => s.role).map((s, i) => new Person(s, mulberry32(seed * 7001 + i * 17 + 3), 100 + i));
+    specs = specs.filter(s => !s.role);
     this.persons = specs.map((s, i) => new Person(s, mulberry32(seed * 104729 + i * 31 + 5), i));
     this.persons.sort((a, b) => a.x - b.x);
     this.persons.forEach((p, i) => { p.idx = i; });
   }
+  get everyone(){ return this.persons.concat(this.watchers); }
   /* one frame: brains first (they set goals), then bodies */
   step(dt, brain, ctx){
     this.t += dt;
     for (const p of this.persons){
-      p.cmd.crouch = p.cmd.bend = p.cmd.lean = p.cmd.kl = p.cmd.kr = 0; p.cmd.hold = false;
+      p.cmd.crouch = p.cmd.bend = p.cmd.lean = p.cmd.kl = p.cmd.kr = p.cmd.tip = 0; p.cmd.hold = false;
       const lap = p.lapse;
       if (lap){ p.releaseHands(this.t); p.state = 'lapse'; }
       else if (brain && ctx) brain.act(ctx, p, this.t, dt);
       else { p.releaseHands(this.t); p.state = 'idle'; }
     }
     for (const p of this.persons) p.update(dt, this.t, this);
+    for (const w of this.watchers) this._watcher(w, dt);
     this._separate();
+  }
+  /* the sofa person sits almost still and now and then raises an arm; the passer-by walks across the back at about 1.2 m/s, out of
+     the picture, and back again some seconds later */
+  _watcher(w, dt){
+    const t = this.t, m = w.mem;
+    w.cmd.crouch = w.cmd.bend = w.cmd.lean = w.cmd.kl = w.cmd.kr = 0; w.cmd.hold = false;
+    if (w.role === 'sofa'){
+      if (m.armUntil == null){ m.armUntil = 0; m.armNext = 6 + w.rng() * 10; m.side = 'l'; }
+      if (t >= m.armNext){ m.armUntil = t + 0.8 + w.rng() * 1.5; m.armNext = t + 10 + w.rng() * 25; m.side = w.rng() < 0.5 ? 'l' : 'r'; }
+      const H = m.side === 'l' ? w.L : w.R, O = m.side === 'l' ? w.R : w.L;
+      if (t < m.armUntil) H.goal(w.shoulderOf(m.side).x + (m.side === 'l' ? -0.01 : 0.01), w.J.topY - w.armLen * w.k * 0.3, t); else H.release(t);
+      O.release(t);
+      /* shifts about on the cushions now and then */
+      if (w.rng() < dt * 0.1) w.fid.x += (w.rng() - 0.5) * 0.01;
+    } else {
+      w.releaseHands(t);
+      if (m.dir == null){ m.dir = w.rng() < 0.5 ? 1 : -1; m.wait = 1 + w.rng() * 6; w.inScene = false; w.x = m.dir > 0 ? -0.1 : 1.1; }
+      if (!w.inScene){ m.wait -= dt; if (m.wait <= 0){ w.inScene = true; w.walkGoal = m.dir > 0 ? 1.12 : -0.12; w.walkSpeedMul = 1.5; } }
+      else {
+        w.x += 0;                                              /* (walking is Person.update's: toward walkGoal) */
+        if (Math.abs(w.x - w.walkGoal) < 0.02 || w.walkGoal == null){ w.inScene = false; m.dir = -m.dir; m.wait = 4 + w.rng() * 10; w.x = m.dir > 0 ? -0.1 : 1.1; w.walkGoal = null; }
+      }
+    }
+    w.update(dt, t, this);
   }
   /* people in the same row can't walk through each other; a child standing in front of a grown-up can overlap them */
   _separate(){
@@ -308,10 +343,10 @@ export class World {
   /* what a pose camera reports: landmarks (noise, lost behind someone in front, lost off the edge of the picture) */
   detect(){
     const out = [];
-    for (const p of this.persons){
+    for (const p of this.everyone){
       if (!p.inScene) continue;
       const lm = p.landmarks();
-      const hid = (x, y) => this.persons.some(q => q !== p && q.layer > p.layer && q.inScene && Math.abs(x - q.sx) < q.kind.shw * q.h * q.k / A * 1.25 && y > q.J.topY - 0.01 && y < q.J.hipY + 0.02);
+      const hid = (x, y) => this.everyone.some(q => q !== p && q.layer > p.layer && q.inScene && Math.abs(x - q.sx) < q.kind.shw * q.h * q.k / A * 1.25 && y > q.J.topY - 0.01 && y < q.J.hipY + 0.02);
       for (let i = 0; i < lm.length; i++){
         const k = lm[i];
         k.x += gauss(this.rng) * this.jitter; k.y += gauss(this.rng) * this.jitter;
@@ -330,15 +365,30 @@ export class World {
 export const LINEUPS = {
   '1c': [{ kind: 'child', x: 0.5 }],
   '1a': [{ kind: 'adult', x: 0.5 }],
+  /* two (a grown-up and a child) and three (two grown-ups and a child), for the results screens */
+  '2m': [{ kind: 'adult', x: 0.35 }, { kind: 'child', x: 0.62 }],
+  '3m': [{ kind: 'adult', x: 0.25 }, { kind: 'child', x: 0.5 }, { kind: 'adult', x: 0.75 }],
   '4c': [{ kind: 'child', x: 0.2 }, { kind: 'child', x: 0.4 }, { kind: 'child', x: 0.6 }, { kind: 'child', x: 0.8 }],
   /* the family: two grown-ups at the ends, a child in front of each (lower, overlapping a little) */
   '4m': [{ kind: 'adult', x: 0.24 }, { kind: 'child', x: 0.35 }, { kind: 'child', x: 0.66 }, { kind: 'adult', x: 0.77 }]
 };
+/* the same, with a watcher or two: s = a person seated on the sofa behind (35-45% of a standing adult, mostly still, sometimes an arm up),
+   p = someone walking across the back of the room. */
+const SOFA = { kind: 'adult', role: 'sofa', x: 0.5 }, PASSER = { kind: 'adult', role: 'passer', x: 0.5 };
+LINEUPS['1c+s'] = [...LINEUPS['1c'], SOFA]; LINEUPS['1c+p'] = [...LINEUPS['1c'], PASSER];
+LINEUPS['1a+s'] = [...LINEUPS['1a'], SOFA]; LINEUPS['1a+p'] = [...LINEUPS['1a'], PASSER];
+LINEUPS['4m+s'] = [...LINEUPS['4m'], SOFA]; LINEUPS['4m+p'] = [...LINEUPS['4m'], PASSER]; LINEUPS['4m+sp'] = [...LINEUPS['4m'], SOFA, PASSER];
+LINEUPS['s'] = [SOFA]; LINEUPS['p'] = [PASSER]; LINEUPS['sp'] = [SOFA, PASSER];
 export function makeWorld(lineup, seed, opts = {}){
   const rng = mulberry32(seed * 31 + 7);
   const react = opts.react ?? 1;
   const adultPic = KINDS.adult.pic + (rng() - 0.5) * 0.03;
   const specs = LINEUPS[lineup].map((s) => {
+    if (s.role){
+      /* watchers: about 40% of a standing adult's size (the sofa person seated, further back), the passer-by a little smaller and further back still */
+      const f = s.role === 'sofa' ? 0.40 + (rng() - 0.5) * 0.10 : 0.40 + (rng() - 0.5) * 0.10;
+      return { ...s, x: s.role === 'sofa' ? 0.3 + rng() * 0.4 : 0.5, layer: -1, react: 1, h: adultPic * f, realM: 1.75, feetY: s.role === 'sofa' ? 0.80 : 0.72 };
+    }
     const x = clamp(s.x + (rng() - 0.5) * 0.06, 0.1, 0.9);
     if (s.kind === 'child'){
       const ratio = clamp(0.60 + gauss(rng) * 0.03, 0.54, 0.68);          /* "about 60% of an adult's height in the picture" */
@@ -374,8 +424,11 @@ export class Feeder {
     this.t += dt;
     const dets = world.detect();
     const sizes = dets.map(d => lib.sizeOf(d.lm)), biggest = Math.max(0, ...sizes);
+    const stay = lib.STAY ?? lib.CLOSE;
     dets.forEach((d, i) => {
-      const p = d.person, close = sizes[i] >= lib.CLOSE * biggest, sat = lib.seated(d.lm);
+      const p = d.person;
+      if (p.role){ p.sizeRatio = biggest ? sizes[i] / biggest : 1; return; }
+      const close = sizes[i] >= stay * biggest, sat = lib.seated(d.lm);
       p.sizeRatio = biggest ? sizes[i] / biggest : 1;
       p.notClose = close ? 0 : (p.notClose || 0) + dt;
       p.notPlaying = (!sat && close) ? 0 : (p.notPlaying || 0) + dt;
@@ -385,9 +438,18 @@ export class Feeder {
       if (!inFrame || d.lm[L.L_WRIST].v < 0.3 || d.lm[L.R_WRIST].v < 0.3) p.stats.offFrame++;
     });
     pose._assign(dets.map(d => d.lm), dt);
+    /* a watcher the tracker lets in is the thing to catch: count the frames someone in the picture beside it is a player */
+    for (const d of dets){
+      const p = d.person; if (!p.role) continue;
+      p.frames = (p.frames || 0) + 1;
+      /* a player whose head is nearer this watcher than anyone else in the picture is the watcher, let in */
+      const dh = (q, o) => Math.hypot((q.head.x - o.J.nose.x) * A, q.head.y - o.J.nose.y);
+      if (pose.players.some(q => q.present && q.head && dets.every(e => e.person === p || dh(q, p) < dh(q, e.person)) && dh(q, p) < 0.3 * p.h)) p.playerFrames = (p.playerFrames || 0) + 1;
+    }
     if (this.assist){
       for (const d of dets){
         const p = d.person;
+        if (p.role) continue;
         if (this._slotOf(p) >= 0){ p.noSlotFor = 0; continue; }
         /* give the tracker its chance first: a second to let someone in, half a second to pick someone up again */
         p.noSlotFor = (p.noSlotFor || 0) + dt;
@@ -448,6 +510,17 @@ export function doMove(p, move, now, dt){
     const T = per(1.3, 2.0), u = (cyc % T) / T;
     p.cmd.lean = (Math.sin(u * 2 * Math.PI) > 0 ? 0.9 : -0.9) * p.amp.lean;
     p.L.release(now); p.R.release(now);
+  } else if (move === 'tiptoe'){
+    /* reaching for something high: up on the toes (4 to 6 cm) with the arms up, then down */
+    const T = per(1.6, 2.2), u = (cyc % T) / T;
+    p.cmd.tip = u < 0.5 ? (ch ? 0.05 : 0.06) * p.amp.tiptoe : 0;
+    const up = u < 0.5, gy = up ? headTop - p.armLen * p.k * 0.5 : sh + p.armLen * p.k * 0.5;
+    p.L.goal(p.J.lSh.x - 0.015, gy, now); p.R.goal(p.J.rSh.x + 0.015, gy, now);
+  } else if (move === 'bend'){
+    /* picking something off the floor: bend over, back up */
+    const T = per(1.4, 2.0), u = (cyc % T) / T;
+    p.cmd.bend = u < 0.5 ? 0.9 : 0;
+    p.L.goal(p.J.lSh.x - 0.02, sh + p.armLen * p.k * 1.0, now); p.R.goal(p.J.rSh.x + 0.02, sh + p.armLen * p.k * 1.0, now);
   } else if (move === 'jump'){
     const T = per(1.1, 1.6);
     const n = Math.floor(cyc / T);

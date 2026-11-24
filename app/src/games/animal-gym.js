@@ -16,7 +16,7 @@ import { Juice } from './common.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { L } from '../tracking/pose-shared.js';
 import { sfx } from '../audio/sound.js';
-import { JumpWatch } from '../tracking/jump.js';
+import { JumpWatch, HOP } from '../tracking/jump.js';
 import { Scene } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
 
@@ -115,7 +115,7 @@ class AnimalGym {
     this.seg = -1; this.segT = 0; this.cool = false; this.cheerT = 0; this.quiet = 0;
     this.fill = 0; this.cheered = false; this.circuits = 0;
     this.st = Array.from({ length: MAX_PLAYERS }, () => ({}));
-    this.jw = new JumpWatch({ rise: 0.08, speed: 0.5 });
+    this.jw = new JumpWatch(HOP);
     this.pulse = 0;
     this.j = new Juice();
     this.scene = new Scene();

@@ -7,6 +7,7 @@ import { reaches } from './reach.js';
 import { Avatars } from '../ui/avatars.js';
 import { crew } from '../ui/crew.js';
 import { body } from '../ui/avatar-art.js';
+import { rowX, FIG } from '../ui/results-row.js';
 import { ANIMALS, animalParts, animalCol, touches, drawAnimal } from './pop-party-animals.js';
 
 /* Three-minute rounds; the storm is always the last ten seconds. */
@@ -474,7 +475,7 @@ class PopParty {
      everyone gets at least a handful so everyone flies. The shell runs this
      until it returns true, then shows the scores. */
   outro(dt, W, H){
-    if (!this.out) this._startOutro();
+    if (!this.out) this._startOutro(W, H);
     const o = this.out;
     o.t += dt; this.t += dt;
     this.scene.step(dt, { t: this.t, p: 1, storm: false, wind: this.wind, joy: 1,
@@ -489,7 +490,7 @@ class PopParty {
     const lift = o.t < BOUQUET.liftAt ? 0 : Math.pow(o.t - BOUQUET.liftAt, 1.6) * 0.18;
     if (lift && !o.lifted){ o.lifted = true; sfx.liftoff(); }
     for (const g of o.groups){
-      const a = this._anchor(g.who);
+      const a = this._anchor(g.who, W, H);
       g.ax += (a.x - g.ax) * Math.min(1, dt * 5); g.ay += (a.y - g.ay) * Math.min(1, dt * 5);
       g.lift = lift;
       g.items.forEach((b, k) => {
@@ -504,7 +505,7 @@ class PopParty {
     return o.t > BOUQUET.liftAt + 4.5;
   }
 
-  _startOutro(){
+  _startOutro(W, H){
     this.out = { t: 0, lifted: false, groups: [] };
     /* A bunch for everyone who played - not for a place nobody stood in.
        With three or four, each bunch is a little smaller so they all fit. */
@@ -521,7 +522,7 @@ class PopParty {
       /* Smaller balloons for a bigger bunch, so it still fits on screen;
          laid out on a sunflower spiral, which packs a round bunch evenly. */
       const n = hues.length, r = 0.036 * Math.min(1, Math.sqrt(20 / n)) * (who.length > 2 ? 0.8 : 1), R = r * 1.2 * Math.sqrt(n);
-      const a = this._anchor(i);
+      const a = this._anchor(i, W, H);
       const items = hues.map((hue, k) => {
         const rr = Math.sqrt((k + 0.5) / n) * R, ang = k * 2.39996;
         const b = this._make(0.1 + Math.random() * 0.8);
@@ -536,25 +537,20 @@ class PopParty {
     }
   }
 
-  /* Where a player holds their bouquet: their higher hand, kept low enough
-     that the bunch above it stays on screen. */
-  _anchor(i){
-    /* With nobody to hold it, a bunch waits where its child would stand:
-       spread across the meadow in order. */
+  /* Where a player holds their bouquet: they stand in a row across the meadow, in seat order, each in their own place (the same places
+     their chips have under them on the results card, ui/results-row.js), so with four nobody stands on anybody and nobody is behind the
+     card; the knot is at their hand. */
+  _anchor(i, W = 1920, H = 1080){
     const here = pose.players.slice(0, this.players).map((q, j) => j).filter(j => pose.players[j].present || this.popped[j].length);
-    const n = Math.max(1, here.length), k = Math.max(0, here.indexOf(i)), home = (k + 0.5) / n * 0.8 + 0.1;
-    const p = pose.players[i];
-    if (!p || !p.present) return { x: home, y: 0.62 };
-    const hands = pose.mouse.active ? [p.hands.right] : [p.hands.left, p.hands.right];
-    const h = hands.reduce((a, b) => (b.y < a.y ? b : a));
-    return { x: Math.max(0.12, Math.min(0.88, h.x)), y: Math.max(0.45, Math.min(0.8, h.y)) };
+    const n = Math.max(1, here.length), k = Math.max(0, here.indexOf(i));
+    return { x: rowX(k, Math.min(4, n), W, H), y: FIG.base - FIG.h * 0.45 };
   }
 
   _drawBouquets(c, W, H){
     /* Each child stands in the meadow as their avatar, holding the strings
        - so the bunch isn't floating on its own. */
     for (const g of this.out.groups){
-      const h = H * 0.46, x = g.ax * W, base = H * 0.99;
+      const h = H * FIG.h, x = g.ax * W, base = H * FIG.base;
       c.save(); c.globalAlpha = 1; c.fillStyle = color('shade.ink');
       try { body(c, x, base, h, crew.lookOf(g.who), this.out.t + g.who, 'stand'); } catch (e){ /* never break the ending over a drawing */ }
       c.restore();

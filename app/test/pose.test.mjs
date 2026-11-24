@@ -228,6 +228,38 @@ test('someone standing far behind is a watcher; on their own, they play', () => 
   assert.equal(pose.personCount, 1, 'nobody closer, so they are the player');
 });
 
+test('a child at half a grown-up\'s size beside them joins and stays a player', () => {
+  resetPose();
+  const grown = (x) => person(x, { size: 0.24 }), child = (x, size = 0.12) => person(x, { size, y: 0.62 });
+  arrive([grown(0.3), child(0.55)]);
+  assert.equal(pose.personCount, 2, 'a child at 50% is a player');
+  /* leaning in, bending, squatting: the child dips to 40% for a long while and is still in; only well under 38% for WATCH_AFTER is out */
+  for (let t = 0; t < WATCH_AFTER * 3; t += 0.05) see([grown(0.3), child(0.55, 0.098)]);
+  assert.equal(pose.personCount, 2, 'at 41% they keep their place');
+  for (let t = 0; t < WATCH_AFTER + 0.5; t += 0.05) see([grown(0.3), child(0.55, 0.07)]);
+  assert.equal(pose.personCount, 1, 'but at 29% for good they are a watcher');
+});
+
+test('someone at 40% of the biggest body, standing, is a watcher; one walking through never joins even alone', () => {
+  resetPose();
+  arrive([person(0.3, { size: 0.24 }), person(0.7, { size: 0.096 })]);
+  assert.equal(pose.personCount, 1);
+  resetPose();
+  for (let t = 0, x = 0.1; t < 6; t += 0.05, x += 0.012) see([person(x, { size: 0.12 })]);
+  assert.equal(pose.personCount, 0, 'a body crossing the picture is walking past, not joining');
+  arrive([person(0.8, { size: 0.12 })]);
+  assert.equal(pose.personCount, 1, 'and standing still a moment, alone, they do join');
+});
+
+test('legs in the picture but hidden behind someone: not a joiner (legs below the picture are fine)', () => {
+  resetPose();
+  arrive([person(0.5, { size: 0.2, knees: false })]);
+  assert.equal(pose.personCount, 0, 'knees at y 0.68 but unseen: something is in front');
+  resetPose();
+  arrive([person(0.5, { size: 0.3, y: 0.7, knees: false })]);
+  assert.equal(pose.personCount, 1, 'knees below the bottom of the picture: a child up close');
+});
+
 test('a watcher on the left does not take player one from a child', () => {
   resetPose();
   /* Raw x 0.8 is screen-left after mirroring. */
@@ -417,17 +449,20 @@ test('the cursor stays on one hand when both are about as clearly seen', () => {
   assert.equal(pose.cursorHand(p), p.hands.left, 'one clearly better seen: that one');
 });
 
-test('while play is capped at two, a third person waits; opened up, they join', () => {
+test('four can play; capped at two, a third person waits; opened up, they join', () => {
   resetPose();
   for (const p of pose.players){ p.present = false; p.lm = null; p.lostFor = 99; }
-  assert.equal(pose.cap, 2);
+  assert.equal(pose.cap, 4, 'four places fill by default (PLAYING)');
+  arrive([person(0.15), person(0.4), person(0.6), person(0.85)]);
+  assert.equal(pose.personCount, 4);
+  for (const p of pose.players){ p.present = false; p.lm = null; p.lostFor = 99; }
+  pose.cap = 2;
   arrive([person(0.2), person(0.5), person(0.8)]);
   assert.equal(pose.personCount, 2);
   assert.equal(pose.players[2].present, false);
   pose.cap = 4;
   arrive([person(0.2), person(0.5), person(0.8)]);
   assert.equal(pose.personCount, 3);
-  pose.cap = 2;
   for (const p of pose.players){ p.present = false; p.lm = null; p.lostFor = 99; }
 });
 
