@@ -356,7 +356,7 @@ test('Play has "Made by us" as its third row, with the maker\'s face, only when 
   assert.equal(TITLES.made, 'Made by us');
   const g = madeGame(game('c1', 'Apple Catch'));
   const rows = homeRows({ pool: [{ id: 'x', name: 'X' }], featured: [{ id: 'f', name: 'F' }], discover: true, made: [g] });
-  assert.deepEqual(rows.map(r => r.id), ['featured', 'games', 'made'], 'after Featured and Your games');
+  assert.deepEqual(rows.map(r => r.id), ['featured', 'games', 'made'], 'after Featured and My library');
   assert.equal(rows[2].title, 'Made by us'); assert.equal(rows[2].items[0].g, g);
   assert.deepEqual(homeRows({ pool: [{ id: 'x', name: 'X' }], featured: [], discover: true }).map(r => r.id), ['featured', 'games'], 'no row until there is one');
   /* the page: the row, its tile with the face, and it plays */
@@ -370,7 +370,7 @@ test('Play has "Made by us" as its third row, with the maker\'s face, only when 
   };
   let { s, p, calls } = page([game('c1', 'Apple Catch', 'p1'), game('c2', 'Bee Pop', 'p2', { how: 'pop' })]);
   const labels = qa(s, '.hlab').map(l => txt(l));
-  assert.deepEqual(labels.slice(-1), ['Made by us']); assert.ok(labels.indexOf('Your games') < labels.indexOf('Made by us'));
+  assert.deepEqual(labels.slice(-1), ['Made by us']); assert.ok(labels.indexOf('My library') < labels.indexOf('Made by us'));
   const tiles = qa(s, '.htile').filter(t => qa(t, '.mkby').length);
   assert.equal(tiles.length, 2, 'each tile carries its maker\'s face');
   assert.equal(tiles.map(t => t.getAttribute('aria-label')).join('|'), 'Play Apple Catch|Play Bee Pop');
