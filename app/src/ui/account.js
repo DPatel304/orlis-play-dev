@@ -283,20 +283,14 @@ export function welcome(done, { auto = true, glide = false, onBack = null } = {}
     show(h('h2', '', 'Which Orlis server?'), ...list.map(sv => onPick(button(sv.name, 'wide'), () => connect(sv))));
   }
   /* Not found: most likely no internet just now. It keeps trying by itself,
-     and connects as soon as the server answers; or type its address. */
+     and connects as soon as the server answers (no typed address: owner, 2026-11-24). */
   async function notFound(){
     let words = notFoundWords(await net.online());
-    const addr = form([['url', 'Server address', 'text']], 'Connect', async ({ url }) => {
-      const u = serverUrl(url);
-      const r = await hello(u);
-      connect({ url: u, id: r.id, name: r.name, setup: r.setup, invite: r.invite !== false });
-    });
-    const typed = h('details', 'setuptype'); typed.append(h('summary', '', 'Type an address'), addr);
     const head = h('h2', '', words.heading), lede = h('p', 'lede', words.lede);
     /* asleep: Cubo dozing above the heading, eyes shut, a few z's drifting up (owner, 2026-11-24) */
     const nap = sleepyCubo(); nap.hidden = !words.asleep;
     show(nap, head, lede,
-      msg, onPick(button('Try again', 'wide'), () => { sfx.select(); find(); }), typed);
+      msg, onPick(button('Try again', 'wide'), () => { sfx.select(); find(); }));
     const me = card.lastChild;
     const tick = async () => {
       if (!s.contains(me)) return;
