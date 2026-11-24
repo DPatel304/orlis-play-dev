@@ -771,3 +771,9 @@ Phase 1 has four world sets on the palette: the meadow (Pop Party and Peekaboo G
 2026-11-21). The other kit worlds (Evening sky, Autumn afternoon, Snowy hills, Sunny beach) and the style board's other ideas (Spooky-cute,
 Sports day, Puzzle room) are brought onto the master palette in Phase 2, each as a sky and about five colours from it, adding only the few colours a world truly needs.
 
+
+## Create: more depth, no AI (shelved by the owner, 2026-11-24)
+Designed and mocked up (`docs/create-mockup.html`, the "1.5" screens), not built: a "How do you win?" choice per level (beat the clock,
+reach a score, don't drop them with 3 hearts, survive), up to 5 levels in a row ("Add a level" copies the last a notch harder),
+1 to 3 stars per level with a "Level 2!" card between levels. Open questions: does a lost level retry or end the game; are best stars
+saved on the game's tile. Engine work needed: hearts, and playing levels in a row (the goal bar for "reach a score" exists).
