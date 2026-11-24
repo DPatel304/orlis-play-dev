@@ -136,6 +136,31 @@ h1{ margin:0; font-size:clamp(24px,3.4vw,32px); font-weight:700; }
 .notes{ background:#fff; border-radius:14px; padding:16px 18px; color:#1d1b2e; }
 .notes h2{ margin:0 0 6px; font-size:18px; }
 .notes p{ margin:0; color:#4b4a63; max-width:80ch; }
+/* Phase 1.5: how you win, levels in a row, stars */
+.goalopt{ display:grid; grid-template-columns:1fr 1fr; gap:calc(var(--u)*1.6); }
+.goalopt .opt{ flex-direction:column; align-items:flex-start; gap:calc(var(--u)*.6); padding:calc(var(--u)*1.8) calc(var(--u)*2); }
+.goalopt .opt svg{ width:calc(var(--u)*6); height:calc(var(--u)*6); }
+.amounts{ display:flex; gap:calc(var(--u)*1); margin-top:calc(var(--u)*.6); }
+.amounts span{ padding:calc(var(--u)*.6) calc(var(--u)*1.6); border-radius:999px; background:var(--paper); font:700 calc(var(--u)*2.2)/1 var(--ui); color:var(--soft); }
+.amounts span.on{ background:var(--ink); color:#fff; }
+.hearts{ display:flex; gap:calc(var(--u)*.6); margin-top:calc(var(--u)*.6); }
+.hearts svg{ width:calc(var(--u)*3.2); height:calc(var(--u)*3.2); }
+.levels{ display:flex; gap:calc(var(--u)*1.6); align-items:stretch; }
+.lvl{ flex:1; background:#fff; border-radius:calc(var(--u)*2); padding:calc(var(--u)*1.2); display:grid; gap:calc(var(--u)*.8); box-shadow:0 calc(var(--u)*.5) calc(var(--u)*1.4) rgba(29,27,46,.1); font:700 calc(var(--u)*2.4)/1.1 var(--ui); color:var(--ink); }
+.lvl .th{ aspect-ratio:16/10; border-radius:calc(var(--u)*1.4); position:relative; overflow:hidden; }
+.lvl .th svg{ position:absolute; width:32%; height:auto; }
+.lvl small{ font:500 calc(var(--u)*1.9)/1.25 var(--ui); color:var(--soft); }
+.lvl.on{ box-shadow:0 0 0 calc(var(--u)*.6) #fff, 0 0 0 calc(var(--u)*1.2) var(--violet); }
+.lvl.add{ border:calc(var(--u)*.45) dashed #b9bccd; background:transparent; box-shadow:none; display:grid; place-items:center; text-align:center; color:var(--soft); font-weight:600; }
+.lvl.add svg{ width:calc(var(--u)*5); height:calc(var(--u)*5); margin:0 auto; }
+.between{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:calc(var(--u)*62); background:#fff; border-radius:calc(var(--u)*3); padding:calc(var(--u)*3.6) calc(var(--u)*4); text-align:center; box-shadow:0 calc(var(--u)*1.2) calc(var(--u)*4) rgba(29,27,46,.35); }
+.between .k{ font:700 calc(var(--u)*2.4)/1 var(--ui); letter-spacing:.08em; color:var(--soft); text-transform:uppercase; }
+.between h3{ margin:calc(var(--u)*1.2) 0; font:700 calc(var(--u)*7)/1 var(--ui); color:var(--ink); }
+.between p{ margin:0 0 calc(var(--u)*2); font:600 calc(var(--u)*3)/1.3 var(--ui); color:var(--ink); }
+.stars{ display:flex; justify-content:center; gap:calc(var(--u)*1.2); margin-bottom:calc(var(--u)*1.6); }
+.stars svg{ width:calc(var(--u)*8); height:calc(var(--u)*8); }
+.stars svg.dim{ opacity:.25; filter:grayscale(1); }
+.between .sub{ font:500 calc(var(--u)*2.4)/1.3 var(--ui); color:var(--soft); margin:0; }
 @media (prefers-reduced-motion: reduce){ .opt.on{ transform:none; } }
 </style>
 
@@ -190,6 +215,8 @@ const P = {
 };
 const cubo = (sz = 64) => `<svg viewBox="0 0 64 64" width="${sz}" height="${sz}"><rect x="6" y="6" width="52" height="52" rx="14" fill="#3da9ff" stroke="${INK}" stroke-width="3"/><path d="M46 6h-2a10 10 0 0 1 14 14v-2" fill="#2f8fe0"/><ellipse cx="24" cy="30" rx="4" ry="5.6" fill="${INK}"/><ellipse cx="40" cy="30" rx="4" ry="5.6" fill="${INK}"/><circle cx="25.4" cy="28" r="1.4" fill="#fff"/><circle cx="41.4" cy="28" r="1.4" fill="#fff"/><path d="M25 41c4 4 10 4 14 0" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
 const mark = `<svg viewBox="0 0 100 100"><rect fill="#3da9ff" x="4" y="40" width="56" height="56" rx="15"/><g transform="rotate(10 66 34)"><rect fill="#8b5cf6" stroke="#fff" stroke-width="3" x="40" y="8" width="52" height="52" rx="14"/></g></svg>`;
+const heart = () => `<svg viewBox="0 0 64 64"><path d="M32 54C14 40 6 30 6 20 6 12 12 6 20 6c6 0 10 3 12 8 2-5 6-8 12-8 8 0 14 6 14 14 0 10-8 20-26 34z" fill="#ff5d6c" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/></svg>`;
+const star = (dim = false) => `<svg viewBox="0 0 64 64" class="${dim ? 'dim' : ''}"><path d="M32 6l7.6 15.8 17.4 2.3-12.7 12 3.2 17.3L32 45l-15.5 8.4 3.2-17.3-12.7-12 17.4-2.3z" fill="#ffc83d" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/></svg>`;
 const kidFace = (col) => `<svg viewBox="0 0 64 64"><rect x="6" y="6" width="52" height="52" rx="14" fill="${col}" stroke="${INK}" stroke-width="3"/><ellipse cx="24" cy="30" rx="3.4" ry="4.6" fill="${INK}"/><ellipse cx="40" cy="30" rx="3.4" ry="4.6" fill="${INK}"/><path d="M26 41c3 3 9 3 12 0" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
 
 /* ---------- the game being made (what each step changes) ---------- */
@@ -243,6 +270,21 @@ const SCREENS = [
         <div class="mic"><span class="dot">${P.mic}</span>Hold OK and say: faster, slower, more, fewer, bigger, make it night, add a golden one…</div>
       </div>
       <div class="navs"><button class="btn ghost">${P.pencil}Change a step</button><button class="btn ghost">${P.again}Undo</button><button class="btn go">${P.play}Play again</button></div>` },
+  { id: 'win', label: '1.5: How you win', title: 'Phase 1.5: how do you win?', note: 'Part of the Rules step, so it can be skipped too (the usual rule is Beat the clock). One choice per level: beat the clock, reach a score (picked from 10 / 20 / 30 / 50), don\'t drop them (3 hearts: Catch and Keep it up) or survive (3 hearts: Dodge). Only the choices that make sense for the game show. The engine already has the goal bar for "reach a score"; hearts are new.',
+    html: () => studio('rules', 'How do you win?', 'Pick one for this level.', `<div class="goalopt">
+      <button class="opt">${P.snail.replace('#e8a36a', '#ffc83d')}<span>Beat the clock<small>Score lots in 2 minutes</small></span></button>
+      <button class="opt on">${P.golden}<span>Reach a score<small>Get there to win</small></span><span class="amounts"><span>10</span><span class="on">20</span><span>30</span><span>50</span></span></button>
+      <button class="opt">${heart()}<span>Don't drop them<small>3 drops and it's over</small></span><span class="hearts">${heart()}${heart()}${heart()}</span></button>
+      <button class="opt" style="opacity:.45">${P.dodge}<span>Survive<small>Only for Dodge games</small></span></button></div>`) },
+  { id: 'levels', label: '1.5: Levels in a row', title: 'Phase 1.5: levels in a row', note: 'On the last step, the game\'s levels sit in a strip. "Add a level" copies the last one a notch harder (a bit faster, a few more); then any step can be changed for that level (another world, a bomb, a different way to win). Up to 5 levels. The whole game still uses one slot.',
+    html: () => studio('name', 'Your levels', 'Add up to 5. Each one can be different.', `<div class="levels">
+      <div class="lvl"><div class="th" style="background:linear-gradient(180deg,#8fd0ff,#e8f6ff 62%,#9ad37a 62%)"><span style="position:absolute;left:12%;top:18%;width:30%">${P.apple}</span></div>Level 1<small>Catch 20 apples</small></div>
+      <div class="lvl on"><div class="th" style="background:linear-gradient(180deg,#1b1f5e,#5a4fb0 62%,#2f5b4a 62%)"><span style="position:absolute;left:12%;top:18%;width:30%">${P.apple}</span><span style="position:absolute;left:56%;top:30%;width:28%">${P.bomb}</span></div>Level 2<small>Faster, at night, with a bomb</small></div>
+      <div class="lvl add"><span>${P.plus}Add a level</span></div></div>
+      <div class="names"><span class="on">Apple Catch</span><span>Apple Rain</span><span>Golden Apples</span></div>`, 'Play it!') },
+  { id: 'between', label: '1.5: Level 2!', title: 'Phase 1.5: between levels', note: 'After each level: the stars it earned (1 for finishing, 2 for doing well, 3 for great), then the next level\'s card with its goal, for a few seconds or until someone presses OK. At the end, the results show each level\'s stars, so kids want to play again for three stars.',
+    html: () => `<div class="prev" style="left:0;top:0;width:100%;border-radius:0"><canvas width="960" height="540"></canvas></div>
+      <div class="between"><div class="k">Level 1 done</div><div class="stars">${star()}${star()}${star(true)}</div><h3>Level 2!</h3><p>Catch 20 apples at night - watch out for the bomb</p><p class="sub">Starting in 3...</p></div>` },
   { id: 'play', label: 'Play page: third row', title: 'The Play page: a third row', note: 'Games the family made get their own row, "Made by us", with each maker\'s face on the tile. Phase 1 keeps them in the family; Phase 2 adds Publish.',
     html: () => `<div class="scr-bg" style="position:absolute;inset:0;background:radial-gradient(120% 120% at 100% 0%, #3b4a8a, #1d1b2e 55%)"></div>${bar('play', true)}
       <div class="prow" style="top:calc(var(--u)*22)"><h4>Featured</h4><div class="tiles">${['#ffb84d', '#4cc9a0', '#ff7eb3'].map((c, i) => `<div class="ptile" style="background:linear-gradient(160deg,${c},#1d1b2e)"><b>${['Comet Catch', 'Bubble Dash', 'Moon Hop'][i]}</b></div>`).join('')}<div class="ptile" style="background:linear-gradient(135deg,#3da9ff,#8b5cf6)"><b>Discover</b></div></div></div>
