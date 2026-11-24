@@ -1,4 +1,4 @@
-/* Play's rows (decision 0055): Featured (this week's games to get, then the Discover tile) and Your games; who sees the tabs; where focus
+/* Play's rows (decision 0055): Featured (this week's games to get, then the Discover tile) and My library; who sees the tabs; where focus
    starts and how it moves; what the hero says; the Discover page's rows. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,9 +8,9 @@ const g = (id, name, more = {}) => ({ id, name, ...more });
 const POOL = [g('pop-party', 'Pop Party', { secs: 120 }), g('sky-painter', 'Sky Painter', { secs: 120 }), g('leaf-pile', 'Leaf Pile', { secs: 120 }), g('sleepy-bear', 'Sleepy Bear', { secs: 180 })];
 const GET = [g('comet', 'Comet Catch', { discover: { id: 'comet' } }), g('bubble', 'Bubble Dash', { discover: { id: 'bubble' } })];
 
-test('two rows: Featured (games to get, then the Discover tile) and Your games', () => {
+test('two rows: Featured (games to get, then the Discover tile) and My library', () => {
   const rows = homeRows({ pool: POOL, featured: GET, discover: true });
-  assert.deepEqual(rows.map(r => r.title), ['Featured', 'Your games']);
+  assert.deepEqual(rows.map(r => r.title), ['Featured', 'My library']);
   assert.deepEqual(rows[0].items.map(i => i.kind), ['get', 'get', 'discover'], 'featured games to get, then the way to Discover');
   assert.deepEqual(rows[1].items.map(i => i.g.id), POOL.map(x => x.id), 'the games on this PC, in order');
   assert.ok(!rows.some(r => ['new', 'make'].includes(r.id)), 'no "New to try" or "Make a game" any more');
@@ -38,14 +38,13 @@ test('the tabs (0055, 0057): Play and Create for everyone in the Player app, chi
   assert.deepEqual(tabsFor({ modeTabs: ['create', 'pro'] }), []);
 });
 
-test('focus starts on the pick made this session, else the one played last, else the first of Your games, else the first featured', () => {
+test('focus starts back on the pick made this session, else on the first Featured tile (owner, 2026-11-24: Home opens on Featured)', () => {
   const rows = homeRows({ pool: POOL, featured: GET, discover: true });
   assert.deepEqual(startFocus(rows, { session: 'leaf-pile', last: 'pop-party' }), { row: 1, col: 2 });
-  assert.deepEqual(startFocus(rows, { last: 'sleepy-bear' }), { row: 1, col: 3 });
-  assert.deepEqual(startFocus(rows, { session: 'gone', last: 'also-gone' }), { row: 1, col: 0 }, 'families replay their games');
-  assert.deepEqual(startFocus(rows), { row: 1, col: 0 });
-  assert.deepEqual(startFocus(rows, { last: 'comet' }), { row: 1, col: 0 }, 'a game to get is not a pick to return to');
-  assert.deepEqual(startFocus(homeRows({ featured: GET, discover: true })), { row: 0, col: 0 }, 'no games of your own: the first featured');
+  assert.deepEqual(startFocus(rows, { last: 'sleepy-bear' }), { row: 0, col: 0 }, 'the game played last no longer moves the start');
+  assert.deepEqual(startFocus(rows, { session: 'gone', last: 'also-gone' }), { row: 0, col: 0 });
+  assert.deepEqual(startFocus(rows), { row: 0, col: 0 });
+  assert.deepEqual(startFocus(homeRows({ pool: POOL })), { row: 0, col: 0 }, 'no Featured row: the first of My library');
 });
 
 test('focus: left and right stay in the row; up and down change row and keep the column last used there', () => {

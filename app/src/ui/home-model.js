@@ -3,7 +3,7 @@
    Play has two rows, top to bottom:
      featured  "Featured"     this week's featured games not on this PC yet (with Get and download progress on their tiles, at most three),
                               then the Discover tile, which opens the Discover page
-     games     "Your games"   the games on this PC
+     games     "My library"   the games on this PC (owner, 2026-11-24: was "Your games")
    A third, "Made by us" (0056, 0057), holds the games the family made in Create (with the maker's face on each tile); there is no row until there is one.
    A last, "Testing", comes only while a creator has put a game on this TV to try.
    The top tabs (Play, Create) are not rows: tabsFor() says whether they show, and the page keeps their focus.
@@ -12,7 +12,7 @@
    Focus is { row, col }. Left and right stay in the row; up and down change row, landing on the column last used there
    (clamped to the row's length). Up from the first row goes to the tabs (home.js), when there are tabs. */
 
-export const TITLES = { waiting: 'Waiting for your OK', featured: 'Featured', games: 'Your games', made: 'Made by us', testing: 'Testing', updates: 'Updates' };
+export const TITLES = { waiting: 'Waiting for your OK', featured: 'Featured', games: 'My library', made: 'Made by us', testing: 'Testing', updates: 'Updates' };
 export const FEATURED_MAX = 3;
 /* how many rows keep the big hero (Play's two; Discover keeps it for its first row only) */
 export const PLAY_BIG = 2;
@@ -46,12 +46,12 @@ export function tabsFor({ waiting = false, creatorApp = false, modeTabs = ['home
   return ['play', 'create'];
 }
 
-/* where focus starts: the game picked this session, else the one played last, else the first of "Your games" (families mostly replay
-   their games), else the first tile of the first row */
+/* where focus starts: back on the game picked this session (coming home from a round), else the first tile of the first row, so Home
+   opens on Featured with My library peeking in below it (owner, 2026-11-24; it used to open on the game played last, in "Your games").
+   `last` is still accepted and no longer used. */
 export function startFocus(rows, { session = null, last = null } = {}){
   const find = (id) => { for (let r = 0; r < rows.length; r++){ const c = rows[r].items.findIndex(it => it.kind === 'game' && it.g && it.g.id === id); if (c >= 0) return { row: r, col: c }; } return null; };
-  const mine = rows.findIndex(r => r.id === 'games');
-  return (session && find(session)) || (last && find(last)) || (mine >= 0 ? { row: mine, col: 0 } : { row: 0, col: 0 });
+  return (session && find(session)) || { row: 0, col: 0 };
 }
 
 /* One step of focus. mem: the column last used in each row (kept by the caller). Returns { row, col } or null (nowhere to go). */

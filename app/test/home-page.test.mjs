@@ -1,4 +1,4 @@
-/* The home page as built (ui/home.js), in the little DOM: Featured and Your games, the Play and Create tabs and the remote's way to them, focus and
+/* The home page as built (ui/home.js), in the little DOM: Featured and My library, the Play and Create tabs and the remote's way to them, focus and
    the backdrop that follows it, the hero shrinking to a banner, what each tile opens, the Discover page, and the profile sheet behind the profile face. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -50,9 +50,9 @@ const withKid = (fn) => {
 };
 const label = (t) => txt(t.querySelector('.hname'));
 
-test('Play: two rows, Featured and Your games, both labelled; the logo with the Play and Create tabs; no New to try or Make a game', () => {
+test('Play: two rows, Featured and My library, both labelled; the logo with the Play and Create tabs; no New to try or Make a game', () => {
   const { s, page } = build();
-  assert.deepEqual(qa(s, '.hlab').map(txt), ['Featured', 'Your games']);
+  assert.deepEqual(qa(s, '.hlab').map(txt), ['Featured', 'My library']);
   assert.ok(q(s, '.lg') && q(s, '.hme'), 'the logo top left, the profile face top right');
   assert.deepEqual(qa(s, '.ptab').map(t => t.getAttribute('aria-label')), ['Play', 'Create'], 'the tabs beside the logo');
   assert.equal(q(s, '.ptab.cur').getAttribute('aria-label'), 'Play', 'Play is the current tab');
@@ -77,11 +77,16 @@ test('Featured: this week\'s three featured games not on this PC yet, then Disco
   });
 });
 
-test('at rest the first of Your games is focused: its one line and the players as figures (no Play button); its world is the backdrop; only its row shows', () => {
+test('at rest Home opens on Featured with My library peeking in below it (owner, 2026-11-24); a game there shows its line, figures and world', () => {
   const { s, page } = build();
   assert.ok(s.classList.contains('rest') && !s.classList.contains('scrolled'));
-  assert.deepEqual(page.pos, { row: 1, col: 0 });
+  assert.deepEqual(page.pos, { row: 0, col: 0 }, 'the first Featured tile');
+  let secs = qa(s, '.hsec');
+  assert.ok(!secs[0].classList.contains('away') && !secs[1].classList.contains('away'), 'Featured and My library both show');
+  assert.ok(secs[1].classList.contains('peek') && !secs[0].classList.contains('peek'), 'My library is the one peeking in');
+  page.focusAt({ row: 1, col: 0 });
   const first = page.rows[1].items[0].g;
+  assert.ok(s.classList.contains('rest'), 'My library still has the big hero');
   assert.equal(hero(s), first.name);
   assert.deepEqual(lit(s), [first.name]);
   assert.ok(txt(q(s, '.hblurb')).length > 3, 'one line');
@@ -91,13 +96,14 @@ test('at rest the first of Your games is focused: its one line and the players a
   assert.equal(q(s, '.htile.on').getAttribute('aria-label'), 'Play ' + first.name);
   assert.ok(!q(s, '.hplay'), 'no Play button');
   assert.deepEqual(layersOn(s), [`url(world:${first.id})`], 'the focused game\'s world fills the screen');
-  const secs = qa(s, '.hsec');
-  assert.ok(secs[0].classList.contains('away') && !secs[1].classList.contains('away'), 'Featured steps out of the way, Your games shows');
+  secs = qa(s, '.hsec');
+  assert.ok(secs[0].classList.contains('away') && !secs[1].classList.contains('away'), 'Featured steps out of the way, My library shows');
   page.leave();
 });
 
 test('moving focus changes the hero and crossfades the backdrop (the other layer takes the new world, the old one fades)', () => {
   const { s, page } = build();
+  page.focusAt({ row: 1, col: 0 });
   const before = qa(s, '.hbg').find(l => l.classList.contains('on'));
   page.focusAt({ row: 1, col: 3 });
   const g = page.rows[1].items[3].g;
@@ -111,7 +117,7 @@ test('moving focus changes the hero and crossfades the backdrop (the other layer
   page.leave();
 });
 
-test('up from Your games shows Featured (the hero still big); a featured game is in the hero with Get; down goes back', () => {
+test('up from My library shows Featured (the hero still big); a featured game is in the hero with Get; down goes back', () => {
   withWeek({ featured: ['s1'], games: SAMPLE.slice(0, 1) }, () => {
     const { s, page } = build();
     page.focusAt({ row: 1, col: 0 });
@@ -119,7 +125,7 @@ test('up from Your games shows Featured (the hero still big); a featured game is
     press('ArrowUp');
     assert.deepEqual(page.pos, { row: 0, col: 0 });
     assert.ok(s.classList.contains('rest') && !s.classList.contains('scrolled'), 'still the big hero');
-    assert.ok(!qa(s, '.hsec')[0].classList.contains('away') && qa(s, '.hsec')[1].classList.contains('away'), 'Featured shows now');
+    assert.ok(!qa(s, '.hsec')[0].classList.contains('away') && qa(s, '.hsec')[1].classList.contains('peek'), 'Featured shows now, My library peeking in below');
     assert.equal(hero(s), 'Comet Catch');
     assert.equal(q(s, '.htile.on').getAttribute('aria-label'), 'Get Comet Catch');
     assert.equal(txt(q(s, '.hblurb')), 'Catch comets');

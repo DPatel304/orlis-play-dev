@@ -32,7 +32,7 @@
 
 /* the focused game: one line, wrapped in the plain dark area on the left (the picture starts at 38%), with the players as figures right after the last word.
    No Play button and no title: the lit tile is the way in (0046). */
-.hinfo{ position:absolute; left:calc(var(--u)*5); bottom:calc(var(--u)*36); width:calc(var(--u)*58); z-index:4; transition:bottom var(--t-slow) var(--ease); }
+.hinfo{ position:absolute; left:calc(var(--u)*5); bottom:calc(var(--u)*45); width:calc(var(--u)*58); z-index:4; transition:bottom var(--t-slow) var(--ease); }
 .home.scrolled .hinfo{ bottom:calc(var(--u)*58); }
 .hblurb{ font:500 calc(var(--u)*4.6)/1.3 var(--ui); color:#fff; opacity:.9; text-shadow:0 calc(var(--u)*.3) calc(var(--u)*1) rgba(0,0,0,.5); margin:0; transition:font-size var(--t-base) var(--ease); }
 /* the "how you play" row: its own line under the description, quiet white, an icon and one or two words each, no boxes (0052) */
@@ -56,10 +56,12 @@
 .home.scrolled .hblurb{ font-size:calc(var(--u)*3.2); }
 
 /* the rows */
-.hrows{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*(67.8 - 25.2 * var(--first,0))); width:calc(var(--u)*172); transition:top var(--t-slow) var(--ease); z-index:3; }
+.hrows{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*(58.6 - 25.2 * var(--first,0))); width:calc(var(--u)*172); transition:top var(--t-slow) var(--ease); z-index:3; }
 .home.scrolled .hrows{ top:calc(var(--u)*(46.8 - 25.2 * var(--first,1))); }
 .home.arrive .hrows{ animation:hrise .7s var(--ease) both; } @keyframes hrise{ from{ opacity:0; transform:translateY(calc(var(--u)*4)); } }
 .hsec{ height:calc(var(--u)*25.2); transition:opacity var(--t-base) var(--ease); } .hsec.away{ opacity:0; pointer-events:none; }
+/* the next row, peeking in under the current one at rest (cropped by the screen's bottom edge): a little quieter, still clickable */
+.hsec.peek{ opacity:.72; }
 .hlab{ height:calc(var(--u)*6.2); font:700 var(--tv-label)/1 var(--ui); color:#fff; text-shadow:0 calc(var(--u)*.3) calc(var(--u)*1) rgba(0,0,0,.5); transition:color var(--t-base) var(--ease); }
 .home.scrolled .hlab{ color:var(--ink); text-shadow:none; }
 .hrow{ display:flex; gap:calc(var(--u)*2.2); width:max-content; transition:transform var(--t-base) var(--ease); padding:calc(var(--u)*2.4) calc(var(--u)*1.6); margin:calc(var(--u)*-2.4) calc(var(--u)*-1.6); }

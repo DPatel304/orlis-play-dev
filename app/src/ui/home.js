@@ -1,7 +1,7 @@
 /* Home (Play) and Discover, one page builder (decisions 0045 to 0049, 0055; the approved mockup is docs/screens-mockup.html).
 
    The focused game's painted world fills the screen, with its one line and how many play (figures; the tile names the game). Under it,
-   Play's two rows: "Featured" (this week's featured games to get, then the Discover tile) and "Your games". The Play and Create tabs
+   Play's two rows: "Featured" (this week's featured games to get, then the Discover tile) and "My library" (peeking in under Featured at rest). The Play and Create tabs
    sit beside the logo (for everyone, children too: 0057); up from the first row reaches them, left and right move between them, OK picks, down goes back.
    The Discover page is the same page with a row per category (rows, tiles and hero are the very same) and a Home button instead of the
    tabs. Moving to a row below the big ones (down) shrinks the hero to a banner. The profile face, top right, opens Profile, Settings and
@@ -240,10 +240,14 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
   function layout(){
     const big = bigHero(pos, rows, bigRows), r = pos.row;
     s.classList.toggle('rest', big); s.classList.toggle('scrolled', !big);
-    /* the rows: at rest only the current one shows (its label above it); scrolled, the lit row and the one after fill the page */
+    /* the rows: at rest the current one shows (its label above it) with the next one peeking in, cropped by the bottom edge, so it's
+       plain there's more below (owner, 2026-11-24); scrolled, the lit row and the one after fill the page */
     const first = big ? r : Math.max(1, r - 1);
     rowsEl.style.setProperty('--first', first);
-    tiles.forEach((rowTiles, k) => rowTiles[0].sec.classList.toggle('away', big ? k !== r : k < first));
+    tiles.forEach((rowTiles, k) => {
+      rowTiles[0].sec.classList.toggle('away', big ? (k !== r && k !== r + 1) : k < first);
+      rowTiles[0].sec.classList.toggle('peek', big && k === r + 1);
+    });
   }
   function slide(t){
     if (!t) return;
