@@ -1,8 +1,11 @@
-/* The home page's rows and focus, with no DOM (so they can be tested): decision 0055 (after 0045's one page).
+/* The home page's rows and focus, with no DOM (so they can be tested): decisions 0055 and 0058 (after 0045's one page).
 
    Play has two rows, top to bottom:
-     featured  "Featured"     this week's featured games not on this PC yet (with Get and download progress on their tiles, at most three),
-                              then the Discover tile, which opens the Discover page
+     featured  "Featured"     left to right (0058): the game last played on this PC, tagged "Play again" (skipped when nothing has been played,
+                              or it is already in a slot); then the owner's slots #1 to #3 - a game on this PC is a normal tile that plays (a
+                              built-in one counts as on this PC), one that is not is a Get tile (with download progress); a slot the owner left
+                              empty holds a game from the weekly rotation; then the Discover tile, which opens the Discover page
+                              (featuredItems() makes the games, homeRows() the row)
      games     "My library"   the games on this PC (owner, 2026-11-24: was "Your games")
    A third, "Made by us" (0056, 0057), holds the games the family made in Create (with the maker's face on each tile); there is no row until there is one.
    A last, "Testing", comes only while a creator has put a game on this TV to try.
@@ -14,15 +17,36 @@
 
 export const TITLES = { waiting: 'Waiting for your OK', featured: 'Featured', games: 'My library', made: 'Made by us', testing: 'Testing', updates: 'Updates' };
 export const FEATURED_MAX = 3;
+export const SLOT_COUNT = 3;
 /* how many rows keep the big hero (Play's two; Discover keeps it for its first row only) */
 export const PLAY_BIG = 2;
 
-/* pool: the games on this PC (shown in the order given); featured: this week's featured Discover games not on this PC yet (stand-ins that
-   know their entry); discover: whether Discover has a page to open (the Discover tile); made: the family's own games from Create (each a game
-   object, see create/made-game.js); testing: games a creator is trying on this TV. */
-export function homeRows({ pool = [], featured = [], discover = false, made = [], testing = [] } = {}){
+/* The games in Featured, before the Discover tile (decision 0058), as row items:
+     last   the game last played on this PC (an id), or null          -> { kind: 'game', g, again: true }   (the "Play again" tile)
+     slots  the server's three slots, in order: [{ id, name, builtIn, rotating, ...store entry }]  (week.featuredSlots())
+     have   (id) -> the game object if it is on this PC (built in or downloaded), else null
+     stand  (slot) -> a stand-in game for a slot's game that is not on this PC (it knows its Discover entry), else null (nothing to get: skipped)
+   The Play again tile goes first, unless nothing was played, the game is not on this PC any more, or it is in a slot (no game twice). */
+export function featuredItems({ last = null, slots = [], have = () => null, stand = () => null } = {}){
+  const out = [];
+  const list = slots.slice(0, SLOT_COUNT);
+  const again = last && !list.some(s => s && s.id === last) ? have(last) : null;
+  if (again) out.push({ kind: 'game', g: again, again: true });
+  list.forEach((s, i) => {
+    if (!s) return;
+    const g = have(s.id);
+    if (g) out.push({ kind: 'game', g, slot: i + 1, rotating: !!s.rotating });
+    else { const st = stand(s); if (st) out.push({ kind: 'get', g: st, slot: i + 1, rotating: !!s.rotating }); }
+  });
+  return out;
+}
+
+/* pool: the games on this PC (shown in the order given); featuredItems: the Featured row's games (featuredItems() above; the older `featured`, a list of
+   Discover games to get, is still taken and made into Get tiles); discover: whether Discover has a page to open (the Discover tile); made: the family's
+   own games from Create (each a game object, see create/made-game.js); testing: games a creator is trying on this TV. */
+export function homeRows({ pool = [], featured = [], featuredItems: lead = null, discover = false, made = [], testing = [] } = {}){
   const rows = [];
-  const fresh = featured.slice(0, FEATURED_MAX).map(g => ({ kind: 'get', g }));
+  const fresh = lead || featured.slice(0, FEATURED_MAX).map(g => ({ kind: 'get', g }));
   if (fresh.length || discover) rows.push({ id: 'featured', title: TITLES.featured, items: [...fresh, ...(discover ? [{ kind: 'discover' }] : [])] });
   if (pool.length) rows.push({ id: 'games', title: TITLES.games, items: pool.map(g => ({ kind: 'game', g })) });
   if (made.length) rows.push({ id: 'made', title: TITLES.made, items: made.map(g => ({ kind: 'game', g, made: true })) });
@@ -48,10 +72,11 @@ export function tabsFor({ waiting = false, creatorApp = false, modeTabs = ['home
 
 /* where focus starts: back on the game picked this session (coming home from a round), else the first tile of the first row, so Home
    opens on Featured with My library peeking in below it (owner, 2026-11-24; it used to open on the game played last, in "Your games").
+   A game can be in two rows now (Featured and My library): `sessionRow` (the row id it was picked in) says which one to return to, else the first.
    `last` is still accepted and no longer used. */
-export function startFocus(rows, { session = null, last = null } = {}){
-  const find = (id) => { for (let r = 0; r < rows.length; r++){ const c = rows[r].items.findIndex(it => it.kind === 'game' && it.g && it.g.id === id); if (c >= 0) return { row: r, col: c }; } return null; };
-  return (session && find(session)) || { row: 0, col: 0 };
+export function startFocus(rows, { session = null, sessionRow = null, last = null } = {}){
+  const find = (id, only) => { for (let r = 0; r < rows.length; r++){ if (only && rows[r].id !== only) continue; const c = rows[r].items.findIndex(it => it.kind === 'game' && it.g && it.g.id === id); if (c >= 0) return { row: r, col: c }; } return null; };
+  return (session && ((sessionRow && find(session, sessionRow)) || find(session))) || { row: 0, col: 0 };
 }
 
 /* One step of focus. mem: the column last used in each row (kept by the caller). Returns { row, col } or null (nowhere to go). */

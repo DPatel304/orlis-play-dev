@@ -158,6 +158,18 @@ td.cb, th.cb{ width:34px; padding-right:0 }
 .people div{ display:flex; gap:10px; align-items:center }
 .people .face{ margin:0; width:28px; height:28px }
 .acts{ display:flex; gap:8px; flex-wrap:wrap; align-items:center }
+.fnow{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; background:var(--surface); border-radius:14px; box-shadow:var(--shadow); padding:10px 14px }
+.fnow .lab{ font-size:12px; font-weight:600; color:var(--soft); text-transform:uppercase; letter-spacing:.05em; margin-right:6px }
+.fslot{ display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:4px 12px 4px 5px; cursor:pointer; font-size:13px; max-width:100%; min-width:0 }
+.fslot:hover{ background:var(--hover) }
+.fslot:focus-visible{ outline:2px solid var(--blue); outline-offset:2px }
+.fslot .n{ display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--grad); color:#fff; font:700 12px var(--ui); flex:none }
+.fslot .t{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.fslot.rot{ cursor:default; border-style:dashed; color:var(--soft) } .fslot.rot .n{ background:var(--line); color:var(--soft) } .fslot.rot .t{ font-weight:400; font-style:italic }
+.fslot .bi{ font-size:11px; color:var(--faint) }
+.slots{ display:flex; gap:8px; flex-wrap:wrap }
+.slots .btn.here{ background:var(--sel); border-color:#cfc3ff; color:#5b3fd6; cursor:default }
+.slots + .sub{ font-size:12.5px }
 .acct{ display:grid; gap:8px; padding:10px 12px; border:1px solid var(--line); border-radius:12px }
 .acct .em{ overflow-wrap:anywhere; font-weight:500 }
 .seg{ display:inline-flex; padding:2px; border-radius:999px; background:var(--paper) }
@@ -239,6 +251,7 @@ const BODY = String.raw`
 <!-- GAMES -->
 <section data-v="games" hidden>
   <div class="top"><h1>Games</h1><span class="sub" id="gcount"></span></div>
+  <div class="fnow" id="gfeat" aria-label="Featured now"></div>
   <div class="card">
     <div class="bar">
       <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="gq" placeholder="Search title, maker or id" aria-label="Search games" autocomplete="off"><kbd>/</kbd></label>
@@ -515,18 +528,28 @@ const SCRIPT = String.raw`
 
   /* ---------- games ---------- */
   var GSTAT = [['all', 'All'], ['live', 'Live'], ['featured', 'Featured'], ['review', 'In review'], ['hidden', 'Hidden']];
-  var gcat = $('gcat'), featuredTotal = 0;
+  var gcat = $('gcat'), featuredNow = [];
+  /* "Featured now": the three slots in order - the game, or "rotating" when the slot is empty (it takes a Discover game each week) */
+  function drawNow(){
+    var el = $('gfeat');
+    el.innerHTML = '<span class="lab">Featured now</span>' + [1, 2, 3].map(function(n){
+      var s = featuredNow[n - 1] || { slot: n, id: null };
+      return s.id
+        ? '<button class="fslot" data-act="open-game" data-id="' + esc(s.id) + '" title="Open ' + esc(s.title || s.id) + '"><span class="n">' + n + '</span><span class="t">' + esc(s.title || s.id) + '</span>' + (s.builtIn ? '<span class="bi">built in</span>' : '') + '</button>'
+        : '<span class="fslot rot" title="Empty: it takes a Discover game from this week’s rotation"><span class="n">' + n + '</span><span class="t">rotating</span></span>';
+    }).join('');
+  }
   function cover(g){ var c = g.cols && g.cols.length ? g.cols : ['#6d5efc', '#8b5cf6']; return '<span class="cover" style="background-image:linear-gradient(135deg,' + esc(c[0]) + ',' + esc(c[1] || c[0]) + ')"></span>'; }
   var games = Table({ key: 'g', path: '/api/admin/games', sort: ['plays', 'desc'], none: 'No games in the Store yet.',
     chips: GSTAT, id: function(g){ return g.key; },
     cols: [{ k: 'title', l: 'Game', sort: 1 }, { k: 'cat', l: 'Category', sort: 1 }, { k: 'maker', l: 'Made by', sort: 1 }, { k: 'status', l: 'Status', sort: 1 }, { k: 'plays', l: 'Plays 7d', num: 1, sort: 1 }, { k: 'fams', l: 'Families 7d', num: 1, sort: 1 }, { k: 'feat', l: 'Featured', sort: 1 }],
     row: function(g){
-      return T('<td>{!cv}<b>{title}</b> <span class="id">{id}@{ver}</span></td><td>{cat}</td><td>{maker}</td><td>{!st}</td><td class="num">{plays}</td><td class="num">{fams}</td><td>{!feat}</td>',
-        { cv: cover(g), title: g.title, id: g.id, ver: g.version, cat: g.cat, maker: g.maker, st: tag(g.status), plays: fmt(g.plays), fams: fmt(g.fams), feat: g.slot ? (g.slot <= 3 ? '★ slot ' + g.slot : '★ pinned') : '<span class="sub">–</span>' });
+      return T('<td>{!cv}<b>{title}</b> <span class="id">{!idv}</span></td><td>{cat}</td><td>{maker}</td><td>{!st}</td><td class="num">{plays}</td><td class="num">{fams}</td><td>{!feat}</td>',
+        { cv: cover(g), title: g.title, idv: g.version === 'built in' ? esc(g.id) + ' · built in' : esc(g.id) + '@' + esc(g.version), cat: g.cat, maker: g.maker, st: tag(g.status), plays: fmt(g.plays), fams: fmt(g.fams), feat: g.slot ? (g.slot <= 3 ? '★ slot ' + g.slot : '★ pinned') : '<span class="sub">–</span>' });
     },
     open: function(g){ openGame(g); },
     after: function(r){
-      featuredTotal = r.featuredTotal; $('gcount').textContent = fmt(r.counts.all) + (games.S.q || games.S.cat ? ' match' : ' total');
+      featuredNow = r.featuredNow || []; drawNow(); $('gcount').textContent = fmt(r.counts.all) + (games.S.q || games.S.cat ? ' match' : ' total');
       var have = [].map.call(gcat.options, function(o){ return o.value; }).join('|'), want = [''].concat(r.cats).join('|');
       if (have !== want){ gcat.innerHTML = '<option value="">All categories</option>' + r.cats.map(function(c){ return '<option>' + esc(c) + '</option>'; }).join(''); gcat.value = games.S.cat; }
     }
@@ -547,24 +570,36 @@ const SCRIPT = String.raw`
       b.push('<button class="btn no" data-act="game-reject" data-id="' + esc(g.submission) + '">Reject&hellip;</button>');
       return b.join('');
     }
-    var full = featuredTotal >= 3 && !g.featured;
-    b.push('<button class="btn ghost" data-act="feature" data-id="' + esc(g.id) + '" data-on="' + (g.featured ? '0' : '1') + '"' + (full ? ' disabled title="Three are featured already: unfeature one first"' : '') + '>' + (g.featured ? 'Unfeature' : 'Feature') + '</button>');
+    /* (Featured has its own part of the panel: slotPicker) */
+    var own = g.version === 'built in';   /* a game built into Orlis Play: not in the Store, so nothing to hide or take out */
+    if (own) return '';
     /* hiding is what the Store has: a family's game kept to that family (not Orlis Play's own, or the owner's starters) */
     if (g.maker !== 'Orlis' && !g.starter) b.push('<button class="btn ghost" data-act="reach" data-id="' + esc(g.id) + '" data-everyone="' + (g.status === 'hidden' ? '1' : '0') + '">' + (g.status === 'hidden' ? 'Unhide (share with everyone)' : 'Hide (their family only)') + '</button>');
     b.push('<button class="btn no" data-act="takeout" data-id="' + esc(g.id) + '" data-sure="Take out? Click again">Take out of Discover</button>');
     return b.join('');
   }
+  /* Featured, in a game's side panel: put it in slot 1, 2 or 3 (it replaces what is there), or take it out. Any game, built-in ones too. */
+  function slotPicker(g){
+    var at = g.slot || 0, b = [1, 2, 3].map(function(n){
+      var now = featuredNow[n - 1], who = now && now.id && now.id !== g.id ? ' (replaces ' + esc(now.title || now.id) + ')' : '';
+      return n === at
+        ? '<button class="btn ghost here" disabled aria-pressed="true">In slot ' + n + '</button>'
+        : '<button class="btn ghost" data-act="slot" data-slot="' + n + '" data-id="' + esc(g.id) + '" title="' + (who ? 'Replaces ' + esc(now.title || now.id) : 'Slot ' + n + ' is empty: it rotates now') + '">Feature in slot ' + n + '</button>';
+    }).join('');
+    return '<div class="slots">' + b + (at ? '<button class="btn no" data-act="unslot" data-slot="' + at + '">Remove from Featured</button>' : '') + '</div>' +
+      '<div class="sub">' + (at ? 'Every family sees it in slot ' + at + ' next time it opens Orlis Play.' : 'Three slots, shown to every family in order. An empty slot takes a Discover game from the weekly rotation.') + '</div>';
+  }
   function openGame(g){
     P = { kind: 'g', id: g.key, row: g };
-    var base = T('<dl class="kv"><dt>Id</dt><dd><code>{id}@{ver}</code></dd><dt>Status</dt><dd>{!st}</dd><dt>Category</dt><dd>{cat}</dd><dt>Made by</dt><dd>{maker}</dd><dt>Plays 7d</dt><dd>{plays} by {fams} families</dd><dt>Size</dt><dd>{size}</dd><dt>Featured</dt><dd>{feat}</dd><span id="gmore" style="display:contents"></span></dl>',
-      { id: g.id, ver: g.version, st: tag(g.status), cat: g.cat, maker: g.maker, plays: fmt(g.plays), fams: fmt(g.fams), size: size(g.bytes), feat: g.slot ? (g.slot <= 3 ? 'slot ' + g.slot : 'pinned, past the top 3') : 'no' });
+    var base = T('<dl class="kv"><dt>Id</dt><dd><code>{!idv}</code></dd><dt>Status</dt><dd>{!st}</dd><dt>Category</dt><dd>{cat}</dd><dt>Made by</dt><dd>{maker}</dd><dt>Plays 7d</dt><dd>{plays} by {fams} families</dd><dt>Size</dt><dd>{size}</dd><dt>Featured</dt><dd>{feat}</dd><span id="gmore" style="display:contents"></span></dl>',
+      { idv: g.version === 'built in' ? esc(g.id) + ' (built in)' : esc(g.id) + '@' + esc(g.version), st: tag(g.status), cat: g.cat, maker: g.maker, plays: fmt(g.plays), fams: fmt(g.fams), size: g.bytes ? size(g.bytes) : '–', feat: g.slot ? 'slot ' + g.slot : 'no' });
     var c = g.cols && g.cols.length ? g.cols : ['#6d5efc', '#8b5cf6'];
-    openPanel(esc(g.title), '<div class="coverbig" id="gcover" style="background-image:linear-gradient(135deg,' + esc(c[0]) + ',' + esc(c[1] || c[0]) + ')"></div>' + base + '<h3>Actions</h3><div class="acts">' + gameActs(g) + '</div>');
+    openPanel(esc(g.title), '<div class="coverbig" id="gcover" style="background-image:linear-gradient(135deg,' + esc(c[0]) + ',' + esc(c[1] || c[0]) + ')"></div>' + base + (g.status === 'review' ? '' : '<h3>Featured</h3>' + slotPicker(g)) + (gameActs(g) ? '<h3>Actions</h3><div class="acts">' + gameActs(g) + '</div>' : ''));
     if (g.status !== 'review') api('GET', '/api/admin/games/' + enc(g.id)).then(function(d){
       if (!P || P.id !== g.key) return;
       var cu = coverUrl(d.cover); if (cu) $('gcover').style.backgroundImage = cu;
       $('gmore').outerHTML = T('<dt>About</dt><dd>{about}</dd><dt>Plays all time</dt><dd>{all} by {fams} families · avg round {mins} min</dd><dt>Added</dt><dd>{added}</dd><dt>Approved</dt><dd>{ok}</dd>',
-        { about: d.about || d.blurb || '–', all: fmt(d.plays.all), fams: fmt(d.plays.families), mins: d.plays.mins, added: dateOf(d.added), ok: d.approved ? ago(d.approved.at) + ' by ' + (d.approved.who || '') : 'starter, or put in by hand' });
+        { about: d.about || d.blurb || '–', all: fmt(d.plays.all), fams: fmt(d.plays.families), mins: d.plays.mins, added: d.added ? dateOf(d.added) : '–', ok: d.approved ? ago(d.approved.at) + ' by ' + (d.approved.who || '') : d.builtIn ? 'built into Orlis Play' : 'starter, or put in by hand' });
     }, function(){});
   }
 
@@ -671,7 +706,9 @@ const SCRIPT = String.raw`
       host.after(box); box.firstChild.focus();
     },
     'game-reject-go': function(b){ return api('POST', '/api/submissions/' + enc(b.dataset.id) + '/decline', { note: b.closest('.note').firstChild.value }).then(function(){ toast('Rejected.'); closePanel(); after(); }); },
-    feature: function(b){ return api('POST', '/api/store/' + enc(b.dataset.id) + '/feature', { on: b.dataset.on === '1' }).then(function(){ toast(b.dataset.on === '1' ? 'Featured.' : 'Unfeatured.'); closePanel(); after(); }); },
+    slot: function(b){ return api('POST', '/api/featured/' + enc(b.dataset.slot), { id: b.dataset.id }).then(function(){ toast('Featured in slot ' + b.dataset.slot + '.'); closePanel(); after(); }); },
+    unslot: function(b){ return api('DELETE', '/api/featured/' + enc(b.dataset.slot)).then(function(){ toast('Taken out of Featured. Slot ' + b.dataset.slot + ' rotates now.'); closePanel(); after(); }); },
+    'open-game': function(b){ return openById(b.dataset.id); },
     reach: function(b){ return api('POST', '/api/store/' + enc(b.dataset.id) + '/reach', { everyone: b.dataset.everyone === '1' }).then(function(){ toast(b.dataset.everyone === '1' ? 'Shared with everyone.' : 'Kept to its family.'); closePanel(); after(); }); },
     takeout: function(b){ return api('DELETE', '/api/store/' + enc(b.dataset.id)).then(function(){ toast('Taken out of Discover. It stays on any PC that already has it.'); closePanel(); after(); }); },
     'fam-ok': function(b){
@@ -732,8 +769,15 @@ const SCRIPT = String.raw`
   var topg = $('topg');
   topg.addEventListener('click', function(e){
     var tr = e.target.closest('tr[data-g]'); if (!tr) return;
-    api('GET', '/api/admin/games' + qs({ q: tr.dataset.g, per: 100 })).then(function(r){ var g = r.rows.filter(function(x){ return x.id === tr.dataset.g && x.status !== 'review'; })[0]; if (g){ featuredTotal = r.featuredTotal; openGame(g); } else toast('That one isn’t in the Store (it’s one of the app’s own).'); }, oops);
+    openById(tr.dataset.g).then(null, oops);
   });
+  /* a game's side panel, from its id (the top games, the Featured now strip) */
+  function openById(id){
+    return api('GET', '/api/admin/games' + qs({ q: id, per: 100 })).then(function(r){
+      var g = r.rows.filter(function(x){ return x.id === id && x.status !== 'review'; })[0];
+      if (g){ featuredNow = r.featuredNow || []; drawNow(); openGame(g); } else toast('That one isn’t in the Store or built into Orlis Play.');
+    });
+  }
   $('pclose').addEventListener('click', closePanel);
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape') closePanel();

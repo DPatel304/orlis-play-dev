@@ -77,7 +77,9 @@ export async function store(files, starters = []){
         const seen = (await games()).filter(g => all || reach.canSee(a, g.id));
         /* (this week's featured, for the Play page: the owner's pins, then turns) */
         const pins = week ? week.pins() : [];
-        return { games: seen.map(g => ({ ...pub(g), reach: reach.of(g.id), mine: reach.mine(a, g.id), pinned: pins.includes(g.id) })), featured: week ? week.featured(seen.map(g => g.id)) : [] };
+        const list = seen.map(g => ({ ...pub(g), reach: reach.of(g.id), mine: reach.mine(a, g.id), pinned: pins.includes(g.id) }));
+        /* "featured": the Discover ids, for older apps; "featuredSlots": Home's Featured row, slot 1 to 3 (weekly.js, decision 0058) */
+        return { games: list, featured: week ? week.featured(seen.map(g => g.id)) : [], featuredSlots: week ? week.featuredSlots(list) : [] };
       }],
       ['GET', '/api/store/:id/file', async ({ headers, params }) => {
         const a = who(headers);

@@ -1,7 +1,7 @@
 /* Home (Play) and Discover, one page builder (decisions 0045 to 0049, 0055; the approved mockup is docs/screens-mockup.html).
 
    The focused game's painted world fills the screen, with its one line and how many play (figures; the tile names the game). Under it,
-   Play's two rows: "Featured" (this week's featured games to get, then the Discover tile) and "My library" (peeking in under Featured at rest). The Play and Create tabs
+   Play's two rows: "Featured" (0058: the game last played, tagged Play again, the owner's three slots, then the Discover tile) and "My library" (peeking in under Featured at rest). The Play and Create tabs
    sit beside the logo (for everyone, children too: 0057); up from the first row reaches them, left and right move between them, OK picks, down goes back.
    The Discover page is the same page with a row per category (rows, tiles and hero are the very same) and a Home button instead of the
    tabs. Moving to a row below the big ones (down) shrinks the hero to a banner. The profile face, top right, opens Profile, Settings and
@@ -32,7 +32,7 @@ import { iconEl } from './icons.js';
 import { BLURB, iconOf, HIDDEN, openProfileSheet } from './menu.js';
 import { startIdleFace } from './cubo-idle.js';
 import { reduced } from './chkit.js';
-import { homeRows, discoverRows, tabsFor, startFocus, step, heroOf, bigHero, howYouPlay, needsTablet, PLAY_BIG } from './home-model.js';
+import { homeRows, discoverRows, featuredItems, tabsFor, startFocus, step, heroOf, bigHero, howYouPlay, needsTablet, PLAY_BIG } from './home-model.js';
 import { layout as storeLayout, newer } from './store.js';
 import { brandBar } from './tabs.js';
 import { seesWaiting, tryIt } from './submissions.js';
@@ -44,8 +44,9 @@ import { makerFace } from '../create/maker.js';
 const LAUNCH = 0.2;    /* seconds of going in (the loading screen fading in) */
 const WORLD = { w: 1280, h: 720 };
 
-/* The pick made this session ({ id }): coming back (from a game, or another page) it's still the one. */
+/* The pick made this session ({ id, row }): coming back (from a game, or another page) it's still the one (in the row it was picked in). */
 let sessionPick = null;
+/* The game last played on this PC (the "Play again" tile in Featured, 0058): set when a round is started from Home. */
 const LAST = 'orlis.lastGame';
 const remembered = () => { try { return localStorage.getItem(LAST); } catch { return null; } };
 const remember = (id) => { try { localStorage.setItem(LAST, id); } catch {} };
@@ -54,7 +55,7 @@ const remember = (id) => { try { localStorage.setItem(LAST, id); } catch {} };
 const worlds = new Map();
 const jpeg = (cv) => { try { return cv.toDataURL('image/jpeg', 0.78); } catch { return null; } };
 /* (the pictures can be stood in for, in the tests: hooks.world) */
-export const hooks = { world: null };
+export const hooks = { world: null, forget(){ sessionPick = null; } };   /* (forget: the pick made this session, for the tests) */
 export function worldOf(g){
   if (hooks.world) return hooks.world(g);
   if (g.made) return madeWorld(g.made.creation);
@@ -87,9 +88,14 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
   /* Discover's games not on this PC yet: a stand-in each that knows its entry (this week's featured first) */
   const standIn = (e) => ({ id: e.id, name: e.name, accent: (e.icon && e.icon.cols && e.icon.cols[0]) || color('fav.purple'), store: { icon: e.icon, blurb: e.blurb, version: e.version, cover: e.cover || '' }, discover: e });
   const games = waiting ? [] : ((week.store && week.store.games) || []);
-  const featured = waiting ? [] : week.featured();
   const notHere = (e) => !library.installed.has(e.id);
-  const toGet = featured.filter(notHere).map(standIn);
+  /* Featured (0058): the game last played here ("Play again"), the owner's three slots (a game on this PC plays, one not here is a Get), then Discover */
+  const lead = waiting ? [] : featuredItems({
+    last: remembered(),
+    slots: week.featuredSlots(),
+    have: (id) => pool.find(g => g.id === id) || null,
+    stand: (s) => s.builtIn || !s.version ? null : standIn(s)
+  });
   /* the tabs (Play, Create): grown-ups in the Player app only */
   const tabIds = discovering ? [] : tabsFor({ waiting, creatorApp: appMode.creator(), modeTabs: appMode.tabs() });
   let rows, nothing = '';
@@ -104,7 +110,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
     if (rest.length && cats.length) cats.push({ name: 'More games', list: rest });
     rows = discoverRows({ waiting: seesWaiting() ? (week.waiting || []).map(standIn) : [], updates: upd, rows: cats.map(r => ({ ...r, list: r.list.map(standIn) })) });
     nothing = !account.signedIn ? 'Sign in to see Discover.' : (week.store ? (games.length ? 'You have every game in Discover. New ones show up here as your family adds them.' : 'Nothing in Discover yet. Games the family adds to the Orlis server show up here.') : 'Loading Discover…');
-  } else rows = homeRows({ pool, featured: toGet, discover: !!nav.store && !waiting && !appMode.creator(), testing: waiting ? [] : (week.drafts || []) });
+  } else rows = homeRows({ pool, featuredItems: lead, discover: !!nav.store && !waiting && !appMode.creator(), testing: waiting ? [] : (week.drafts || []) });
   const bigRows = discovering ? 1 : PLAY_BIG;
   /* the family's own games from Create (0057): the third row, "Made by us" */
   if (!discovering && !waiting && !appMode.creator()){
@@ -176,7 +182,8 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
   const makeTile = (item) => {
     const el = button('', 'htile ' + item.kind);
     const hero = heroOf(item);
-    if (hero.cta) el.setAttribute('aria-label', `${hero.cta.label} ${hero.name}`);
+    if (hero.cta) el.setAttribute('aria-label', `${item.again ? 'Play again' : hero.cta.label} ${hero.name}`);
+    if (item.again) el.classList.add('again');
     el.querySelector('.lbl').replaceWith(h('span', 'hname'));
     const t = { el, item };
     if (item.kind === 'game' || item.kind === 'get' || item.kind === 'try'){
@@ -186,6 +193,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
       paintTile(t);
       if (item.made){ const by = h('span', 'mkby'); by.setAttribute('aria-label', 'Made by us'); by.appendChild(makerFace(item.g.made.makerId, 96)); el.appendChild(by); }
       if (needsTablet(item.g)){ const b = h('span', 'tabmark'); b.setAttribute('role', 'img'); b.setAttribute('aria-label', 'Needs an Orlis PlayPad'); b.appendChild(iconEl('tabletgrip', 96, color('shade.ink'))); el.appendChild(b); }
+      if (item.again) el.insertAdjacentHTML('beforeend', `<span class="getpill again">${icon('play')}Play again</span>`);
       if (item.kind === 'try') el.insertAdjacentHTML('beforeend', `<span class="getpill">${icon('play')}Try it</span>`);
       if (item.kind === 'get') el.insertAdjacentHTML('beforeend', `<span class="getpill">${icon('get')}${item.update ? 'Update' : 'Get'}</span><span class="gotbar"><i></i></span>`);
     } else if (item.kind === 'discover'){
@@ -210,7 +218,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
   });
   const items = tiles.flat();
   /* ---------- focus ---------- */
-  let pos = startFocus(rows, { session: sessionPick && sessionPick.id, last: remembered() });
+  let pos = startFocus(rows, { session: sessionPick && sessionPick.id, sessionRow: sessionPick && sessionPick.row });
   const mem = {};
   let going = null, getting = false, bg = 0, lastWorld = null;
   const current = () => tiles[pos.row][pos.col];
@@ -262,7 +270,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
     const t = current();
     paintHero(t); layout(); slide(t);
     if (!fromRemote) remote.mark(t.el); else remote.mark(t.el);
-    if (t.item.g && t.item.kind === 'game'){ remember(t.item.g.id); sessionPick = { id: t.item.g.id }; }
+    if (t.item.g && t.item.kind === 'game') sessionPick = { id: t.item.g.id, row: rows[t.row].id };
     if (!quiet && was !== p){ sfx.nav(); ambience.lift(); }
   }
 
@@ -284,6 +292,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
       getting = false; t.el.classList.remove('getting');
     }
     going = { t: 0, g };
+    if (!g.made) remember(g.id);
     /* straight to the loading screen (a quick fade); it stays while the game gets ready */
     launch.begin({ url: g.made ? madeCover(g.made.creation, 960, 600, { title: true }) : coverOf(g), name: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '' });
   }

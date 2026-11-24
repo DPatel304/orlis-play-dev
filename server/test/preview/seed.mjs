@@ -90,8 +90,8 @@ export function seed(dir, { families = 2500, plays = 200000, games = 150, now = 
   const addBeta = db.prepare("INSERT INTO beta (email, status, created_at) VALUES (?, 'requested', ?)");
   addBeta.run('nina@example.com', iso(now - 50 * 60e3)); addBeta.run('hugo@example.com', iso(now - 140 * 60e3));
   db.prepare("INSERT INTO beta (email, status, created_at, decided_at) VALUES ('anna@example.com', 'joined', ?, ?)").run(iso(now - 9 * 864e5), iso(now - 9 * 864e5));
-  db.prepare("INSERT INTO featured (game_id, pinned_at) VALUES (?, ?)").run(list[0].id, iso(now - 864e5));
-  db.prepare("INSERT INTO featured (game_id, pinned_at) VALUES (?, ?)").run(list[2].id, iso(now - 2 * 864e5));
+  db.prepare("INSERT INTO featured_slots (slot, game_id, set_at) VALUES (?, ?, ?)").run(1, list[0].id, iso(now - 864e5));
+  db.prepare("INSERT INTO featured_slots (slot, game_id, set_at) VALUES (?, ?, ?)").run(3, list[2].id, iso(now - 2 * 864e5));
   db.prepare('INSERT INTO reach (game_id, household_id) VALUES (?, ?)').run(list[30].id, fams[3].hid);
   db.exec('COMMIT');
   db.close();

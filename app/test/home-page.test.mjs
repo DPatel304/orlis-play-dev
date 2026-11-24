@@ -24,7 +24,9 @@ const txt = (el) => [el._text, ...el.children.map(txt)].join('');
 const q = (root, sel) => root.querySelector(sel), qa = (root, sel) => root.querySelectorAll(sel);
 
 function build(extra = {}){
+  const kept = localStorage.getItem('orlis.lastGame');   /* (resetDom clears the storage; the game last played stays, as it would between visits) */
   const ui = resetDom(); El.prototype.getContext = () => null;
+  if (kept != null) localStorage.setItem('orlis.lastGame', kept);
   keyHandlers.length = 0;
   const calls = [];
   const nav = { home: () => calls.push('home'), store: () => calls.push('store'), create: () => calls.push('create'), pro: () => calls.push('pro') };
@@ -63,18 +65,100 @@ test('Play: two rows, Featured and My library, both labelled; the logo with the 
   page.leave();
 });
 
-test('Featured: this week\'s three featured games not on this PC yet, then Discover; the games already here are left out', () => {
-  withWeek({ featured: ['s1', 's2', 's3', 's4'], games: SAMPLE }, () => {
-    library.installed.set('s2', '1.0');
-    try {
-      const { s, page } = build();
-      assert.deepEqual(qa(s, '.htile.get').map(label), ['Comet Catch', 'Moon Hop', 'Star Sweep'], 'three, without the one already here');
-      assert.deepEqual(page.rows[0].items.map(i => i.kind), ['get', 'get', 'get', 'discover']);
-      assert.ok(qa(s, '.htile.get').every(t => q(t, '.getpill') && q(t, '.gotbar')), 'a Get pill and a progress bar on each');
-      assert.ok(q(s, '.htile.disc'), 'the Discover tile');
+/* what the server sends for Featured (decision 0058): [slot 1, 2, 3], each { id, name, builtIn, rotating, ...the Store entry } */
+const slot = (n, id, more = {}) => { const e = SAMPLE.find(x => x.id === id); return { slot: n, id, name: e ? e.name : id, builtIn: !e, rotating: false, ...(e || {}), ...more }; };
+const withLast = (id, fn) => {
+  const was = (() => { try { return localStorage.getItem('orlis.lastGame'); } catch { return null; } })();
+  if (id) localStorage.setItem('orlis.lastGame', id); else localStorage.removeItem('orlis.lastGame');
+  try { return fn(); } finally { was == null ? localStorage.removeItem('orlis.lastGame') : localStorage.setItem('orlis.lastGame', was); }
+};
+
+test('Featured (0058): Play again (the game last played), then the owner\'s slots 1 to 3, then Discover; a built-in game plays, a Store game not here is a Get, an empty slot rotates', () => {
+  withLast('pop-party', () => withWeek({ games: SAMPLE, featuredSlots: [slot(1, 'sleepy-bear'), slot(2, 's1'), slot(3, 's3', { rotating: true })] }, () => {
+    const { s, page } = build();
+    const row = page.rows[0];
+    assert.equal(row.title, 'Featured');
+    assert.deepEqual(row.items.map(i => i.kind), ['game', 'game', 'get', 'get', 'discover']);
+    assert.deepEqual(row.items.map(i => i.g ? i.g.id : 'discover'), ['pop-party', 'sleepy-bear', 's1', 's3', 'discover'], 'last played, slot 1, slot 2, slot 3 (rotating), Discover');
+    assert.deepEqual(row.items.map(i => !!i.again), [true, false, false, false, false]);
+    const tiles = qa(s, '.hrow')[0].children;
+    assert.ok(q(tiles[0], '.getpill.again') && /Play again/.test(txt(q(tiles[0], '.getpill'))), 'a "Play again" pill on the thumbnail');
+    assert.ok(tiles[0].classList.contains('again') && tiles[0].classList.contains('game'));
+    assert.equal(tiles[0].getAttribute('aria-label'), 'Play again Pop Party');
+    assert.ok(!q(tiles[1], '.getpill'), 'a game on this PC (a built-in one too) is a normal tile that plays');
+    assert.equal(tiles[1].getAttribute('aria-label'), 'Play Sleepy Bear');
+    assert.ok(q(tiles[2], '.getpill') && !q(tiles[2], '.again') && q(tiles[2], '.gotbar'), 'a game not on this PC: Get, with its progress bar');
+    assert.equal(tiles[2].getAttribute('aria-label'), 'Get Comet Catch');
+    assert.equal(tiles[3].getAttribute('aria-label'), 'Get Moon Hop', 'a slot left empty holds the rotation\'s game');
+    assert.equal(qa(s, '.htile.again').length, 1, 'one Play again tile');
+    assert.deepEqual(page.pos, { row: 0, col: 0 }, 'Home opens on the first Featured tile');
+    page.leave();
+  }));
+});
+
+test('Featured: no Play again tile when nothing was played, when the game is already in a slot, or when it is no longer on this PC; a game is never twice', () => {
+  const slots = [slot(1, 'sleepy-bear'), slot(2, 's1'), slot(3, 's2')];
+  withWeek({ games: SAMPLE, featuredSlots: slots }, () => {
+    withLast(null, () => {
+      const { page } = build();
+      assert.deepEqual(page.rows[0].items.map(i => i.g ? i.g.id : 'discover'), ['sleepy-bear', 's1', 's2', 'discover'], 'nothing played yet: the slots and Discover');
       page.leave();
-    } finally { library.installed.delete('s2'); }
+    });
+    withLast('sleepy-bear', () => {
+      const { page } = build();
+      assert.deepEqual(page.rows[0].items.map(i => i.g ? i.g.id : 'discover'), ['sleepy-bear', 's1', 's2', 'discover'], 'played last, and in slot 1: only the slot');
+      assert.ok(page.rows[0].items.every(i => !i.again));
+      page.leave();
+    });
+    withLast('gone-game', () => {
+      const { page } = build();
+      assert.ok(page.rows[0].items.every(i => !i.again), 'not on this PC any more');
+      page.leave();
+    });
   });
+});
+
+test('Featured: a Store game in a slot that is on this PC is a normal tile that plays; no server: Play again and Discover; an older server (only a list of ids): those fill the slots', async () => {
+  withLast('leaf-pile', () => {
+    const { page: none } = build();
+    assert.deepEqual(none.rows[0].items.map(i => i.kind), ['game', 'discover'], 'no server: the last game played, then Discover');
+    none.leave();
+  });
+  /* a game downloaded from the Store is in the library (and on Home's list of games): in a slot it is a normal tile */
+  const { GAMES } = await import('../src/games/index.js');
+  const mine = { ...GAMES.find(x => x.id === 'leaf-pile'), id: 's4', name: 'Star Sweep', store: { version: '1.0', blurb: 'Sweep', icon: SAMPLE[3].icon } };
+  GAMES.unshift(mine); library.installed.set('s4', '1.0');
+  try {
+    withLast(null, () => withWeek({ games: SAMPLE, featuredSlots: [slot(1, 's4'), slot(2, 's1'), slot(3, 's2')] }, () => {
+      const { page } = build();
+      assert.deepEqual(page.rows[0].items.map(i => i.kind), ['game', 'get', 'get', 'discover'], 'Star Sweep is here: it plays; the others are Gets');
+      assert.equal(page.rows[0].items[0].g, mine);
+      page.leave();
+    }));
+  } finally { GAMES.splice(GAMES.indexOf(mine), 1); library.installed.delete('s4'); }
+  withLast(null, () => withWeek({ featured: ['s1', 's2', 's3', 's4'], games: SAMPLE }, () => {
+    const { s, page } = build();
+    assert.deepEqual(qa(s, '.htile.get').map(label), ['Comet Catch', 'Bubble Dash', 'Moon Hop'], 'an older server: its three Discover ids, as Get tiles');
+    assert.deepEqual(page.rows[0].items.map(i => i.kind), ['get', 'get', 'get', 'discover']);
+    page.leave();
+  }));
+});
+
+test('coming back from a round returns to the game just played, in the row it was picked in (Featured or My library)', () => {
+  hooks.forget();
+  withLast(null, () => withWeek({ games: SAMPLE, featuredSlots: [slot(1, 'sleepy-bear'), slot(2, 's1'), slot(3, 's2')] }, () => {
+    const a = build();
+    const lib = a.page.rows[1].items.findIndex(i => i.g.id === 'sleepy-bear');
+    a.page.focusAt({ row: 1, col: lib });
+    a.page.leave();
+    const b = build();
+    assert.deepEqual(b.page.pos, { row: 1, col: lib }, 'back on Sleepy Bear in My library, though it is in Featured too');
+    b.page.focusAt({ row: 0, col: 0 });
+    b.page.leave();
+    const c = build();
+    assert.deepEqual(c.page.pos, { row: 0, col: 0 }, 'picked in Featured: back there');
+    c.page.leave(); hooks.forget();
+  }));
 });
 
 test('at rest Home opens on Featured with My library peeking in below it (owner, 2026-11-24); a game there shows its line, figures and world', () => {

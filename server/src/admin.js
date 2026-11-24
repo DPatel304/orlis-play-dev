@@ -19,6 +19,7 @@ import { statfsSync } from 'node:fs';
 import { Fail, Raw, stats } from './http.js';
 import { AVATARS } from './api.js';
 import { BUILT_IN } from './weekly.js';
+import { BUILT_IN_GAMES } from './builtin.js';
 import { KEEP } from './backup.js';
 import { LIMITS as CREATE } from './creations.js';
 
@@ -149,7 +150,7 @@ export function admin({ db, info, dataDir, shop, week, log, mail, mailState = { 
 
   /* ---------- games ---------- */
   const catOf = (g) => g.tags && g.tags[0] ? g.tags[0][0].toUpperCase() + g.tags[0].slice(1) : g.uses === 'body' ? 'Body' : g.uses === 'hands' ? 'Hands' : 'Other';
-  const gameNames = async () => new Map([...BUILT_IN, ...(await shop.games()).map(g => [g.id, g.name])]);
+  const gameNames = async () => new Map([...BUILT_IN, ...BUILT_IN_GAMES, ...(await shop.games()).map(g => [g.id, g.name])]);
   /* each game's last 7 days (kept for a few seconds: it reads a week of plays) */
   let weekMemo = null;
   const weekPlays = () => {
@@ -161,13 +162,20 @@ export function admin({ db, info, dataDir, shop, week, log, mail, mailState = { 
     return map;
   };
   async function gameRows(){
-    const games = await shop.games(), pins = week.pins(), seen = weekPlays();
+    const games = await shop.games(), slots = week.slots(), seen = weekPlays();
     const hidden = new Set(q('SELECT game_id FROM reach').all().map(r => r.game_id));
     const rows = games.map(g => {
-      const n = seen.get(g.id) || { plays: 0, fams: 0 }, slot = pins.indexOf(g.id);
+      const n = seen.get(g.id) || { plays: 0, fams: 0 }, slot = slots.indexOf(g.id);
       return { key: `${g.id}@${g.version}`, id: g.id, version: g.version, title: g.name, cat: catOf(g), maker: g.by || 'Orlis', status: hidden.has(g.id) ? 'hidden' : 'live',
         plays: n.plays, fams: n.fams, slot: slot >= 0 ? slot + 1 : null, featured: slot >= 0, cols: (g.icon && g.icon.cols) || [], bytes: g.bytes, added: g.added, starter: !!g.starter };
     });
+    /* the games built into Orlis Play, listed too (marked builtIn), so the owner can feature them (decision 0058); a Store game of the same id stands for it */
+    for (const [id, name] of BUILT_IN_GAMES){
+      if (games.some(g => g.id === id)){ rows.find(r => r.id === id).builtIn = true; continue; }
+      const n = seen.get(id) || { plays: 0, fams: 0 }, slot = slots.indexOf(id);
+      rows.push({ key: `${id}@built-in`, id, version: 'built in', title: name, cat: 'Built in', maker: 'Orlis', status: 'live', builtIn: true,
+        plays: n.plays, fams: n.fams, slot: slot >= 0 ? slot + 1 : null, featured: slot >= 0, cols: [], bytes: 0, added: null, starter: false });
+    }
     /* games waiting for the owner's OK (not in the Store yet - or a newer version of one that is) */
     for (const s of q(`SELECT s.id AS submission, s.game_id AS id, s.name, s.version, s.bytes, s.created_at AS added, s.tried_at AS tried, h.name AS family
         FROM submissions s JOIN accounts x ON x.id = s.account_id JOIN households h ON h.id = x.household_id WHERE s.status = 'waiting' ORDER BY s.created_at`).all()){
@@ -286,7 +294,7 @@ export function admin({ db, info, dataDir, shop, week, log, mail, mailState = { 
     return value;
   }
   async function overview(){
-    const n = numbers(), qu = queue(), names = await gameNames(), pins = week.pins();
+    const n = numbers(), qu = queue(), names = await gameNames(), pins = week.slots();
     return {
       now: now().toISOString(), health: health(),
       stats: { families: { total: n.families, newThisWeek: n.newWeek }, active7: { households: n.active7, pct: n.families ? Math.round(n.active7 / n.families * 100) : 0 },
@@ -340,11 +348,20 @@ export function admin({ db, info, dataDir, shop, week, log, mail, mailState = { 
         owner(headers, ip);
         const rows = await gameRows();
         const r = gamePage(rows, query);
-        return { ...r, cats: [...new Set(rows.map(g => g.cat))].sort((a, b) => a.localeCompare(b)) };
+        /* "Featured now": the three slots, in order (a game id, or null: the slot rotates) */
+        const names = await gameNames();
+        const featuredNow = week.slots().map((id, i) => ({ slot: i + 1, id, title: id ? names.get(id) || id : null, builtIn: !!id && BUILT_IN_GAMES.some(b => b[0] === id) }));
+        return { ...r, featuredNow, cats: [...new Set(rows.map(g => g.cat))].sort((a, b) => a.localeCompare(b)) };
       }],
       ['GET', '/api/admin/games/:id', async ({ headers, ip, params }) => {
         owner(headers, ip);
         const g = (await shop.games()).find(x => x.id === params.id);
+        const b = BUILT_IN_GAMES.find(x => x[0] === params.id);
+        if (!g && b){
+          const all = q('SELECT COUNT(*) AS n, COUNT(DISTINCT household_id) AS fams, AVG(secs) AS secs FROM plays WHERE game_id = ?').get(b[0]);
+          return { id: b[0], version: 'built in', title: b[1], blurb: null, about: 'Built into Orlis Play.', tags: [], cover: null, cols: [], bytes: 0, added: null, maker: 'Orlis', builtIn: true,
+            plays: { all: all.n, families: all.fams, mins: Math.round((all.secs || 0) / 6) / 10 }, approved: null };
+        }
         if (!g) throw new Fail(404, 'no_game', 'That game isn\'t in the Store.');
         const all = q('SELECT COUNT(*) AS n, COUNT(DISTINCT household_id) AS fams, AVG(secs) AS secs FROM plays WHERE game_id = ?').get(g.id);
         const ok = q("SELECT at, who, note FROM history WHERE game_id = ? AND what = 'approved' ORDER BY id DESC LIMIT 1").get(g.id);

@@ -1,13 +1,17 @@
 /* This week, for the whole family - a reason to come back every Monday.
 
-   Featured: which of Discover's games the Play page puts up front. The
-   owner's pins come first; the rest take turns, a new few every Monday.
+   Featured (decision 0058): three numbered slots the owner fills with any game - a Discover game or one built into Orlis Play
+   (builtin.js). A slot left empty takes a Discover game from the rotation, a new few every Monday. Older apps read the plain list of
+   Discover ids ("featured" in /api/store: the slotted ones first, then the rotation); newer ones read "featuredSlots" (featuredSlots() below).
 
    Challenges: three goals a week the family reaches together, made of the
    rounds everyone plays (each Orlis Play tells the server when a round
    ends: which game, how long). Reaching one wins the family a star. They
    reset every Monday; nothing is lost for missing a week. */
 import { Fail } from './http.js';
+import { builtIn } from './builtin.js';
+
+export const SLOTS = 3;
 
 const DAY = 864e5;
 /* Monday, 00:00 (the server's own time), of the week `now` is in */
@@ -55,11 +59,64 @@ export function progress(list, plays){
 
 export function weekly(db, { now = () => new Date() } = {}){
   const q = (s) => db.prepare(s);
-  const pins = () => q('SELECT game_id FROM featured ORDER BY pinned_at').all().map(r => r.game_id);
+  /* the three slots, in order: a game id or null */
+  const slots = () => {
+    const out = Array(SLOTS).fill(null);
+    for (const r of q('SELECT slot, game_id FROM featured_slots').all()) out[r.slot - 1] = r.game_id;
+    return out;
+  };
+  const pins = () => slots().filter(Boolean);
+  /* slot n (1 to 3) holds game id, or nothing (id null); a game is in one slot only, so putting it in another moves it. Answers what it replaced. */
+  const setSlot = (n, id) => {
+    const was = slots()[n - 1];
+    db.exec('BEGIN');
+    try {
+      if (id){
+        q('DELETE FROM featured_slots WHERE game_id = ? OR slot = ?').run(id, n);
+        q('INSERT INTO featured_slots (slot, game_id, set_at) VALUES (?, ?, ?)').run(n, id, now().toISOString());
+      } else q('DELETE FROM featured_slots WHERE slot = ?').run(n);
+      db.exec('COMMIT');
+    } catch (e){ db.exec('ROLLBACK'); throw e; }
+    return was;
+  };
+  /* What the app reads (Home's Featured row): [slot 1, 2, 3], each { slot, id, name, builtIn, rotating, ...the Store entry, for a Store game }.
+     entries: the Store games this family may see. A slot whose game this family cannot see counts as empty. An empty slot takes the next
+     Discover game in the rotation (rotating: true), so there are three whenever there are games enough. */
+  const featuredSlots = (entries) => {
+    const slotted = slots().map((id) => {
+      if (!id) return null;
+      const b = builtIn(id), e = entries.find(x => x.id === id);
+      if (!b && !e) return null;
+      return { ...(e || {}), id, name: b ? b.name : e.name, builtIn: !!b };
+    });
+    const used = new Set(slotted.filter(Boolean).map(x => x.id));
+    const fill = featuredIds(entries.map(e => e.id).filter(id => !used.has(id)), [], now(), slotted.filter(x => !x).length);
+    return slotted.map((x, i) => {
+      if (x) return { slot: i + 1, rotating: false, ...x };
+      const next = fill.shift(), e = entries.find(y => y.id === next);
+      return e ? { slot: i + 1, rotating: true, ...e, builtIn: false } : null;
+    }).filter(Boolean);
+  };
   return {
-    pins,
+    pins, slots, setSlot, featuredSlots,
     featured: (ids) => featuredIds(ids, pins(), now()),
     routes(who, owner, log, gameName = () => null, heads = () => {}){
+      /* slot N gets game id (or is emptied: id null): the game must be a built-in one or one in the Store; it goes in the history */
+      const put = async (me, slotText, id) => {
+        const n = Number(slotText);
+        if (!Number.isInteger(n) || n < 1 || n > SLOTS) throw new Fail(400, 'bad_slot', 'Slots are 1, 2 and 3.');
+        if (id == null || id === ''){
+          const was = setSlot(n, null);
+          if (was) log.add(me, 'unfeatured', { gameId: was, name: (builtIn(was) || {}).name || await gameName(was), note: `slot ${n}` });
+          return { slot: n, id: null };
+        }
+        id = String(id).slice(0, 80);
+        const name = (builtIn(id) || {}).name || await gameName(id);
+        if (!name) throw new Fail(404, 'no_game', 'That game isn\'t in Orlis Play or the Store.');
+        setSlot(n, id);
+        log.add(me, 'featured', { gameId: id, name, note: `slot ${n}` });
+        return { slot: n, id, name, builtIn: !!builtIn(id) };
+      };
       return [
         /* a round's over: which game, the best score, how long, how many played */
         ['POST', '/api/plays', ({ headers, body }) => {
@@ -98,14 +155,22 @@ export function weekly(db, { now = () => new Date() } = {}){
           const stars = q('SELECT COUNT(*) AS n FROM trophies WHERE household_id = ?').get(a.household_id).n;
           return { week, ends: to.toISOString(), challenges: list, stars, trophies: stars };
         }],
-        /* the owner puts a Discover game up front, or lets it take turns */
+        /* the owner puts a game in Featured slot N (1 to 3) - { id }, a Discover game or a built-in one - or empties it ({ id: null }, or DELETE) */
+        ['POST', '/api/featured/:slot', async ({ headers, params, body, ip }) => put(owner(headers, ip), params.slot, body && body.id)],
+        ['DELETE', '/api/featured/:slot', async ({ headers, params, ip }) => put(owner(headers, ip), params.slot, null)],
+        /* the older on/off: on puts the game in the first empty slot (none empty: refused), off takes it out of its slot */
         ['POST', '/api/store/:id/feature', async ({ headers, params, body, ip }) => {
           const me = owner(headers, ip);
-          const on = body.on === true;
-          if (on) q('INSERT OR IGNORE INTO featured (game_id, pinned_at) VALUES (?, ?)').run(params.id, now().toISOString());
-          else q('DELETE FROM featured WHERE game_id = ?').run(params.id);
-          log.add(me, on ? 'featured' : 'unfeatured', { gameId: params.id, name: await gameName(params.id) });
-          return { id: params.id, featured: on };
+          const have = slots(), at = have.indexOf(params.id);
+          if (body && body.on === true){
+            if (at >= 0) return { id: params.id, featured: true, slot: at + 1 };
+            const free = have.indexOf(null);
+            if (free < 0) throw new Fail(409, 'slots_full', 'Three games are featured already. Take one out first.');
+            await put(me, free + 1, params.id);
+            return { id: params.id, featured: true, slot: free + 1 };
+          }
+          if (at >= 0) await put(me, at + 1, null);
+          return { id: params.id, featured: false };
         }]
       ];
     }

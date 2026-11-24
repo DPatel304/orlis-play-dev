@@ -47,7 +47,7 @@
 /* a game that needs a tablet: a round white badge in the tile's top-right corner */
 .tabmark{ position:absolute; right:calc(var(--u)*1.2); top:calc(var(--u)*1.2); width:calc(var(--u)*5); height:calc(var(--u)*5); border-radius:50%; background:#fff; box-shadow:0 calc(var(--u)*.4) calc(var(--u)*1.2) rgba(29,27,46,.45); display:flex; align-items:center; justify-content:center; z-index:2; }
 .tabmark .oicon{ width:calc(var(--u)*3.7); height:calc(var(--u)*3.7); display:block; }
-.htile.get .tabmark{ right:auto; left:calc(var(--u)*1.2); }
+.htile.get .tabmark, .htile.again .tabmark{ right:auto; left:calc(var(--u)*1.2); }
 .hmeta{ display:flex; align-items:center; margin-top:calc(var(--u)*2.6); } .hmeta:empty{ display:none; }
 /* (the empty library's one button) */
 .btn.hplay{ display:inline-flex; align-items:center; justify-content:center; padding:calc(var(--u)*2.2) calc(var(--u)*5.4); border:0; border-radius:var(--pill); background:#fff; color:var(--ink); font:700 var(--tv-btn) var(--ui); box-shadow:var(--soft); white-space:nowrap; margin-left:calc(var(--u)*.2); }
