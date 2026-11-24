@@ -82,7 +82,10 @@ const PLAY = {
     /* sweep low, from the outside in toward the pile, and back out */
     const side = k.i ? 1 : -1, ph = (t * 0.7 + k.i * 0.3) % 1, inward = ph < 0.5;
     const x = PILE.x + side * (inward ? 0.42 - ph * 0.7 : 0.07 + (ph - 0.5) * 0.7);
-    k.hands.r.x = x; k.hands.r.y = 0.86 + Math.sin(t * 3) * 0.05; k.hands.l.x = x - side * 0.04; k.hands.l.y = 0.8;
+    /* at the height this player's leaves lie (their own reach band: it follows the body, no longer the bottom of the picture) */
+    const mine = (g.leaves || []).filter(L => !L.air && L.own === k.i).map(L => L.y).sort((p, q) => p - q);
+    const y = mine.length ? mine[mine.length >> 1] : 0.7;
+    k.hands.r.x = x; k.hands.r.y = y + Math.sin(t * 3) * 0.03; k.hands.l.x = x - side * 0.04; k.hands.l.y = y - 0.04;
   },
   'stack-it-high'(g, k, t, dt){
     const key = k.i + 'r', mine = g.blocks.find(b => b.held && b.held.key === key);
