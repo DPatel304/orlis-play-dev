@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hudZones, underHud, badge, hud, sayBubble, spoken, PANEL_ROWS, scorePill, chip, statusBar, BAR_COLORS } from '../src/games/hud.js';
+import { hudZones, underHud, clearOf, badge, hud, sayBubble, spoken, PANEL_ROWS, scorePill, chip, statusBar, BAR_COLORS } from '../src/games/hud.js';
 import { COLS, ROWS, SLOTS, gridOf, block, cell } from '../src/games/grid.js';
 
 const overlap = (a, b) => a.x < b.x + b.w - 0.5 && b.x < a.x + a.w - 0.5 && a.y < b.y + b.h - 0.5 && b.y < a.y + a.h - 0.5;
@@ -83,4 +83,16 @@ test('every game\'s first words are short: a painted icon from the library and a
     const words = spoken(t).split(' ').filter(Boolean); assert.ok(words.length <= 4, `${g.id}: "${t}" is ${words.length} words`);
     assert.ok(!/\p{Extended_Pictographic}/u.test(t), `${g.id}: "${t}" has no emoji in it`);
     assert.ok(i.say.icon && assets.has(i.say.icon), `${g.id}: its first words carry a library icon (${i.say.icon})`); }
+});
+
+test('clearOf: how low the top of the shell reaches at an x, so a ball or block kept under it is never behind a clock, words or score chip', () => {
+  for (const [W, H] of [[1920, 1080], [1280, 720]]){
+    const z = hudZones(W, H);
+    /* in the middle: under the goal bar and the words; at the right: under the clock; at the left: under the scores; elsewhere: nothing */
+    assert.ok(Math.abs(clearOf(W, H, 0.5) - ((z.top.y + z.top.h) / H + 0.04)) < 1e-9);
+    assert.ok(clearOf(W, H, 0.95) >= (z.clock.y + z.clock.h) / H);
+    assert.ok(clearOf(W, H, 0.1) > 0.2 && clearOf(W, H, 0.1) < 0.3, 'the second row of chips, no lower');
+    assert.equal(clearOf(W, H, 0.7), 0);
+    for (const x of [0.1, 0.3, 0.5, 0.95]) assert.ok(!underHud(W, H, x * W, clearOf(W, H, x) * H + 1) || x < 0.35 && clearOf(W, H, x) * H + 1 < z.score.y + z.score.h, `x ${x}`);
+  }
 });

@@ -36,7 +36,7 @@ export async function start({ lineup, seed = 1, id }){
   const inst = window.__round();
   ctx.inst = inst; ctx.game = window.__game();
   const orig = inst.step.bind(inst);
-  inst.step = (dt, W, H) => { dt = Math.min(dt, 1 / 20); if (!ctx.game.passive){ world.step(dt, brain, ctx); feeder.step(world, dt); } return orig(dt, W, H); };
+  inst.step = (dt, W, H) => { dt = Math.min(dt, 1 / 20); pose.mouse.active = false; if (!ctx.game.passive){ world.step(dt, brain, ctx); feeder.step(world, dt); } return orig(dt, W, H); };
   return { players: inst.players, mode: window.__mode() };
 }
 

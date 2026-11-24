@@ -3,6 +3,7 @@ import { Juice, clamp } from './common.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx, music } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
+import { reaches } from './reach.js';
 import { Avatars } from '../ui/avatars.js';
 import { crew } from '../ui/crew.js';
 import { body } from '../ui/avatar-art.js';
@@ -53,6 +54,23 @@ export const GIANT_SLAPS = 6;
 /* Teeny balloons are tiny to look at but not to catch: a hand that lands
    anywhere near one counts. */
 const MIN_REACH = 0.04;
+
+/* One shared sky, but it rises to meet everyone: a balloon slows to a hover where a player can reach it (inside their reach band,
+   and within a step of where they stand), and once it is above the top of the tallest player's reach it's off - a child alone doesn't
+   watch balloons float up where they can't go, and a grown-up isn't left with the balloons nobody short could get. The numbers are
+   how fast a balloon rises then (1 is its own speed) and how near sideways counts as a step (screen widths). */
+export const HOVER = 0.3, AWAY = 12, APPROACH = 10, STEP_X = 0.45;
+/* ...but only in the upper part of the band (0 the top, 1 the knees): lower than that is a stoop, and a short player's stooping
+   would be a tall player's hovering - balloons wait where they're a reach, not where they're a bend */
+export const COMFY = 0.6;
+/* ...and balloons come up to that part at speed, but slow down in good time: this far (screen heights) of ordinary speed before it */
+export const RUNWAY = 0.1;
+/* Where new balloons come up: this share of them next to a player (the rest anywhere), within this far of them (screen widths) */
+export const NEAR = 0.9, NEAR_X = 0.3;
+/* ...and how strongly they come up by whoever is behind (0: not at all; 1: a player with none gets twice the share of one on the average) */
+export const FAIR = 6;
+/* ...a balloon for a player who's behind comes up this far (screen widths) away from a leader within LEADER_X of them */
+export const AWAY_X = 0.1, LEADER_X = 0.25;
 
 const tri = (x) => { const f = x - Math.floor(x); return f < 0.5 ? f * 4 - 1 : 3 - f * 4; };
 
@@ -118,6 +136,7 @@ class PopParty {
        every round, so it drifts and never sweeps back and forth in a pattern. */
     this.waves = Array.from({ length: 4 }, (_, k) => ({ f: 0.04 + Math.random() * 0.16 + k * 0.03, ph: Math.random() * 6.2832, a: 0.4 + Math.random() * 0.6 }));
     this.slowT = 0; this.scale = 1;
+    this.reach = reaches(MAX_PLAYERS);
     this.parade = null; this.animal = null;
     this.events = planEvents(FINALE);
     this.scene = new Scene();
@@ -184,6 +203,7 @@ class PopParty {
       look: this._look(), rainbow: this._paradeOn()
     });
     const lift = ramp;
+    for (let i = 0; i < this.players; i++){ const p = pose.players[i]; if (p && p.present) this.reach[i].step(dt, p, pose.mouse.active); }
     for (const b of this.balloons){
       b.age += sdt;
       if (b.wob) b.wob *= Math.pow(0.03, dt);
@@ -195,7 +215,9 @@ class PopParty {
         this._string(b, W, H);
         continue;
       }
-      b.by -= b.rise * lift * sdt * (b.giant && this._giantUp(b) ? 0.45 : 1);
+      if (b.giant) b.sp = this._giantUp(b) ? 0.45 : 1;
+      else { const want = this._rise(b); b.sp += (want - b.sp) * Math.min(1, dt * (want < b.sp ? 10 : 4)); }
+      b.by -= b.rise * lift * sdt * b.sp;
       b.wx += this.wind * sdt;
       const [ox, oy] = MOTIONS[b.motion].at(b, b.age);
       const nx = clamp(b.x0 + ox + b.wx, 0.04, 0.96);
@@ -255,14 +277,59 @@ class PopParty {
        screen instead of piling into a wall. */
     const x = x0 ?? (motion === 'drift'
       ? (dir > 0 ? 0.08 + Math.random() * 0.32 : 0.6 + Math.random() * 0.32)
-      : 0.08 + Math.random() * 0.84);
+      : this._lane());
     return {
       x0: x, x: null, wx: 0, by: 1.15 + Math.random() * 0.05, y: 1.2, tilt: 0,
       r: rand(size.r), rise: rand(size.rise), worth: rainbow ? 5 : size.worth,
       hue: HUES[(Math.random() * HUES.length) | 0],
       motion, dir, f: 1.2 + Math.random() * 1.4, ph: Math.random() * 6.28,
-      kind: rainbow ? 'rainbow' : 'normal', age: 0, dead: false, str: []
+      kind: rainbow ? 'rainbow' : 'normal', age: 0, dead: false, str: [], sp: 1
     };
+  }
+
+  /* how fast this balloon rises, as a share of its own speed: slowly where a player can reach it, quickly once it's gone over
+     everyone's head, and as it is the rest of the way up */
+  _rise(b){
+    if (b.x == null) return 1;
+    let top = 9, near = null;
+    for (let i = 0; i < this.players; i++){
+      const p = pose.players[i], r = this.reach[i];
+      if (!p || !p.present || !r.ready) continue;
+      top = Math.min(top, r.top);
+      if (!near || Math.abs(b.x - r.x) < Math.abs(b.x - near.x)) near = r;
+    }
+    if (!near) return 1;
+    /* it waits for the player it's nearest, not for everyone who could get there */
+    if (Math.abs(b.x - near.x) < STEP_X){
+      if (b.y >= near.top && b.y <= near.at(COMFY)) return HOVER;
+      if (b.y > near.at(COMFY) + RUNWAY) return APPROACH;
+      if (b.y > near.at(COMFY)) return 1;
+    }
+    return b.y < top - 0.02 ? AWAY : 1;
+  }
+
+  /* the parade marches at a height everyone can reach: a little under the top of the shortest player's reach */
+  _paradeY(){
+    let y = 0.38;
+    for (let i = 0; i < this.players; i++){ const p = pose.players[i]; if (p && p.present && this.reach[i].ready) y = Math.max(y, this.reach[i].top + 0.08); }
+    return Math.min(0.7, y);
+  }
+
+  /* where a new balloon comes up across the screen: usually by somebody, and by whoever has popped the fewest - so the sky doesn't
+     go to the quickest hands (a child's, as often as not) and nobody is left with nothing but balloons that aren't theirs */
+  _lane(){
+    const near = [];
+    for (let i = 0; i < this.players; i++){ const p = pose.players[i]; if (p && p.present && this.reach[i].ready) near.push(i); }
+    if (!near.length || Math.random() > NEAR) return 0.08 + Math.random() * 0.84;
+    const mean = near.reduce((s, i) => s + this.score[i], 0) / near.length;
+    const w = near.map(i => clamp(1 + FAIR * (1 - this.score[i] / (mean + 5)), 0.05, 4));
+    let r = Math.random() * w.reduce((s, v) => s + v, 0), k = 0;
+    while (k < w.length - 1 && (r -= w[k]) > 0) k++;
+    /* ...on the side away from anyone ahead of them who stands near, where those hands would have to walk to take it */
+    const me = near[k], x = this.reach[me].x;
+    let away = 0;
+    for (const i of near) if (i !== me && this.score[i] > this.score[me] * 1.1 + 2 && Math.abs(this.reach[i].x - x) < LEADER_X) away += x >= this.reach[i].x ? 1 : -1;
+    return clamp(x + (Math.random() - 0.5) * NEAR_X + Math.sign(away) * AWAY_X, 0.08, 0.92);
   }
 
   _breeze(t){
@@ -528,7 +595,7 @@ class PopParty {
       /* Red at the head through to violet at the tail. */
       Object.assign(b, { parade: { dir, idx: i }, kind: 'normal', r: 0.06, worth: 2, rise: 0,
         hue: Math.round(i * 290 / (PARADE_N - 1)),
-        x0: dir > 0 ? -0.06 - i * PARADE_GAP : 1.06 + i * PARADE_GAP, by: 0.38 });
+        x0: dir > 0 ? -0.06 - i * PARADE_GAP : 1.06 + i * PARADE_GAP, by: this._paradeY() });
       b.x = b.x0; b.y = b.by;
       this.balloons.push(b);
     }

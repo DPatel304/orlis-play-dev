@@ -15,7 +15,7 @@ import { music } from '../src/audio/sound.js';
 import popParty from '../src/games/pop-party.js';
 import sleepyBear from '../src/games/sleepy-bear.js';
 import leafPile, { PILE, SWEEP_END } from '../src/games/leaf-pile.js';
-import stackItHigh, { TOWER, TOWER_FULL } from '../src/games/stack-it-high.js';
+import stackItHigh, { TOWER_FULL } from '../src/games/stack-it-high.js';
 import skyPainter from '../src/games/sky-painter.js';
 
 const W = 1920, H = 1080, DT = 1 / 30;
@@ -85,11 +85,11 @@ const PLAY = {
     k.hands.r.x = x; k.hands.r.y = 0.86 + Math.sin(t * 3) * 0.05; k.hands.l.x = x - side * 0.04; k.hands.l.y = 0.8;
   },
   'stack-it-high'(g, k, t, dt){
+    /* (each child has their own blocks and tower) */
     const key = k.i + 'r', mine = g.blocks.find(b => b.held && b.held.key === key);
-    if (mine) toward(k.hands.r, TOWER.x, g._top() - 0.12, 1.2, dt);
+    if (mine) toward(k.hands.r, g.towerX(k.i), g._top(k.i) + 0.09, 1.2, dt);
     else {
-      const free = g.blocks.filter(b => !b.held && (k.i ? b.x >= 0.5 : b.x < 0.5)).sort((a, b) => b.y - a.y)[0]
-        || g.blocks.filter(b => !b.held).sort((a, b) => b.y - a.y)[0];
+      const free = g.blocks.filter(b => !b.held && b.owner === k.i).sort((a, b) => b.y - a.y)[0];
       if (free) toward(k.hands.r, free.x, free.y, 1.2, dt); else toward(k.hands.r, k.x, 0.4, 0.8, dt);
     }
     toward(k.hands.l, k.x - 0.15, 0.7, 0.5, dt);   /* the other hand out of the way */
@@ -265,7 +265,7 @@ test('stack-it-high: a child who walks off carrying a block drops it, and the ot
   play(g, stackItHigh, kids, DT * 2);
   assert.equal(carried.held, null, 'dropped');
   play(g, stackItHigh, kids, 30);
-  assert.ok(g.tower.length <= TOWER_FULL);
+  assert.ok(g.lanes.every(l => l.tower.length <= TOWER_FULL));
   assert.ok(g.towers >= 0 && g.blocks.length < 20, 'no pile-up of blocks');
 });
 
