@@ -10,6 +10,10 @@
    of bending down and swooshing your arms - with a gentle pull toward the
    pile once a leaf is nearly there, so the youngest's sweeps land.
 
+   Where a leaf lies depends on who is going to sweep it: each player has a reach band - from just above their hips to about
+   mid-thigh, worked out from their own landmarks (so a grown-up sweeps at hip height and a child, lower down, at theirs), and
+   leaves land, and settle, in the band of the player they are nearest to. Nobody has to fold in half.
+
    Nothing to lose: no clock pressure, no wrong moves. Each player's count
    is the leaves they swept in. First person: the players are their hands. */
 import { color, alpha } from './assets/palette.js';
@@ -25,7 +29,9 @@ export const ROUND = 180;
    about two thirds of its biggest, and it is still growing long after. BIG is the pile the goal bar's last star is for.
    Sweeping goes on until SWEEP_END; then it's "Jump in!", and after the burst the leaves come down for FINALE seconds. */
 export const GROW = 70, BIG = 120;
-export const SWEEP_END = ROUND - 24, FINALE = 6;
+export const SWEEP_END = ROUND - 12, FINALE = 6;
+/* (SWEEP_END + JUMP_WAIT + FINALE is the whole round: the jump-in waits at most JUMP_WAIT, and the round ends when the clock does,
+   at ROUND, however soon everybody jumped) */
 /* a sweep: a hand moving at least this fast (screen widths a second)
    within REACH (screen heights) of a leaf pushes it */
 export const SWEEP_SPEED = 0.3, REACH = 0.09;
@@ -38,8 +44,13 @@ export const SWEEP_GAP = 0.5, MAX_SLIDE = 0.6, STEER = 0.5;
 export const JUMP_WAIT = 6;
 /* where the pile sits (screen fractions), and how far its pull reaches */
 export const PILE = { x: 0.5, y: 0.86 }, PULL = 0.28;
-/* where leaves lie: knee to shin height, where bending hands reach */
+/* where leaves lie when nobody is there to say (the start, or an empty room), and the most a swept leaf can wander */
 const GROUND_TOP = 0.7, GROUND_BOTTOM = 0.9, START_LEAVES = 46, MAX_LEAVES = 180;
+const WANDER_TOP = 0.4, WANDER_BOTTOM = 0.92;
+/* a player's reach band, as a share of their torso (shoulder to hip): from a little above the hips to about mid-thigh */
+export const BAND = [-0.1, 0.3];
+/* how fast a lying leaf slides sideways-in-depth toward the band of the player it is nearest to (screen heights a second) */
+const SETTLE = 0.05;
 const COLS = [color('autumn.amber'), color('fav.orange', 'shade'), color('fav.yellow', 'shade'), color('autumn.rust'), color('ui.gold', 'shade')];
 
 /* (the words when the pile is big enough: the move card shows a jump while they're up) */
@@ -61,11 +72,26 @@ export const AUTUMN = {
   petals: COLS
 };
 
+/* where a player's hands can sweep without bending: { top, bottom } in screen heights, from their own body (null if we can't tell).
+   Hip and shoulder landmarks give the torso; with no landmarks (the mouse), the centre and scale do. */
+export function bandOf(p){
+  if (!p || !p.present) return null;
+  let hip = null, torso = null;
+  const lm = p.lm, ok = (k) => k && (k.v ?? 1) > 0.3;
+  if (lm && ok(lm[23]) && ok(lm[24]) && ok(lm[11]) && ok(lm[12])){
+    hip = (lm[23].y + lm[24].y) / 2; torso = hip - (lm[11].y + lm[12].y) / 2;
+  } else if (p.centre && p.scale){
+    torso = p.scale / 2.4; hip = p.centre.y + torso / 2;
+  }
+  if (hip == null || !(torso > 0.02)) return null;
+  return { top: hip + BAND[0] * torso, bottom: hip + BAND[1] * torso, x: p.centre ? p.centre.x : 0.5 };
+}
+
 class LeafPile {
   constructor(players){
     this.players = players;
     this.score = Array.from({ length: MAX_PLAYERS }, () => 0);
-    this.leaves = [];
+    this.leaves = []; this.bands = []; this.bandBy = [];
     for (let i = 0; i < START_LEAVES; i++) this._leaf(true);
     this.pile = 0; this.piles = 0; this.peak = 0; this.finale = 0;      /* (piles: 1 once it has burst) */
     this.told = new Set();
@@ -81,8 +107,28 @@ class LeafPile {
     this.say = { icon: LEAF, text: 'Sweep to the pile!', t: 0 };
   }
 
+  /* the bands of the players here now */
+  _bands(){
+    this.bands = []; this.bandBy = [];
+    for (let i = 0; i < this.players; i++){ const b = bandOf(pose.players[i]); this.bandBy[i] = b; if (b) this.bands.push(b); }
+    return this.bands;
+  }
+  /* the band of a leaf's own player (the one it came down for), or of whoever is nearest to x (if anyone is here) */
+  _bandAt(x, own = -1){
+    const bs = this.bands.length ? this.bands : this._bands();
+    if (own >= 0 && this.bandBy[own]) return this.bandBy[own];
+    let best = null, d = 9;
+    for (const b of bs){ const k = Math.abs(b.x - x); if (k < d){ d = k; best = b; } }
+    return best;
+  }
+  /* a height to lie at, in the reach band of the player the leaf is for */
+  _restY(x, own = -1){
+    const b = this._bandAt(x, own);
+    return b ? b.top + Math.random() * (b.bottom - b.top) : GROUND_TOP + Math.random() * (GROUND_BOTTOM - GROUND_TOP);
+  }
+
   /* a leaf: lying on the grass (onGround), or falling from the trees */
-  _leaf(onGround, x = Math.random(), y = null){
+  _leaf(onGround, x = Math.random(), y = null, own = -1){
     if (this.leaves.length >= MAX_LEAVES){
       /* full: the lying leaf furthest from anyone playing makes way */
       const here = pose.players.slice(0, this.players).filter(p => p && p.present && p.centre).map(p => p.centre.x);
@@ -94,10 +140,10 @@ class LeafPile {
     }
     const away = Math.abs(x - PILE.x) < 0.12 ? (x < PILE.x ? -0.14 : 0.14) : 0;
     this.leaves.push({
-      x: Math.min(0.98, Math.max(0.02, x + away)), y: y ?? (onGround ? GROUND_TOP + Math.random() * (GROUND_BOTTOM - GROUND_TOP) : -0.05),
+      x: Math.min(0.98, Math.max(0.02, x + away)), y: y ?? (onGround ? this._restY(x + away, own) : -0.05),
       vx: 0, vy: 0, rot: Math.random() * 6.28, spin: 0, s: 0.8 + Math.random() * 0.5,
-      col: COLS[(Math.random() * COLS.length) | 0], air: !onGround, rest: onGround ? 0 : GROUND_TOP + Math.random() * (GROUND_BOTTOM - GROUND_TOP),
-      ph: Math.random() * 6.28, who: -1
+      col: COLS[(Math.random() * COLS.length) | 0], air: !onGround, rest: onGround ? 0 : this._restY(x + away, own),
+      ph: Math.random() * 6.28, who: -1, own
     });
   }
 
@@ -106,15 +152,18 @@ class LeafPile {
     this.j.step(dt);
     if (this.t >= ROUND) this.over = true;
     const aspect = W / H;
+    this._bands();
 
     /* leaves keep drifting down from the trees */
     this.fallT -= dt;
     if (this.fallT <= 0){
       this.fallT = 0.5 + Math.random() * 0.8;
       /* they come down near someone who's playing, within reach */
-      const here = pose.players.slice(0, this.players).filter(p => p && p.present && p.centre);
-      const near = here.length ? here[(Math.random() * here.length) | 0].centre.x + (Math.random() - 0.5) * 0.5 : Math.random();
-      this._leaf(false, Math.min(0.95, Math.max(0.05, near)));
+      const here = [];
+      for (let i = 0; i < this.players; i++){ const p = pose.players[i]; if (p && p.present && p.centre) here.push(i); }
+      const who = here.length ? here[(Math.random() * here.length) | 0] : -1;
+      const near = who >= 0 ? pose.players[who].centre.x + (Math.random() - 0.5) * 0.2 : Math.random();
+      this._leaf(false, Math.min(0.95, Math.max(0.05, near)), null, who);
     }
 
     /* hands sweeping */
@@ -155,9 +204,15 @@ class LeafPile {
         L.rot += (L.spin || 1.5) * dt;
         if (L.y >= L.rest && L.vy > 0){ L.y = L.rest; L.air = false; L.vy = 0; }
       } else {
-        L.x += L.vx * dt; L.y += L.vy * dt * 0.3;
+        L.x += L.vx * dt; L.y += L.vy * dt * 0.15;
         L.vx *= Math.pow(0.15, dt); L.vy *= Math.pow(0.15, dt); L.rot += L.spin * dt; L.spin *= Math.pow(0.1, dt);
-        L.y = Math.min(GROUND_BOTTOM, Math.max(GROUND_TOP, L.y));
+        L.y = Math.min(WANDER_BOTTOM, Math.max(WANDER_TOP, L.y));
+        /* a leaf lying still, away from the pile, settles into the reach band of the player it is nearest to */
+        const b = this._bandAt(L.x, L.own);
+        if (b && Math.hypot(L.vx, L.vy) < 0.05 && Math.hypot((PILE.x - L.x) * aspect, PILE.y - L.y) > PULL * 0.6){
+          const to = L.y < b.top ? b.top : L.y > b.bottom ? b.bottom : L.y;
+          L.y += Math.max(-SETTLE * dt, Math.min(SETTLE * dt, to - L.y));
+        }
       }
       if (L.x < -0.05 || L.x > 1.05){ L.x = Math.min(1.02, Math.max(-0.02, L.x)); L.vx = -L.vx * 0.3; }
       /* leaves at the very edges drift back in, where hands can reach them */
@@ -191,8 +246,8 @@ class LeafPile {
       if ((here && this.jumped.size >= here) || this.ready > JUMP_WAIT) this._burst();
     } else this.jumps.step(dt, pose.players, this.players);
     this.burstT = Math.max(0, this.burstT - dt);
-    /* after the burst, the leaves come down, and that's the end */
-    if (this.piles && (this.finale += dt) >= FINALE) this.over = true;
+    /* after the burst, the leaves come down; the round ends when its time does (ROUND) */
+    if (this.piles) this.finale += dt;
 
     this.scene.step(dt, { t: this.t, p: 0.65 + 0.3 * Math.min(1, this.t / ROUND), storm: false, wind: 0.01, joy: this.ready ? 1 : 0.4, look: 0.5, rainbow: false });
     this.avatars.step(dt, this.players);

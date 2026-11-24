@@ -13,10 +13,14 @@
    How still is still: each player's movement is how fast their body's
    points (head, shoulders, wrists, hips) are going - the two fastest, so
    waving just your arms counts - in screen widths a second, smoothed a
-   little; the camera's jitter is well under STILL. */
+   little; the camera's jitter is well under STILL.
+
+   A star is for dancing and then freezing: a player who stood still all along
+   (no dancing in the few seconds before the music stopped) gets no star.
+   "Wobble!" is shown by the player who wobbled, not as one shared pill. */
 import { color, alpha } from './assets/palette.js';
 import { Juice, clamp } from './common.js';
-import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
+import { pose, PLAYER_COLORS, MAX_PLAYERS, headOf } from '../tracking/pose.js';
 import { sfx, music } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
@@ -24,8 +28,14 @@ import { Avatars } from '../ui/avatars.js';
 export const ROUND = 180;
 /* how long the dancing goes between freezes (a range, so it can't be
    timed), how long a freeze lasts, and the grace at its start - nobody
-   stops on the exact beat */
-export const DANCE = [6, 11], FREEZE = [3.5, 5], GRACE = 0.7;
+   stops on the exact beat. GRACE is longer than a reaction (a child 0.25-0.6 s, a
+   grown-up 0.4-0.8 s, then arms to slow down), so a player who is trying gets the star. */
+export const DANCE = [6, 11], FREEZE = [3.5, 5], GRACE = 1.5;
+/* "was dancing": moving at least DANCING (screen widths a second) for DANCED seconds in the last few (the count leaks away
+   with a time constant of DANCE_MEMORY) before the music stopped */
+export const DANCING = 0.2, DANCED = 0.6, DANCE_MEMORY = 3;
+/* how long a player's own "Wobble!" shows */
+export const WOBBLE_SHOW = 1.3;
 /* movement, in screen widths a second: under STILL is frozen, over WOBBLE
    is a wobble the bear notices (between: nearly - no frost yet, no grumble) */
 export const STILL = 0.06, WOBBLE = 0.2;
@@ -64,6 +74,9 @@ class SleepyBear {
     this.move = each(0);           /* smoothed movement */
     this.frost = each(0);          /* 0..1: how frozen their hands look */
     this.caught = each(false);     /* wobbled this freeze */
+    this.act = each(0);            /* seconds of dancing in the last few (leaky) */
+    this.danced = each(false);     /* was dancing when the music stopped: only they can earn the star */
+    this.wob = each(0);            /* seconds left of this player's "Wobble!" */
     this.prev = each(null);
     this.t = 0; this.over = false;
     this.phase = 'dance'; this.left = FIRST_DANCE; this.inPhase = 0;
@@ -89,6 +102,11 @@ class SleepyBear {
       this.prev[i] = p && p.present && p.lm ? p.lm.map(k => ({ x: k.x, y: k.y })) : null;
       this.move[i] += (m - this.move[i]) * Math.min(1, dt * 6);
       if (!p || !p.present) this.move[i] = 0;
+      if (this.phase === 'dance'){
+        this.act[i] = this.act[i] * Math.exp(-dt / DANCE_MEMORY) + (this.move[i] > DANCING ? dt : 0);
+        if (!p || !p.present) this.act[i] = 0;
+      }
+      this.wob[i] = Math.max(0, this.wob[i] - dt);
     }
 
     if (this.t >= ROUND && !this.over){ this.over = true; music.hold(false); }
@@ -110,6 +128,7 @@ class SleepyBear {
         const p = pose.players[i];
         if (!p || !p.present || !graced) continue;
         if (this.caught[i]) continue;
+        if (!this.danced[i]) continue;          /* (stood still all along: nothing to freeze from) */
         if (this.move[i] < STILL) this.frost[i] = Math.min(1, this.frost[i] + dt * 0.9);
         else if (this.move[i] > WOBBLE){ this._wobble(i); }
       }
@@ -136,6 +155,7 @@ class SleepyBear {
     this.phase = 'freeze'; this.inPhase = 0;
     this.left = FREEZE[0] + Math.random() * (FREEZE[1] - FREEZE[0]);
     this.caught.fill(false);
+    for (let i = 0; i < MAX_PLAYERS; i++) this.danced[i] = this.act[i] >= DANCED;
     music.hold(true);
     sfx.startle?.();
     this.say = { icon: 'snowflake', text: 'Freeze!', t: 0 };
@@ -145,7 +165,7 @@ class SleepyBear {
     let still = 0;
     for (let i = 0; i < this.players; i++){
       const p = pose.players[i];
-      if (p && p.present && !this.caught[i] && this.frost[i] > 0.6){ this.score[i]++; still++; }
+      if (p && p.present && this.danced[i] && !this.caught[i] && this.frost[i] > 0.6){ this.score[i]++; still++; }
     }
     if (still) sfx.gold?.(); else sfx.yawn?.();
     this.phase = 'dance'; this.inPhase = 0;
@@ -154,10 +174,9 @@ class SleepyBear {
     this.say = still ? { text: 'Hooray! Dance!', t: 0 } : { icon: 'musicnote', text: 'Dance!', t: 0 };
   }
   _wobble(i){
-    this.caught[i] = true; this.frost[i] = 0;
+    this.caught[i] = true; this.frost[i] = 0; this.wob[i] = WOBBLE_SHOW;
     const b = this.bear;
     if (b.grumble <= 0){ b.grumble = 1.2; b.roll = 1; sfx.grumble?.(); }
-    this.say = { text: 'Wobble! Hrrmph…', t: 0 };
   }
 
   draw(c, W, H){
@@ -172,6 +191,13 @@ class SleepyBear {
       if (!p || !p.present || this.frost[i] < 0.05) continue;
       const hands = pose.mouse.active ? [p.hands.right] : [p.hands.left, p.hands.right];
       for (const h of hands) frost(c, h.x * W, h.y * H, H * 0.03, this.frost[i], this.t);
+    }
+    /* each player's own "Wobble!", above their head, in their colour */
+    for (let i = 0; i < this.players; i++){
+      const p = pose.players[i];
+      if (!p || !p.present || this.wob[i] <= 0) continue;
+      const h = p.lm ? headOf(p.lm) : { x: p.centre.x, y: p.centre.y - 0.2 };
+      wobbleTag(c, W, H, h.x, h.y, PLAYER_COLORS[i], Math.min(1, this.wob[i] * 4, (WOBBLE_SHOW - this.wob[i]) * 6 + 0.3), this.t);
     }
   }
 
@@ -264,6 +290,18 @@ export function bearHead(c, x, y, s, b, t){
   else if (b.grumble > 0) c.arc(x, y + 78 * s, 18 * s, Math.PI + 0.3, -0.3);
   else c.arc(x, y + 48 * s, 14 * s, 0.3, Math.PI - 0.3);
   c.stroke();
+}
+
+/* "Wobble!" in a little pill above a player's head (x, y: the head, screen fractions), kept on the picture */
+function wobbleTag(c, W, H, hx, hy, col, a, t){
+  const fs = Math.round(H * 0.04), w = fs * 5.2, h = fs * 1.6;
+  const x = Math.min(W - w / 2 - 12, Math.max(w / 2 + 12, hx * W)), y = Math.max(H * 0.28, hy * H - H * 0.1) + Math.sin(t * 14) * H * 0.004;
+  c.save(); c.globalAlpha = a;
+  c.fillStyle = alpha('earth.snow', 0.94); c.strokeStyle = col; c.lineWidth = Math.max(3, fs * 0.14);
+  c.beginPath(); c.roundRect(x - w / 2, y - h / 2, w, h, h / 2); c.fill(); c.stroke();
+  c.fillStyle = color('shade.ink'); c.font = `800 ${fs}px Inter, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('Wobble!', x, y + fs * 0.04);
+  c.restore();
 }
 
 /* frost round a frozen hand: little ice spikes, growing with how frozen */

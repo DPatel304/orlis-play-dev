@@ -138,12 +138,12 @@ const PROBES = {
     return {
       frame(dt, t){
         const g = ctx.inst;
-        if (prev === 'dance' && g.phase === 'freeze'){ cur = { at: t, len: 0, outcome: {} }; }
+        if (prev === 'dance' && g.phase === 'freeze'){ cur = { at: t, len: 0, outcome: {}, before: g.score.slice() }; }
         if (g.phase === 'freeze' && cur) cur.len += dt;
         if (prev === 'freeze' && g.phase === 'dance' && cur){
           ctx.world.persons.forEach((p, i) => {
             const s = p.slot; if (s < 0) { cur.outcome[i] = 'absent'; return; }
-            cur.outcome[i] = g.caught[s] ? 'wobble' : g.frost[s] > 0.6 ? 'star' : 'nearly';
+            cur.outcome[i] = g.score[s] > cur.before[s] ? 'star' : g.caught[s] ? 'wobble' : 'nearly';
           });
           freezes.push(cur); cur = null;
         }
@@ -214,16 +214,16 @@ const PROBES = {
       frame(dt, t){
         const g = ctx.inst;
         if (g.seg !== prevSeg){
-          if (cur){ cur.fill = r2(cur.lastFill); cur.filled = cur.filledAt != null; segs.push(cur); }
+          if (cur){ cur.fill = r2(cur.lastFill); cur.filled = cur.filledAt != null; cur.len = t - cur.start; segs.push(cur); }
           cur = { seg: g.seg, move: g.move, start: t, lastFill: 0, filledAt: null, triesBy: ctx.world.persons.map(() => 0), base: ctx.world.persons.map(p => p.slot >= 0 ? g.score[p.slot] : 0) };
           prevSeg = g.seg;
         }
         cur.lastFill = g.fill; if (g.fill >= 1 && cur.filledAt == null) cur.filledAt = t - cur.start;
         ctx.world.persons.forEach((p, i) => { if (p.slot >= 0) cur.triesBy[i] = g.score[p.slot] - cur.base[i]; });
       },
-      finish(){
-        if (cur){ cur.fill = r2(cur.lastFill); cur.filled = cur.filledAt != null; segs.push(cur); }
-        return { segments: segs.map(s => ({ move: s.move, filled: s.filled, filledAfter: r2(s.filledAt), fill: s.fill, tries: s.triesBy })), circuits: ctx.inst.circuits,
+      finish(t){
+        if (cur){ cur.fill = r2(cur.lastFill); cur.filled = cur.filledAt != null; cur.len = t - cur.start; segs.push(cur); }
+        return { segments: segs.map(s => ({ move: s.move, filled: s.filled, len: r2(s.len), filledAfter: r2(s.filledAt), fill: s.fill, tries: s.triesBy })), circuits: ctx.inst.circuits,
           filledOf: [segs.filter(s => s.filled).length, segs.length] };
       }
     };
