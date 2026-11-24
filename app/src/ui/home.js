@@ -2,7 +2,7 @@
 
    The focused game's painted world fills the screen, with its one line and how many play (figures; the tile names the game). Under it,
    Play's two rows: "Featured" (this week's featured games to get, then the Discover tile) and "Your games". The Play and Create tabs
-   sit beside the logo (grown-ups only); up from the first row reaches them, left and right move between them, OK picks, down goes back.
+   sit beside the logo (for everyone, children too: 0057); up from the first row reaches them, left and right move between them, OK picks, down goes back.
    The Discover page is the same page with a row per category (rows, tiles and hero are the very same) and a Home button instead of the
    tabs. Moving to a row below the big ones (down) shrinks the hero to a banner. The profile face, top right, opens Profile, Settings and
    Sign out.
@@ -37,6 +37,9 @@ import { layout as storeLayout, newer } from './store.js';
 import { brandBar } from './tabs.js';
 import { seesWaiting, tryIt } from './submissions.js';
 import { color } from '../games/assets/palette.js';
+import { creations } from '../create/creations.js';
+import { madeGame, madeCover, madeWorld } from '../create/made-game.js';
+import { makerFace } from '../create/maker.js';
 
 const LAUNCH = 0.2;    /* seconds of going in (the loading screen fading in) */
 const WORLD = { w: 1280, h: 720 };
@@ -54,6 +57,7 @@ const jpeg = (cv) => { try { return cv.toDataURL('image/jpeg', 0.78); } catch { 
 export const hooks = { world: null };
 export function worldOf(g){
   if (hooks.world) return hooks.world(g);
+  if (g.made) return madeWorld(g.made.creation);
   if (worlds.has(g.id)) return worlds.get(g.id);
   let url = null;
   try {
@@ -87,7 +91,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
   const notHere = (e) => !library.installed.has(e.id);
   const toGet = featured.filter(notHere).map(standIn);
   /* the tabs (Play, Create): grown-ups in the Player app only */
-  const tabIds = discovering ? [] : tabsFor({ kid: account.isKid, waiting, creatorApp: appMode.creator(), modeTabs: appMode.tabs() });
+  const tabIds = discovering ? [] : tabsFor({ waiting, creatorApp: appMode.creator(), modeTabs: appMode.tabs() });
   let rows, nothing = '';
   if (discovering){
     const have = library.installed;
@@ -102,6 +106,12 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
     nothing = !account.signedIn ? 'Sign in to see Discover.' : (week.store ? (games.length ? 'You have every game in Discover. New ones show up here as your family adds them.' : 'Nothing in Discover yet. Games the family adds to the Orlis server show up here.') : 'Loading Discover…');
   } else rows = homeRows({ pool, featured: toGet, discover: !!nav.store && !waiting && !appMode.creator(), testing: waiting ? [] : (week.drafts || []) });
   const bigRows = discovering ? 1 : PLAY_BIG;
+  /* the family's own games from Create (0057): the third row, "Made by us" */
+  if (!discovering && !waiting && !appMode.creator()){
+    const madeRow = homeRows({ made: creations.items.map(madeGame) }).find(r => r.id === 'made');
+    const at = rows.findIndex(r => r.id === 'testing');
+    if (madeRow) rows.splice(at < 0 ? rows.length : at, 0, madeRow);
+  }
 
   /* ---------- the page ---------- */
   const bgwrap = h('div', 'hbgwrap');
@@ -158,7 +168,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
 
   /* ---------- tiles ---------- */
   const tiles = [];                                   /* tiles[row][col] = { el, item, pic } */
-  const gamePic = (g) => shotOf(g);
+  const gamePic = (g) => g.made ? madeCover(g.made.creation, 960, 600, { title: true }) : shotOf(g);
   const paintTile = (t) => {
     const url = t.item.g && gamePic(t.item.g);
     if (url){ t.el.style.backgroundImage = `url(${url})`; t.el.classList.add('covered'); }
@@ -174,6 +184,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
       el.style.setProperty('--c1', ic.cols[0]); el.style.setProperty('--c2', ic.cols[1] || ic.cols[0]);
       el.querySelector('.hname').textContent = item.g.name;
       paintTile(t);
+      if (item.made){ const by = h('span', 'mkby'); by.setAttribute('aria-label', 'Made by us'); by.appendChild(makerFace(item.g.made.makerId, 96)); el.appendChild(by); }
       if (needsTablet(item.g)){ const b = h('span', 'tabmark'); b.setAttribute('role', 'img'); b.setAttribute('aria-label', 'Needs an Orlis PlayPad'); b.appendChild(iconEl('tabletgrip', 96, color('shade.ink'))); el.appendChild(b); }
       if (item.kind === 'try') el.insertAdjacentHTML('beforeend', `<span class="getpill">${icon('play')}Try it</span>`);
       if (item.kind === 'get') el.insertAdjacentHTML('beforeend', `<span class="getpill">${icon('get')}${item.update ? 'Update' : 'Get'}</span><span class="gotbar"><i></i></span>`);
@@ -270,7 +281,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
     }
     going = { t: 0, g };
     /* straight to the loading screen (a quick fade); it stays while the game gets ready */
-    launch.begin({ url: coverOf(g), name: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '' });
+    launch.begin({ url: g.made ? madeCover(g.made.creation, 960, 600, { title: true }) : coverOf(g), name: g.name, blurb: BLURB[g.id] || (g.store && g.store.blurb) || '' });
   }
   /* the owner tries a game a creator sent (not kept; played long enough, it can be approved on the management page) */
   const trySent = async (e) => {
@@ -324,9 +335,10 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
   slide(current());
   ambience.start();
   /* this week's featured and challenges, fresh from the server (shown again if they changed - not mid-pick) */
+  if (onFresh && !discovering && !waiting && account.signedIn) creations.refresh().then((changed) => { if (changed && !going && !getting && !holdArrive && s.isConnected) onFresh(); }, () => {});
   if (onFresh) week.refresh().then(changed => { if (changed && !going && !getting && !holdArrive && s.isConnected) onFresh(); }, () => {});
   /* the pictures still to make (one at a time, between frames) */
-  const stopShots = makeShots([...new Map(items.filter(t => t.item.g).map(t => [t.item.g.id, t.item.g])).values()], (g) => items.forEach(t => { if (t.item.g && t.item.g.id === g.id) paintTile(t); }));
+  const stopShots = makeShots([...new Map(items.filter(t => t.item.g && !t.item.g.made).map(t => [t.item.g.id, t.item.g])).values()], (g) => items.forEach(t => { if (t.item.g && t.item.g.id === g.id) paintTile(t); }));
   /* this week's challenge cards, on arriving (only the first time in a new challenge week, 0051) */
   let holdArrive = false;
   if (!discovering && !waiting && ch && ch.challenges && ch.challenges.length && splashWanted(ch)){

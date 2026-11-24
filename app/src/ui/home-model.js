@@ -4,25 +4,28 @@
      featured  "Featured"     this week's featured games not on this PC yet (with Get and download progress on their tiles, at most three),
                               then the Discover tile, which opens the Discover page
      games     "Your games"   the games on this PC
-   A third, "Testing", comes only while a creator has put a game on this TV to try.
+   A third, "Made by us" (0056, 0057), holds the games the family made in Create (with the maker's face on each tile); there is no row until there is one.
+   A last, "Testing", comes only while a creator has put a game on this TV to try.
    The top tabs (Play, Create) are not rows: tabsFor() says whether they show, and the page keeps their focus.
    The Discover page (0055) uses the same rows and tiles: a row per category, from discoverRows().
 
    Focus is { row, col }. Left and right stay in the row; up and down change row, landing on the column last used there
    (clamped to the row's length). Up from the first row goes to the tabs (home.js), when there are tabs. */
 
-export const TITLES = { waiting: 'Waiting for your OK', featured: 'Featured', games: 'Your games', testing: 'Testing', updates: 'Updates' };
+export const TITLES = { waiting: 'Waiting for your OK', featured: 'Featured', games: 'Your games', made: 'Made by us', testing: 'Testing', updates: 'Updates' };
 export const FEATURED_MAX = 3;
 /* how many rows keep the big hero (Play's two; Discover keeps it for its first row only) */
 export const PLAY_BIG = 2;
 
 /* pool: the games on this PC (shown in the order given); featured: this week's featured Discover games not on this PC yet (stand-ins that
-   know their entry); discover: whether Discover has a page to open (the Discover tile); testing: games a creator is trying on this TV. */
-export function homeRows({ pool = [], featured = [], discover = false, testing = [] } = {}){
+   know their entry); discover: whether Discover has a page to open (the Discover tile); made: the family's own games from Create (each a game
+   object, see create/made-game.js); testing: games a creator is trying on this TV. */
+export function homeRows({ pool = [], featured = [], discover = false, made = [], testing = [] } = {}){
   const rows = [];
   const fresh = featured.slice(0, FEATURED_MAX).map(g => ({ kind: 'get', g }));
   if (fresh.length || discover) rows.push({ id: 'featured', title: TITLES.featured, items: [...fresh, ...(discover ? [{ kind: 'discover' }] : [])] });
   if (pool.length) rows.push({ id: 'games', title: TITLES.games, items: pool.map(g => ({ kind: 'game', g })) });
+  if (made.length) rows.push({ id: 'made', title: TITLES.made, items: made.map(g => ({ kind: 'game', g, made: true })) });
   if (testing.length) rows.push({ id: 'testing', title: TITLES.testing, items: testing.map(d => ({ kind: 'test', d })) });
   return rows;
 }
@@ -36,10 +39,10 @@ export function discoverRows({ waiting = [], updates = [], rows = [] } = {}){
   return out;
 }
 
-/* Which tabs show along the top (decision 0055): Play and Create, for a grown-up in the Player app; none for a child (children don't make games),
-   for a profile still waiting to be let in, or in the Creator app. modeTabs: appMode.tabs(). */
-export function tabsFor({ kid = false, waiting = false, creatorApp = false, modeTabs = ['home', 'store', 'create'] } = {}){
-  if (kid || waiting || creatorApp || !modeTabs.includes('create') || !modeTabs.includes('home')) return [];
+/* Which tabs show along the top (decisions 0055, 0057): Play and Create, for everyone in the Player app - children make games too; none for a profile
+   still waiting to be let in, or in the Creator app. modeTabs: appMode.tabs(). (`kid` is still accepted and means nothing.) */
+export function tabsFor({ waiting = false, creatorApp = false, modeTabs = ['home', 'store', 'create'] } = {}){
+  if (waiting || creatorApp || !modeTabs.includes('create') || !modeTabs.includes('home')) return [];
   return ['play', 'create'];
 }
 

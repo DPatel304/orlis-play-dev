@@ -2,22 +2,15 @@
 .screen.tvhome.createpage{ background:transparent; color:var(--ink); font-family:var(--ui); }
 .ctop{ position:absolute; left:0; top:0; z-index:8; }
 .createpage .sscroll{ padding-top:0; }
-/* a plain notice: a picture, a title, a line or two (Pending approval, Making games is for grown-ups, Your requests) */
+/* a plain notice: a picture, a title, a line or two (Pending approval, Making games is for grown-ups) */
 .cnotice{ position:relative; max-width:calc(var(--u)*128); margin:0 auto; padding:calc(var(--u)*20) calc(var(--u)*5) calc(var(--u)*6); text-align:left; color:var(--ink); }
 .cnotice h1{ margin:0 0 calc(var(--u)*2); font:700 calc(var(--u)*9)/1 var(--ui); color:var(--ink); letter-spacing:-.01em; }
 .cnotice p{ margin:0 0 calc(var(--u)*1.6); max-width:calc(var(--u)*100); font:400 calc(var(--u)*4)/1.3 var(--ui); color:var(--ink-soft); }
 .cnotice .snote{ font-weight:700; color:var(--ink); }
-.cnico,.bigicon{ display:grid; place-items:center; width:calc(var(--u)*17); height:calc(var(--u)*17); margin:0 0 calc(var(--u)*3); border-radius:28%; background:var(--grad); color:#fff; box-shadow:var(--soft); }
-.cnico svg.i,.bigicon svg.i{ width:calc(var(--u)*9.5); height:calc(var(--u)*9.5); }
-.cnotice.requests .cbtn{ margin:calc(var(--u)*2) 0 calc(var(--u)*3); }
-.cnotice.requests .shelf{ margin-top:calc(var(--u)*2); } .cnotice.requests .shelf h3{ font:700 var(--tv-label)/1 var(--ui); margin:0 0 calc(var(--u)*2); color:var(--ink); }
-.cnotice .shelfrow{ display:flex; gap:calc(var(--u)*2.2); flex-wrap:wrap; }
-.cnotice .btn.slock.buildingtile{ width:calc(var(--u)*30); aspect-ratio:16/10; padding:0; border:0; border-radius:calc(var(--u)*2.2); background:center/cover no-repeat; box-shadow:var(--soft); overflow:hidden; }
-.cnotice .btn.slock .sthumb{ position:absolute; inset:0; background:center/cover no-repeat; } .cnotice .btn.slock .smeta{ display:none; } .cnotice .btn.slock .fill{ display:none; }
+.cnico{ display:grid; place-items:center; width:calc(var(--u)*17); height:calc(var(--u)*17); margin:0 0 calc(var(--u)*3); border-radius:28%; background:var(--grad); color:#fff; box-shadow:var(--soft); }
+.cnico svg.i{ width:calc(var(--u)*9.5); height:calc(var(--u)*9.5); }
+
 .cnotice .cempty{ font-size:calc(var(--u)*3.6); }
-/* "No game slots": a painted picture and one line */
-.builder .bsent{ display:flex; flex-direction:column; align-items:flex-start; text-align:left; padding-top:calc(var(--u)*6); }
-.builder .bsent .bh{ font:700 calc(var(--u)*9)/1 var(--ui); margin:0 0 calc(var(--u)*2); } .builder .bsent .bnote{ font:400 calc(var(--u)*4)/1.3 var(--ui); color:var(--ink-soft); margin:0; }
 /* Create Pro: a gradient band, then the three steps */
 .createpage .shero.prohero{ height:calc(var(--u)*40); }
 .createpage .shero.prohero .sheroart{ background:var(--grad) !important; }
@@ -41,7 +34,3 @@
 /* your games and the rows under the steps */
 .createpage .srow h3{ font:700 var(--tv-label)/1 var(--ui); color:var(--ink); } .createpage .srow{ padding:0 calc(var(--u)*5); }
 .createpage .btn.slock .nm{ font-family:var(--ui); color:var(--ink); }
-/* Make a game (the request builder): clean type and a flat surface under it */
-.createpage.flow .cbuild{ transform:translateY(calc(var(--u)*8)); }
-.builder{ font-family:var(--ui); color:var(--ink); }
-.builder h1,.builder .bh{ font-family:var(--ui); color:var(--ink); }

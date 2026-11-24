@@ -192,6 +192,20 @@ export const STEPS = [
     game_id   TEXT PRIMARY KEY,
     pinned_at TEXT NOT NULL
   );
+  `,
+  /* 13: the family's own games, made in Create from pictures (a description in the Orlis.play vocabulary, and the picks that made it) */
+  `
+  CREATE TABLE creations (
+    id           TEXT PRIMARY KEY,
+    household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+    maker_id     TEXT NOT NULL,
+    name         TEXT NOT NULL,
+    picks        TEXT NOT NULL,
+    description  TEXT NOT NULL,
+    created_at   TEXT NOT NULL,
+    updated_at   TEXT NOT NULL
+  );
+  CREATE INDEX creations_household ON creations(household_id, created_at);
   `
 ];
 

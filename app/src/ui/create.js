@@ -1,4 +1,5 @@
-/* Create: making your own games - for grown-ups the owner made creators.
+/* Create Pro: making games with Claude Code - for grown-ups the owner made creators (the Creator app). Create for everyone - kids and
+   families building a game from pictures - is ui/create-page.js (decision 0057); this page is only the Pro side, still paused for everyone else.
 
    New game: a name, the idea, and what to start from (a starter game:
    Star Catch, or one of the owner's own in the Store). Orlis Play
@@ -7,11 +8,9 @@
    Orlis Play's rules and guardrails. Your games: each one, to open in
    Claude Code again (or see its folder).
 
-   Create Pro (Creator app): Test puts a game on the family's TV Orlis (Play's
-   Testing row); Publish downloads it there, under Play. All between this PC
-   and the family's server - nobody else is in it (ui/tv.js).
-
-   Everyone else sees what's coming. */
+   Test puts a game on the family's TV Orlis (Play's Testing row); Publish
+   downloads it there, under Play. All between this PC and the family's
+   server - nobody else is in it (ui/tv.js). */
 import { toast } from './toast.js';
 import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
@@ -28,13 +27,9 @@ import { unpack, check, build, pack, nextVersion } from './creator-kit.js';
 import { newer } from './store.js';
 import { library } from './library.js';
 import { PAPER } from './boot.js';
-import { week } from './week.js';
 import { appMode } from './mode.js';
-import { tabsFor } from './home-model.js';
-import { buildingRow } from './building.js';
-import { gameBuilder, changePop, looksOf } from './request.js';
-import { previewCover } from './covers.js';
 import { coverFor } from './shots.js';
+import { createMakePage } from './create-page.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -56,11 +51,13 @@ let lastTry = null;
 /* the first game a new creator made (setup's "Make my first game"), for a friendlier word after trying it */
 let firstFolder = null;
 
-export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, pro = false, view = '' }){
+export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, pro = false, edit = null }){
+  /* Create is the picture builder for everyone; only Create Pro is this page */
+  if (!pro) return createMakePage({ nav, onPlay, onWho, onRecalibrate, edit });
   clearUI();
   const s = screen('tvhome createpage onhero');
   /* the Play and Create tabs (0055), for a grown-up in the Player app; else the Home button */
-  const bar = topBar(pro ? 'pro' : 'create', nav, { onWho, onRecalibrate, tabs: pro ? null : tabsFor({ kid: account.isKid, waiting: account.waiting, creatorApp: appMode.creator(), modeTabs: appMode.tabs() }) });
+  const bar = topBar('pro', nav, { onWho, onRecalibrate, tabs: null });
   s.appendChild(bar.el);
   const scroll = h('div', 'sscroll');
   s.appendChild(scroll);
@@ -91,42 +88,18 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     return scene;
   }
 
-  if (!pro){
-    /* the page is the flow: no banner, straight into the first question */
-    s.classList.add('flow'); s.classList.remove('onhero');
-  }
-  /* Create Pro: a banner, with the Dev Kit's buttons */
-  if (pro){
+  /* a banner, with the Dev Kit's buttons */
+  {
     const b = banner('Create Pro', 'Make games with Claude Code', kit ? '' : 'On your own Claude account');
     b.hero.classList.add('prohero');
     scroll.appendChild(b.hero);
   }
-  /* "Your requests": the games asked for, and how each is going */
-  if (!pro && view === 'requests'){
-    s.classList.remove('flow'); s.classList.add('requestspage');
-    const sec = h('section', 'cnotice requests');
-    sec.append(h('h1', '', 'Your requests'));
-    const fill = async () => {
-      await week.refresh({ force: true }).catch(() => {});
-      sec.querySelectorAll('.buildingrow, .cempty').forEach(e => e.remove());
-      const row_ = buildingRow(week.building(), () => fill());
-      if (row_){ row_.classList.add('buildingrow'); sec.appendChild(row_); }
-      else sec.appendChild(h('p', 'cempty', 'Nothing asked for yet. Ask for a game and it shows up here while it is made.'));
-    };
-    scroll.appendChild(sec); fill();
-    if (nav.create) sec.appendChild(onPick(button('Ask for a game', 'cbtn ringed go'), () => { sfx.select(); nav.create(); }));
-    return scene;
-  }
-  /* where Make a game builds */
-  const buildHost = h('div', 'cbuild');
-  scroll.appendChild(buildHost);
   const body = h('div', 'cbody');
   scroll.appendChild(body);
   const sbtn = (label, fn, cls) => onPick(button(label, 'sbtn ' + cls), fn);
   const btn = (label, fn, cls = '') => onPick(button(label, 'setbtn ' + cls), fn);
   /* what just happened, or went wrong (bad), said once in a pop-up */
   let said = '', bad = false;
-  let autoOpened = false;        /* the flow opened by itself, once */
   let mine = [];                 /* the games being made on this PC */
   let pop = null;
 
@@ -330,8 +303,6 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
   }
   /* (back from Try it) */
   if (lastTry) refreshMine().then(afterTry);
-  /* (a new grown-up who picked "Make a game" on joining: straight into it) */
-  else if (account.state && account.state.firstGame === 'make'){ account.set({ firstGame: false }); autoOpened = true; setTimeout(askPop, 300); }
   /* (someone new with the Dev Kit who picked "Make my first game" in setup) */
   else if (account.state && account.state.firstGame === true && making.available && !appMode.creator()) firstGame();
 
@@ -373,29 +344,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     if (making.available) card.lastChild.append(btn('Build a game', () => { closePop(); newGamePop(); }, 'go'));
   }
 
-  /* Request a game: the wizard, then back here to see it listed */
-  const sendAsk = (recipe) => account.call('POST', '/api/requests', recipe).then((r) => { said = 'Sent!'; week.refresh({ force: true }).catch(() => {}); return r; });
   const store_ = async () => { try { return (await account.call('GET', '/api/store')).games || []; } catch { return []; } };
-  let slots = null;              /* { used, total } game slots (none for the owner) */
-  let building = null;           /* the builder, while it's open */
-  function askPop(quiet){
-    if (quiet !== true) sfx.select();
-    closePop();
-    if (building) return;
-    if (slots && slots.used >= slots.total){
-      buildHost.innerHTML = '';
-      const full = h('section', 'builder');
-      /* (none at all is not "all 0 are used") */
-      const none = !slots.total;
-      full.append(h('div', 'bq bsent', `<div class="bigicon">${icon('slot')}</div><h1 class="bh">${none ? 'No game slots yet' : 'No game slots left'}</h1><p class="bnote">${none ? 'You have no game slots yet. Ask the owner.' : `All ${slots.total} are used. Ask the owner for more.`}</p>`));
-      buildHost.appendChild(full);
-      return;
-    }
-    building = gameBuilder({
-      host: buildHost, store: store_, send: sendAsk, onPlay: nav.home && !appMode.creator() ? () => nav.home() : null,
-      onDone: () => { building = null; draw(); setTimeout(() => { if (s.isConnected) askPop(true); }, 0); }
-    });
-  }
 
   /* a row, the Store's way: its name, then what's in it */
   const row = (name, sub) => {
@@ -410,8 +359,7 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     /* everything it needs first; then, if a newer draw started meanwhile,
        leave it to that one - so overlapping draws never double anything */
     const me = ++drawing;
-    const [, , , ok, shop, drafts] = await Promise.all([0, 0,
-      account.call('GET', '/api/requests').then(r => { slots = r.slots || null; return r.requests || []; }, () => null),
+    const [ok, shop, drafts] = await Promise.all([
       kit && making.available && claudeOk === null ? setup.status().then(claudeConnected) : claudeOk,
       store_(), kit ? tv.drafts() : null]);
     if (me !== drawing) return;
@@ -420,12 +368,8 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
     published = new Map(shop.filter(g => g.mine).map(g => [g.id, g.version]));
     if (said){ toast(said, { bad }); said = ''; bad = false; }
     body.innerHTML = '';
-    /* (in the Creator app there's no Play: what's on its way is here, under the questions) */
-    if (appMode.creator() && !pro){ await week.refresh({ force: true }).catch(() => {}); if (me !== drawing) return; const row_ = buildingRow(week.building(), () => draw()); if (row_) body.appendChild(row_); }
-    /* the page opens straight into making a game (but not on the way back from Try it, or setup's own first game) */
-    if (!pro && !autoOpened){ autoOpened = true; if (!lastTry && !(account.state && account.state.firstGame === true)) askPop(true); }
     /* Create Pro: three steps, as big pictures - connect Claude, build a game, test it on the TV (and publish) */
-    if (pro && kit){
+    if (kit){
       const steps = h('div', 'psteps');
       const step = (n, cls, em, label, ...extra) => {
         const c = h('div', `pstep ${cls}`, `<span class="pn">${n}</span><div class="pem">${em}</div><div class="plb">${label}</div>`);

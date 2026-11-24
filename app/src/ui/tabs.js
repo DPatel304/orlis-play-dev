@@ -1,5 +1,5 @@
 /* The top of every page but Home (decision 0045): a big Home button where the logo sits on Home.
-   Decision 0055: Play and Create are two tabs beside the logo, on Play and on Create (grown-ups only).
+   Decision 0055: Play and Create are two tabs beside the logo, on Play and on Create (for everyone, children too: decision 0057).
 
    topBar(page, nav, opts) gives { el, tick() }: put el on the page and call tick() each frame. nav has home(). With opts.tabs ('create')
    the bar is the logo and the tabs (that one lit) instead of the Home button. (The profile face, Settings and signing out are on Home,

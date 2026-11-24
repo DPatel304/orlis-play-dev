@@ -1,5 +1,5 @@
 /* The clean menus (decision 0045): the two squares logo and the wordmark, the big Home button, the one loading pattern, pause, results, and the
-   U6 fixes (under-construction names, no emoji picture picker, painted icons, the no-slots words). Pictures of every screen are in docs/u5/. */
+   U6 fixes (no emoji picture picker, painted icons). Pictures of every screen are in docs/u5/. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -11,7 +11,6 @@ El.prototype.getContext = () => null;
 globalThis.requestAnimationFrame = () => 0;
 const { twoSquares, hopSquares, logo, icon, ICON_NAMES, homeButton, loader, GAME_PROP } = await import('../src/ui/brand.js');
 const { results, pauseOverlay } = await import('../src/ui/screens.js');
-const { requestName } = await import('../src/ui/request.js');
 const { resultWords, countText } = await import('../src/ui/units.js');
 const read = (f) => readFileSync(new URL('../src/' + f, import.meta.url), 'utf8');
 
@@ -36,7 +35,7 @@ test('the look has no cube, no blobs and no emoji left in the menus', () => {
   assert.ok(!/frontScene[\s\S]*cube\(/.test(read('ui/front.js')), 'the sign-in picture has no cube');
   assert.ok(!/glow\(/.test(read('ui/front.js')) && !/glow\(/.test(read('ui/boot.js')), 'no gradient blobs in the intro or behind sign-in');
   assert.ok(css.includes('--ink') || read('style.css').includes('--ink:#1d1b2e'), 'the near-black ink is a token');
-  for (const f of ['ui/home.js', 'ui/menu.js', 'ui/tabs.js', 'ui/brand.js', 'ui/screens.js', 'ui/kid-editor.js', 'ui/building.js']) assert.ok(!/\\u\{1F|[\u{1F300}-\u{1FAFF}]/u.test(read(f).replace(/AVATARS[\s\S]*?\};/, '')), f + ' has no emoji');
+  for (const f of ['ui/home.js', 'ui/menu.js', 'ui/tabs.js', 'ui/brand.js', 'ui/screens.js', 'ui/kid-editor.js', 'ui/create-home.js', 'ui/create-studio.js']) assert.ok(!/\\u\{1F|[\u{1F300}-\u{1FAFF}]/u.test(read(f).replace(/AVATARS[\s\S]*?\};/, '')), f + ' has no emoji');
   for (const w of ['--ink:#1d1b2e', '--paper:#f4f5f9', '--grad:linear-gradient(120deg,#3da9ff,#8b5cf6)', '--tv-title', 'font-face']) assert.ok(read('style.css').includes(w.replace('font-face', '"Outfit"')) || w === 'font-face' && read('style.css').includes('"Outfit"'), w);
 });
 
@@ -130,15 +129,6 @@ test('pause: a card on the left with the name, the time left, a Who\'s who slot 
   assert.ok(read('main.js').includes(".querySelector('.pwho').appendChild(whoRow("), 'who\'s who goes in the card');
 });
 
-test('U6: a request\'s tile shows the game\'s name, never just "Your game" when there is something to say', () => {
-  assert.equal(requestName({ recipe: { name: 'Rainbow Flyer' } }), 'Rainbow Flyer');
-  assert.equal(requestName({ recipe: { name: '  ' }, game: { name: 'Pop Party 2' } }), 'Pop Party 2', 'the name the made game has');
-  assert.equal(requestName({ recipe: { thing: 'balloons', action: 'pop' } }), 'Pop the Balloons', 'else a name that fits what it is about');
-  assert.equal(requestName({ recipe: { action: 'paint' } }).length > 0, true);
-  assert.equal(requestName({ recipe: {} }), 'Your game', 'only when nothing is known');
-  assert.equal(requestName({}), 'Your game');
-});
-
 test('U6: Edit child has no emoji picture picker (the avatar maker is the picture); a new child goes on to the maker', () => {
   const src = read('ui/kid-editor.js');
   assert.ok(!src.includes('pictures(') && !src.includes('AVATARS') && !src.includes("'avatars'"), 'no picker');
@@ -146,14 +136,10 @@ test('U6: Edit child has no emoji picture picker (the avatar maker is the pictur
   assert.ok(!/avatar: pick/.test(src), 'the picture is not sent');
 });
 
-test('U6: Create Pro\'s cards and the no-slots screen use painted icons, and say it plainly', () => {
+test('U6: Create Pro\'s cards use painted icons', () => {
   const src = read('ui/create.js');
   assert.ok(!/\\u\{1F(517|511|6E0|4FA|6A7)\}/.test(src), 'no emoji');
-  for (const n of ["icon('link')", "icon('key')", "icon('hammer')", "icon('tv')", "icon('slot')"]) assert.ok(src.includes(n), n);
-  assert.ok(src.includes('You have no game slots yet. Ask the owner.'), 'the words');
-  assert.ok(src.includes("const none = !slots.total"), 'none at all is not "All 0 are used"');
-  assert.ok(src.includes('All ${slots.total} are used. Ask the owner for more.'), 'and the wording of the other case is kept');
-  assert.ok(!read('ui/covers.js').includes("glyph: '\\u{1F6A7}'"), 'the under-construction cover has no emoji');
+  for (const n of ["icon('link')", "icon('key')", "icon('hammer')", "icon('tv')"]) assert.ok(src.includes(n), n);
 });
 
 test('U6: Pending approval says what happens next; the back button is a Home button that is not covered', () => {
@@ -189,13 +175,13 @@ test('going into a game shows one loading screen at once: no tile opening up fir
   assert.equal(launch.el.querySelectorAll('.loadhop').length, 1, 'asking for the card again adds no second one');
   launch.release(true);
   assert.ok(!/rect|launchname|launchdots/.test(read('ui/launch.js').replace(/\/\*[\s\S]*?\*\//g, '')), 'no tile-opening code left');
-  assert.ok(!/rect:/.test(read('ui/home.js').match(/launch\.begin\([^)]*\)/)[0]), 'home does not pass the tile\'s place');
+  assert.ok(!/rect:/.test(read('ui/home.js').match(/launch\.begin\(\{[^\n]*\}\);/)[0]), 'home does not pass the tile\'s place');
 });
 
 test('a game\'s picture is never empty: the loading card falls back to its cover art when no shot is saved', async () => {
   const shots = await import('../src/ui/shots.js');
   assert.equal(typeof shots.coverOf, 'function');
-  assert.ok(/coverOf\(g\)/.test(read('ui/home.js').match(/launch\.begin\([^)]*\)/)[0]), 'the launch uses coverOf, not the saved shot alone');
+  assert.ok(/coverOf\(g\)/.test(read('ui/home.js').match(/launch\.begin\(\{[^\n]*\}\);/)[0]), 'the launch uses coverOf, not the saved shot alone');
   const src = read('ui/shots.js').match(/export function coverOf[\s\S]*?\n}\n/)[0];
   assert.ok(src.includes('shotOf(g)') && src.includes('makeCover(g)') && src.includes('generatedArt'), 'saved shot, else its own art, else a generated one');
 });

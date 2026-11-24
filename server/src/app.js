@@ -20,6 +20,7 @@ import { store } from './store.js';
 import { weekly } from './weekly.js';
 import { folderFiles } from './files.js';
 import { requests } from './requests.js';
+import { creations } from './creations.js';
 
 /* The server's version: 0.1 and the build number, stamped in when the exe
    is built (build-exe.mjs); run from the code, plain 0.1.0. */
@@ -63,6 +64,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const sent = submissions(db, keep, shop, log);
   const tv = drafts(db, keep, shop, log);
   const pair = pairing(db);
+  const made = creations(db);
   /* a note for the owner, by the clock (the cube shows it - supervisor.js) */
   const tell = notify || ((title, text) => console.log(`@@say ${String(title).replace(/[|\n]/g, ' ')}|${String(text).replace(/\n/g, ' ')}`));
   const asked = requests(db, keep, shop, sent, log, tell);
@@ -79,6 +81,7 @@ export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PO
   const owners = (who, owner) => [
     ...sent.routes(who, owner, (h, ip) => h['x-orlis-manage'] !== undefined ? owner(h, ip) : who(h)),
     ...tv.routes(who),
+    ...made.routes(who),
     ...pair.routes(who),
     ...asked.routes(who, owner, (h, ip) => h['x-orlis-manage'] !== undefined ? owner(h, ip) : who(h)),
     /* the management page itself: only to this laptop */
