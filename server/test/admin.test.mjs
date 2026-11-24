@@ -383,7 +383,11 @@ test('overview: health, stats, 14-day series, the queue\'s first four, activity 
     assert.equal(o.stats.active7.pct, Math.round(2 / 9 * 100));
     assert.equal(o.stats.plays.today, 3, 'today\'s plays');
     assert.deepEqual(o.stats.queue, { all: 6, joins: 6, games: 0 });
-    assert.equal(o.stats.games, 1);
+    /* the sidebar's game count is the Games page's own total (the Store's games, the built-in ones, and those in review), never a different set */
+    const gp = await call('GET', '/api/admin/games');
+    assert.equal(o.stats.games, gp.json.total, 'the overview and the Games page count the same games');
+    assert.equal(o.stats.games, gp.json.counts.all);
+    assert.ok(o.stats.games > 1, 'built-in games are in the count, not just the one Store game');
     /* the series: 14 days, oldest first, ending today */
     assert.equal(o.series.days.length, 14); assert.equal(o.series.newFamilies.length, 14); assert.equal(o.series.plays.length, 14);
     assert.equal(o.series.newFamilies.reduce((x, y) => x + y, 0), 8 + 0, 'the families that joined in the last 14 days');

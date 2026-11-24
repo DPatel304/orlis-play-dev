@@ -15,7 +15,7 @@ import { silhouette } from './avatars.js';
 import { crew } from './crew.js';
 import { launch } from './launch.js';
 import { color } from '../games/assets/palette.js';
-import { FRAME, FramingWatch, framingShown, markFramingShown } from './framing.js';
+import { FRAME, FramingWatch, framingShown, markFramingShown, bodyBox, placeCard } from './framing.js';
 
 export const SETTLE = 0.5, SETTLE_EMPTY = 1.2, GOOD_HOLD = 0.8, HELLO = 2, PLAY_ANYWAY_AFTER = 10, FRAMED_FOR = 0.5;
 
@@ -35,7 +35,7 @@ export function framingCheck({ onDone, players = pose.cap }){
   const first = !framingShown();
   const watch = new FramingWatch();
   let phase = 'measure', t = 0, phaseT = 0, framedT = 0, finished = false;
-  let s = null, say = null, who = null, go = null, rep = { nobody: true, present: 0, ok: true, bad: [] };
+  let s = null, card = null, say = null, who = null, go = null, rep = { nobody: true, present: 0, ok: true, bad: [] };
   const seats = () => pose.players.slice(0, players);
 
   function finish(){
@@ -46,7 +46,7 @@ export function framingCheck({ onDone, players = pose.cap }){
   function build(){
     launch.release();                                    /* (the cover goes: there is something to show) */
     s = screen('framing');
-    const card = h('div', 'frmcard');
+    card = h('div', 'frmcard');
     const mark = h('span', 'frmtick'); mark.innerHTML = TICK;
     say = h('div', 'frmsay');
     who = h('div', 'frmwho');
@@ -75,6 +75,18 @@ export function framingCheck({ onDone, players = pose.cap }){
     who.textContent = b && rep.present > 1 ? (crew.nameOf(b.i) || `Player ${b.i + 1}`) : '';
   }
 
+  /* the words card sits where it covers no figure: the top centre when that is clear, else the bottom, a corner or a side */
+  function placeWords(W, H){
+    if (!card) return;
+    const boxes = seats().filter(p => p.present && p.lm).map(p => bodyBox(p.lm, W, H));
+    if (phase === 'hint' && rep.nobody) boxes.push(bodyBox(GHOST, W, H));
+    const keep = [];
+    if (go && !go.classList.contains('hide')){ const g = go.getBoundingClientRect(); keep.push({ x0: g.left, y0: g.top, x1: g.right, y1: g.bottom }); }
+    const w = card.offsetWidth, hh = card.offsetHeight;
+    const { x, y } = placeCard(W, H, w, hh, boxes, keep);
+    card.style.left = x + 'px'; card.style.top = y + 'px';
+  }
+
   return {
     tick(dt){
       if (finished) return;
@@ -98,6 +110,7 @@ export function framingCheck({ onDone, players = pose.cap }){
     },
     draw(c, W, H){
       if (phase === 'measure') return;
+      placeWords(W, H);
       c.fillStyle = color('shade.paper'); c.fillRect(0, 0, W, H);
       const x0 = FRAME.side * W, x1 = (1 - FRAME.side) * W, y0 = FRAME.top * H, y1 = FRAME.feet * H, r = H * 0.03;
       const ok = phase !== 'hint';

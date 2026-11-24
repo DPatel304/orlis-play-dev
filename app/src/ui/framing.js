@@ -87,3 +87,33 @@ export class FramingWatch {
 const KEY = 'orlis_framing_shown';
 export function framingShown(){ try { return localStorage.getItem(KEY) === '1'; } catch { return false; } }
 export function markFramingShown(){ try { localStorage.setItem(KEY, '1'); } catch { /* shown again next time */ } }
+
+/* ---------- where the words card goes ---------- */
+
+/* The rectangle a body fills on a W x H screen (pixels), with room for the head and the limbs' thickness, so a card kept off it never
+   touches the figure. lm: the body's landmarks (screen fractions). Returns { x0, y0, x1, y1 } or null when it cannot be worked out. */
+export function bodyBox(lm, W, H){
+  const idx = [L.NOSE, L.L_SHOULDER, L.R_SHOULDER, L.L_ELBOW, L.R_ELBOW, L.L_WRIST, L.R_WRIST, L.L_HIP, L.R_HIP, L.L_KNEE, L.R_KNEE, L.L_ANKLE, L.R_ANKLE];
+  const pts = idx.map(i => lm[i]).filter(k => k && (k.v ?? 1) > 0.3);
+  if (!pts.length || !lm[L.L_SHOULDER] || !lm[L.R_SHOULDER]) return null;
+  const sw = Math.hypot((lm[L.L_SHOULDER].x - lm[L.R_SHOULDER].x) * W, (lm[L.L_SHOULDER].y - lm[L.R_SHOULDER].y) * H), pad = sw * 0.5;
+  const xs = pts.map(k => k.x * W), ys = pts.map(k => k.y * H);
+  return { x0: Math.min(...xs) - pad, y0: Math.min(...ys) - pad * 1.6, x1: Math.max(...xs) + pad, y1: Math.max(...ys) + pad };
+}
+
+/* Where the words card goes: a w x h card on a W x H screen that overlaps no figure. It prefers the top centre (where it has always been), then
+   the bottom centre, then the corners and the middle of each side, and takes the first that is clear; if none is clear it takes the one
+   covering the least. `boxes`: the figures' rectangles (bodyBox). `keep`: other rectangles to stay off (the "Play anyway" button, when it is up).
+   Returns { x, y } for the card's top left corner. */
+export function placeCard(W, H, w, h, boxes, keep = []){
+  const m = Math.round(H * 0.012), side = Math.round(W * 0.02), xc = (W - w) / 2, yc = (H - h) / 2, lo = H - h - m * 2.5;
+  const spots = [[xc, m], [xc, lo], [side, m], [W - w - side, m], [side, lo], [W - w - side, lo], [side, yc], [W - w - side, yc]];
+  const hit = (x, y, b) => Math.max(0, Math.min(x + w, b.x1) - Math.max(x, b.x0)) * Math.max(0, Math.min(y + h, b.y1) - Math.max(y, b.y0));
+  let best = null;
+  for (const [x, y] of spots){
+    const cost = [...boxes, ...keep].reduce((s, b) => s + (b ? hit(x, y, b) : 0), 0);
+    if (!best || cost < best.cost) best = { x, y, cost };
+    if (cost === 0) break;
+  }
+  return { x: Math.round(best.x), y: Math.round(best.y) };
+}

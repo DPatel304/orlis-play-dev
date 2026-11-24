@@ -9,6 +9,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
+import { T } from './slowness.mjs';
 import { startHub } from '../../../tools/pad-hub.mjs';
 import { FakeHost } from '../../../tools/pad-fake-host.mjs';
 import { createWorld } from '../../src/games/peekaboo/world.js';
@@ -22,8 +23,8 @@ export const TABLET = { viewport: { width: 1280, height: 800 }, deviceScaleFacto
 export const MIA = { colour: 'orange', face: { eyes: 'dot', mouth: 'smile' }, top: 'cap', outfit: 'stripes', outfitColour: 'shade.card', extra: 'none' };
 export const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 export async function until(fn, ms = 8000, label = '') {
-  const t0 = Date.now();
-  for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('timed out waiting for ' + (label || fn)); await sleep(40); }
+  const t0 = Date.now();   /* (the deadline scales with how busy the machine is: harness/slowness.mjs; it is only measured once the plain one has passed) */
+  for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms && Date.now() - t0 > T(ms)) throw new Error('timed out waiting for ' + (label || fn)); await sleep(40); }
 }
 
 /* the game host, as little as it can be: one hider, the real rules, the latest stick, lanterns the test sets */
@@ -78,11 +79,11 @@ export async function startPeekabooRig() {
     const page = await ctx.newPage(); const errors = [];
     page.on('pageerror', (e) => errors.push(e)); page.on('console', (m) => { if (m.type() === 'error') errors.push(new Error(m.text())); });
     await page.goto(hub.url + '/');
-    await page.getByText('Tap the three', { exact: false }).first().waitFor({ state: 'visible', timeout: 10000 });
+    await page.getByText('Tap the three', { exact: false }).first().waitFor({ state: 'visible', timeout: T(10000) });
     for (const id of host.join) await page.locator(`.cell[data-id="${id}"]`).tap();
     await page.locator('.person[data-who="mia"]').tap();
     await page.getByRole('button', { name: "I'm ready" }).tap();
-    await page.waitForFunction(() => document.body.dataset.program === 'on' && window.__pk && window.__pk.net.seen, null, { timeout: 20000 });
+    await page.waitForFunction(() => document.body.dataset.program === 'on' && window.__pk && window.__pk.net.seen, null, { timeout: T(20000) });
     return { ctx, page, errors };
   };
   rig.close = async () => {

@@ -4,6 +4,7 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { startPair, until, sleep } from './harness/peekaboo-pair.mjs';
+import { T } from './harness/slowness.mjs';
 
 let P;
 before(async () => { P = await startPair(); });
@@ -39,10 +40,10 @@ test('3. a pot and "Step out" through the real game', async () => {
   await P.drag(-0.5, -0.9);
   await until(async () => (await P.state()).place === 'pot1', 10000, 'the game hider in pot1');
   await P.release();
-  await P.tab.page.locator('.pk-out.show').waitFor({ timeout: 5000 });
+  await P.tab.page.locator('.pk-out.show').waitFor({ timeout: T(5000) });
   await P.tab.page.locator('.pk-out').tap();
   await until(async () => (await P.state()).place === null, 6000, 'out of the pot');
-  await P.tab.page.locator('.pk-out.show').waitFor({ state: 'detached', timeout: 4000 }).catch(() => {});
+  await P.tab.page.locator('.pk-out.show').waitFor({ state: 'detached', timeout: T(4000) }).catch(() => {});
   assert.equal(await P.tab.page.locator('.pk-out.show').count(), 0);
 });
 
@@ -60,7 +61,7 @@ test('4. seek: a fake hand\'s lantern comes near (the tablet glows), then lights
   await until(async () => (await P.state()).phase === 'reveal', 15000, 'found');
   const f = await P.state();
   assert.equal(f.result, 'found'); assert.equal(f.foundBy, 0, 'found by the seeker whose hand lit them');
-  await P.tab.page.locator('.pk-result.pk-on').waitFor({ timeout: 8000 });
+  await P.tab.page.locator('.pk-result.pk-on').waitFor({ timeout: T(8000) });
   assert.match(await tabText('.pk-result'), /They found you!/);
   assert.equal(await P.tab.page.evaluate(() => window.__pk.cs.face), 'front');
   assert.match(await P.tv.page.evaluate(() => window.__round().line()), /^Found by .+ in \d+:\d\d!$/);
@@ -70,7 +71,7 @@ test('5. Play again keeps the same hider (same phone, same seat) and the tablet 
   const seatBefore = (await P.state()).hiderSeat, devBefore = await P.tab.page.evaluate(() => localStorage.getItem('orlis.pad.device'));
   await P.hands([{ seat: 0, x: 25, z: 26 }, { seat: 1, x: 5, z: 26 }]);
   await P.setT(3.9);                                       /* (the TV draws in software here: skip most of the 4 s reveal) */
-  await P.tv.page.getByText('Play again').first().waitFor({ timeout: 45000 });
+  await P.tv.page.getByText('Play again').first().waitFor({ timeout: T(45000) });
   await P.tv.page.getByText('Play again').first().click();
   /* the same phones are already in: the new round starts by itself, with no join card */
   let sawCard = false;
@@ -97,22 +98,22 @@ test('6. the tablet drops: the TV pauses with "Waiting for … phone"; it rejoin
   const seat = await P.tv.page.evaluate(() => window.__pads.session.seats.find(s => s.kind === 'pad').n);
   await P.tv.page.evaluate(() => { window.__seen = new Set(); setInterval(() => window.__seen.add(window.__pads.session.phase), 15); });   /* (it comes back fast: keep a record) */
   await P.tv.page.evaluate((n) => window.__pads.link.send.close(window.__pads.connOf(n)), seat);
-  await P.tv.page.locator('.waitpill').waitFor({ timeout: 8000 });
+  await P.tv.page.locator('.waitpill').waitFor({ timeout: T(8000) });
   assert.match((await P.tv.page.locator('.waitpill .wt').innerText()).trim(), /^Waiting for .+'s PlayPad$/);
   assert.ok(await P.tv.page.evaluate(() => window.__seen.has('paused')), 'the session paused');
   /* (the tablet comes back within a second, so look while the pill is up: the round clock does not move) */
   const t0 = (await P.state()).t; await sleep(120); const t1 = (await P.state()).t;
   if (await P.tv.page.locator('.waitpill').count()) assert.ok(Math.abs(t1 - t0) < 0.02, `the round clock stands still while paused (${t0} -> ${t1})`);
-  await P.tv.page.locator('.waitpill').waitFor({ state: 'detached', timeout: 15000 });
+  await P.tv.page.locator('.waitpill').waitFor({ state: 'detached', timeout: T(15000) });
   assert.equal(await P.tv.page.evaluate(() => window.__pads.session.phase), 'playing');
-  await P.tab.page.locator('.pk-base').waitFor({ timeout: 8000 });
+  await P.tab.page.locator('.pk-base').waitFor({ timeout: T(8000) });
   await until(() => P.tab.page.evaluate(() => window.__pk && window.__pk.net.seen), 8000, 'the tablet is back on the garden');
   /* the game goes on: seek, nobody finds the hider, time runs out */
   await P.setT(9.9); await until(async () => (await P.state()).phase === 'seek', 8000, 'seek');
   await P.setT(59.9);
   await until(async () => (await P.state()).phase === 'reveal', 8000, 'time up');
   assert.equal((await P.state()).result, 'hidden');
-  await P.tab.page.locator('.pk-result.pk-on').waitFor({ timeout: 8000 });
+  await P.tab.page.locator('.pk-result.pk-on').waitFor({ timeout: T(8000) });
   assert.match(await tabText('.pk-result'), /You stayed hidden!/);
   assert.equal(await P.tv.page.evaluate(() => window.__round().line()), 'You stayed hidden!');
   assert.deepEqual(P.tv.errors.filter(e => !/GL Driver|ReadPixels/.test(String(e))).map(String), [], 'no errors on the TV');

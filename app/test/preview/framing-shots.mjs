@@ -2,7 +2,7 @@
    at 1920x1080 and 1280x720. Not part of `npm test`; run by hand with the dev server up:
 
      cd app && npx vite --port 5191 --strictPort &
-     node test/preview/framing-shots.mjs ../docs/calm
+     node test/preview/framing-shots.mjs ../docs/calm            (ONLY=too-close,feet-cut for some of the cases; BASE=... for another port)
 
    The player is a body put through pose._assign ten times a second (the camera is not used), the way hands-shots.mjs does it. */
 import { createRequire } from 'node:module';
@@ -27,7 +27,9 @@ const script = ({ cx, top, span }) => {
     const pose = window.__pose;
     if (!pose) return;
     clearInterval(poll);
-    pose.update = () => {}; pose.mouse.active = false;
+    pose.update = () => {};
+    /* (with no camera or model to load, the tracker falls back to the mouse and the check is skipped: hold that off, for good) */
+    Object.defineProperty(pose.mouse, 'active', { get: () => false, set: () => {}, configurable: true });
     const body = () => {
       const lm = Array.from({ length: 33 }, () => ({ x: cx, y: 0.5, z: 0, v: 0.95, visibility: 0.95 }));
       const at = (i, dx, f) => { lm[i] = { x: cx + dx, y: top + span * f, z: 0, v: 0.95, visibility: 0.95 }; };
@@ -43,6 +45,7 @@ const script = ({ cx, top, span }) => {
 
 for (const [size, W, H] of [['1920', 1920, 1080], ['1280', 1280, 720]]){
   for (const [name, spec] of Object.entries(CASES)){
+    if (process.env.ONLY && !process.env.ONLY.split(',').includes(name)) continue;
     const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
     page.on('pageerror', (e) => console.log('PAGE ERROR', e.message));
