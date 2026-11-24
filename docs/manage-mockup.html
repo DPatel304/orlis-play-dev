@@ -1,254 +1,395 @@
 <title>Orlis Server Mockup</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: the Orlis Play clean look (decision 0045) on a laptop page - a top bar with Cubo and pill tabs, then one or two columns of white surfaces.
-   One light look on purpose, like Orlis Play itself. */
+/* Layout: an admin console in the Orlis clean look - left sidebar with counts, a dense main column of tables built to page through
+   thousands of rows (search, filter chips, sortable headers, paging), and a detail panel that slides in from the right. Light only, like Orlis Play. */
 :root{
-  --ink:#1d1b2e; --soft:#6b6a82; --faint:#9a99ad; --paper:#f4f5f9; --surface:#ffffff; --line:#e2e4ee;
-  --blue:#3da9ff; --violet:#8b5cf6; --grad:linear-gradient(120deg,#3da9ff,#8b5cf6);
-  --good:#16a34a; --good-bg:#e7f8ee; --warn:#b45309; --warn-bg:#fff4dc; --bad:#be123c;
+  --ink:#1d1b2e; --soft:#6b6a82; --faint:#9a99ad; --paper:#f4f5f9; --surface:#ffffff; --line:#e7e8f0; --hover:#f7f7fb;
+  --blue:#3da9ff; --violet:#8b5cf6; --grad:linear-gradient(120deg,#3da9ff,#8b5cf6); --sel:#efeaff;
+  --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
   --ui:"Outfit",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --shadow:0 6px 22px rgba(29,27,46,.08);
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --shadow:0 4px 18px rgba(29,27,46,.07);
   color-scheme:light;
 }
 *{ box-sizing:border-box }
-body{ margin:0; background:var(--paper); color:var(--ink); font:400 16px/1.45 var(--ui); }
-.note{ background:var(--ink); color:#fff; font-size:14px; padding-block:10px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+html,body{ height:100% }
+body{ margin:0; background:var(--paper); color:var(--ink); font:400 14px/1.45 var(--ui); }
+button, input, select{ font:inherit; color:inherit }
+.note{ background:var(--ink); color:#fff; font-size:13px; padding-block:8px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
 .note b{ color:#b9a8ff }
-header{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding-block:18px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); max-width:1160px; margin:0 auto; }
-.brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:22px; }
-.brand svg{ width:38px; height:38px }
+.app{ display:grid; grid-template-columns:220px minmax(0,1fr); min-height:calc(100% - 36px) }
+@media (max-width:820px){ .app{ grid-template-columns:1fr } aside{ position:static!important; height:auto!important; flex-direction:row!important; flex-wrap:wrap; } aside .foot{ display:none } }
+/* sidebar */
+aside{ position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:2px; padding-block:18px; padding-left:max(14px,env(safe-area-inset-left,0px)); padding-right:14px; background:var(--surface); border-right:1px solid var(--line) }
+.brand{ display:flex; align-items:center; gap:9px; font-weight:700; font-size:17px; padding:2px 8px 16px }
+.brand svg{ width:30px; height:30px }
 .brand span{ font-weight:400; color:var(--soft) }
-nav{ margin-left:auto; display:flex; gap:4px; padding:4px; background:var(--surface); border-radius:999px; box-shadow:var(--shadow); flex-wrap:wrap; }
-nav button{ border:0; background:none; font:600 15px var(--ui); color:var(--ink); padding:8px 16px; border-radius:999px; cursor:pointer; display:flex; gap:6px; align-items:center; }
-nav button.on{ background:var(--ink); color:#fff }
-nav button:focus-visible, .btn:focus-visible{ outline:3px solid var(--blue); outline-offset:2px }
-.dot{ min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:var(--violet); color:#fff; font-size:12px; display:grid; place-items:center }
-main{ max-width:1160px; margin:0 auto; padding-block:4px 60px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); display:grid; gap:18px; }
-.cols{ display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:18px; align-items:start }
-.cols > div{ display:grid; gap:18px; min-width:0 }
-@media (max-width:860px){ .cols{ grid-template-columns:1fr } }
-.card{ background:var(--surface); border-radius:20px; padding:22px 24px; box-shadow:var(--shadow); min-width:0 }
-h2{ margin:0 0 12px; font-size:19px; font-weight:700; text-wrap:balance }
-h3{ margin:0; font-size:17px; font-weight:600 }
-.sub{ color:var(--soft); font-size:14px }
-.btn{ border:0; font:600 14px var(--ui); padding:9px 18px; border-radius:999px; cursor:pointer; background:var(--grad); color:#fff; white-space:nowrap }
-.btn.plain{ background:var(--paper); color:var(--ink) }
+aside a{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; text-decoration:none; color:var(--ink); font-weight:500; cursor:pointer }
+aside a svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; color:var(--soft); flex:none }
+aside a:hover{ background:var(--hover) }
+aside a.on{ background:var(--sel); color:#5b3fd6 }
+aside a.on svg{ color:#5b3fd6 }
+aside a .c{ margin-left:auto; font:500 12px var(--mono); color:var(--faint) }
+aside a .c.hot{ background:var(--violet); color:#fff; padding:1px 7px; border-radius:999px }
+aside .foot{ margin-top:auto; padding:10px; font:12px/1.7 var(--mono); color:var(--soft) }
+.led{ display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--ok); margin-right:7px; vertical-align:1px }
+.led.warn{ background:var(--warn) } .led.bad{ background:var(--bad) }
+/* main */
+main{ padding-block:20px 60px; padding-left:24px; padding-right:max(24px,env(safe-area-inset-right,0px)); min-width:0; display:grid; gap:16px; align-content:start }
+@media (max-width:820px){ main{ padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)) } }
+.top{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap }
+h1{ margin:0; font-size:22px; font-weight:700 }
+.top .sub{ color:var(--soft) }
+.card{ background:var(--surface); border-radius:14px; box-shadow:var(--shadow); min-width:0 }
+.card > h2{ margin:0; font-size:15px; font-weight:600; padding:14px 18px; border-bottom:1px solid var(--line); display:flex; gap:10px; align-items:center }
+.card > h2 .more{ margin-left:auto; font-weight:500; color:#5b3fd6; cursor:pointer; font-size:13px }
+.pad{ padding:14px 18px }
+/* health strip */
+.health{ display:flex; flex-wrap:wrap; gap:0; }
+.health > div{ flex:1 1 150px; padding:12px 18px; border-right:1px solid var(--line); min-width:0 }
+.health > div:last-child{ border-right:0 }
+.health .k{ color:var(--soft); font-size:12px }
+.health .v{ font:500 13px var(--mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+/* stats */
+.stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:16px }
+.stat{ padding:14px 18px }
+.stat .k{ color:var(--soft); font-size:13px }
+.stat .v{ font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.2 }
+.stat .d{ font-size:12px; color:var(--ok); font-variant-numeric:tabular-nums }
+.stat .d.dn{ color:var(--bad) }
+.stat svg{ display:block; width:100%; height:28px; margin-top:6px }
+.grid2{ display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:16px; align-items:start }
+@media (max-width:1100px){ .grid2{ grid-template-columns:1fr } }
+/* toolbars + tables */
+.bar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:12px 18px; border-bottom:1px solid var(--line) }
+.search{ flex:1 1 240px; display:flex; align-items:center; gap:8px; padding:7px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface) }
+.search svg{ width:15px; height:15px; stroke:var(--faint); fill:none; stroke-width:2 }
+.search input{ border:0; outline:0; flex:1; min-width:0; background:none }
+.search kbd{ font:11px var(--mono); color:var(--faint); border:1px solid var(--line); border-radius:5px; padding:0 5px }
+.chip{ border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:5px 11px; cursor:pointer; font-size:13px; white-space:nowrap }
+.chip b{ font:500 11px var(--mono); color:var(--faint); margin-left:4px }
+.chip.on{ background:var(--ink); border-color:var(--ink); color:#fff }
+.chip.on b{ color:#cfcbe6 }
+.btn{ border:0; padding:7px 14px; border-radius:10px; cursor:pointer; font-weight:600; font-size:13px; background:var(--ink); color:#fff; white-space:nowrap }
+.btn.ghost{ background:var(--paper); color:var(--ink) }
 .btn.no{ background:none; color:var(--bad); box-shadow:inset 0 0 0 1px var(--line) }
-/* the status band */
-.status{ display:flex; gap:18px; align-items:center; background:var(--good-bg); border-radius:20px; padding:18px 24px; flex-wrap:wrap }
-.status.warn{ background:var(--warn-bg) }
-.status .big{ display:flex; gap:12px; align-items:center; font-size:20px; font-weight:700; color:var(--good) }
-.status.warn .big{ color:var(--warn) }
-.status .big i{ width:14px; height:14px; border-radius:50%; background:currentColor; box-shadow:0 0 0 6px color-mix(in srgb,currentColor 18%,transparent) }
-.checks{ display:flex; gap:22px; flex-wrap:wrap; margin-left:auto; font-size:14px; color:var(--ink) }
-.checks span::before{ content:"✓"; color:var(--good); font-weight:700; margin-right:6px }
-.checks span.x::before{ content:"!"; color:var(--warn) }
-/* needs you */
-.need{ display:flex; gap:14px; align-items:center; padding:12px 0; border-top:1px solid var(--line) }
-.need:first-of-type{ border-top:0; padding-top:0 }
-.need .n{ width:34px; height:34px; border-radius:50%; background:var(--grad); color:#fff; font-weight:700; display:grid; place-items:center; flex:none }
-.need div{ flex:1; min-width:0 }
-/* families */
-.fam{ display:flex; gap:16px; align-items:center; padding:14px 0; border-top:1px solid var(--line); flex-wrap:wrap }
-.fam:first-of-type{ border-top:0; padding-top:0 }
-.faces{ display:flex }
-.faces svg{ width:40px; height:40px; margin-right:-8px; border:3px solid var(--surface); border-radius:12px; background:var(--surface) }
-.fam .who{ flex:1; min-width:180px }
-.fam .stat{ text-align:right; font-size:14px; color:var(--soft); font-variant-numeric:tabular-nums }
-.fam .stat b{ display:block; color:var(--ink); font-weight:600; font-size:15px }
-.pill{ display:inline-block; font-size:12px; font-weight:600; padding:2px 9px; border-radius:999px; background:var(--paper); color:var(--soft); margin-left:6px; vertical-align:2px }
-.pill.new{ background:#efeaff; color:var(--violet) }
-/* feed */
-.feed{ list-style:none; margin:0; padding:0; display:grid; gap:14px }
-.feed li{ display:grid; grid-template-columns:28px minmax(0,1fr); gap:10px; align-items:start }
-.feed .ic{ width:28px; height:28px; border-radius:9px; display:grid; place-items:center; background:var(--paper) }
-.feed .ic svg{ width:16px; height:16px; stroke:var(--ink); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
-.feed small{ display:block; color:var(--faint); font-size:13px }
-/* families page */
-.member{ display:flex; gap:12px; align-items:center; padding:10px 0; border-top:1px solid var(--line); flex-wrap:wrap }
-.member .grow{ flex:1; min-width:160px }
-.kids{ display:flex; gap:16px; flex-wrap:wrap; padding:10px 0 4px }
-.kid{ display:grid; justify-items:center; gap:4px; font-size:14px }
-.kid svg{ width:52px; height:52px }
-.row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center }
-input[type=email], input[type=text]{ flex:1; min-width:200px; font:400 15px var(--ui); padding:10px 16px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink) }
-.slots{ display:flex; align-items:center; gap:6px; font-size:14px; color:var(--soft) }
-.slots button{ width:26px; height:26px; border-radius:50%; border:1px solid var(--line); background:var(--surface); cursor:pointer; font:600 14px var(--ui); color:var(--ink) }
-/* games */
-.games{ display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px }
-.game{ border-radius:14px; overflow:hidden; background:var(--paper) }
-.game .art{ aspect-ratio:16/9; max-width:100% }
-.game .t{ padding:10px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px }
-.star{ border:0; background:none; cursor:pointer; font-size:13px; font-weight:600; color:var(--soft); padding:4px 8px; border-radius:999px }
-.star.on{ background:#fff3c4; color:#8a6100 }
-/* settings */
-.set{ display:flex; gap:14px; align-items:center; padding:14px 0; border-top:1px solid var(--line); flex-wrap:wrap }
-.set:first-of-type{ border-top:0; padding-top:0 }
-.set > div{ flex:1; min-width:200px }
-.ok{ color:var(--good); font-weight:600; font-size:14px }
-.hist{ width:100%; border-collapse:collapse; font-size:15px }
-.hist td{ padding:10px 8px; border-top:1px solid var(--line); vertical-align:top }
-.hist td:first-child{ color:var(--faint); white-space:nowrap; font-variant-numeric:tabular-nums; width:150px }
+.btn:focus-visible, .chip:focus-visible, aside a:focus-visible, th button:focus-visible{ outline:2px solid var(--blue); outline-offset:2px }
 .scroll{ overflow-x:auto }
-.tag{ font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); margin:0 0 6px }
+table{ width:100%; border-collapse:collapse }
+th{ text-align:left; font-weight:500; color:var(--soft); font-size:12px; padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap; background:var(--surface) }
+th button{ border:0; background:none; padding:0; cursor:pointer; color:inherit; font-weight:inherit }
+th.sorted button{ color:var(--ink) }
+th.num, td.num{ text-align:right; font-variant-numeric:tabular-nums }
+td{ padding:8px 12px; border-bottom:1px solid var(--line); white-space:nowrap }
+tbody tr{ cursor:pointer }
+tbody tr:hover{ background:var(--hover) }
+tbody tr.sel{ background:var(--sel) }
+td .id{ font:12px var(--mono); color:var(--faint) }
+td.cb, th.cb{ width:34px; padding-right:0 }
+.face{ width:24px; height:24px; border-radius:7px; display:inline-grid; place-items:center; color:#fff; font-size:11px; font-weight:700; margin-right:-5px; border:2px solid var(--surface); vertical-align:middle }
+.tag{ display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--paper); color:var(--soft) }
+.tag.new{ background:#efeaff; color:#5b3fd6 } .tag.wait{ background:#fff4dc; color:#92400e } .tag.act{ background:#e7f8ee; color:#166534 } .tag.off{ background:#f1f1f4; color:var(--faint) } .tag.flag{ background:#fde8e8; color:#991b1b }
+.pager{ display:flex; gap:8px; align-items:center; padding:10px 18px; color:var(--soft); font-size:13px; flex-wrap:wrap }
+.pager .sp{ margin-left:auto }
+.pager button{ border:1px solid var(--line); background:var(--surface); border-radius:8px; padding:4px 10px; cursor:pointer }
+.pager button:disabled{ opacity:.4; cursor:default }
+.bulk{ display:none; gap:8px; align-items:center; padding:8px 18px; background:var(--sel); font-size:13px }
+.bulk.on{ display:flex }
+/* queue + log */
+.q{ display:flex; gap:12px; align-items:center; padding:10px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap }
+.q:last-child{ border-bottom:0 }
+.q .w{ flex:1; min-width:180px }
+.q small, .log small{ color:var(--faint) }
+.log{ list-style:none; margin:0; padding:0 }
+.log li{ display:grid; grid-template-columns:62px 92px minmax(0,1fr); gap:10px; padding:7px 18px; border-bottom:1px solid var(--line); align-items:baseline }
+.log li:last-child{ border-bottom:0 }
+.log .t{ font:12px var(--mono); color:var(--faint) }
+.log .e{ font:11px var(--mono); color:var(--soft) }
+.log .m{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+/* detail panel */
+.panel{ position:fixed; top:0; right:0; bottom:0; width:min(440px,100%); background:var(--surface); box-shadow:-12px 0 40px rgba(29,27,46,.15); transform:translateX(105%); transition:transform .25s cubic-bezier(.2,.8,.25,1); z-index:20; display:flex; flex-direction:column; padding-top:env(safe-area-inset-top,0px); padding-right:env(safe-area-inset-right,0px) }
+.panel.open{ transform:none }
+.panel header{ display:flex; gap:10px; align-items:center; padding:16px 18px; border-bottom:1px solid var(--line) }
+.panel header h2{ margin:0; font-size:17px }
+.panel header button{ margin-left:auto; border:0; background:var(--paper); border-radius:8px; width:30px; height:30px; cursor:pointer; font-size:16px }
+.panel .body{ overflow:auto; padding:6px 18px 20px; display:grid; gap:16px; align-content:start }
+.kv{ display:grid; grid-template-columns:120px minmax(0,1fr); gap:6px 12px; font-size:13px }
+.kv dt{ color:var(--soft) } .kv dd{ margin:0; font-variant-numeric:tabular-nums; overflow-wrap:anywhere }
+.panel h3{ margin:6px 0 0; font-size:12px; font-weight:600; color:var(--soft); text-transform:uppercase; letter-spacing:.05em }
+.people{ display:grid; gap:6px }
+.people div{ display:flex; gap:10px; align-items:center }
+.people .face{ margin:0; width:28px; height:28px }
+.acts{ display:flex; gap:8px; flex-wrap:wrap }
+.cover{ width:44px; height:26px; border-radius:6px; vertical-align:middle; margin-right:8px; display:inline-block }
+@media (prefers-reduced-motion:reduce){ .panel{ transition:none } }
 section[hidden]{ display:none!important }
+/* settings */
+.set{ display:grid; grid-template-columns:180px minmax(0,1fr) auto; gap:12px; align-items:center; padding:11px 18px; border-bottom:1px solid var(--line) }
+.set:last-child{ border-bottom:0 }
+.set .k{ color:var(--soft) }
+.set code{ font:12.5px var(--mono) }
+@media (max-width:640px){ .set{ grid-template-columns:1fr } }
 </style>
 
-<div class="note"><b>Mockup</b> · the management page on your laptop, with made-up testers. The tabs work; buttons don't do anything.</div>
+<div class="note"><b>Mockup</b> · Orlis Server admin, with ~2,400 made-up families and 180 games. Search, chips, sorting, paging and rows work; actions don't.</div>
 
-<header>
-  <div class="brand">
-    <svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="cg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3da9ff"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><rect x="4" y="4" width="32" height="32" rx="10" fill="url(#cg)"/><rect x="9" y="9" width="22" height="22" rx="7" fill="#fff" opacity=".22"/><circle cx="15" cy="19" r="2.6" fill="#1d1b2e"/><circle cx="25" cy="19" r="2.6" fill="#1d1b2e"/><path d="M15.5 25.5 q4.5 3.5 9 0" stroke="#1d1b2e" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
-    Orlis <span>Server</span>
-  </div>
-  <nav id="tabs">
-    <button data-t="home" class="on">Overview</button>
-    <button data-t="fams">Families <span class="dot">1</span></button>
-    <button data-t="games">Games</button>
-    <button data-t="hist">History</button>
-    <button data-t="sets">Settings</button>
-  </nav>
-</header>
+<div class="app">
+<aside>
+  <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="cg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3da9ff"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><rect x="4" y="4" width="32" height="32" rx="10" fill="url(#cg)"/><circle cx="15" cy="19" r="2.6" fill="#1d1b2e"/><circle cx="25" cy="19" r="2.6" fill="#1d1b2e"/><path d="M15.5 25.5 q4.5 3.5 9 0" stroke="#1d1b2e" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Orlis <span>Server</span></div>
+  <a data-t="home" class="on" tabindex="0"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Overview</a>
+  <a data-t="queue" tabindex="0"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="17" r="3"/></svg>Queue<span class="c hot" id="nq">7</span></a>
+  <a data-t="fams" tabindex="0"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.2c3 .2 5.5 2.4 5.5 5.8"/></svg>Families<span class="c" id="nf"></span></a>
+  <a data-t="games" tabindex="0"><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16" cy="11.5" r="1"/><circle cx="18" cy="13.5" r="1"/></svg>Games<span class="c" id="ng"></span></a>
+  <a data-t="log" tabindex="0"><svg viewBox="0 0 24 24"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>Activity</a>
+  <a data-t="sets" tabindex="0"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</a>
+  <div class="foot"><span class="led"></span>v0.1.0 · up 3d 4h<br><span class="led"></span>funnel · smtp · backup</div>
+</aside>
 
 <main>
 <!-- OVERVIEW -->
-<section data-v="home" style="display:grid;gap:18px">
-  <div class="status">
-    <div class="big"><i></i>Everything's working</div>
-    <div class="checks"><span>Families can reach Orlis from home</span><span>Email is on</span><span>Backed up today, 3:00 AM</span></div>
+<section data-v="home" style="display:grid;gap:16px">
+  <div class="top"><h1>Overview</h1><span class="sub">Tue 24 Nov, 16:42</span></div>
+  <div class="card health">
+    <div><div class="k">Funnel</div><div class="v"><span class="led"></span>up · orlis.your-name.ts.net</div></div>
+    <div><div class="k">SMTP</div><div class="v"><span class="led"></span>ok · last sent 4m ago</div></div>
+    <div><div class="k">Backup</div><div class="v"><span class="led"></span>03:00 · 14 kept · 212 MB</div></div>
+    <div><div class="k">Disk</div><div class="v"><span class="led warn"></span>82% used · 18 GB free</div></div>
+    <div><div class="k">Errors (24h)</div><div class="v"><span class="led"></span>0 · p95 38 ms</div></div>
   </div>
-  <div class="cols">
-    <div>
-      <div class="card">
-        <h2>Needs you</h2>
-        <div class="need"><span class="n">1</span><div><h3>Ana wants to join</h3><div class="sub">ana@example.com · asked 20 min ago</div></div><button class="btn">Let her in</button><button class="btn no">Decline</button></div>
-      </div>
-      <div class="card">
-        <h2>Families</h2>
-        <div class="fam" id="f1"></div>
-        <div class="fam" id="f2"></div>
-        <div class="fam" id="f3"></div>
-      </div>
-    </div>
-    <div>
-      <div class="card">
-        <h2>Lately</h2>
-        <ul class="feed">
-          <li><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v3M5 12H3M21 12h-2M12 21v-3"/><circle cx="12" cy="12" r="4"/></svg></span><div>Ana asked to join<small>20 min ago</small></div></li>
-          <li><span class="ic"><svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg></span><div><b>The Lees</b> played their first game: Pop Party with 2 players<small>Today, 4:12 PM</small></div></li>
-          <li><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></span><div><b>Sam</b> joined Orlis<small>Today, 3:58 PM</small></div></li>
-          <li><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg></span><div><b>The Patels</b> made a game: Apple Catch<small>Yesterday</small></div></li>
-        </ul>
-        <p class="sub" style="margin:16px 0 0">These also pop up by the clock, and come to your email.</p>
-      </div>
-    </div>
+  <div class="card stats" style="gap:0">
+    <div class="stat"><div class="k">Families</div><div class="v" id="sfam"></div><div class="d">+38 this week</div><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline fill="none" stroke="#8b5cf6" stroke-width="2" points="0,24 15,22 30,21 45,18 60,16 75,12 90,9 100,6"/></svg></div>
+    <div class="stat"><div class="k">Active (7d)</div><div class="v">1,412</div><div class="d">59% of families</div><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline fill="none" stroke="#3da9ff" stroke-width="2" points="0,14 15,12 30,16 45,10 60,12 75,8 90,11 100,7"/></svg></div>
+    <div class="stat"><div class="k">Plays today</div><div class="v">6,083</div><div class="d dn">−4% vs last Tue</div><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline fill="none" stroke="#3da9ff" stroke-width="2" points="0,20 15,18 30,8 45,6 60,14 75,10 90,12 100,13"/></svg></div>
+    <div class="stat"><div class="k">Queue</div><div class="v">7</div><div class="d" style="color:var(--soft)">5 joins · 2 games</div></div>
   </div>
+  <div class="grid2">
+    <div class="card"><h2>Queue<span class="more" data-go="queue">All 7 →</span></h2><div id="qmini"></div></div>
+    <div class="card"><h2>Activity<span class="more" data-go="log">All →</span></h2><ul class="log" id="logmini"></ul></div>
+  </div>
+  <div class="card"><h2>Top games (7d)<span class="more" data-go="games">All 180 →</span></h2>
+    <div class="scroll"><table><thead><tr><th>Game</th><th class="num">Plays</th><th class="num">Families</th><th class="num">Avg min</th><th>Featured</th></tr></thead><tbody id="topg"></tbody></table></div></div>
+</section>
+
+<!-- QUEUE -->
+<section data-v="queue" hidden style="display:grid;gap:16px">
+  <div class="top"><h1>Queue</h1><span class="sub">Joins and games waiting for you</span></div>
+  <div class="card"><h2>Add email to allowlist</h2><div class="bar" style="border:0"><div class="search"><input id="allow" type="email" placeholder="name@example.com, one or more, comma-separated"></div><button class="btn">Allow</button></div></div>
+  <div class="card"><div class="bar"><button class="chip on">All <b>7</b></button><button class="chip">Join requests <b>5</b></button><button class="chip">Games <b>2</b></button><span style="margin-left:auto" class="sub">Oldest first</span></div><div id="qfull"></div></div>
 </section>
 
 <!-- FAMILIES -->
-<section data-v="fams" hidden style="display:grid;gap:18px">
-  <div class="cols">
-    <div id="famcards"></div>
-    <div>
-      <div class="card">
-        <h2>Let someone in</h2>
-        <p class="sub" style="margin:0 0 12px">Add their email. They install Orlis Play, make an account with that email, and they're straight in. We email them the download link.</p>
-        <div class="row"><input id="em" type="email" placeholder="their@email.com"><button class="btn">Let in</button></div>
-      </div>
-      <div class="card">
-        <h2>Waiting to join</h2>
-        <div class="need"><div><h3>Ana</h3><div class="sub">ana@example.com · The Garcias · 20 min ago</div></div></div>
-        <div class="row"><button class="btn">Let her in</button><button class="btn no">Decline</button></div>
-      </div>
+<section data-v="fams" hidden style="display:grid;gap:16px">
+  <div class="top"><h1>Families</h1><span class="sub" id="fcount"></span></div>
+  <div class="card">
+    <div class="bar">
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="fq" placeholder="Search name, email or id"><kbd>/</kbd></label>
+      <span id="fchips" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+      <button class="btn ghost">Export CSV</button>
     </div>
+    <div class="bulk" id="fbulk"><b id="nsel">0</b> selected<button class="btn ghost">Reset passwords</button><button class="btn ghost">Set slots…</button><button class="btn no">Remove</button></div>
+    <div class="scroll"><table><thead><tr id="fhead"></tr></thead><tbody id="fbody"></tbody></table></div>
+    <div class="pager" id="fpager"></div>
   </div>
 </section>
 
 <!-- GAMES -->
-<section data-v="games" hidden style="display:grid;gap:18px">
+<section data-v="games" hidden style="display:grid;gap:16px">
+  <div class="top"><h1>Games</h1><span class="sub" id="gcount"></span></div>
   <div class="card">
-    <h2>Discover</h2>
-    <p class="sub" style="margin:-4px 0 14px">Star up to three to show them first in everyone's Featured row. Unstarred, they take turns each week.</p>
-    <div class="games" id="games"></div>
+    <div class="bar">
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="gq" placeholder="Search title, maker or id"></label>
+      <span id="gchips" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+      <select id="gcat" class="chip"><option value="">All categories</option></select>
+    </div>
+    <div class="scroll"><table><thead><tr id="ghead"></tr></thead><tbody id="gbody"></tbody></table></div>
+    <div class="pager" id="gpager"></div>
   </div>
 </section>
 
-<!-- HISTORY -->
-<section data-v="hist" hidden>
-  <div class="card scroll">
-    <h2>History</h2>
-    <table class="hist"><tbody>
-      <tr><td>Today 4:20 PM</td><td>Ana asked to join (The Garcias)</td></tr>
-      <tr><td>Today 4:12 PM</td><td>The Lees played their first game: Pop Party</td></tr>
-      <tr><td>Today 3:58 PM</td><td>Sam joined, from your Let someone in list</td></tr>
-      <tr><td>Today 3:30 PM</td><td>You let in sam@example.com</td></tr>
-      <tr><td>Yesterday</td><td>The Patels made Apple Catch</td></tr>
-      <tr><td>Nov 22</td><td>You starred Peekaboo Garden in Featured</td></tr>
-    </tbody></table>
+<!-- ACTIVITY -->
+<section data-v="log" hidden style="display:grid;gap:16px">
+  <div class="top"><h1>Activity</h1><span class="sub">Everything that changed, newest first. Heads-ups are marked ●.</span></div>
+  <div class="card">
+    <div class="bar"><label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input placeholder="Filter by family, email or game"></label>
+      <button class="chip on">All</button><button class="chip">Joins</button><button class="chip">First plays</button><button class="chip">Games</button><button class="chip">Owner actions</button><button class="chip">Errors</button></div>
+    <ul class="log" id="logfull"></ul>
+    <div class="pager"><span>1–30 of 48,210</span><span class="sp"></span><button disabled>← Newer</button><button>Older →</button></div>
   </div>
 </section>
 
 <!-- SETTINGS -->
-<section data-v="sets" hidden>
-  <div class="cols">
-    <div>
-      <div class="card">
-        <h2>This server</h2>
-        <div class="set"><div><h3>Name</h3><div class="sub">Orlis · what families see</div></div><button class="btn plain">Rename</button></div>
-        <div class="set"><div><h3>Reachable from home</h3><div class="sub">orlis.your-name.ts.net · checked a minute ago</div></div><span class="ok">On</span></div>
-        <div class="set"><div><h3>Keep this laptop awake</h3><div class="sub">Families can't sign in while it's asleep. Settings › System › Power › Sleep: Never (when plugged in).</div></div><span class="ok">Awake 3 days</span></div>
-        <div class="set"><div><h3>Starts with Windows</h3><div class="sub">Right-click the cube by the clock to change</div></div><span class="ok">On</span></div>
-        <div class="set"><div><h3>Version</h3><div class="sub">Orlis Server 0.1</div></div><button class="btn plain">Check for updates</button></div>
-      </div>
-    </div>
-    <div>
-      <div class="card">
-        <h2>Email</h2>
-        <div class="set"><div><h3>you@gmail.com</h3><div class="sub">Sends download links, and heads-ups to you</div></div><button class="btn plain">Send a test</button></div>
-      </div>
-      <div class="card">
-        <h2>Backups</h2>
-        <div class="set"><div><h3>Every night</h3><div class="sub">Last: today, 3:00 AM · 14 kept</div></div><button class="btn plain">Back up now</button></div>
-      </div>
-    </div>
+<section data-v="sets" hidden style="display:grid;gap:16px">
+  <div class="top"><h1>Settings</h1></div>
+  <div class="card"><h2>Server</h2>
+    <div class="set"><span class="k">Name</span><code>Orlis</code><button class="btn ghost">Edit</button></div>
+    <div class="set"><span class="k">Version</span><code>0.1.0 · up 3d 4h</code><button class="btn ghost">Check for updates</button></div>
+    <div class="set"><span class="k">LAN</span><code>http://192.168.1.20:47871</code><span></span></div>
+    <div class="set"><span class="k">Internet (Funnel)</span><code>https://orlis.your-name.ts.net → :47872</code><span class="tag act">up</span></div>
+    <div class="set"><span class="k">Start with Windows</span><code>on</code><span class="sub">change from tray</span></div>
+    <div class="set"><span class="k">Data folder</span><code>C:\Users\you\Documents\Orlis Server\Orlis Server data</code><button class="btn ghost">Open</button></div>
+  </div>
+  <div class="card"><h2>Joining</h2>
+    <div class="set"><span class="k">Mode</span><code>allowlist + ask</code><button class="btn ghost">Change</button></div>
+    <div class="set"><span class="k">Default game slots</span><code>3</code><button class="btn ghost">Edit</button></div>
+    <div class="set"><span class="k">Max waiting</span><code>20</code><button class="btn ghost">Edit</button></div>
+  </div>
+  <div class="card"><h2>Heads-ups</h2>
+    <div class="set"><span class="k">SMTP</span><code>you@gmail.com · smtp.gmail.com:465</code><button class="btn ghost">Send test</button></div>
+    <div class="set"><span class="k">Email me on</span><code>join request, joined, first play</code><button class="btn ghost">Edit</button></div>
+    <div class="set"><span class="k">Digest</span><code>off (each event)</code><button class="btn ghost">Daily digest</button></div>
+  </div>
+  <div class="card"><h2>Backups</h2>
+    <div class="set"><span class="k">Schedule</span><code>daily 03:00 · keep 14</code><button class="btn ghost">Back up now</button></div>
+    <div class="set"><span class="k">Last</span><code>today 03:00 · 212 MB · ok</code><button class="btn ghost">Restore…</button></div>
   </div>
 </section>
 </main>
+</div>
+
+<div class="panel" id="panel" aria-hidden="true"><header><h2 id="ptitle"></h2><button id="pclose" aria-label="Close">×</button></header><div class="body" id="pbody"></div></div>
 
 <script>
-/* faces: a little cube avatar in a colour */
-const face = (c, mood) => `<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="2" width="36" height="36" rx="10" fill="${c}"/><rect x="6" y="6" width="28" height="28" rx="8" fill="#fff" opacity=".2"/><circle cx="14" cy="18" r="2.6" fill="#1d1b2e"/><circle cx="26" cy="18" r="2.6" fill="#1d1b2e"/><path d="${mood || 'M14.5 25 q5.5 4 11 0'}" stroke="#1d1b2e" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>`;
-const FAMS = [
-  { name: 'The Patels', you: true, people: [['Dee', '#3da9ff'], ['Maya', '#ff8a3d'], ['Leo', '#22c55e']], last: 'Played today', what: 'Peekaboo Garden', week: '9 games this week', grown: ['dee@example.com · you'], made: 1 },
-  { name: 'The Lees', isnew: true, people: [['Sam', '#a855f7'], ['Ivy', '#f43f5e']], last: 'Played today', what: 'Pop Party', week: '1 game this week', grown: ['sam@example.com'], made: 0 },
-  { name: 'The Garcias', waiting: true, people: [['Ana', '#f59e0b']], last: 'Not played yet', what: 'Waiting for you to let them in', week: '', grown: ['ana@example.com'], made: 0 }
-];
-FAMS.forEach((f, i) => {
-  document.getElementById('f' + (i + 1)).innerHTML =
-    `<div class="faces">${f.people.map(p => face(p[1])).join('')}</div>
-     <div class="who"><h3>${f.name}${f.you ? '<span class="pill">You</span>' : ''}${f.isnew ? '<span class="pill new">New</span>' : ''}${f.waiting ? '<span class="pill">Waiting</span>' : ''}</h3><div class="sub">${f.people.map(p => p[0]).join(', ')}</div></div>
-     <div class="stat"><b>${f.last}</b>${f.what}${f.week ? ' · ' + f.week : ''}</div>`;
-});
-document.getElementById('famcards').innerHTML = FAMS.filter(f => !f.waiting).map(f => `
-  <div class="card">
-    <h2>${f.name}${f.you ? '<span class="pill">You</span>' : ''}${f.isnew ? '<span class="pill new">New</span>' : ''}</h2>
-    <p class="tag">Who plays</p>
-    <div class="kids">${f.people.map(p => `<div class="kid">${face(p[1])}${p[0]}</div>`).join('')}</div>
-    <p class="tag" style="margin-top:14px">Grown-ups</p>
-    ${f.grown.map(g => `<div class="member"><div class="grow">${g}</div>${f.you ? '' : '<div class="slots"><button aria-label="Fewer">−</button>3 game slots<button aria-label="More">+</button></div><button class="btn plain">New password</button>'}</div>`).join('')}
-    <div class="sub" style="margin-top:6px">${f.last} · ${f.what}${f.made ? ' · made ' + f.made + ' game' : ''}</div>
-  </div>`).join('');
-const GAMES = [['Pop Party', '#ffb3c7', '#8b5cf6', true], ['Peekaboo Garden', '#bfe7c6', '#22c55e', true], ['Sky Painter', '#9fd8ff', '#3da9ff', false], ['Leaf Pile', '#ffd7a1', '#ff8a3d', false], ['Sleepy Bear', '#c9c2ff', '#6d5efc', false], ['Stack It High', '#ffe08a', '#f59e0b', false]];
-document.getElementById('games').innerHTML = GAMES.map(([n, a, b, on]) => `
-  <div class="game"><svg class="art" viewBox="0 0 160 90" preserveAspectRatio="none" aria-hidden="true"><rect width="160" height="90" fill="${a}"/><circle cx="120" cy="30" r="18" fill="#fff" opacity=".6"/><path d="M0 70 Q40 52 80 66 T160 60 V90 H0Z" fill="${b}" opacity=".55"/></svg>
-  <div class="t"><b>${n}</b><button class="star${on ? ' on' : ''}">${on ? '★ Featured' : '☆ Feature'}</button></div></div>`).join('');
-/* tabs */
-const tabs = document.getElementById('tabs');
-tabs.addEventListener('click', (e) => {
-  const b = e.target.closest('button'); if (!b) return;
-  tabs.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-  document.querySelectorAll('section[data-v]').forEach(s => { s.hidden = s.dataset.v !== b.dataset.t; });
-});
+/* ---------- made-up data, deterministic ---------- */
+let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const pick = (a) => a[Math.floor(r() * a.length)];
+const SUR = ['Lee','Garcia','Patel','Nguyen','Smith','Kim','Okafor','Rossi','Müller','Silva','Cohen','Haddad','Jensen','Tanaka','Brown','Martin','Novak','Ahmed','Wilson','Dubois','Kowalski','Singh','Moreau','Costa','Ibrahim','Larsen','Schmidt','Reyes','Walker','Chen'];
+const FIRST = ['Sam','Ana','Ivy','Leo','Maya','Noah','Zoe','Eli','Mia','Omar','Lena','Theo','Ruby','Kai','Nora','Ben','Aria','Max','Lily','Finn','Sofia','Jude','Isla','Ravi'];
+const COLS = ['#3da9ff','#ff8a3d','#22c55e','#a855f7','#f43f5e','#f59e0b','#06b6d4','#6d5efc'];
+const NOW = Date.UTC(2026, 10, 24, 16, 42);
+const ago = (ms) => { const m = Math.round(ms / 60000); if (m < 60) return m + 'm ago'; const h = Math.round(m / 60); if (h < 48) return h + 'h ago'; const d = Math.round(h / 24); return d < 60 ? d + 'd ago' : Math.round(d / 30) + 'mo ago'; };
+const fmt = (n) => n.toLocaleString('en-US');
+const id6 = () => Math.floor(r() * 0xffffff).toString(16).padStart(6, '0');
+const FAMS = [];
+for (let i = 0; i < 2384; i++){
+  const s = pick(SUR), n = 1 + Math.floor(r() * 4), joined = NOW - Math.floor(r() ** 1.6 * 300 * 864e5);
+  const last = r() < .08 ? null : Math.max(joined, NOW - Math.floor(r() ** 2.4 * 90 * 864e5));
+  const plays = last ? Math.floor(r() ** 2 * 900) : 0;
+  const status = i < 5 ? 'waiting' : NOW - joined < 7 * 864e5 ? 'new' : !last || NOW - last > 30 * 864e5 ? 'inactive' : 'active';
+  FAMS.push({ id: 'h_' + id6(), name: 'The ' + s + (s.endsWith('s') ? 'es' : 's'), email: FIRST[i % FIRST.length].toLowerCase() + '.' + s.toLowerCase().replace(/[^a-z]/g, '') + (i % 97) + '@example.com',
+    people: Array.from({ length: n }, () => [pick(FIRST), pick(COLS)]), joined, last, plays, made: r() < .2 ? 1 + Math.floor(r() * 3) : 0, slots: r() < .05 ? 6 : 3, status, flag: r() < .01 });
+}
+FAMS[5].name = 'The Patels'; FAMS[5].status = 'active'; FAMS[5].owner = true;
+const CATS = ['Party','Active','Calm','Puzzle','Story','Family-made'];
+const WORDS = ['Pop','Sky','Leaf','Sleepy','Stack','Peekaboo','Bubble','Rocket','Garden','Frog','Comet','Pancake','Jelly','Robot','Lantern','Snow','Dino','Kite','Treasure','Bounce'];
+const NOUN = ['Party','Painter','Pile','Bear','It High','Garden','Bash','Dash','Hop','Catch','Rescue','Race','Tower','Parade','Quest','Drop'];
+const GAMES = [];
+const seen = new Set();
+while (GAMES.length < 180){ const t = pick(WORDS) + ' ' + pick(NOUN); if (seen.has(t)) continue; seen.add(t);
+  const fam = GAMES.length > 6 && r() < .35; const p7 = Math.floor(r() ** 2.2 * 9000);
+  GAMES.push({ id: t.toLowerCase().replace(/[^a-z]+/g, '-'), title: t, cat: fam ? 'Family-made' : pick(CATS.slice(0, 5)), maker: fam ? pick(FAMS).name : 'Orlis', plays: p7, fams: Math.floor(p7 / (2 + r() * 5)), mins: (2 + r() * 6).toFixed(1),
+    status: GAMES.length < 2 ? 'review' : r() < .06 ? 'hidden' : 'live', featured: false, reports: r() < .04 ? 1 + Math.floor(r() * 3) : 0, ver: '1.' + Math.floor(r() * 6), col: [pick(COLS), pick(COLS)] }); }
+GAMES.sort((a, b) => b.plays - a.plays); GAMES[0].featured = GAMES[2].featured = GAMES[5].featured = true;
+const face = (p) => `<span class="face" style="background:${p[1]}">${p[0][0]}</span>`;
+const cover = (g) => `<span class="cover" style="background:linear-gradient(135deg,${g.col[0]},${g.col[1]})"></span>`;
+const TAG = { active: 'act', new: 'new', waiting: 'wait', inactive: 'off', live: 'act', hidden: 'off', review: 'wait' };
+const tag = (s) => `<span class="tag ${TAG[s] || ''}">${s}</span>`;
+document.getElementById('nf').textContent = fmt(FAMS.length);
+document.getElementById('ng').textContent = GAMES.length;
+document.getElementById('sfam').textContent = fmt(FAMS.length);
+
+/* ---------- a reusable table: search, chips, sort, page, select ---------- */
+function table({ rows, key, q, chips, head, body, pager, count, cols, row, filter, searchOf, sortDefault, select, extra }){
+  let state = { q: '', chip: 'all', sort: sortDefault[0], dir: sortDefault[1], page: 0, sel: new Set() };
+  const PER = 25;
+  const chipCounts = () => chips ? Object.fromEntries(chips.map(([k, , f]) => [k, rows.filter(f).length])) : {};
+  function draw(){
+    const cc = chipCounts();
+    if (chips) document.getElementById(key + 'chips').innerHTML = chips.map(([k, label]) => `<button class="chip${state.chip === k ? ' on' : ''}" data-chip="${k}">${label} <b>${fmt(cc[k])}</b></button>`).join('');
+    let list = rows.filter(x => (!chips || chips.find(c => c[0] === state.chip)[2](x)) && (!state.q || searchOf(x).includes(state.q)) && (!extra || extra(x)));
+    const c = cols.find(c => c.k === state.sort);
+    list = list.slice().sort((a, b) => { const A = c.v(a), B = c.v(b); return (A > B ? 1 : A < B ? -1 : 0) * (state.dir === 'asc' ? 1 : -1); });
+    const pages = Math.max(1, Math.ceil(list.length / PER)); state.page = Math.min(state.page, pages - 1);
+    const slice = list.slice(state.page * PER, state.page * PER + PER);
+    head.innerHTML = (select ? '<th class="cb"><input type="checkbox" aria-label="Select page"></th>' : '') + cols.map(c => `<th class="${c.num ? 'num ' : ''}${state.sort === c.k ? 'sorted' : ''}">${c.v ? `<button data-sort="${c.k}">${c.l}${state.sort === c.k ? (state.dir === 'asc' ? ' ↑' : ' ↓') : ''}</button>` : c.l}</th>`).join('');
+    body.innerHTML = slice.map(x => `<tr data-id="${x.id}" class="${state.sel.has(x.id) ? 'sel' : ''}">${select ? `<td class="cb"><input type="checkbox" ${state.sel.has(x.id) ? 'checked' : ''} aria-label="Select"></td>` : ''}${row(x)}</tr>`).join('') || `<tr><td colspan="9" class="sub" style="padding:24px 12px">No matches.</td></tr>`;
+    const from = list.length ? state.page * PER + 1 : 0;
+    pager.innerHTML = `<span>${fmt(from)}–${fmt(Math.min(list.length, (state.page + 1) * PER))} of ${fmt(list.length)}</span><span class="sp">Page ${state.page + 1} / ${fmt(pages)}</span><button data-p="-1" ${state.page ? '' : 'disabled'}>←</button><button data-p="1" ${state.page < pages - 1 ? '' : 'disabled'}>→</button>`;
+    if (count) count.textContent = `${fmt(rows.length)} total`;
+    if (select){ const b = document.getElementById(key + 'bulk'); b.classList.toggle('on', state.sel.size > 0); document.getElementById('nsel').textContent = state.sel.size; }
+  }
+  q.addEventListener('input', () => { state.q = q.value.trim().toLowerCase(); state.page = 0; draw(); });
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    if (t.dataset.chip && t.closest('#' + key + 'chips')){ state.chip = t.dataset.chip; state.page = 0; draw(); }
+    if (t.dataset.sort && head.contains(t)){ state.dir = state.sort === t.dataset.sort && state.dir === 'desc' ? 'asc' : 'desc'; state.sort = t.dataset.sort; draw(); }
+    if (t.dataset.p && pager.contains(t)){ state.page += Number(t.dataset.p); draw(); }
+    if (body.contains(t)){ const tr = t.closest('tr[data-id]'); if (!tr) return;
+      if (t.type === 'checkbox'){ state.sel.has(tr.dataset.id) ? state.sel.delete(tr.dataset.id) : state.sel.add(tr.dataset.id); draw(); return; }
+      open(rows.find(x => x.id === tr.dataset.id)); }
+    if (t.type === 'checkbox' && head.contains(t)){ body.querySelectorAll('tr[data-id]').forEach(tr => t.checked ? state.sel.add(tr.dataset.id) : state.sel.delete(tr.dataset.id)); draw(); }
+  });
+  draw(); return { draw };
+}
+
+/* families */
+let open = () => {};
+table({ rows: FAMS, key: 'f', q: document.getElementById('fq'), head: document.getElementById('fhead'), body: document.getElementById('fbody'), pager: document.getElementById('fpager'), count: document.getElementById('fcount'), select: true,
+  chips: [['all', 'All', () => true], ['active', 'Active', f => f.status === 'active'], ['new', 'New (7d)', f => f.status === 'new'], ['waiting', 'Waiting', f => f.status === 'waiting'], ['inactive', 'Inactive 30d+', f => f.status === 'inactive'], ['flag', 'Flagged', f => f.flag]],
+  searchOf: f => (f.name + ' ' + f.email + ' ' + f.id + ' ' + f.people.map(p => p[0]).join(' ')).toLowerCase(), sortDefault: ['last', 'desc'],
+  cols: [{ k: 'name', l: 'Family', v: f => f.name }, { k: 'ppl', l: 'Profiles', v: null }, { k: 'status', l: 'Status', v: f => f.status }, { k: 'last', l: 'Last played', v: f => f.last || 0 }, { k: 'plays', l: 'Plays', num: 1, v: f => f.plays }, { k: 'made', l: 'Made', num: 1, v: f => f.made }, { k: 'joined', l: 'Joined', v: f => f.joined }],
+  row: f => `<td><b>${f.name}</b>${f.owner ? ' <span class="tag">you</span>' : ''}${f.flag ? ' <span class="tag flag">flagged</span>' : ''}<br><span class="id">${f.email}</span></td><td>${f.people.map(face).join('')}</td><td>${tag(f.status)}</td><td>${f.last ? ago(NOW - f.last) : '<span class="sub">never</span>'}</td><td class="num">${fmt(f.plays)}</td><td class="num">${f.made}/${f.slots}</td><td>${new Date(f.joined).toISOString().slice(0, 10)}</td>` });
+
+/* games */
+const gcat = document.getElementById('gcat'); gcat.innerHTML += CATS.map(c => `<option>${c}</option>`).join('');
+const gt = table({ rows: GAMES, key: 'g', q: document.getElementById('gq'), head: document.getElementById('ghead'), body: document.getElementById('gbody'), pager: document.getElementById('gpager'), count: document.getElementById('gcount'),
+  chips: [['all', 'All', () => true], ['live', 'Live', g => g.status === 'live'], ['featured', 'Featured', g => g.featured], ['review', 'In review', g => g.status === 'review'], ['hidden', 'Hidden', g => g.status === 'hidden'], ['reported', 'Reported', g => g.reports > 0]],
+  extra: g => !gcat.value || g.cat === gcat.value,
+  searchOf: g => (g.title + ' ' + g.maker + ' ' + g.id).toLowerCase(), sortDefault: ['plays', 'desc'],
+  cols: [{ k: 'title', l: 'Game', v: g => g.title }, { k: 'cat', l: 'Category', v: g => g.cat }, { k: 'maker', l: 'Made by', v: g => g.maker }, { k: 'status', l: 'Status', v: g => g.status }, { k: 'plays', l: 'Plays 7d', num: 1, v: g => g.plays }, { k: 'fams', l: 'Families 7d', num: 1, v: g => g.fams }, { k: 'feat', l: 'Featured', v: g => g.featured ? 1 : 0 }],
+  row: g => `<td>${cover(g)}<b>${g.title}</b> <span class="id">${g.id}@${g.ver}</span>${g.reports ? ` <span class="tag flag">${g.reports} report${g.reports > 1 ? 's' : ''}</span>` : ''}</td><td>${g.cat}</td><td>${g.maker}</td><td>${tag(g.status)}</td><td class="num">${fmt(g.plays)}</td><td class="num">${fmt(g.fams)}</td><td>${g.featured ? '★ slot ' + ([0, 2, 5].indexOf(GAMES.indexOf(g)) + 1) : '<span class="sub">–</span>'}</td>` });
+gcat.addEventListener('change', () => gt.draw());
+
+/* top games */
+document.getElementById('topg').innerHTML = GAMES.slice(0, 6).map(g => `<tr data-g="${g.id}"><td>${cover(g)}<b>${g.title}</b></td><td class="num">${fmt(g.plays)}</td><td class="num">${fmt(g.fams)}</td><td class="num">${g.mins}</td><td>${g.featured ? '★' : '<span class="sub">–</span>'}</td></tr>`).join('');
+
+/* queue */
+const Q = FAMS.filter(f => f.status === 'waiting').map((f, i) => ({ kind: 'join', f, at: NOW - (i + 1) * 23 * 60000 }))
+  .concat(GAMES.filter(g => g.status === 'review').map((g, i) => ({ kind: 'game', g, at: NOW - (i + 2) * 3 * 3600000 }))).sort((a, b) => a.at - b.at);
+document.getElementById('nq').textContent = Q.length;
+const qrow = (x) => x.kind === 'join'
+  ? `<div class="q"><span class="tag wait">join</span><div class="w"><b>${x.f.people[0][0]}</b> · ${x.f.name}<br><small>${x.f.email} · ${ago(NOW - x.at)} · not on allowlist</small></div><button class="btn">Approve</button><button class="btn no">Decline</button></div>`
+  : `<div class="q"><span class="tag new">game</span><div class="w"><b>${x.g.title}</b> <span class="id" style="font:12px var(--mono);color:var(--faint)">${x.g.id}@${x.g.ver}</span><br><small>by ${x.g.maker} · ${ago(NOW - x.at)} · passed checks</small></div><button class="btn ghost">Try</button><button class="btn">Publish</button><button class="btn no">Reject</button></div>`;
+document.getElementById('qmini').innerHTML = Q.slice(0, 4).map(qrow).join('');
+document.getElementById('qfull').innerHTML = Q.map(qrow).join('');
+
+/* activity */
+const EV = [];
+for (let i = 0; i < 30; i++){
+  const f = pick(FAMS), g = pick(GAMES), k = r();
+  const e = k < .25 ? ['play.first', `● <b>${f.name}</b> first play: ${g.title}`] : k < .45 ? ['account.new', `● <b>${f.people[0][0]}</b> joined · ${f.email}`] : k < .55 ? ['join.ask', `● <b>${f.people[0][0]}</b> asked to join · ${f.email}`] : k < .7 ? ['game.made', `<b>${f.name}</b> made ${g.title}`] : k < .8 ? ['owner', `You featured ${g.title}`] : k < .9 ? ['allow', `You allowed ${f.email}`] : ['backup', 'Backup ok · 212 MB'];
+  EV.push([NOW - Math.floor(i * i * 4.5 + i * 7) * 60000, ...e]);
+}
+const lrow = ([t, e, m]) => `<li><span class="t">${new Date(t).toISOString().slice(11, 16)}</span><span class="e">${e}</span><span class="m">${m}</span></li>`;
+document.getElementById('logmini').innerHTML = EV.slice(0, 8).map(lrow).join('');
+document.getElementById('logfull').innerHTML = EV.map(lrow).join('');
+
+/* detail panel */
+const panel = document.getElementById('panel');
+open = (x) => {
+  if (!x) return;
+  const fam = !!x.people;
+  document.getElementById('ptitle').innerHTML = fam ? x.name : x.title;
+  document.getElementById('pbody').innerHTML = fam ? `
+    <dl class="kv"><dt>Id</dt><dd><code style="font:12px var(--mono)">${x.id}</code></dd><dt>Status</dt><dd>${tag(x.status)}</dd><dt>Grown-up</dt><dd>${x.email}</dd><dt>Joined</dt><dd>${new Date(x.joined).toISOString().slice(0, 10)} · via allowlist</dd>
+      <dt>Last played</dt><dd>${x.last ? ago(NOW - x.last) : 'never'}</dd><dt>Plays</dt><dd>${fmt(x.plays)} all time</dd><dt>Game slots</dt><dd>${x.made} of ${x.slots} used</dd><dt>Devices</dt><dd>Windows PC · v0.1.42</dd></dl>
+    <h3>Profiles</h3><div class="people">${x.people.map(p => `<div>${face(p)}${p[0]}</div>`).join('')}</div>
+    <h3>Most played</h3><div class="sub">${GAMES.slice(1, 4).map(g => g.title).join(' · ')}</div>
+    <h3>Actions</h3><div class="acts">${x.status === 'waiting' ? '<button class="btn">Approve</button>' : ''}<button class="btn ghost">Reset password</button><button class="btn ghost">Slots −</button><button class="btn ghost">Slots +</button><button class="btn ghost">View activity</button><button class="btn no">Remove family</button></div>` : `
+    <div style="height:120px;border-radius:12px;background:linear-gradient(135deg,${x.col[0]},${x.col[1]})"></div>
+    <dl class="kv"><dt>Id</dt><dd><code style="font:12px var(--mono)">${x.id}@${x.ver}</code></dd><dt>Status</dt><dd>${tag(x.status)}</dd><dt>Category</dt><dd>${x.cat}</dd><dt>Made by</dt><dd>${x.maker}</dd>
+      <dt>Plays 7d</dt><dd>${fmt(x.plays)} by ${fmt(x.fams)} families</dd><dt>Avg session</dt><dd>${x.mins} min</dd><dt>Reports</dt><dd>${x.reports || 'none'}</dd></dl>
+    <h3>Actions</h3><div class="acts"><button class="btn ghost">Try</button><button class="btn ghost">${x.featured ? 'Unfeature' : 'Feature'}</button><button class="btn ghost">${x.status === 'hidden' ? 'Unhide' : 'Hide'}</button><button class="btn ghost">Versions</button><button class="btn no">Remove</button></div>`;
+  panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false');
+};
+document.getElementById('pclose').onclick = () => { panel.classList.remove('open'); panel.setAttribute('aria-hidden', 'true'); };
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.getElementById('pclose').click(); if (e.key === '/' && document.activeElement.tagName !== 'INPUT'){ const v = document.querySelector('section:not([hidden]) .search input'); if (v){ e.preventDefault(); v.focus(); } } });
+document.getElementById('topg').addEventListener('click', (e) => { const tr = e.target.closest('tr[data-g]'); if (tr) open(GAMES.find(g => g.id === tr.dataset.g)); });
+
+/* navigation */
+function go(t){ document.querySelectorAll('aside a').forEach(a => a.classList.toggle('on', a.dataset.t === t)); document.querySelectorAll('section[data-v]').forEach(s => { s.hidden = s.dataset.v !== t; }); document.getElementById('pclose').click(); }
+document.querySelector('aside').addEventListener('click', (e) => { const a = e.target.closest('a[data-t]'); if (a) go(a.dataset.t); });
+document.querySelector('aside').addEventListener('keydown', (e) => { const a = e.target.closest('a[data-t]'); if (a && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); go(a.dataset.t); } });
+document.addEventListener('click', (e) => { const m = e.target.closest('[data-go]'); if (m) go(m.dataset.go); });
 </script>
