@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recipe preview</title>
+<style>:root{--bg:#1d1b2e}body{margin:0;background:var(--bg)}canvas{display:block;width:100vw;height:100vh;object-fit:contain}</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script type="module">
+/* Dev page: runs one game built by create/recipe.js with the real engine and library, and a scripted hand standing in for the camera.
+   /test/preview/recipe.html?how=catch&what=apple&where=meadow&move=reach&golden=1&bomb=1&mode=together   (window.__done is true after 5 s) */
+import { build, clean } from '/src/create/recipe.js';
+import { makePlay } from '/src/games/play/engine.js';
+import { assets } from '/src/games/assets/index.js';
+const q = new URLSearchParams(location.search);
+const picks = clean({ how: q.get('how') || undefined, what: q.get('what') || undefined, where: q.get('where') || undefined, move: q.get('move') || undefined, mode: q.get('mode') || undefined,
+  golden: q.has('golden') ? q.get('golden') === '1' : undefined, bomb: q.has('bomb') ? q.get('bomb') === '1' : undefined, speed: q.has('speed') ? +q.get('speed') : undefined, many: q.has('many') ? +q.get('many') : undefined });
+const spec = build(picks); window.__spec = spec;
+const c = document.getElementById('c'), ctx = c.getContext('2d'), W = c.width, H = c.height;
+const hand = (x, y) => ({ x, y, vx: 0, vy: 0, speed: 0.1 });
+const pose = { players: [{ present: true, hands: { left: null, right: hand(0.5, 0.6) } }], mouse: { active: true } };
+const sfx = new Proxy({}, { get: () => () => {} });
+const ui = { say(c, w, h, o){ assets.text(c, o.text, w / 2, h * 0.1, h * 0.07, { color: '#fff', outline: '#2f2b45' }); }, goal(){} };
+const round = makePlay(spec, { pose, sfx, assets, ui, colors: ['#3da9ff'], max: 4 }).create(1);
+let t = 0, last = performance.now();
+const step = 1 / 30;
+function frame(){
+  /* virtual time: fixed steps, so a shot is the same every run */
+  for (let k = 0; k < 2; k++){
+    t += step; const h = pose.players[0].hands.right;
+    h.x = 0.5 + 0.38 * Math.sin(t * 1.1); h.y = (picks.how === 'catch' ? 0.62 : 0.45) + 0.15 * Math.sin(t * 1.9); h.speed = 0.3;
+    round.step(step, W, H);
+  }
+  round.draw(ctx, W, H);
+  const card = round.card();
+  if (card) assets.draw(ctx, 'cubo', W * 0.09, H * 0.82, H * 0.22, { pose: card, t });
+  window.__done = t > 5;
+  requestAnimationFrame(frame);
+}
+frame();
+</script></body></html>

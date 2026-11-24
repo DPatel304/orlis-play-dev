@@ -140,8 +140,11 @@ class PlayRound {
       const colour = who >= 0 ? this.env.colors[who] : hexOf(th.color, this.env) || '#ffe680';
       switch (key){
         case 'score': {
-          const n = v ?? 1; this.total += n; if (who >= 0) this.score[who] += n;
-          this.texts.push({ x: th.x, y: th.y - th.sz * 0.6, text: '+' + n, color: colour, age: 0 }); break;
+          const n = v ?? 1, add = (a, i) => { a[i] = Math.max(0, a[i] + n); };
+          this.total = Math.max(0, this.total + n);
+          /* a point from the game itself (a thing left the screen, a ball landed) goes to everyone playing; a loss never takes a score below 0 */
+          if (who >= 0) add(this.score, who); else for (let i = 0; i < this.n; i++){ const p = this.env.pose.players[i]; if (p && p.present) add(this.score, i); }
+          this.texts.push({ x: th.x, y: th.y - th.sz * 0.6, text: (n < 0 ? '' : '+') + n, color: colour, age: 0 }); break;
         }
         case 'sparkle': this.fx.push({ kind: 'sparkle', x: th.x, y: th.y, size: th.sz * 2.2, color: hexOf(th.color, this.env) || '#ffe680', age: 0 }); break;
         case 'pop': this.fx.push({ kind: 'popring', x: th.x, y: th.y, size: th.sz * 2.4, color: colour, age: 0 }); break;
