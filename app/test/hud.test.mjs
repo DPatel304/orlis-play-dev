@@ -33,6 +33,7 @@ test('every timed game is three minutes, so the games feel the same (Tower Defen
   for (const g of GAMES){
     if (g.id === 'last-known-position' || g.endless) continue;
     if (g.id === 'pop-party') { assert.equal(g.secs, 120, 'Pop Party is two minutes'); continue; }
+    if (g.id === 'ptero-flight') { assert.equal(g.secs, 90, 'Pterry Flight is a minute and a half (the playtest: arms out for 3 minutes was too long)'); continue; }
     assert.equal(g.secs, 180, `${g.id} is 3 minutes`);
   }
 });
