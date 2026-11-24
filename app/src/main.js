@@ -36,6 +36,7 @@ import { MAKING } from './ui/avatar-maker.js';
 import { countText } from './ui/units.js';
 import { usesPads, createPads, padHub, peopleFrom, skipJoinCard } from './session/pads.js';
 import { joinCard } from './ui/join-card.js';
+import { framingCheck } from './ui/framing-check.js';
 import { padWaitPill } from './ui/pause-pill.js';
 import { normalizeLook } from './ui/look.js';
 
@@ -67,7 +68,7 @@ const DEV = !!(import.meta.env && import.meta.env.DEV);
 /* The camera's on only where it's used: a game, its scores (a wave picks
    "again"), and the camera check. Everywhere else - the intro, signing in,
    the home screen - it's off: no light, and no work for the laptop. */
-const CAMERA = new Set(['starting', 'lineup', 'join', 'play', 'outro', 'results', 'calibrate']);
+const CAMERA = new Set(['starting', 'lineup', 'framing', 'join', 'play', 'outro', 'results', 'calibrate']);
 /* The pages that are the mouse's and the keyboard's: Home, the Store,
    Create, and signing in. */
 const HOMEY = new Set(['menu', 'store', 'create', 'pro', 'who']);
@@ -75,9 +76,11 @@ const HOMEY = new Set(['menu', 'store', 'create', 'pro', 'who']);
 /* The pages that crossfade into each other (the tabs have their own slide) */
 const FADEY = new Set(['menu', 'store', 'create', 'pro', 'who', 'results']);
 const TABBY = new Set(['menu', 'store', 'create', 'pro']);
-const INTO_GAME = new Set(['starting', 'lineup', 'join', 'play']);
+const INTO_GAME = new Set(['starting', 'lineup', 'framing', 'join', 'play']);
 /* (?fx=0 turns the page fades off - the rehearsals read the page, and two pages at once would confuse them) */
 const NOFX = /[?&]fx=0\b/.test(location.search);
+/* (the rehearsals and rigs, which pass fx=0, put scripted bodies in front of a game: they skip the framing check, as does ?framing=0) */
+const NOFRAMING = NOFX || /[?&]framing=0\b/.test(location.search);
 function go(next, build){
   /* (looking for everyone again, except in a round, which looks for its players) */
   if (next !== 'play') pose.look();
@@ -234,6 +237,14 @@ function lineUpThenPlay(){
 }
 /* A game that uses phones shows the join card first (QR, the three pictures, who has joined, Start); any other starts at once. */
 function afterLineUp(){
+  /* the camera check: nothing shows when everyone is fully in view; someone cut off (or the first time on this PC) gets a moment first */
+  if (!NOFRAMING && !game.passive && !pose.mouse.active){
+    go('framing', () => framingCheck({ onDone: () => { if (mode === 'framing') afterFraming(); } }));
+    return;
+  }
+  afterFraming();
+}
+function afterFraming(){
   if (!(usesPads(game) && padsRt)){ startRound(); return; }
   /* play again: the same phones are already in, so a new round starts at once (the join card is for a fresh start from home) */
   if (skipJoinCard(padsRt, padsAgain, trackedSeats)){ startRound(); return; }
@@ -412,7 +423,7 @@ function openPause(){
    the scores or the camera check, home. */
 remote.install(() => {
   if (mode === 'play' && !lost){ if (paused){ paused.remove(); paused = null; cursor.reset(); } else openPause(); }
-  else if (mode === 'results' || mode === 'calibrate' || mode === 'join' || mode === 'store') toMenu();
+  else if (mode === 'results' || mode === 'calibrate' || mode === 'join' || mode === 'framing' || mode === 'store') toMenu();
 });
 
 /* The game waits only when the room is empty - everybody gone for a couple
@@ -511,7 +522,7 @@ function tick(now){
   if (!away && !CALM.has(mode)) pose.update(now, dt);
 
   /* paper, under the menus; dark under a game while it loads */
-  c.fillStyle = mode === 'play' || mode === 'outro' || mode === 'results' || mode === 'starting' ? '#0d0b1a' : PAPER;
+  c.fillStyle = mode === 'play' || mode === 'outro' || mode === 'results' || mode === 'starting' || mode === 'framing' ? '#0d0b1a' : PAPER;
   c.fillRect(0, 0, W, H);
 
   if (mode === 'play' && inst && !paused && !lost && !padWait){

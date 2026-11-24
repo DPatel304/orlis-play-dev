@@ -28,3 +28,7 @@ test('a setting that makes no sense is said, not guessed', () => {
   assert.throws(() => settings({ env: { ORLIS_PORT: 'lots' }, defaultDataDir: dir }), /port/);
   assert.throws(() => settings({ env: { ORLIS_PUBLIC_URL: 'http://plain.example.com' }, defaultDataDir: dir }), /https/);
 });
+
+test('the download link starts as the regular release stable one, not the Beta installer', () => {
+  assert.equal(DEFAULTS.downloadUrl, 'https://github.com/DPatel304/orlis-play-dev/releases/latest/download/Orlis-Play-Setup.exe');
+});
