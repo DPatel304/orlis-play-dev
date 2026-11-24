@@ -1,11 +1,13 @@
-/* The builder (decision 0057; the look and flow are docs/create-mockup.html): six steps with the live game on the left and the step's
-   pictures on the right. A strip of the six steps runs along the top (done ticked, the current one lit), the one-line sum-up of the game sits
-   under the preview, and Back / Next are bottom right. Picking anything changes the preview at once (the real built description on the real
-   engine, a scripted hand standing in for the camera). The last step names it (three suggested names, no typing) and has one Play it! button.
+/* The builder (decisions 0057, 0059; the look and flow are docs/create-mockup.html): four steps (Where, What, Rules, Name & play) with the
+   live game on the left and the step's pictures on the right. A strip of the steps runs along the top (done ticked, the current one lit), the one-line
+   sum-up of the game sits under the preview, and Back / Next are bottom right. Picking anything changes the preview at once (the real built description
+   on the real engine, a scripted hand standing in for the camera). "What" picks the game's job (Collect, Dodge, Keep up or Stack: it is how you
+   play, so there is no move to pick) and up to five things, listed in a tray under the preview. The last step names it (three suggested
+   names, no typing) and has one Play it! button.
 
    createStudio({ creation, onBack(), onPlay(saved), say(text, bad) }) -> the element, with tick(dt) and dispose().
    The state and what each move does are in create/builder-model.js (tested); this is only drawing and wiring. Remote and mouse work on every
-   card, slider stop and button (remote.js finds them by their .btn class). */
+   card, chip, slider stop and button (remote.js finds them by their .btn class). */
 import { button, onPick } from './cursor.js';
 import { h } from './screens.js';
 import { sfx } from '../audio/sound.js';
@@ -13,7 +15,7 @@ import { icon } from './brand.js';
 import { iconHTML } from './icons.js';
 import { remote } from './remote.js';
 import { assets } from '../games/assets/index.js';
-import { choices } from '../create/recipe.js';
+import { choices, pieceInfo } from '../create/recipe.js';
 import { PICTURES } from '../create/pictures.js';
 import { makePreview, SIZE } from '../create/preview.js';
 import { creations } from '../create/creations.js';
@@ -35,8 +37,11 @@ function worldPic(id){
   return url;
 }
 
+/* what the four jobs mean, for the line under the things */
+const JOB_LEGEND = [['collect', 'Touch it to score'], ['dodge', 'Keep away - it costs a point'], ['keepup', 'Bat it up - don’t let it drop'], ['stack', 'Build a tower - a full one blasts off']];
+
 export function createStudio({ creation = null, onBack = () => {}, onPlay = () => {}, say = () => {} } = {}){
-  let st = B.newBuilder(creation), cat = null, busy = false, controls = [];
+  let countEl = null, st = B.newBuilder(creation), cat = null, busy = false, controls = [], trayKey = '';
   const root = h('div', 'cstudio');
 
   /* ---------- the step strip ---------- */
@@ -47,16 +52,18 @@ export function createStudio({ creation = null, onBack = () => {}, onPlay = () =
   prev.append(canvas, h('span', 'clive', 'LIVE'));
   const say1 = h('p', 'csay');
   const preview = makePreview(canvas);
+  /* the things picked and their jobs (What) */
+  const tray = h('div', 'ctray');
   /* ---------- the choices ---------- */
   const panel = h('div', 'cpick');
   const navs = h('div', 'cnavs');
-  root.append(strip, prev, say1, panel, navs);
+  root.append(strip, prev, say1, tray, panel, navs);
 
-  /* a card: a picture and a word, one pick */
+  /* a card: a picture (or a canvas) and a word, one pick */
   const opt = (pic, label, small, isOn, set, cls = '') => {
     const b = onPick(button('', 'copt ' + cls), () => { sfx.select(); set(); sync(); });
     const lbl = b.querySelector('.lbl'); lbl.className = 'lbl copt-in';
-    if (pic){ const p = h('span', 'cpic'); p.innerHTML = pic; lbl.appendChild(p); }
+    if (pic){ const p = h('span', 'cpic'); if (typeof pic === 'string') p.innerHTML = pic; else p.appendChild(pic); lbl.appendChild(p); }
     const t = h('span', 'cword'); t.textContent = label; if (small){ const s = h('small'); s.textContent = small; t.appendChild(s); }
     lbl.appendChild(t);
     b.setAttribute('aria-label', small ? `${label}: ${small}` : label);
@@ -65,31 +72,34 @@ export function createStudio({ creation = null, onBack = () => {}, onPlay = () =
   };
   const pickKey = (key, val) => () => { st = B.pick(st, key, val); };
 
+  /* ---------- the tray: each thing picked, with its four job chips ---------- */
+  function drawTray(){
+    const key = st.picks.things.map(t => t.id).join(',');
+    if (key !== trayKey){
+      trayKey = key;
+      controls = controls.filter(c => !c.tray);
+      tray.innerHTML = '';
+      const head = h('div', 'ctrayhead'); countEl = h('small', '', ''); head.append(h('b', '', 'Your things'), countEl);
+      tray.appendChild(head);
+      st.picks.things.forEach((t, i) => {
+        const info = pieceInfo(t.id), row = h('div', 'ctrow'), pic = h('span', 'cpic'), nm = h('span', 'ctname');
+        pic.innerHTML = iconHTML(t.id, 96); nm.textContent = info.label;
+        const rm = onPick(button(icon('close'), 'cx'), () => {
+          if (!B.canRemove(st)){ sfx.back?.(); say('A game needs at least one thing'); return; }
+          sfx.select(); st = B.removePiece(st, t.id); sync();
+          if (document.body.classList && document.body.classList.contains('remote')){ const rows = tray.querySelectorAll('.ctrow'); const r = rows[Math.min(i, rows.length - 1)]; const first = r && r.querySelector('.cjob.on, .cjob'); if (first) remote.mark(first); }
+        });
+        rm.setAttribute('aria-label', `Take off the ${info.label.toLowerCase()}`);
+        controls.push({ el: rm, on: () => false, tray: true, chip: true });
+        row.append(pic, nm, rm);
+        tray.appendChild(row);
+      });
+    }
+    countEl.textContent = `${st.picks.things.length} of ${choices.maxThings}`;
+  }
+
   /* ---------- what each step shows ---------- */
   const builders = {
-    how(){
-      const g = h('div', 'cgrid two');
-      for (const o of choices.how) g.appendChild(opt(PICTURES[o.icon], o.label, o.line, () => st.picks.how === o.id, pickKey('how', o.id)));
-      return [g];
-    },
-    what(){
-      const cur = choices.what.find(c => c.pieces.some(p => p.id === st.picks.what));
-      if (!cat) cat = (cur || choices.what[0]).id;
-      const tabs = h('div', 'ccats'), grid = h('div', 'cgrid three');
-      const fillGrid = () => {
-        grid.innerHTML = ''; controls = controls.filter(c => !c.grid);
-        for (const p of choices.what.find(c => c.id === cat).pieces){
-          const b = opt(iconHTML(p.id, 160), p.label, '', () => st.picks.what === p.id, pickKey('what', p.id), 'piece');
-          controls.find(c => c.el === b).grid = true; grid.appendChild(b);
-        }
-      };
-      for (const c of choices.what){
-        const t = onPick(button(c.label, 'ccat'), () => { sfx.select(); cat = c.id; fillGrid(); sync(); });
-        t.setAttribute('aria-label', c.label); tabs.appendChild(t); controls.push({ el: t, on: () => cat === c.id, tab: true });
-      }
-      fillGrid();
-      return [tabs, grid];
-    },
     where(){
       const g = h('div', 'cgrid two worlds');
       for (const w of choices.where){
@@ -103,10 +113,37 @@ export function createStudio({ creation = null, onBack = () => {}, onPlay = () =
       }
       return [g];
     },
-    move(){
-      const g = h('div', 'cgrid two');
-      for (const m of choices.move) g.appendChild(opt(PICTURES[m.icon], m.label, '', () => st.picks.move === m.id, pickKey('move', m.id)));
-      return [g];
+    what(){
+      if (!cat) cat = (choices.what.find(c => c.pieces.some(p => p.id === st.picks.things[0].id)) || choices.what[0]).id;
+      const tabs = h('div', 'ccats'), grid = h('div', 'cgrid five');
+      const toggle = (id) => () => {
+        if (B.isPicked(st, id)){
+          if (!B.canRemove(st)){ say('A game needs at least one thing'); return; }
+          st = B.removePiece(st, id);
+        } else if (!B.canAdd(st)){ say(`${choices.maxThings} things is the most - take one off first`); return; }
+        else st = B.addPiece(st, id);
+      };
+      const fillGrid = () => {
+        grid.innerHTML = ''; controls = controls.filter(c => !c.grid);
+        for (const p of choices.what.find(c => c.id === cat).pieces){
+          const b = opt(iconHTML(p.id, 160), p.label, '', () => B.isPicked(st, p.id), toggle(p.id), 'piece');
+          controls.find(c => c.el === b).grid = true; grid.appendChild(b);
+        }
+      };
+      for (const c of choices.what){
+        const t = onPick(button(c.label, 'ccat'), () => { sfx.select(); cat = c.id; fillGrid(); sync(); });
+        t.setAttribute('aria-label', c.label); tabs.appendChild(t); controls.push({ el: t, on: () => cat === c.id, tab: true });
+      }
+      fillGrid();
+      const jobs = h('div', 'cjobs');
+      for (const j of choices.jobs){
+        const b = onPick(button(j.label, 'cjob'), () => { sfx.select(); st = B.jobAll(st, j.id); sync(); });
+        b.setAttribute('aria-label', `Job: ${j.label}`); b.setAttribute('data-job', j.id);
+        jobs.appendChild(b); controls.push({ el: b, on: () => B.jobNow(st) === j.id, chip: true });
+      }
+      const legend = h('div', 'cjoblegend');
+      for (const [id, line] of JOB_LEGEND){ const l = h('span', 'cjl'), n = h('b', '', ''), t = h('em', '', ''); n.textContent = choices.jobs.find(j => j.id === id).label; t.textContent = line; l.append(n, t); legend.appendChild(l); }
+      return [jobs, tabs, grid, legend];
     },
     rules(){
       const r = choices.rules, out = [];
@@ -124,7 +161,7 @@ export function createStudio({ creation = null, onBack = () => {}, onPlay = () =
           s.setAttribute('aria-label', `${label}: ${r[key].labels[i]}`); track.appendChild(s); stops.push(s);
           controls.push({ el: s, on: () => st.picks[key] === i, stop: true });
         }
-        controls.push({ el: box, on: () => false, paint(){ const v = st.picks[key]; fill.style.width = `${v * 25}%`; val.textContent = r[key].labels[v]; stops.forEach((s, i) => s.classList.toggle('lit', i <= v)); } });
+        controls.push({ el: box, on: () => false, paint(){ const v = st.picks[key]; fill.style.width = `${v * 100 / (r[key].steps - 1)}%`; val.textContent = r[key].labels[v]; stops.forEach((s, i) => s.classList.toggle('lit', i <= v)); } });
         box.append(top, left, track, right);
         return box;
       };
@@ -141,12 +178,14 @@ export function createStudio({ creation = null, onBack = () => {}, onPlay = () =
       const mode = h('div', 'cgrid two ctoggle');
       for (const m of r.mode) mode.appendChild(opt(PICTURES[m.icon], m.label, '', () => st.picks.mode === m.id, pickKey('mode', m.id), 'cwide'));
       out.push(mode);
-      /* the specials (a golden one, a bomb): not in Keep it up */
-      if (B.hasSpecials(st.picks)){
+      /* the specials: a golden one needs something to Collect, a bomb needs things that move about (not only a ball to keep up) */
+      const avail = r.specials.filter(s => s.id === 'golden' ? B.hasGolden(st.picks) : B.hasBomb(st.picks));
+      if (avail.length){
         const sp = h('div', 'cgrid two ctoggle');
-        for (const s of r.specials) sp.appendChild(opt(PICTURES[s.icon], s.label, s.line, () => !!st.picks[s.id], () => { st = B.flip(st, s.id); }, 'cwide'));
+        for (const s of avail) sp.appendChild(opt(PICTURES[s.icon], s.label, s.line, () => !!st.picks[s.id], () => { st = B.flip(st, s.id); }, 'cwide'));
         out.push(sp);
-      } else out.push(h('p', 'cnote', 'Keep it up has no golden ones or bombs.'));
+      }
+      if (avail.length < r.specials.length) out.push(h('p', 'cnote', avail.length ? 'A golden one needs a thing to Collect.' : 'Golden ones and bombs need things to Collect or Dodge.'));
       return out;
     },
     name(){
@@ -189,23 +228,26 @@ export function createStudio({ creation = null, onBack = () => {}, onPlay = () =
     }
     navs.append(back, fwd);
   }
-  /* what changes on a pick: the cards' ticks, the sliders, the sentence, the live game */
+  /* what changes on a pick: the cards' ticks, the chips, the sentence, the live game */
   function sync(){
+    if (STEPS_WITH_TRAY.includes(B.STEPS[st.step].id)) drawTray();
     for (const c of controls){
       if (c.paint){ c.paint(); continue; }
       const on = !!c.on();
       c.el.classList.toggle('on', on);
-      if (!c.tab && !c.stop) c.el.classList.toggle('focus', on);      /* (where the remote starts: the card that is lit) */
+      if (!c.tab && !c.stop && !c.chip) c.el.classList.toggle('focus', on);      /* (where the remote starts: the card that is lit) */
     }
     say1.textContent = B.sumUp(st);
     preview.set(st.picks);
   }
+  const STEPS_WITH_TRAY = ['what'];
   function render(){
     const info = B.stepInfo(st);
     root.setAttribute('data-step', info.id);
     root.className = 'cstudio step-' + info.id;
     drawStrip();
-    controls = [];
+    controls = []; trayKey = '';
+    tray.innerHTML = '';
     panel.innerHTML = '';
     panel.append(h('h3', '', ''), h('p', 'csub', ''));
     panel.querySelector('h3').textContent = info.title;

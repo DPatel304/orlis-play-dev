@@ -1,5 +1,5 @@
-/* The Create tab (decision 0057; the look is docs/create-mockup.html): a big "Make a game" card with Cubo, a three-picture reminder (Pick, Play,
-   Change a step), and the family's three slots. A filled slot shows the game's cover (its world and piece) with the maker's face and opens
+/* The Create tab (decisions 0057, 0059; the look is docs/create-mockup.html): a big "Make a game" banner with Cubo, filling the screen's width,
+   and under it the family's three slots. A filled slot shows the game's cover (its world and piece) with the maker's face and opens
    Play / Change / Remove (Remove asks "Sure?"); an empty one is dashed. With all three used, "Make a game" says so and starts nothing.
 
    createHome({ items, onMake(), onPlay(c), onChange(c), onRemove(c), message }) gives the element to put on the page; list changes call
@@ -9,7 +9,6 @@ import { h, screen } from './screens.js';
 import { sfx } from '../audio/sound.js';
 import { icon } from './brand.js';
 import { faceOf } from './avatar-maker.js';
-import { PICTURES } from '../create/pictures.js';
 import { madeCover } from '../create/made-game.js';
 import { makerFace, makerName } from '../create/maker.js';
 import { slotsOf, slotsLine, makeCard, FULL_LINE } from '../create/slots.js';
@@ -32,14 +31,6 @@ export function createHome({ items = [], onMake = () => {}, onPlay = () => {}, o
   const cubo = h('span', 'chcubo'); cubo.appendChild(faceOf({}, 256, { tile: false, bare: true }));
   heroLbl.append(cubo, h('span', 'chtext'));
   const heroText = heroLbl.querySelector('.chtext');
-
-  /* ---------- how it works ---------- */
-  const how = h('div', 'chow');
-  how.innerHTML = '<div class="chowtxt"><b>How it works</b><span>Choose how it plays, what is in it and where. Then play, and change a step any time.</span></div>';
-  const mini = h('div', 'cmini');
-  const step = (pic, label) => { const s = h('span', 'cministep'); s.innerHTML = `${pic}<em>${label}</em>`; return s; };
-  mini.append(step(PICTURES.catch, 'Pick'), step(PICTURES.reach, 'Play'), step(icon('pencil'), 'Change a step'));
-  how.appendChild(mini);
 
   /* ---------- our games: the three slots ---------- */
   const lab = h('div', 'crowlab'); lab.innerHTML = '<b>Our games</b><small></small>';
@@ -100,7 +91,7 @@ export function createHome({ items = [], onMake = () => {}, onPlay = () => {}, o
   }
   draw();
 
-  root.append(hero, how, lab, slots);
+  root.append(hero, lab, slots);
   Object.defineProperty(root, 'open', { get: () => !!pop });
   return Object.assign(root, { update(next){ list = next; draw(); }, closePop });
 }

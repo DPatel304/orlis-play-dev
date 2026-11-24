@@ -14,30 +14,32 @@ export const SIZE = { w: 960, h: 540 };
 const SILENT = new Proxy({}, { get: () => () => {} });
 const hand = () => ({ x: 0.5, y: 0.6, vx: 0, vy: 0, speed: 0 });
 
-/* the scripted player: it chases the thing it should catch, pop or bat (and just waves about for Dodge, where touching costs); a gentle sweep
-   when nothing is there yet */
-export function makeHand(how){
+/* the scripted player: it chases what it should catch, stack or bat up (the lowest first, a falling ball before it drops) and just waves about
+   when nothing is there yet. It does not chase a Dodge thing or a bomb, so now and then one touches it, and costs a point. */
+const CHASE = /^(collect|stack|keepup|golden)/;
+export function makeHand(){
   const h = hand();
   let t = 0;
   return {
     h,
     step(dt, things){
       t += dt;
-      const aim = (things || []).filter(x => !x.dead && x.d && x.d.name !== 'bomb' && x.y > 0.12 && x.y < (how === 'catch' ? 0.95 : 0.88));
-      let tx = 0.5 + 0.34 * Math.sin(t * 0.9), ty = (how === 'catch' ? 0.66 : 0.5) + 0.12 * Math.sin(t * 1.6);
-      if (how !== 'dodge' && aim.length){
-        /* the nearest one it can still reach (the lowest, for a falling thing) */
-        const best = aim.reduce((a, b) => (how === 'catch' ? b.y > a.y : Math.hypot(b.x - h.x, b.y - h.y) < Math.hypot(a.x - h.x, a.y - h.y)) ? b : a);
-        tx = best.x; ty = how === 'keepup' ? Math.min(0.88, best.y + 0.06) : best.y;
+      const aim = (things || []).filter(x => !x.dead && x.d && CHASE.test(x.d.name || '') && x.y > 0.12 && x.y < 0.95);
+      let tx = 0.5 + 0.34 * Math.sin(t * 0.9), ty = 0.6 + 0.1 * Math.sin(t * 1.6), kind = '';
+      if (aim.length){
+        /* the lowest one (the one about to be lost) */
+        const best = aim.reduce((a, b) => b.y > a.y ? b : a);
+        kind = (best.d.name || '').startsWith('keepup') ? 'keepup' : '';
+        tx = best.x; ty = kind ? Math.min(0.88, best.y + 0.06) : best.y;
       }
-      const k = Math.min(1, dt * (how === 'keepup' ? 5 : 2.6)), nx = h.x + (tx - h.x) * k, ny = h.y + (ty - h.y) * k;
+      const k = Math.min(1, dt * (kind ? 5 : 3)), nx = h.x + (tx - h.x) * k, ny = h.y + (ty - h.y) * k;
       h.vx = (nx - h.x) / (dt || 1); h.vy = (ny - h.y) / (dt || 1); h.speed = Math.hypot(h.vx, h.vy); h.x = nx; h.y = ny;
     }
   };
 }
 
 function round(picks, { ui = { say: sayBubble, goal: goalBar }, a = assets } = {}){
-  const p = clean(picks), hd = makeHand(p.how);
+  const p = clean(picks), hd = makeHand();
   const pose = { players: [{ present: true, hands: { left: null, right: hd.h } }], mouse: { active: true } };
   const play = makePlay(build(p), { pose, sfx: SILENT, assets: a, ui, colors: ['#3da9ff'], max: 4 }).create(1);
   return { play, hand: hd, picks: p };
@@ -81,7 +83,7 @@ export function makePreview(canvas){
 export function headless(picks, secs = 20){
   const sounds = [], sfx = new Proxy({}, { get: (_, k) => () => sounds.push(k) });
   const none = { scene(){}, draw(){}, text(){} };
-  const p = clean(picks), hd = makeHand(p.how), pose = { players: [{ present: true, hands: { left: null, right: hd.h } }], mouse: { active: true } };
+  const p = clean(picks), hd = makeHand(), pose = { players: [{ present: true, hands: { left: null, right: hd.h } }], mouse: { active: true } };
   const play = makePlay(build(p), { pose, sfx, assets: none, ui: { say(){}, goal(){} }, colors: ['#3da9ff'], max: 4 }).create(1);
   const dt = 1 / 30;
   for (let t = 0; t < secs; t += dt){ hd.step(dt, play.things); play.step(dt, SIZE.w, SIZE.h); }
