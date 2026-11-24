@@ -1,22 +1,24 @@
-/* ---------- Create: the home with the family's slots, and the six-step builder (decision 0057; the look is docs/create-mockup.html) ----------
+/* ---------- Create: the start screen with Cubo and the family's slots (decisions 0057, 0060; the steps are clean-cubo.css) ----------
    Everything sits in .cstage, a 16:9 box (177.78 x 100 --u) centred on the screen, so the TV layout holds in any window shape. */
 .screen.cmake{ display:block; padding:0; overflow:hidden; text-align:left; }
 .cstage{ position:absolute; left:50%; top:0; width:calc(var(--u)*177.78); height:calc(var(--u)*100); transform:translateX(-50%); }
 .cstage .ctop .hbrand{ left:calc(var(--u)*5); }
 .csys{ position:absolute; right:calc(var(--u)*5); top:calc(var(--u)*2.6); z-index:7; }
-.cview,.chome,.cstudio{ position:absolute; inset:0; }
+.cview,.chome{ position:absolute; inset:0; }
 .cstage .cnotice{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*10); }
 
 /* the same flat button for every card: no border, a soft shadow, the lit one ringed in violet */
-.btn.chero,.btn.cslot,.btn.copt,.btn.cworld,.btn.ccat,.btn.cname,.btn.cbtn2,.btn.cskip,.btn.cstop,.btn.cjob,.btn.cx{ border:0; font-family:var(--ui); color:var(--ink); }
-.btn.chero .fill,.btn.cslot .fill,.btn.copt .fill,.btn.cworld .fill,.btn.ccat .fill,.btn.cname .fill,.btn.cbtn2 .fill,.btn.cskip .fill,.btn.cstop .fill,.btn.cjob .fill,.btn.cx .fill{ display:none; }
+.btn.chero,.btn.cslot{ border:0; font-family:var(--ui); color:var(--ink); }
+.btn.chero .fill,.btn.cslot .fill{ display:none; }
 
 /* ---------- the home ---------- */
 .btn.chero{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*15); right:calc(var(--u)*5); height:calc(var(--u)*40); padding:0; border-radius:calc(var(--u)*3); background:var(--grad); color:#fff; text-align:left; overflow:hidden;
   box-shadow:0 0 0 calc(var(--u)*.7) #fff, 0 0 0 calc(var(--u)*1.4) var(--blue), 0 calc(var(--u)*1) calc(var(--u)*3) rgba(29,27,46,.25); }
 .btn.chero .lbl{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-start; padding:calc(var(--u)*5); }
-.chcubo{ position:absolute; right:calc(var(--u)*12); top:calc(var(--u)*4); width:calc(var(--u)*32); height:calc(var(--u)*32); filter:drop-shadow(0 calc(var(--u)*.8) calc(var(--u)*1.6) rgba(20,18,40,.3)); }
-.chcubo canvas{ width:100%; height:100%; display:block; }
+.chcubo{ position:absolute; right:calc(var(--u)*14); top:calc(var(--u)*1); width:calc(var(--u)*38); height:calc(var(--u)*38); filter:drop-shadow(0 calc(var(--u)*.8) calc(var(--u)*1.6) rgba(20,18,40,.3)); }
+.chcubo canvas{ position:relative; width:100%; height:100%; display:block; }
+/* the ring that fills round Cubo while both arms are up */
+.chring{ position:absolute; inset:calc(var(--u)*-1.6); border-radius:50%; background:conic-gradient(#fff var(--arms,0%), rgba(255,255,255,.22) 0); -webkit-mask:radial-gradient(circle, transparent 66%, #000 67%); mask:radial-gradient(circle, transparent 66%, #000 67%); opacity:.9; }
 .chtext b{ display:block; font:700 calc(var(--u)*9)/1 var(--ui); }
 .chtext span{ display:block; margin-top:calc(var(--u)*1.4); max-width:44ch; font:500 calc(var(--u)*3.6)/1.3 var(--ui); opacity:.94; }
 .btn.chero.full{ background:linear-gradient(135deg,#4b4580,var(--ink)); }
@@ -54,104 +56,7 @@
 .cgpbtns .btn.setbtn.danger.sure{ background:var(--ink); color:#fff; }
 .cgpbtns .btn.setbtn svg.i{ width:calc(var(--u)*3.8); height:calc(var(--u)*3.8); }
 
-/* ---------- the studio: the live game left, the choices right ---------- */
-.cstepper{ position:absolute; left:calc(var(--u)*5); right:calc(var(--u)*5); top:calc(var(--u)*14.4); display:flex; gap:calc(var(--u)*1.2); }
-.cstep{ flex:1; min-width:0; display:flex; align-items:center; gap:calc(var(--u)*1); padding:calc(var(--u)*1) calc(var(--u)*1.4); border-radius:var(--pill); background:#fff; font:600 calc(var(--u)*2.3)/1 var(--ui); color:var(--ink-soft); white-space:nowrap; overflow:hidden; box-shadow:var(--soft-sm); }
-.cstep i{ font-style:normal; flex:none; width:calc(var(--u)*3.4); height:calc(var(--u)*3.4); border-radius:50%; display:grid; place-items:center; background:var(--line); color:var(--ink-soft); font-size:calc(var(--u)*2); }
-.cstep.done i{ background:#4cc9a0; color:#fff; } .cstep.cur{ background:var(--ink); color:#fff; } .cstep.cur i{ background:#fff; color:var(--ink); }
-.cstl{ overflow:hidden; text-overflow:ellipsis; }
-.cprev{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*21.4); width:calc(var(--u)*98); aspect-ratio:16/9; border-radius:calc(var(--u)*2.6); overflow:hidden; box-shadow:0 calc(var(--u)*1) calc(var(--u)*3) rgba(29,27,46,.3); background:#000; }
-.cprev canvas{ width:100%; height:100%; display:block; }
-.clive{ position:absolute; left:calc(var(--u)*1.6); top:calc(var(--u)*1.4); padding:calc(var(--u)*.5) calc(var(--u)*1.4); border-radius:var(--pill); background:rgba(0,0,0,.45); color:#fff; font:700 calc(var(--u)*1.8)/1 var(--ui); letter-spacing:.06em; display:flex; align-items:center; gap:calc(var(--u)*.8); }
-.clive:before{ content:""; width:calc(var(--u)*1.1); height:calc(var(--u)*1.1); border-radius:50%; background:#ff5d6c; }
-.csay{ position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*79); width:calc(var(--u)*98); margin:0; font:600 calc(var(--u)*3.2)/1.3 var(--ui); color:var(--ink); }
-.cpick{ position:absolute; left:calc(var(--u)*108); right:calc(var(--u)*5); top:calc(var(--u)*21.4); bottom:calc(var(--u)*15.5); display:flex; flex-direction:column; gap:calc(var(--u)*1.8); }
-.cpick > *{ flex:none; }
-.cpick h3{ margin:0; font:700 calc(var(--u)*5)/1.05 var(--ui); color:var(--ink); }
-.cpick .csub{ margin:calc(var(--u)*-1) 0 0; font:500 calc(var(--u)*2.6)/1.3 var(--ui); color:var(--ink-soft); } .cpick .csub.none{ display:none; }
-.cgrid{ display:grid; grid-template-columns:repeat(2,1fr); gap:calc(var(--u)*1.6); } .cgrid.three{ grid-template-columns:repeat(3,1fr); }
-
-.btn.copt{ background:#fff; border-radius:calc(var(--u)*2.2); padding:0; text-align:left; box-shadow:0 calc(var(--u)*.5) calc(var(--u)*1.4) rgba(29,27,46,.1); overflow:visible; }
-.btn.copt .lbl{ display:flex; align-items:center; gap:calc(var(--u)*1.6); padding:calc(var(--u)*1.6); font:700 calc(var(--u)*3)/1.1 var(--ui); }
-.cpic{ flex:none; display:block; width:calc(var(--u)*7.5); height:calc(var(--u)*7.5); } .cpic svg,.cpic .oicon{ width:100%; height:100%; display:block; }
-.cword small{ display:block; margin-top:calc(var(--u)*.4); font:500 calc(var(--u)*2.1)/1.2 var(--ui); color:var(--ink-soft); }
-.cgrid.three .btn.copt .lbl{ flex-direction:column; gap:calc(var(--u)*.5); font-size:calc(var(--u)*2.4); padding:calc(var(--u)*1.2) calc(var(--u)*.6); text-align:center; }
-.cgrid.three .cpic{ width:calc(var(--u)*7); height:calc(var(--u)*7); }
-.btn.copt.on,.btn.cworld.on{ box-shadow:0 0 0 calc(var(--u)*.6) #fff, 0 0 0 calc(var(--u)*1.2) var(--violet), 0 calc(var(--u)*.8) calc(var(--u)*2) rgba(139,92,246,.35); transform:scale(1.03); }
-.btn.copt:hover,.btn.copt.hot,body.remote .btn.copt.kfocus{ box-shadow:0 0 0 calc(var(--u)*.6) var(--blue), 0 calc(var(--u)*.8) calc(var(--u)*2) rgba(29,27,46,.2); transform:scale(1.03); }
-.btn.copt.on:hover,.btn.copt.on.hot,body.remote .btn.copt.on.kfocus{ box-shadow:0 0 0 calc(var(--u)*.6) #fff, 0 0 0 calc(var(--u)*1.2) var(--blue); }
-.btn.copt.small{ display:inline-flex; } .btn.copt.small .lbl{ padding:calc(var(--u)*1.1) calc(var(--u)*2.6); font-size:calc(var(--u)*2.8); }
-.cgrid.ctoggle .btn.copt .lbl{ justify-content:center; padding:calc(var(--u)*1.2) calc(var(--u)*1.6); } .cgrid.ctoggle .cpic{ width:calc(var(--u)*5.6); height:calc(var(--u)*5.6); }
-.cslider + .cgrid.ctoggle, .cgrid.ctoggle + .cgrid.ctoggle{ margin-top:calc(var(--u)*.8); }   /* (the picked card's ring is 1.2u wide: room for it between the rows) */
-.ccats{ display:flex; gap:calc(var(--u)*1); flex-wrap:wrap; }
-.btn.ccat{ padding:0; border-radius:var(--pill); background:#fff; box-shadow:var(--soft-sm); } .btn.ccat .lbl{ display:block; padding:calc(var(--u)*.9) calc(var(--u)*2.2); font:600 calc(var(--u)*2.5)/1 var(--ui); color:var(--ink-soft); }
-.btn.ccat.on{ background:var(--ink); } .btn.ccat.on .lbl{ color:#fff; }
-.btn.ccat:hover,.btn.ccat.hot,body.remote .btn.ccat.kfocus{ box-shadow:0 0 0 calc(var(--u)*.5) var(--blue); transform:none; }
-.cgrid.worlds{ gap:calc(var(--u)*1.4); }
-.btn.cworld{ position:relative; aspect-ratio:16/8.6; padding:0; border-radius:calc(var(--u)*2.2); overflow:hidden; background:var(--line) center/cover no-repeat; box-shadow:0 calc(var(--u)*.5) calc(var(--u)*1.4) rgba(29,27,46,.15); }
-.btn.cworld .cworldname{ position:absolute; left:calc(var(--u)*1.4); bottom:calc(var(--u)*1.1); color:#fff; font:700 calc(var(--u)*2.8)/1 var(--ui); text-shadow:0 0 3px rgba(0,0,0,.7), 0 2px 6px rgba(0,0,0,.55); }
-.btn.cworld:hover,.btn.cworld.hot,body.remote .btn.cworld.kfocus{ box-shadow:0 0 0 calc(var(--u)*.6) var(--blue); transform:none; }
-.btn.cworld.on:hover,.btn.cworld.on.hot,body.remote .btn.cworld.on.kfocus{ box-shadow:0 0 0 calc(var(--u)*.6) #fff, 0 0 0 calc(var(--u)*1.2) var(--blue); transform:none; }
-
-/* the rules: picture sliders with five stops */
-.cslider{ background:#fff; border-radius:calc(var(--u)*2); padding:calc(var(--u)*1.2) calc(var(--u)*2.2) calc(var(--u)*1.4); display:grid; grid-template-columns:auto 1fr auto; gap:calc(var(--u)*.4) calc(var(--u)*1.6); align-items:center; box-shadow:var(--soft-sm); }
-.cslab{ grid-column:1 / -1; display:flex; justify-content:space-between; align-items:baseline; font:700 calc(var(--u)*2.8)/1 var(--ui); color:var(--ink); }
-.cslab em{ font:600 calc(var(--u)*2.4)/1 var(--ui); font-style:normal; color:var(--violet); }
-.cend{ display:block; width:calc(var(--u)*5.4); height:calc(var(--u)*5.4); } .cend svg{ width:100%; height:100%; display:block; }
-.ctrack{ position:relative; height:calc(var(--u)*5.4); display:flex; align-items:center; justify-content:space-between; }
-.ctrack:before{ content:""; position:absolute; left:calc(var(--u)*2.2); right:calc(var(--u)*2.2); top:50%; height:calc(var(--u)*1.2); margin-top:calc(var(--u)*-.6); border-radius:var(--pill); background:var(--line); }
-.ctrack i{ position:absolute; left:calc(var(--u)*2.2); top:50%; height:calc(var(--u)*1.2); margin-top:calc(var(--u)*-.6); border-radius:var(--pill); background:var(--grad); max-width:calc(100% - var(--u)*4.4); }
-.btn.cstop{ position:relative; width:calc(var(--u)*4.4); height:calc(var(--u)*4.4); padding:0; border-radius:50%; background:#fff; box-shadow:0 0 0 calc(var(--u)*.45) var(--line); overflow:visible; }
-.btn.cstop.lit{ box-shadow:0 0 0 calc(var(--u)*.45) var(--violet); background:#efe9ff; }
-.btn.cstop.on{ background:var(--violet); box-shadow:0 0 0 calc(var(--u)*.7) #fff, 0 0 0 calc(var(--u)*1.3) var(--violet); transform:scale(1.18); }
-.btn.cstop .lbl{ display:none; }
-.btn.cstop:hover,.btn.cstop.hot,body.remote .btn.cstop.kfocus{ box-shadow:0 0 0 calc(var(--u)*.6) var(--blue); transform:scale(1.18); }
-.cslider.clen{ grid-template-columns:auto 1fr; } .cslider.clen .cslab{ grid-column:auto; } .cseg{ display:flex; gap:calc(var(--u)*1); justify-content:flex-end; }
-.cseg .btn.copt{ box-shadow:0 0 0 calc(var(--u)*.4) var(--line); }
-.cnote{ margin:0; font:500 calc(var(--u)*2.6)/1.3 var(--ui); color:var(--ink-soft); }
-.btn.cskip{ align-self:center; padding:0; background:transparent; box-shadow:none; border-radius:var(--pill); } .btn.cskip .lbl{ display:block; padding:calc(var(--u)*1.2) calc(var(--u)*2.6); font:600 calc(var(--u)*2.7)/1 var(--ui); color:var(--ink-soft); border-radius:var(--pill); box-shadow:inset 0 0 0 calc(var(--u)*.35) #b9bccd; }
-.btn.cskip:hover .lbl,.btn.cskip.hot .lbl,body.remote .btn.cskip.kfocus .lbl{ color:var(--ink); box-shadow:inset 0 0 0 calc(var(--u)*.5) var(--blue); } .btn.cskip:hover,.btn.cskip.hot,body.remote .btn.cskip.kfocus{ transform:none; box-shadow:none; }
-
-/* naming it */
-.cnames{ display:flex; flex-direction:column; align-items:flex-start; gap:calc(var(--u)*1.4); }
-.btn.cname{ padding:0; border-radius:var(--pill); background:#fff; box-shadow:0 calc(var(--u)*.5) calc(var(--u)*1.4) rgba(29,27,46,.1); } .btn.cname{ max-width:100%; text-align:left; } .btn.cname .lbl{ display:block; padding:calc(var(--u)*1.6) calc(var(--u)*3.2); font:700 calc(var(--u)*3.1)/1.15 var(--ui); white-space:normal; }
-.btn.cname.on{ background:var(--ink); } .btn.cname.on .lbl{ color:#fff; }
-.btn.cname:hover,.btn.cname.hot,body.remote .btn.cname.kfocus{ box-shadow:0 0 0 calc(var(--u)*.6) var(--blue); transform:none; }
-.cmadeby{ display:flex; align-items:center; gap:calc(var(--u)*1.6); font:600 calc(var(--u)*3)/1 var(--ui); color:var(--ink-soft); }
-.cmbface{ display:block; width:calc(var(--u)*7); height:calc(var(--u)*7); } .cmbface canvas{ width:100%; height:100%; display:block; }
-
-/* what: up to five things, the picture grid on the right and the tray of picked things (each with its four jobs) under the live game */
-.cgrid.five{ grid-template-columns:repeat(5,1fr); }
-.cgrid.five .btn.copt .lbl{ flex-direction:column; gap:calc(var(--u)*.5); font-size:calc(var(--u)*2.4); padding:calc(var(--u)*1.2) calc(var(--u)*.6); text-align:center; }
-.cgrid.five .cpic{ width:calc(var(--u)*8.4); height:calc(var(--u)*8.4); }
-.ctray{ display:none; }
-.cstudio.step-what .cprev{ width:calc(var(--u)*70); }
-.cstudio.step-what .csay{ display:none; }
-.cstudio.step-what .cpick{ left:calc(var(--u)*80); }
-.cstudio.step-what .ctray{ display:block; position:absolute; left:calc(var(--u)*5); top:calc(var(--u)*62.4); width:calc(var(--u)*70); }
-.ctrayhead{ display:flex; gap:calc(var(--u)*1.4); align-items:baseline; height:calc(var(--u)*3); color:var(--ink); } .ctrayhead b{ font:700 calc(var(--u)*2.8)/1 var(--ui); } .ctrayhead small{ font:500 calc(var(--u)*2.3)/1 var(--ui); color:var(--ink-soft); }
-.ctrow{ display:flex; align-items:center; gap:calc(var(--u)*1); height:calc(var(--u)*5.3); margin-top:calc(var(--u)*.7); padding:0 calc(var(--u)*.9); border-radius:calc(var(--u)*2.2); background:#fff; box-shadow:var(--soft-sm); }
-.ctrow .cpic{ width:calc(var(--u)*4.2); height:calc(var(--u)*4.2); }
-.ctname{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:700 calc(var(--u)*2.4)/1 var(--ui); color:var(--ink); }
-.cjobs{ display:flex; gap:calc(var(--u)*.7); }
-.btn.cjob{ flex:1; padding:0; border-radius:var(--pill); background:var(--line); } .btn.cjob .lbl{ display:block; padding:calc(var(--u)*1) calc(var(--u)*.4); text-align:center; font:700 calc(var(--u)*2.15)/1 var(--ui); color:var(--ink-soft); white-space:nowrap; }
-.btn.cjob.on{ background:var(--ink); } .btn.cjob.on .lbl{ color:#fff; }
-.btn.cjob:hover,.btn.cjob.hot,body.remote .btn.cjob.kfocus,.btn.cx:hover,.btn.cx.hot,body.remote .btn.cx.kfocus{ box-shadow:0 0 0 calc(var(--u)*.5) var(--blue); transform:none; }
-.btn.cx{ flex:none; width:calc(var(--u)*3.8); height:calc(var(--u)*3.8); padding:0; border-radius:50%; background:transparent; color:var(--ink-soft); } .btn.cx .lbl{ display:grid; place-items:center; width:100%; height:100%; } .btn.cx svg.i{ width:calc(var(--u)*2.2); height:calc(var(--u)*2.2); }
-.cjoblegend{ display:grid; grid-template-columns:1fr 1fr; gap:calc(var(--u)*1.2) calc(var(--u)*2.4); margin-top:calc(var(--u)*.6); }
-.cjl b{ display:block; font:700 calc(var(--u)*2.5)/1.1 var(--ui); color:var(--ink); } .cjl em{ display:block; font:500 calc(var(--u)*2.2)/1.25 var(--ui); font-style:normal; color:var(--ink-soft); }
-
-
-/* Back and Next, bottom right */
-.cnavs{ position:absolute; right:calc(var(--u)*5); bottom:calc(var(--u)*4); display:flex; gap:calc(var(--u)*1.6); z-index:3; }
-.btn.cbtn2{ padding:0; border-radius:var(--pill); box-shadow:var(--soft-sm); } .btn.cbtn2 .lbl{ display:inline-flex; align-items:center; gap:calc(var(--u)*1.2); padding:calc(var(--u)*1.7) calc(var(--u)*4.2); font:700 calc(var(--u)*3.2)/1 var(--ui); }
-.btn.cbtn2.ghost{ background:#fff; color:var(--ink); } .btn.cbtn2.go{ background:var(--ink); color:#fff; }
-.btn.cbtn2.big{ background:var(--grad); color:#fff; box-shadow:0 calc(var(--u)*1) calc(var(--u)*3) rgba(139,92,246,.4); } .btn.cbtn2.big .lbl{ padding:calc(var(--u)*1.8) calc(var(--u)*5.4); font-size:calc(var(--u)*3.8); }
-.btn.cbtn2.big{ margin-left:calc(var(--u)*1.2); }
-.btn.cbtn2 svg.i{ width:1.1em; height:1.1em; }
-.btn.cbtn2:hover,.btn.cbtn2.hot,body.remote .btn.cbtn2.kfocus{ transform:scale(1.05); box-shadow:0 0 0 calc(var(--u)*.6) var(--blue), var(--soft-sm); }
-
 /* Play's third row: the maker's face on each tile */
 .htile .mkby{ position:absolute; right:calc(var(--u)*1.2); top:calc(var(--u)*1.2); width:calc(var(--u)*5.6); height:calc(var(--u)*5.6); filter:drop-shadow(0 calc(var(--u)*.4) calc(var(--u)*.8) rgba(20,18,40,.45)); }
 
-@media (prefers-reduced-motion: reduce){ .btn.copt.on,.btn.cstop.on,.btn.cslot:hover{ transform:none; } .btn.chero.shake{ animation:none; } }
+@media (prefers-reduced-motion: reduce){ .btn.cslot:hover{ transform:none; } .btn.chero.shake{ animation:none; } }

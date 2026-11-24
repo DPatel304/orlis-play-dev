@@ -1,0 +1,111 @@
+/* ---------- Cubo's Create: the steps (decision 0060; the storyboard is docs/cubo-create-mockup.html) ----------
+   The painted world and Cubo are drawn on the main canvas behind; everything here is the big things to touch, over it. The box is the
+   same 16:9 stage as the start screen (177.78 x 100 --u), so the layout holds at 1920x1080 and 1280x720 alike. Targets are big (a hand is not a
+   mouse); the ring round one fills while a hand rests in it (--dw), and round "Arms up" while both arms are held (--k). */
+.cc{ position:absolute; inset:0; z-index:5; font-family:var(--painted); color:var(--ink); text-align:left; pointer-events:none; }
+.cc.hide{ display:none; }
+.cclayer{ position:absolute; inset:0; }
+.cc .btn{ pointer-events:auto; border:0; font-family:var(--painted); color:var(--ink); }
+.cc .btn .fill{ display:none; }
+.cc .btn.hide,.cc .hide{ display:none; }
+
+/* Cubo's words */
+.ccbubble{ position:absolute; left:calc(var(--u)*3); top:calc(var(--u)*12.4); display:none; align-items:center; gap:calc(var(--u)*1.4); max-width:calc(var(--u)*60); padding:calc(var(--u)*1.6) calc(var(--u)*1.8) calc(var(--u)*1.6) calc(var(--u)*3); border-radius:calc(var(--u)*3.4); background:rgba(255,255,255,.95); box-shadow:var(--soft); pointer-events:auto; }
+.ccbubble.on{ display:flex; }
+.cctext{ font:600 calc(var(--u)*3.9)/1.2 var(--painted); }
+.btn.ccagain{ flex:none; width:calc(var(--u)*6.4); height:calc(var(--u)*6.4); padding:0; border-radius:50%; background:var(--ink); color:#fff; }
+.btn.ccagain .lbl{ display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+.btn.ccagain svg.i{ width:calc(var(--u)*3); height:calc(var(--u)*3); }
+.btn.ccback{ position:absolute; left:calc(var(--u)*3); top:calc(var(--u)*2.6); padding:0; border-radius:var(--pill); background:rgba(255,255,255,.95); box-shadow:var(--soft-sm); }
+.btn.ccback .lbl{ display:inline-flex; align-items:center; gap:calc(var(--u)*1); padding:calc(var(--u)*1.4) calc(var(--u)*3) calc(var(--u)*1.4) calc(var(--u)*2.2); font:600 calc(var(--u)*3.2)/1 var(--painted); }
+.btn.ccback svg.i{ width:calc(var(--u)*3.4); height:calc(var(--u)*3.4); }
+
+/* the same ring for everything a hand can touch, and the lit one for the remote */
+.btn.cccard,.btn.ccchip,.btn.cctrayslot,.btn.ccspin,.btn.ccarms,.btn.ccspot{ position:relative; }
+.btn.cccard::after,.btn.ccchip::after,.btn.cctrayslot::after,.btn.ccspin::after,.btn.ccarms::after,.btn.ccspot::after{
+  content:''; position:absolute; inset:calc(var(--u)*-1); border-radius:inherit; padding:calc(var(--u)*.9); pointer-events:none;
+  background:conic-gradient(var(--violet) var(--dw,0%), transparent 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask:linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+body.remote .cc .btn.sel,body.remote .cc .ccslider.sel{ box-shadow:0 0 0 calc(var(--u)*.8) #fff, 0 0 0 calc(var(--u)*1.6) var(--violet), var(--soft); }
+
+/* "Arms up": the one big pill that goes on from a step (it fills while both arms stay up) */
+.btn.ccarms{ position:absolute; right:calc(var(--u)*4); bottom:calc(var(--u)*4); padding:0; border-radius:var(--pill); background:var(--ink); color:#fff; box-shadow:var(--soft); overflow:visible; }
+.btn.ccarms::before{ content:''; position:absolute; inset:0; border-radius:inherit; background:linear-gradient(90deg, var(--violet) var(--k,0%), transparent 0); opacity:.95; }
+.btn.ccarms .lbl{ position:relative; display:inline-flex; align-items:center; gap:calc(var(--u)*1.6); padding:calc(var(--u)*1.8) calc(var(--u)*4.4) calc(var(--u)*1.8) calc(var(--u)*3); font:700 calc(var(--u)*4)/1 var(--painted); }
+.btn.ccarms svg{ width:calc(var(--u)*5.4); height:calc(var(--u)*5.4); display:block; }
+.cc[data-step=what] .btn.ccarms{ right:auto; left:50%; margin-left:calc(var(--u)*-17); bottom:calc(var(--u)*3); }
+.btn.ccarms.rising{ transform:scale(1.05); }
+
+.cctip{ position:absolute; padding:calc(var(--u)*.9) calc(var(--u)*2.4); border-radius:var(--pill); background:rgba(255,255,255,.92); font:600 calc(var(--u)*3)/1.1 var(--painted); box-shadow:var(--soft-sm); }
+
+/* Where: the world's name, the dot row, and the arrows either side */
+.ccworld{ position:absolute; left:50%; top:calc(var(--u)*2.6); transform:translateX(-50%); padding:calc(var(--u)*1.2) calc(var(--u)*5); border-radius:var(--pill); background:rgba(255,255,255,.95); box-shadow:var(--soft); font:700 calc(var(--u)*7.6)/1.1 var(--painted); white-space:nowrap; }
+.ccdots{ position:absolute; left:50%; bottom:calc(var(--u)*5.4); transform:translateX(-50%); display:flex; gap:calc(var(--u)*3); padding:calc(var(--u)*2) calc(var(--u)*4); border-radius:var(--pill); background:rgba(255,255,255,.92); box-shadow:var(--soft); }
+.btn.ccdot{ width:calc(var(--u)*4.4); height:calc(var(--u)*4.4); padding:0; border-radius:50%; background:#cfd2e2; transition:transform .2s; }
+.btn.ccdot.on{ background:var(--violet); transform:scale(1.55); }
+.cc-where .cctip{ left:50%; bottom:calc(var(--u)*17); transform:translateX(-50%); font-size:calc(var(--u)*3.6); }
+.btn.ccside{ position:absolute; top:50%; width:calc(var(--u)*11); height:calc(var(--u)*11); margin-top:calc(var(--u)*-5.5); padding:0; border-radius:50%; background:rgba(255,255,255,.88); box-shadow:var(--soft); }
+.btn.ccside .lbl{ display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+.btn.ccside svg.i{ width:calc(var(--u)*5); height:calc(var(--u)*5); }
+.btn.ccside.left{ left:calc(var(--u)*24); } .btn.ccside.right{ right:calc(var(--u)*4); }
+.btn.ccside.right svg{ } 
+.btn.ccside.left svg{ }
+
+/* the game: four big cards, each with Cubo doing it */
+.ccgrid{ position:absolute; left:calc(var(--u)*38); top:calc(var(--u)*24); width:calc(var(--u)*134); display:grid; grid-template-columns:1fr 1fr; gap:calc(var(--u)*3.4); }
+.btn.cccard{ height:calc(var(--u)*34); padding:0; border-radius:calc(var(--u)*3.6); background:rgba(255,255,255,.95); box-shadow:var(--soft); text-align:left; }
+.btn.cccard .lbl.cccardin{ display:flex; align-items:center; gap:calc(var(--u)*1); width:100%; height:100%; padding:0 calc(var(--u)*2) 0 calc(var(--u)*1.4); box-sizing:border-box; }
+.cccardin canvas{ flex:none; width:calc(var(--u)*30); height:calc(var(--u)*30); }
+.cccardtext b{ display:block; font:700 calc(var(--u)*6.8)/1 var(--painted); }
+.cccardtext small{ display:block; margin-top:calc(var(--u)*1); font:500 calc(var(--u)*3.4)/1.2 var(--painted); color:var(--ink-soft); }
+.btn.cccard:hover,.btn.cccard.dw{ transform:scale(1.02); }
+
+/* what: the group bubbles, the wheel's grab spot and the tray */
+.ccgroups{ position:absolute; display:flex; gap:calc(var(--u)*1.8); transition:none; }
+.ccgroups.big{ left:calc(var(--u)*24); right:calc(var(--u)*6); top:calc(var(--u)*30); justify-content:center; gap:calc(var(--u)*3); }
+.ccgroups:not(.big){ left:calc(var(--u)*22); right:calc(var(--u)*4); top:calc(var(--u)*2.6); justify-content:flex-end; }
+.btn.ccchip{ padding:0; background:var(--chip); border-radius:calc(var(--u)*5); box-shadow:var(--soft); }
+.btn.ccchip .lbl.ccchipin{ display:flex; align-items:center; justify-content:center; width:100%; height:100%; box-sizing:border-box; }
+.ccchippic{ display:block; } .ccchippic .oicon{ width:100%; height:100%; display:block; object-fit:contain; }
+.ccgroups.big .btn.ccchip{ width:calc(var(--u)*28); height:calc(var(--u)*36); border-radius:calc(var(--u)*6); }
+.ccgroups.big .ccchipin{ flex-direction:column; gap:calc(var(--u)*1); }
+.ccgroups.big .ccchippic{ width:calc(var(--u)*18); height:calc(var(--u)*18); }
+.ccgroups.big .ccchipword{ font:700 calc(var(--u)*5.2)/1 var(--painted); }
+.ccgroups:not(.big) .btn.ccchip{ height:calc(var(--u)*10.4); padding:0 calc(var(--u)*3) 0 calc(var(--u)*1.6); }
+.ccgroups:not(.big) .ccchipin{ gap:calc(var(--u)*1.2); }
+.ccgroups:not(.big) .ccchippic{ width:calc(var(--u)*7.4); height:calc(var(--u)*7.4); }
+.ccgroups:not(.big) .ccchipword{ font:700 calc(var(--u)*3.6)/1 var(--painted); }
+.btn.ccchip.on{ box-shadow:0 0 0 calc(var(--u)*.8) #fff, 0 0 0 calc(var(--u)*1.6) var(--ink), var(--soft); }
+.btn.ccchip:hover{ transform:scale(1.03); }
+.btn.ccspot{ position:absolute; left:50%; top:calc(var(--u)*40); width:calc(var(--u)*22); height:calc(var(--u)*22); margin:calc(var(--u)*-11) 0 0 calc(var(--u)*-11); padding:0; border-radius:50%; background:radial-gradient(circle, rgba(255,242,170,.55) 0 55%, rgba(255,242,170,.15) 70%, rgba(255,242,170,0) 72%); border:calc(var(--u)*.7) dashed #fff; animation:ccglow 1.6s ease-in-out infinite; }
+.btn.ccspot.near{ background:radial-gradient(circle, rgba(255,230,120,.9) 0 55%, rgba(255,230,120,.3) 70%, rgba(255,230,120,0) 72%); }
+@keyframes ccglow{ 0%,100%{ box-shadow:0 0 calc(var(--u)*2) rgba(255,236,150,.6); } 50%{ box-shadow:0 0 calc(var(--u)*5) rgba(255,236,150,.95); } }
+.ccspottip{ left:50%; top:calc(var(--u)*25); transform:translateX(-50%); }
+.ccswipetip{ left:calc(var(--u)*124); top:calc(var(--u)*30); }
+.cctray{ position:absolute; right:calc(var(--u)*3.4); top:calc(var(--u)*15); width:calc(var(--u)*16); padding:calc(var(--u)*1.4); border-radius:calc(var(--u)*3); background:rgba(255,255,255,.92); box-shadow:var(--soft); display:flex; flex-direction:column; align-items:center; gap:calc(var(--u)*1.1); }
+.cctray small{ font:700 calc(var(--u)*2.8)/1 var(--painted); color:var(--ink-soft); }
+.btn.cctrayslot,.cctrayslot.empty{ display:block; width:calc(var(--u)*11.4); height:calc(var(--u)*11.4); padding:0; border-radius:calc(var(--u)*2.4); background:#fff; box-shadow:var(--soft-sm); }
+.cctrayslot.empty{ background:rgba(29,27,46,.08); box-shadow:none; border:calc(var(--u)*.4) dashed #b9bccd; }
+.cctrayin{ display:flex; align-items:center; justify-content:center; width:100%; height:100%; } .cctrayin .oicon{ width:86%; height:86%; object-fit:contain; }
+.btn.cctrayslot:hover{ transform:scale(1.06); }
+
+/* the rules: two giant sliders pushed with a hand */
+.ccslider{ position:absolute; left:calc(var(--u)*30); width:calc(var(--u)*130); padding:calc(var(--u)*2) calc(var(--u)*3); border-radius:calc(var(--u)*4); background:rgba(255,255,255,.93); box-shadow:var(--soft); box-sizing:border-box; }
+.cc-rules .ccslider:nth-child(1){ top:calc(var(--u)*25); } .cc-rules .ccslider:nth-child(2){ top:calc(var(--u)*56); }
+.ccslab{ display:flex; align-items:baseline; justify-content:space-between; }
+.ccslab b{ font:700 calc(var(--u)*5.2)/1.1 var(--painted); } .ccslab em{ font:700 calc(var(--u)*7)/1.1 var(--painted); font-style:normal; color:var(--violet); }
+.ccsliderrow{ display:flex; align-items:center; gap:calc(var(--u)*2.4); margin-top:calc(var(--u)*1.4); }
+.ccend{ flex:none; width:calc(var(--u)*11); height:calc(var(--u)*11); } .ccend svg{ width:100%; height:100%; display:block; }
+.cctrack{ position:relative; flex:1; height:calc(var(--u)*5.6); border-radius:var(--pill); background:#dfe2ee; display:flex; align-items:center; justify-content:space-between; padding:0 calc(var(--u)*.4); }
+.cctrack i{ position:absolute; left:0; top:0; bottom:0; border-radius:var(--pill); background:var(--grad); }
+.btn.ccstop{ position:relative; z-index:1; flex:none; width:calc(var(--u)*5.6); height:calc(var(--u)*5.6); padding:0; border-radius:50%; background:#fff; box-shadow:var(--soft-sm); margin:0; }
+.btn.ccstop.lit{ background:var(--blue); }
+.btn.ccstop.on{ width:calc(var(--u)*9.6); height:calc(var(--u)*9.6); margin:calc(var(--u)*-2) calc(var(--u)*-2); background:var(--violet); box-shadow:0 0 0 calc(var(--u)*.9) #fff, var(--soft); }
+
+/* the name: the wheel is on the canvas; Spin is here for a hand, the remote and the mouse */
+.btn.ccspin{ position:absolute; left:calc(var(--u)*60); bottom:calc(var(--u)*4); padding:0; border-radius:var(--pill); background:#fff; box-shadow:var(--soft); }
+.btn.ccspin .lbl{ display:inline-flex; padding:calc(var(--u)*1.8) calc(var(--u)*6); font:700 calc(var(--u)*4.4)/1 var(--painted); }
+.ccgo{ position:absolute; left:0; right:0; top:calc(var(--u)*34); text-align:center; font:700 calc(var(--u)*13)/1 var(--painted); color:#fff; text-shadow:0 0 calc(var(--u)*1.4) var(--ink), 0 calc(var(--u)*.4) calc(var(--u)*3) rgba(29,27,46,.6); }
+
+@media (prefers-reduced-motion: reduce){ .btn.ccspot{ animation:none; } .btn.cccard:hover,.btn.ccchip:hover,.btn.ccdot.on,.cc[data-step=what] .btn.ccarms{ right:auto; left:50%; margin-left:calc(var(--u)*-17); bottom:calc(var(--u)*3); }
+.btn.ccarms.rising{ transform:none; } .btn.ccdot.on{ transform:none; } }

@@ -9,7 +9,6 @@ const src = (f) => readFileSync(new URL('../src/ui/' + f, import.meta.url), 'utf
 const PLACES = [
   ['home.js', /faceCv = faceOf\(([^)]*\)?[^;]*)\);/],
   ['create-page.js', /\.hface'\)\.appendChild\(faceOf\(([^;]*)\)\);/],
-  ['create-home.js', /chcubo'\);\s*cubo\.appendChild\(faceOf\(([^;]*)\)\);/],
   ['account.js', /el\.appendChild\(faceOf\(\{ look: \{ \.\.\.CUBO([^;]*)\)\);/]
 ];
 

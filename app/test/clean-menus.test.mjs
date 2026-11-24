@@ -35,7 +35,7 @@ test('the look has no cube, no blobs and no emoji left in the menus', () => {
   assert.ok(!/frontScene[\s\S]*cube\(/.test(read('ui/front.js')), 'the sign-in picture has no cube');
   assert.ok(!/glow\(/.test(read('ui/front.js')) && !/glow\(/.test(read('ui/boot.js')), 'no gradient blobs in the intro or behind sign-in');
   assert.ok(css.includes('--ink') || read('style.css').includes('--ink:#1d1b2e'), 'the near-black ink is a token');
-  for (const f of ['ui/home.js', 'ui/menu.js', 'ui/tabs.js', 'ui/brand.js', 'ui/screens.js', 'ui/kid-editor.js', 'ui/create-home.js', 'ui/create-studio.js']) assert.ok(!/\\u\{1F|[\u{1F300}-\u{1FAFF}]/u.test(read(f).replace(/AVATARS[\s\S]*?\};/, '')), f + ' has no emoji');
+  for (const f of ['ui/home.js', 'ui/menu.js', 'ui/tabs.js', 'ui/brand.js', 'ui/screens.js', 'ui/kid-editor.js', 'ui/create-home.js', 'ui/cubo-create.js']) assert.ok(!/\\u\{1F|[\u{1F300}-\u{1FAFF}]/u.test(read(f).replace(/AVATARS[\s\S]*?\};/, '')), f + ' has no emoji');
   for (const w of ['--ink:#1d1b2e', '--paper:#f4f5f9', '--grad:linear-gradient(120deg,#3da9ff,#8b5cf6)', '--tv-title', 'font-face']) assert.ok(read('style.css').includes(w.replace('font-face', '"Outfit"')) || w === 'font-face' && read('style.css').includes('"Outfit"'), w);
 });
 

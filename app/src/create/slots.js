@@ -12,5 +12,5 @@ export const canMake = (list = []) => !isFull(list);
 export const slotsLine = (list = []) => `${usedOf(list)} of ${MAX_SLOTS} slots used`;
 /* what "Make a game" says: its words, and whether it starts the builder */
 export const makeCard = (list = []) => isFull(list)
-  ? { title: 'Make a game', line: FULL_LINE, full: true, starts: false }
-  : { title: 'Make a game', line: 'Pick pictures, play it, change a step.', full: false, starts: true };
+  ? { title: "Cubo's Create", line: FULL_LINE, full: true, starts: false }
+  : { title: "Cubo's Create", line: "Let's make a game! Raise both arms to start.", full: false, starts: true };

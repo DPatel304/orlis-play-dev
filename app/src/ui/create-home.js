@@ -2,13 +2,17 @@
    and under it the family's three slots. A filled slot shows the game's cover (its world and piece) with the maker's face and opens
    Play / Change / Remove (Remove asks "Sure?"); an empty one is dashed. With all three used, "Make a game" says so and starts nothing.
 
+   This is Cubo's Create's start screen (decision 0060): the banner is Cubo waving you in ("Raise both arms to start"; the page reads the
+   arms, and calls arms(progress) so a ring fills round him), and the games row is the three slots.
+
    createHome({ items, onMake(), onPlay(c), onChange(c), onRemove(c), message }) gives the element to put on the page; list changes call
-   its update(items). The remote's arrows and OK, and the mouse, work on every button here. */
+   its update(items), tick(dt) animates Cubo, nope() shakes the banner (slots full). The remote's arrows and OK, and the mouse, work on every button here. */
 import { button, onPick } from './cursor.js';
 import { h, screen } from './screens.js';
 import { sfx } from '../audio/sound.js';
 import { icon } from './brand.js';
-import { faceOf } from './avatar-maker.js';
+import { cuboFigure } from './avatar-art.js';
+import { reduced } from './chkit.js';
 import { madeCover } from '../create/made-game.js';
 import { makerFace, makerName } from '../create/maker.js';
 import { slotsOf, slotsLine, makeCard, FULL_LINE } from '../create/slots.js';
@@ -22,14 +26,17 @@ export function createHome({ items = [], onMake = () => {}, onPlay = () => {}, o
   /* ---------- the big card ---------- */
   function make(){
     const card = makeCard(list);
-    if (!card.starts){ sfx.back?.(); hero.classList.add('shake'); setTimeout(() => hero.classList.remove('shake'), 500); say(FULL_LINE); return; }
+    if (!card.starts){ nope(); say(FULL_LINE); return; }
     sfx.select(); onMake();
   }
   const hero = onPick(button('', 'chero'), make);
   hero.classList.add('focus');
   const heroLbl = hero.querySelector('.lbl');
-  const cubo = h('span', 'chcubo'); cubo.appendChild(faceOf({}, 256, { tile: false, bare: true }));
+  /* Cubo, the whole of him, waving you in (his canvas is drawn by tick; the ring round him fills as both arms stay up) */
+  const cubo = h('span', 'chcubo'), cv = document.createElement('canvas'); cv.width = 512; cv.height = 512; cv.setAttribute('aria-hidden', 'true');
+  cubo.append(h('span', 'chring'), cv);
   heroLbl.append(cubo, h('span', 'chtext'));
+  let clock = 0;
   const heroText = heroLbl.querySelector('.chtext');
 
   /* ---------- our games: the three slots ---------- */
@@ -91,7 +98,18 @@ export function createHome({ items = [], onMake = () => {}, onPlay = () => {}, o
   }
   draw();
 
+  /* Cubo waves (still, with reduced motion) */
+  function tick(dt){
+    clock += dt;
+    const c = cv.getContext && cv.getContext('2d');
+    if (!c) return;
+    c.clearRect(0, 0, cv.width, cv.height);
+    cuboFigure(c, cv.width / 2, cv.height * 0.97, cv.height * 0.92, reduced() ? 'stand' : 'wave', reduced() ? 0 : clock, null, { talk: false });
+  }
+  const arms = (k) => { hero.style.setProperty('--arms', `${Math.round(Math.max(0, Math.min(1, k)) * 100)}%`); hero.classList.toggle('armsup', k > 0); };
+  const nope = () => { sfx.back?.(); hero.classList.add('shake'); setTimeout(() => hero.classList.remove('shake'), 500); };
+
   root.append(hero, lab, slots);
   Object.defineProperty(root, 'open', { get: () => !!pop });
-  return Object.assign(root, { update(next){ list = next; draw(); }, closePop });
+  return Object.assign(root, { update(next){ list = next; draw(); }, closePop, tick, arms, nope });
 }

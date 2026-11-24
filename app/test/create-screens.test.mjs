@@ -11,7 +11,6 @@ El.prototype.getContext = () => null;
 globalThis.requestAnimationFrame = () => 0;
 
 const { MAX_SLOTS, FULL_LINE, slotsOf, usedOf, isFull, canMake, makeCard, slotsLine } = await import('../src/create/slots.js');
-const B = await import('../src/create/builder-model.js');
 const { defaultPicks, build, sentence, choices, clean, addThing, setJob } = await import('../src/create/recipe.js');
 const { validate } = await import('../src/games/play/validate.js');
 const { playEnv } = await import('../src/games/play/env.js');
@@ -19,7 +18,6 @@ const { creations } = await import('../src/create/creations.js');
 const { madeGame, isMade, resultsOf, summaryOf } = await import('../src/create/made-game.js');
 const { headless } = await import('../src/create/preview.js');
 const { createHome } = await import('../src/ui/create-home.js');
-const { createStudio } = await import('../src/ui/create-studio.js');
 const { createMakePage } = await import('../src/ui/create-page.js');
 const { tabsFor, homeRows, TITLES } = await import('../src/ui/home-model.js');
 const { account } = await import('../src/ui/account.js');
@@ -71,90 +69,6 @@ test('kids get the Play and Create tabs; Create Pro stays out of it', () => {
   assert.equal(qa(ui, '.chero').length, 1, 'the big Make a game card is there for a child');
   assert.ok(!/Create Pro|Claude Code|grown-ups/i.test(txt(ui)), 'no Pro, no "for grown-ups"');
   signedOut();
-});
-
-test('the builder walks four steps (Where, What, Rules, Name) and every pick changes the game that is previewed', () => {
-  assert.deepEqual(B.STEPS.map(s => s.id), ['where', 'what', 'rules', 'name']);
-  assert.deepEqual(B.STEPS.map(s => s.label), ['Where', 'What', 'Rules', 'Name & play']);
-  assert.ok(!B.STEPS.some(s => s.id === 'move'), 'no Your move step');
-  let st = B.newBuilder();
-  assert.equal(st.step, 0); assert.deepEqual(st.picks, defaultPicks());
-  assert.deepEqual(B.stripOf(st).map(s => s.status), ['cur', 'todo', 'todo', 'todo']);
-  assert.equal(B.stepInfo(st).id, 'where', 'Where is first');
-  st = B.pick(st, 'where', 'night'); assert.equal(B.specOf(st).scene, 'night');
-  st = B.next(st); assert.equal(B.stepInfo(st).id, 'what');
-  st = B.addPiece(st, 'bee'); assert.deepEqual(B.specOf(st).things.filter(t => t.name !== 'golden').map(t => t.piece), ['apple', 'bee']);
-  st = B.jobAll(st, 'dodge'); assert.equal(B.specOf(st).things.find(t => t.piece === 'bee').moves, 'drift'); assert.equal(B.specOf(st).card, 'lean', 'the job says how you play');
-  assert.deepEqual(st.picks.things.map(t => t.job), ['dodge', 'dodge'], 'one job for every thing');
-  st = B.next(st);
-  assert.deepEqual(B.stripOf(st).map(s => s.status), ['done', 'done', 'cur', 'todo']);
-  const slow = B.specOf(B.pick(st, 'speed', 0)).things[0], fast = B.specOf(B.pick(st, 'speed', 4)).things[0];
-  assert.ok(fast.speed > slow.speed, 'speed');
-  assert.ok(B.specOf(B.pick(st, 'many', 4)).things[0].appears.max > B.specOf(B.pick(st, 'many', 0)).things[0].appears.max, 'how many');
-  assert.equal(B.specOf(B.pick(st, 'minutes', 3)).secs, 180);
-  assert.equal(B.specOf(B.pick(st, 'mode', 'versus')).team, undefined); assert.equal(B.specOf(B.pick(st, 'mode', 'together')).team, true);
-  assert.ok(B.specOf(B.flip(B.pick(st, 'bomb', false), 'bomb')).things.some(t => t.name === 'bomb'), 'a bomb to avoid');
-  assert.ok(!B.specOf(B.pick(st, 'golden', false)).things.some(t => t.name === 'golden'), 'no golden one');
-  st = B.next(st); assert.equal(B.isLast(st), true); assert.equal(B.next(st).step, B.LAST, 'never past the last');
-  assert.equal(B.back(B.newBuilder()).step, 0, 'never before the first');
-  /* what it says and what it asks, step by step */
-  assert.equal(B.stepInfo(B.newBuilder()).title, 'Where is it?'); assert.equal(B.stepInfo(B.go(B.newBuilder(), 1)).title, 'What is in it?');
-  assert.equal(B.stepInfo(st).nextLabel, 'Play it!'); assert.equal(B.stepInfo(B.newBuilder()).nextLabel, 'Next');
-  assert.equal(B.sumUp(st), sentence(st.picks));
-  assert.deepEqual(validate(B.specOf(st), env), []);
-});
-
-test('the things: up to five, each once, one always stays, each with its job', () => {
-  let st = B.go(B.newBuilder(), 1);
-  assert.deepEqual(st.picks.things, [{ id: 'apple', job: 'collect' }]);
-  assert.equal(B.canAdd(st), true); assert.equal(B.canRemove(st), false, 'the last one stays');
-  assert.equal(B.removePiece(st, 'apple').picks.things.length, 1); assert.equal(B.togglePiece(st, 'apple').picks.things.length, 1, 'picking the last again changes nothing');
-  for (const id of ['bee', 'star', 'fish', 'pear']) st = B.addPiece(st, id);
-  assert.equal(st.picks.things.length, 5); assert.equal(B.canAdd(st), false, 'five is the most');
-  assert.equal(B.addPiece(st, 'banana').picks.things.length, 5); assert.equal(B.addPiece(B.removePiece(st, 'star'), 'bee').picks.things.length, 4, 'once each');
-  assert.equal(B.isPicked(st, 'bee'), true); assert.equal(B.isPicked(st, 'banana'), false);
-  st = B.togglePiece(st, 'bee'); assert.equal(B.isPicked(st, 'bee'), false, 'picking again takes it off');
-  st = B.jobAll(st, 'stack'); assert.ok(st.picks.things.every(t => t.job === 'stack')); assert.equal(B.jobNow(st), 'stack'); assert.equal(B.addPiece(st, 'cookie').picks.things.at(-1).job, 'stack', 'new things take the game\'s job');
-  st = B.jobOf(st, 'fish', 'dodge'); assert.equal(st.picks.things.find(t => t.id === 'fish').job, 'dodge', 'a thing can still hold its own');
-  assert.deepEqual(validate(B.specOf(st), env), []);
-  /* the name stays out of the picks the builder builds with */
-  assert.equal('name' in B.addPiece(B.setName(st, 'x'), 'bee').picks, false);
-});
-
-test('Rules can be skipped: the usual rules are used, and it goes on to the name', () => {
-  let st = B.go(B.newBuilder(), 2);
-  assert.equal(B.SKIP_LABEL, 'Skip, use the usual rules');
-  st = B.pick(B.pick(B.pick(B.pick(st, 'speed', 4), 'many', 0), 'minutes', 3), 'mode', 'versus');
-  st = B.flip(B.pick(st, 'golden', false), 'bomb');
-  const skipped = B.skipRules(st), d = defaultPicks();
-  for (const k of B.RULE_KEYS) assert.equal(skipped.picks[k], d[k], k + ' is the usual');
-  assert.equal(skipped.step, B.LAST, 'on to the name');
-  assert.deepEqual(skipped.picks.things, st.picks.things, 'the other steps stay as picked');
-  assert.deepEqual(validate(B.specOf(skipped), env), []);
-  assert.equal(B.hasSpecials(clean(one('beachball', 'keepup'))), false, 'a ball to keep up has no golden ones or bombs');
-  assert.deepEqual([B.hasGolden(clean(one('bee', 'dodge'))), B.hasBomb(clean(one('bee', 'dodge')))], [false, true], 'a Dodge thing can have a bomb but no golden one');
-  assert.deepEqual([B.hasGolden(defaultPicks()), B.hasBomb(defaultPicks())], [true, true]);
-});
-
-test('names: three to pick from, one picked, and a changed game keeps its own name', () => {
-  let st = B.go(B.newBuilder(), 3);
-  const names = B.nameChoices(st);
-  assert.equal(names.length, 3); assert.equal(new Set(names).size, 3);
-  assert.equal(B.nameOf(st), names[0], 'the first is picked to begin with');
-  st = B.setName(st, names[2]); assert.equal(B.nameOf(st), names[2]); assert.equal(B.finalPicks(st).name, names[2]);
-  assert.equal(B.specOf(st).title, names[2]);
-  st = B.addPiece(B.removePiece(B.addPiece(st, 'fish'), 'apple'), 'bee');
-  assert.ok(B.nameChoices(st).includes(B.nameOf(st)), 'a name that no longer fits is dropped for one that does');
-  for (const n of B.nameChoices(st)) assert.ok(n.split(' ').length >= 3 && n.split(' ').length <= 5, n);
-  const mine = game('c1', 'The Great Wobbly Banana Bonanza'), again = B.newBuilder(mine);
-  assert.equal(again.editing, 'c1'); assert.equal(again.step, 0);
-  assert.equal(B.nameOf(again), 'The Great Wobbly Banana Bonanza', 'opened on its own name (up to five words)');
-  assert.deepEqual(again.picks.things, [{ id: 'apple', job: 'collect' }]); assert.equal('name' in again.picks, false);
-  /* a game made before 0059 (one thing, a "how") opens as one thing with its job */
-  const old = { id: 'o1', name: 'Bee Dash', makerId: 'p1', picks: { how: 'dodge', what: 'bee', where: 'sunset', move: 'wave', speed: 3, many: 2, size: 2, minutes: 1, mode: 'together', golden: true, bomb: false, name: 'Bee Dash' } };
-  const opened = B.newBuilder(old);
-  assert.deepEqual(opened.picks.things, [{ id: 'bee', job: 'dodge' }]); assert.equal(opened.picks.where, 'sunset'); assert.equal(opened.picks.speed, 5); assert.equal(B.nameOf(opened), 'Bee Dash');
-  assert.deepEqual(validate(B.specOf(opened), env), []);
 });
 
 test('the made game plays on the real engine, and tells the shell what it needs', () => {
@@ -271,7 +185,7 @@ test('the Create home: three slots, Make a game starts the builder, and a full f
   assert.equal(qa(home, '.cslot.full').map(s => s.getAttribute('aria-label')).join('|'), 'Apple Catch: play, change or remove|Bee Pop: play, change or remove');
   assert.equal(qa(qa(home, '.cslot.full')[1], '.cby').length, 1, 'the maker\'s face on the tile');
   assert.match(txt(q(home, '.crowlab')), /2 of 3 slots used/);
-  assert.match(txt(q(home, '.chero')), /Make a game/);
+  assert.match(txt(q(home, '.chero')), /Cubo(&#39;|')s Create/); assert.match(txt(q(home, '.chero')), /Raise both arms to start/);
   assert.equal(qa(home, '.cministep').length, 0, 'no Pick, Play, Change a step tiles'); assert.equal(qa(home, '.chow').length, 0, 'no How it works card');
   pickEl(q(home, '.chero')); assert.deepEqual(calls, ['make']);
   pickEl(q(home, '.cslot.empty')); assert.deepEqual(calls, ['make', 'make'], 'an empty slot makes one too');
@@ -313,91 +227,110 @@ test('a slot opens to Play, Change and Remove, and Remove only on the second pre
   signedOut();
 });
 
-/* ---------- the studio ---------- */
-test('the studio: the strip, the cards, the things with their jobs, the live game and Back and Next', () => {
-  signedIn(); resetDom(); El.prototype.getContext = () => null;
-  const calls = [], said = [];
-  const studio = createStudio({ onBack: () => calls.push('back'), onPlay: (g) => calls.push('play:' + g.name), say: (t) => said.push(t) });
-  const strip = () => qa(studio, '.cstep').map(s => s.className.replace('cstep ', ''));
-  assert.deepEqual(strip(), ['cur', 'todo', 'todo', 'todo']);
-  assert.deepEqual(qa(studio, '.cstl').map(txt), ['Where', 'What', 'Rules', 'Name & play']);
-  assert.ok(q(studio, '.cprev') && q(studio, '.clive'), 'the live game, on the left');
-  assert.match(txt(q(studio, '.csay')), /^Catch the apples in the sunny meadow/);
-  /* 1: where - the world cards */
-  assert.equal(qa(studio, '.cworld').length, 6);
-  pickEl(byLabel(studio, 'Starry night')); assert.equal(studio.preview.round.spec.scene, 'night');
-  /* 2: what - tabs, a grid of pictures, the things picked with their jobs */
-  pickEl(byLabel(studio, 'Next')); assert.deepEqual(strip(), ['done', 'cur', 'todo', 'todo']);
-  assert.equal(qa(studio, '.ccat').length, 5);
-  assert.equal(qa(studio, '.ctrow').length, 1, 'the apple is picked to begin with');
-  assert.deepEqual(qa(studio, '.cjob').map(b => b.getAttribute('data-job')), ['collect', 'dodge', 'keepup', 'stack'], 'a row of four job chips: the game\'s one job');
-  assert.ok(qa(studio, '.cjob')[0].classList.contains('on'), 'Collect is the usual');
-  pickEl(byLabel(studio, 'Animals')); assert.ok(byLabel(studio, 'Bee'), 'the animals'); assert.ok(!byLabel(studio, 'Apple'), 'not the food any more');
-  pickEl(byLabel(studio, 'Bee')); assert.equal(qa(studio, '.ctrow').length, 2); assert.ok(byLabel(studio, 'Bee').classList.contains('on'));
-  assert.deepEqual(studio.state.picks.things.map(t => t.id), ['apple', 'bee']);
-  pickEl(byLabel(studio, 'Job: Dodge')); assert.deepEqual(studio.state.picks.things.map(t => t.job), ['dodge', 'dodge'], 'every thing gets the job');
-  assert.ok(byLabel(studio, 'Job: Dodge').classList.contains('on') && !byLabel(studio, 'Job: Collect').classList.contains('on'));
-  assert.equal(studio.preview.round.spec.things.find(t => t.piece === 'bee').moves, 'drift', 'the live game shows the mix');
-  assert.match(txt(q(studio, '.csay')), /odge the apples and bees/);
-  /* picking again takes it off; so does the cross; up to five; the last one stays */
-  pickEl(byLabel(studio, 'Bee')); assert.equal(qa(studio, '.ctrow').length, 1);
-  for (const l of ['Bee', 'Bumblebee', 'Butterfly', 'Bird']) pickEl(byLabel(studio, l));
-  assert.equal(qa(studio, '.ctrow').length, 5); assert.match(txt(q(studio, '.ctrayhead')), /5 of 5/);
-  pickEl(byLabel(studio, 'Ladybug')); assert.equal(qa(studio, '.ctrow').length, 5, 'five is the most'); assert.ok(said.some(t => /5 things is the most/.test(t)));
-  pickEl(byLabel(studio, 'Take off the bird')); assert.equal(qa(studio, '.ctrow').length, 4); assert.ok(!studio.state.picks.things.some(t => t.id === 'bird'));
-  for (const l of ['bee', 'bumblebee', 'butterfly']) pickEl(byLabel(studio, `Take off the ${l}`));
-  assert.equal(qa(studio, '.ctrow').length, 1); pickEl(byLabel(studio, 'Take off the apple')); assert.equal(qa(studio, '.ctrow').length, 1); assert.ok(said.some(t => /at least one thing/.test(t)));
-  pickEl(byLabel(studio, 'Fish')); pickEl(byLabel(studio, 'Job: Stack')); assert.equal(studio.preview.round.spec.things.find(t => t.piece === 'fish').rules[0].then[0].stack, 6); assert.equal(studio.preview.round.spec.card, 'reach');
-  /* 3: rules - sliders with five stops, the round, together or who wins, the specials that fit */
-  pickEl(byLabel(studio, 'Next'));
-  assert.equal(qa(studio, '.cstop').length, 14, 'seven stops each');
-  assert.ok(!qa(studio, '.cworld').length && !byLabel(studio, 'Squat'), 'no move to pick');
-  pickEl(byLabel(studio, 'How fast: Rocket')); assert.equal(studio.state.picks.speed, 6);
-  pickEl(byLabel(studio, 'How many: One')); assert.equal(studio.state.picks.many, 0);
-  pickEl(byLabel(studio, '3 minutes')); assert.equal(studio.preview.round.spec.secs, 180);
-  pickEl(byLabel(studio, 'Who wins?')); assert.equal(studio.state.picks.mode, 'versus');
-  assert.ok(byLabel(studio, 'A bomb: to avoid'), 'a Stack thing can have a bomb'); assert.ok(!byLabel(studio, 'Golden one: worth 5'), 'a golden one needs a thing to Collect');
-  pickEl(byLabel(studio, 'A bomb: to avoid')); assert.equal(studio.state.picks.bomb, true); assert.ok(studio.preview.round.spec.things.some(t => t.name === 'bomb'));
-  assert.ok(byLabel(studio, B.SKIP_LABEL), 'a way to skip the rules');
-  pickEl(byLabel(studio, B.SKIP_LABEL));
-  assert.equal(studio.state.step, 3); assert.equal(studio.state.picks.speed, 3); assert.equal(studio.state.picks.minutes, 1); assert.equal(studio.state.picks.mode, 'together'); assert.equal(studio.state.picks.bomb, false);
-  assert.deepEqual(studio.state.picks.things, [{ id: 'apple', job: 'stack' }, { id: 'fish', job: 'stack' }], 'the earlier steps stay');
-  /* 4: name - three to pick, who made it, one Play it! */
-  assert.equal(qa(studio, '.cname').length, 3);
-  assert.match(txt(q(studio, '.cmbtxt')), /Made by Leo/);
-  assert.ok(!byLabel(studio, 'Next') && byLabel(studio, 'Play it!'), 'the last step has Play it!');
-  assert.equal(qa(studio, '.cname.on').length, 1);
-  const second = qa(studio, '.cname')[1]; pickEl(second); assert.ok(second.classList.contains('on')); assert.equal(qa(studio, '.cname.on').length, 1);
-  /* Back goes a step, and from the first step out of the builder */
-  pickEl(byLabel(studio, 'Back')); assert.equal(studio.state.step, 2);
-  studio.goto(0); pickEl(byLabel(studio, 'Back')); assert.deepEqual(calls, ['back']);
-  signedOut();
-});
+/* ---------- Cubo's Create (the screen; the steps and gestures are cubo-flow.test.mjs and cubo-gestures.test.mjs) ---------- */
+const { cuboCreate } = await import('../src/ui/cubo-create.js');
+const { pose } = await import('../src/tracking/pose.js');
+const tickFor = (cc, secs, dt = 1 / 30) => { for (let t = 0; t < secs - 1e-9; t += dt) cc.tick(dt); };
+const keyDown = (key) => { const e = { key, preventDefault(){}, stopImmediatePropagation(){} }; for (const f of (globalThis.__keys || [])) f(e); };
 
-test('Play it! keeps the game in a slot and plays it; Change it comes back to the same slot', async () => {
+test('Cubo’s Create walks the steps on the screen: big things to touch, Cubo’s line, the tray, and Play saves into a slot', async () => {
   signedIn(); resetDom(); El.prototype.getContext = () => null;
   const srv = fakeServer(); creations.call = srv.call;
+  const steps = [], played = [], said = [];
+  const cc = cuboCreate({ onStep: (s) => steps.push(s), onPlay: (g) => played.push(g), say: (t) => said.push(t) });
+  cc.start();
+  assert.equal(cc.step, 'start'); assert.ok(cc.classList.contains('hide'), 'the start screen is the page’s');
+  /* where */
+  cc.event({ t: 'ok' }); assert.equal(cc.step, 'where');
+  assert.match(txt(q(cc, '.cctext')), /Where shall we play/, 'Cubo says the step’s line');
+  assert.equal(qa(cc, '.ccdot').length, 6, 'a dot row shows the world');
+  cc.event({ t: 'key', key: 'right' }); assert.ok(qa(cc, '.ccdot')[1].classList.contains('on'));
+  assert.match(txt(q(cc, '.ccworld')), new RegExp(choices.where[1].label));
+  cc.event({ t: 'arms' }); assert.equal(cc.step, 'game');
+  /* the game: four big cards, each a single touch */
+  assert.equal(qa(cc, '.cccard').length, 4);
+  assert.deepEqual(qa(cc, '.cccard').map(b => b.getAttribute('aria-label').split(':')[0]), ['Collect', 'Dodge', 'Keep up', 'Stack']);
+  pickEl(qa(cc, '.cccard')[1]); assert.equal(cc.step, 'what'); assert.equal(cc.state.job, 'dodge');
+  assert.match(txt(q(cc, '.cctext')), /What shall we dodge/);
+  /* what: five group bubbles; a group; the wheel's grab spot; the tray */
+  assert.deepEqual(qa(cc, '.ccchip').map(b => b.getAttribute('aria-label')), ['Food', 'Animals', 'Sky', 'Toys', 'Nature']);
+  assert.ok(qa(cc, '.ccgroups')[0].classList.contains('big'));
+  pickEl(qa(cc, '.ccchip')[1]); assert.equal(cc.state.group, 'animals'); assert.ok(!qa(cc, '.ccgroups')[0].classList.contains('big'));
+  assert.ok(cc.wheel.n >= 8, 'the group’s things ride the wheel');
+  cc.event({ t: 'grab', id: 'bee' }); cc.event({ t: 'grab', id: 'frog' });
+  assert.equal(qa(cc, '.cctrayslot').filter(b => !b.classList.contains('empty')).length, 2, 'two in the tray');
+  assert.match(txt(q(cc, '.cctray')), /2 of 5/);
+  pickEl(byLabel(cc, 'Take off the frog')); assert.deepEqual(cc.state.tray, ['bee'], 'touch a tray item to take it back');
+  cc.event({ t: 'grab', id: 'frog' });
+  cc.event({ t: 'arms' }); assert.equal(cc.step, 'rules');
+  /* rules: two giant sliders with seven stops */
+  assert.equal(qa(cc, '.ccstop').length, 14);
+  pickEl(byLabel(cc, 'How fast?: Rocket')); assert.equal(cc.state.picks.speed, 6);
+  pickEl(byLabel(cc, 'How many?: A storm')); assert.equal(cc.state.picks.many, 6);
+  assert.match(txt(qa(cc, '.ccslab')[0]), /Rocket/);
+  cc.event({ t: 'arms' }); assert.equal(cc.step, 'name');
+  assert.ok(cc.state.names.length >= 6);
+  const keep = cc.state.names[0];
+  cc.event({ t: 'arms' });
+  await new Promise(r => setTimeout(r, 30));
+  assert.equal(played.length, 1); assert.equal(played[0].name, keep); assert.equal(played[0].makerId, 'p2');
+  assert.equal(creations.items.length, 1); assert.deepEqual(played[0].picks.things.map(t => t.id), ['bee', 'frog']); assert.equal(played[0].picks.speed, 6);
+  assert.deepEqual(played[0].picks.things.map(t => t.job), ['dodge', 'dodge']);
+  assert.equal(validate(played[0].desc, env).length, 0, 'it plays on the real engine');
+  assert.ok(steps.includes('start') && steps.includes('play'));
+  cc.dispose(); signedOut();
+});
+
+test('Cubo’s Create: a body walking across the picture changes the world; the second player does nothing; slots full say so', () => {
+  signedIn(); resetDom(); El.prototype.getContext = () => null;
+  const cc = cuboCreate({ full: false }); cc.start(); cc.event({ t: 'ok' });
+  const person = (x, up = false) => {
+    const lm = Array.from({ length: 33 }, () => ({ x, y: 0.5, v: 0.95 }));
+    lm[0] = { x, y: 0.2, v: 0.95 }; lm[15] = { x: x - 0.1, y: up ? 0.08 : 0.55, v: 0.95 }; lm[16] = { x: x + 0.1, y: up ? 0.08 : 0.55, v: 0.95 };
+    lm[23] = { x: x - 0.03, y: 0.55, v: 0.95 }; lm[24] = { x: x + 0.03, y: 0.55, v: 0.95 };
+    return { present: true, lm, centre: { x, y: 0.4 }, scale: 0.4, hands: { left: { x: x - 0.1, y: up ? 0.08 : 0.55 }, right: { x: x + 0.1, y: up ? 0.08 : 0.55 } } };
+  };
+  const saved = pose.players.slice(); const was = pose.mouse.active; pose.mouse.active = false;
+  try {
+    pose.players.splice(0, pose.players.length, person(0.25), person(0.7, true), { present: false });
+    tickFor(cc, 1);   /* (the second player has both arms up the whole time) */
+    assert.equal(cc.step, 'where', 'the second player’s arms do nothing');
+    const seen = new Set();
+    for (let x = 0.2; x <= 0.8; x += 0.01){ pose.players[0] = person(x); tickFor(cc, 0.1); seen.add(cc.state.worldIx); }
+    assert.deepEqual([...seen].sort(), [0, 1, 2, 3, 4, 5], 'walking across the picture goes through every world');
+    pose.players[0] = person(0.8, true); tickFor(cc, 1);
+    assert.equal(cc.step, 'game', 'the first player’s arms up chose it');
+  } finally { pose.players.splice(0, pose.players.length, ...saved); pose.mouse.active = was; }
+  cc.dispose();
+  /* the page can hold the start back (the camera check): arms up asks it, and only a forced OK goes on */
+  const asked = [], held = cuboCreate({ onStart: () => asked.push('asked') }); held.start();
+  held.event({ t: 'arms' }); held.event({ t: 'ok' }); assert.equal(held.step, 'start'); assert.deepEqual(asked, ['asked', 'asked']);
+  held.event({ t: 'ok', force: true }); assert.equal(held.step, 'where'); held.dispose();
+  /* slots full: Cubo says so, and it does not start */
+  const calls = [], full = cuboCreate({ full: true, onFull: () => calls.push('full'), say: () => {} }); full.start();
+  full.event({ t: 'arms' }); assert.equal(full.step, 'start'); assert.deepEqual(calls, ['full']);
+  full.dispose(); signedOut();
+});
+
+test('Cubo’s Create: Change it opens at Where on the game’s own picks and saves back into its slot', async () => {
+  signedIn(); resetDom(); El.prototype.getContext = () => null;
+  const srv = fakeServer(); creations.call = srv.call;
+  const mine = await creations.save({ name: 'Super Bee Dodge Party', picks: { things: [{ id: 'bee', job: 'dodge' }], where: 'beach', speed: 4, many: 2 }, makerId: 'p1' });
   const played = [];
-  const studio = createStudio({ onPlay: (g) => played.push(g) });
-  studio.goto(3);
-  const name = qa(studio, '.cname')[1].getAttribute('aria-label'); pickEl(qa(studio, '.cname')[1]);
-  pickEl(byLabel(studio, 'Play it!')); await new Promise(r => setTimeout(r, 20));
-  assert.equal(played.length, 1); assert.equal(played[0].name, name); assert.equal(played[0].makerId, 'p2', 'made by whoever is playing');
-  assert.equal(creations.items.length, 1); assert.equal(srv.rows.length, 1);
-  assert.equal(validate(played[0].desc, env).length, 0);
-  /* Change it: the builder on that game's picks, saved back into its slot */
-  const again = createStudio({ creation: played[0], onPlay: (g) => played.push(g) });
-  assert.equal(again.state.editing, played[0].id); assert.equal(again.state.step, 0);
-  again.goto(1); pickEl(byLabel(again, 'Job: Dodge')); again.goto(3);
-  pickEl(byLabel(again, 'Play it!')); await new Promise(r => setTimeout(r, 20));
-  assert.equal(creations.items.length, 1, 'the same slot'); assert.equal(played[1].id, played[0].id); assert.equal(creations.items[0].picks.things[0].job, 'dodge');
+  const cc = cuboCreate({ creation: mine, onPlay: (g) => played.push(g) }); cc.start();
+  assert.equal(cc.step, 'where'); assert.equal(cc.state.picks.where, 'beach');
+  cc.event({ t: 'arms' }); cc.event({ t: 'job', id: 'dodge' }); cc.event({ t: 'arms' }); cc.event({ t: 'arms' });
+  assert.equal(cc.step, 'name'); assert.equal(cc.state.names[0], 'Super Bee Dodge Party');
+  cc.event({ t: 'arms' }); await new Promise(r => setTimeout(r, 30));
+  assert.equal(played[0].id, mine.id); assert.equal(creations.items.length, 1, 'the same slot');
   /* a full family cannot make another from here */
   await creations.save({ name: 'B', picks: defaultPicks(), makerId: 'p1' }); await creations.save({ name: 'C', picks: defaultPicks(), makerId: 'p1' });
-  const said = [];
-  const third = createStudio({ onPlay: (g) => played.push(g), say: (t, bad) => said.push([t, bad]) });
-  third.goto(3); pickEl(byLabel(third, 'Play it!')); await new Promise(r => setTimeout(r, 20));
-  assert.equal(played.length, 2); assert.deepEqual(said, [[FULL_LINE, true]]);
-  signedOut();
+  const said = [], third = cuboCreate({ onPlay: (g) => played.push(g), say: (t, bad) => said.push([t, bad]) }); third.start();
+  for (const e of ['ok', 'ok']) third.event({ t: e });
+  third.event({ t: 'job', id: 'collect' }); third.event({ t: 'group', id: 'food' }); third.event({ t: 'grab', id: 'apple' }); third.event({ t: 'arms' }); third.event({ t: 'arms' }); third.event({ t: 'arms' });
+  await new Promise(r => setTimeout(r, 30));
+  assert.equal(played.length, 1); assert.deepEqual(said, [[FULL_LINE, true]]); assert.equal(third.step, 'name', 'a play that did not save goes back to the name');
+  cc.dispose(); third.dispose(); signedOut();
 });
 
 test('the results of a made game have Change it, Play again and Home', async () => {
