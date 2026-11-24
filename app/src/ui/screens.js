@@ -165,7 +165,7 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null, ex
   const total = extra && Number.isFinite(extra.total) && extra.total > 0 ? Math.round(extra.total) : 0;
   if (total && !game.passive){
     const big = h('div', 'gbig');
-    const [prop, opts] = GAME_PROP[game.id] || [];
+    const [prop, opts] = game.prop || GAME_PROP[game.id] || [];
     big.appendChild(prop ? propIcon(prop, 240, opts || {}, 'gico') : looks({ id: game.id, icon: game.store && game.store.icon }).icon('gico sicon'));
     const num = h('b'); num.textContent = String(total);
     const words = h('span'); resultWords(game, total).forEach((w, i) => { if (i) words.appendChild(document.createElement('br')); words.append(w); });

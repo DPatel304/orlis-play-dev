@@ -12,10 +12,17 @@ import { sayBubble, goalBar } from '../games/hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { color } from '../games/assets/palette.js';
-import { build, clean, sentence } from './recipe.js';
+import { build, clean, sentence, choices } from './recipe.js';
+
+/* what the game was, for the results card: the picked piece as the icon, and "apples caught" (Dodge counts the ones let go by) */
+const VERB = { catch: 'caught', pop: 'popped', dodge: 'dodged', collect: 'collected' };
+export function resultsOf(picks){
+  const p = clean(picks || {}), pc = choices.what.flatMap(c => c.pieces).find(x => x.id === p.what);
+  if (p.how === 'keepup') return { unit: 'bounces', prop: [p.what], done: ['bounces', ''] };
+  return { unit: pc.plural, prop: [p.what], done: [pc.plural, VERB[p.how]] };
+}
 
 export const isMade = (g) => !!(g && g.made);
-export const madeId = (g) => (g && g.made ? g.made.id : null);
 
 /* each world's colour for the tile, the loading cover and the badge */
 const ACCENT = { meadow: ['meadow.fresh', 'sky.high'], night: ['fav.purple', 'night.sky'], beach: ['sea.far', 'earth.path'], snow: ['sky.high', 'earth.snow'], sunset: ['dusk.rose', 'dusk.deep'], autumn: ['autumn.amber', 'autumn.straw'] };
@@ -27,7 +34,7 @@ export function madeGame(c){
   const env = { pose, sfx, assets, ui: { say: (cv, ...args) => sayBubble(cv, ...args), goal: (cv, ...args) => goalBar(cv, ...args) }, colors: PLAYER_COLORS, max: MAX_PLAYERS };
   const play = makePlay(spec, env);
   return {
-    id: 'made:' + c.id, name: c.name || spec.title || 'My game', unit: 'points', accent: a, secs: play.secs, endless: play.endless,
+    id: 'made:' + c.id, name: c.name || spec.title || 'My game', unit: resultsOf(picks).unit, prop: resultsOf(picks).prop, done: resultsOf(picks).done, accent: a, secs: play.secs, endless: play.endless,
     moves: spec.card ? [spec.card] : ['reach'], minPlayers: 1, maxPlayers: MAX_PLAYERS,
     store: { icon: { cols: [a, b] }, blurb: sentence(picks), version: c.updatedAt || '1' },
     made: { id: c.id, makerId: c.makerId || null, creation: c },

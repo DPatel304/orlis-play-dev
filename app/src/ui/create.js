@@ -96,7 +96,6 @@ export function createPage({ nav = {}, onPlay = () => {}, onWho, onRecalibrate, 
   }
   const body = h('div', 'cbody');
   scroll.appendChild(body);
-  const sbtn = (label, fn, cls) => onPick(button(label, 'sbtn ' + cls), fn);
   const btn = (label, fn, cls = '') => onPick(button(label, 'setbtn ' + cls), fn);
   /* what just happened, or went wrong (bad), said once in a pop-up */
   let said = '', bad = false;

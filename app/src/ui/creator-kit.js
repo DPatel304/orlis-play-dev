@@ -24,7 +24,6 @@ const UNSAFE_PICTURE = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*
 /* a cover: an SVG picture in shapes - no words, links or images (the same rule as the server's) */
 const UNSAFE_COVER = /<\s*script|\bon\w+\s*=|javascript:|<\s*foreign|href|<\s*image|<\s*style|<\s*text|<\s*tspan|<\s*use\b|url\(\s*['"]?(?!#)/i;
 const COVER_MAX = 12000;
-export const EDITABLE = ['game.js', 'orlis.json'];
 
 /* a game's id, from its name: "Bird Hoops!" -> "bird-hoops" */
 const tag = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');

@@ -31,4 +31,3 @@ export const PICTURES = {
   golden: svg(`<circle cx="32" cy="32" r="18" fill="${GOLD}" ${sw()}/><path d="M32 22l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="${WHITE}"/>`),
   bomb: svg(`<circle cx="30" cy="38" r="18" fill="${COAL}" ${sw()}/><path d="M42 24l8-8" ${sw(4)} stroke-linecap="round"/><path d="M52 10l4-4M56 16h4" stroke="${GOLD}" stroke-width="3" stroke-linecap="round"/><ellipse cx="23" cy="31" rx="4" ry="6" fill="${WHITE}" opacity=".35"/>`)
 };
-export const pictureOf = (id) => PICTURES[id] || '';

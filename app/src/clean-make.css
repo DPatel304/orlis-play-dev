@@ -90,6 +90,7 @@
 .btn.copt.on:hover,.btn.copt.on.hot,body.remote .btn.copt.on.kfocus{ box-shadow:0 0 0 calc(var(--u)*.6) #fff, 0 0 0 calc(var(--u)*1.2) var(--blue); }
 .btn.copt.small{ display:inline-flex; } .btn.copt.small .lbl{ padding:calc(var(--u)*1.1) calc(var(--u)*2.6); font-size:calc(var(--u)*2.8); }
 .cgrid.ctoggle .btn.copt .lbl{ justify-content:center; padding:calc(var(--u)*1.2) calc(var(--u)*1.6); } .cgrid.ctoggle .cpic{ width:calc(var(--u)*5.6); height:calc(var(--u)*5.6); }
+.cslider + .cgrid.ctoggle, .cgrid.ctoggle + .cgrid.ctoggle{ margin-top:calc(var(--u)*.8); }   /* (the picked card's ring is 1.2u wide: room for it between the rows) */
 .ccats{ display:flex; gap:calc(var(--u)*1); flex-wrap:wrap; }
 .btn.ccat{ padding:0; border-radius:var(--pill); background:#fff; box-shadow:var(--soft-sm); } .btn.ccat .lbl{ display:block; padding:calc(var(--u)*.9) calc(var(--u)*2.2); font:600 calc(var(--u)*2.5)/1 var(--ui); color:var(--ink-soft); }
 .btn.ccat.on{ background:var(--ink); } .btn.ccat.on .lbl{ color:#fff; }
@@ -131,7 +132,8 @@
 .cnavs{ position:absolute; right:calc(var(--u)*5); bottom:calc(var(--u)*4); display:flex; gap:calc(var(--u)*1.6); z-index:3; }
 .btn.cbtn2{ padding:0; border-radius:var(--pill); box-shadow:var(--soft-sm); } .btn.cbtn2 .lbl{ display:inline-flex; align-items:center; gap:calc(var(--u)*1.2); padding:calc(var(--u)*1.7) calc(var(--u)*4.2); font:700 calc(var(--u)*3.2)/1 var(--ui); }
 .btn.cbtn2.ghost{ background:#fff; color:var(--ink); } .btn.cbtn2.go{ background:var(--ink); color:#fff; }
-.btn.cbtn2.big{ background:var(--grad); color:#fff; box-shadow:0 calc(var(--u)*1) calc(var(--u)*3) rgba(139,92,246,.4); } .btn.cbtn2.big .lbl{ padding:calc(var(--u)*2.2) calc(var(--u)*6); font-size:calc(var(--u)*4); }
+.btn.cbtn2.big{ background:var(--grad); color:#fff; box-shadow:0 calc(var(--u)*1) calc(var(--u)*3) rgba(139,92,246,.4); } .btn.cbtn2.big .lbl{ padding:calc(var(--u)*1.8) calc(var(--u)*5.4); font-size:calc(var(--u)*3.8); }
+.btn.cbtn2.big{ margin-left:calc(var(--u)*1.2); }
 .btn.cbtn2 svg.i{ width:1.1em; height:1.1em; }
 .btn.cbtn2:hover,.btn.cbtn2.hot,body.remote .btn.cbtn2.kfocus{ transform:scale(1.05); box-shadow:0 0 0 calc(var(--u)*.6) var(--blue), var(--soft-sm); }
 

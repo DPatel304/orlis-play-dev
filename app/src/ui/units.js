@@ -1,12 +1,13 @@
 /* How a game's count is said: "1 balloon", "12 balloons" (U2). A game's `unit` is the plural ('balloons'); the singular comes from this
    list, or from dropping the final "s" ("ies" becomes "y"). Words that do not change (fruit) are listed too. */
 const ONE = {
-  leaves: 'leaf', stories: 'story', fruit: 'fruit',
+  leaves: 'leaf', stories: 'story', fruit: 'fruit', fish: 'fish', dice: 'die', cookies: 'cookie',
   'bits of sky painted': 'bit of sky painted'
 };
 export function singular(unit){
   const u = String(unit || 'points');
   if (ONE[u]) return ONE[u];
+  if (/ leaves$/.test(u)) return u.slice(0, -7) + ' leaf';
   if (/ies$/.test(u)) return u.slice(0, -3) + 'y';
   if (/s$/.test(u)) return u.slice(0, -1);
   return u;
@@ -23,7 +24,7 @@ const DONE = { 'pop-party': ['balloons', 'popped'], 'leaf-pile': ['leaves', 'swe
   'sleepy-bear': ['stars', 'earned'], 'animal-gym': ['moves', 'made'], 'ptero-flight': ['wonders', 'spotted'], 'sky-painter': ['bits of sky', 'painted'],
   'save-the-harvest': ['fruit', 'picked'] };
 export function resultWords(game, n = 2){
-  const [unit, verb] = DONE[game && game.id] || [(game && game.unit) || 'points', ''];
+  const [unit, verb] = (game && game.done) || DONE[game && game.id] || [(game && game.unit) || 'points', ''];
   const word = Math.round(Number(n) || 0) === 1 ? singular(unit) : unit;
   return verb ? [word, verb] : [word];
 }
