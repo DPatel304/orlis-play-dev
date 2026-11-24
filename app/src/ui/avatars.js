@@ -1,7 +1,7 @@
 import { pose, L, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { figure } from './avatar-art.js';
 import { handsMode } from './handsmode.js';
-import { keepOut } from './cursor.js';
+import { keepOut } from './keepout.js';
 
 /* The players, in the picture. Two layers, drawn by the game at different
    depths:

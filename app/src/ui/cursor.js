@@ -1,6 +1,7 @@
 import { pose, PLAYER_COLORS, MAX_PLAYERS, oneEuro } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { handsMode } from './handsmode.js';
+import { keepOut } from './keepout.js';
 
 /* Point and wave. Every button in Orlis Play is a DOM .btn; the cursor
    finds the one each player's hand is pointing at and lights it up - and a
@@ -40,18 +41,6 @@ export function inFront(){
   if (typeof document === 'undefined') return true;
   if (document.hidden) return false;
   return typeof document.hasFocus === 'function' ? document.hasFocus() : true;
-}
-
-/* Places a hand's ring or mitt is never drawn over: any element marked data-nocursor (the big count on the results card). Rectangles as
-   shares of the window, a little padded. Only what is drawn: the hand still points at buttons wherever it is. */
-export function keepOut(x, y){
-  if (typeof document === 'undefined' || !document.querySelectorAll) return false;
-  const w = window.innerWidth || 1, hh = window.innerHeight || 1;
-  for (const el of document.querySelectorAll('[data-nocursor]')){
-    const r = el.getBoundingClientRect();
-    if (r.width > 0 && x >= r.left / w - 0.03 && x <= r.right / w + 0.03 && y >= r.top / hh - 0.05 && y <= r.bottom / hh + 0.05) return true;
-  }
-  return false;
 }
 
 export const cursor = {

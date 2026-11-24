@@ -48,9 +48,6 @@ const LANDED = 0.04;        /* body sizes from standing height that count as dow
 /* With feet: how much of the body's rise the ankles must rise too. */
 const FEET = 0.5;
 const FEET_FOLLOW = 0.5;      /* the floor follows the ankles slower still, or a hop would carry it up with it */
-/* Asked to watch the feet but they can't be seen (a child up close, legs behind a table): the body alone decides, but a squat's
-   stand-up looks just like a small hop to it, so it has to be this much bigger and quicker. */
-const BLIND = 1.8;
 
 /* Where player p's feet are: the middle of their ankles, if both are seen. */
 function feetOf(p){
@@ -90,9 +87,9 @@ export class JumpWatch {
       if (f == null) this.floor[i] = null;
       else if (this.floor[i] == null) this.floor[i] = f;
       const lifted = f == null || this.floor[i] == null || (this.floor[i] - f) / s > this.rise * FEET;
-      const k = this.feet && f == null ? BLIND : 1, need = this.rise * k;
+      const need = this.rise;
       this.sinceRise[i] = rise > need ? 0 : this.sinceRise[i] + dt;
-      this.sinceFast[i] = speed > this.speed * k ? 0 : this.sinceFast[i] + dt;
+      this.sinceFast[i] = speed > this.speed ? 0 : this.sinceFast[i] + dt;
       if (this.sinceRise[i] < WINDOW && this.sinceFast[i] < WINDOW && rise > need * 0.5 && lifted && this.unsure[i] <= 0){ this.up[i] = true; this.sinceRise[i] = this.sinceFast[i] = 9; out.push(i); continue; }
       /* standing height drifts with a slow change only: a quick move (down into a squat, up out of it, a hop) leaves it where it was */
       if (Math.abs(speed) < SLOW) this.base[i] += (y - this.base[i]) * Math.min(1, dt * (y > this.base[i] ? FOLLOW_DOWN : FOLLOW));
