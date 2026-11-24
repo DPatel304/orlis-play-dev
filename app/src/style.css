@@ -773,7 +773,8 @@ canvas.avface{ display:block; border-radius:22%; }
 .lunm{ font-size:2.4vh; font-weight:700; }
 /* the camera check in "get ready" (ui/framing-check.js): the frame and the figures are on the canvas; the words are a card at the top */
 .screen.framing{ justify-content:flex-start; padding:0; pointer-events:none; }
-.frmcard{ position:absolute; top:1.2vh; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:1.6vh; padding:.8vh 2.6vh .8vh 1.6vh; border-radius:3vh;
+.frmcard{ position:absolute; top:1.2vh; left:0;   /* (framing-check.js sets left and top so the card stays clear of the figures) */
+  display:flex; align-items:center; gap:1.6vh; padding:.8vh 2.6vh .8vh 1.6vh; border-radius:3vh;
   background:var(--surface); box-shadow:0 .8vh 2.4vh rgba(40,40,60,.14); color:var(--ink); max-width:92vw; }
 .frmtick{ display:none; width:4.6vh; height:4.6vh; border-radius:50%; background:var(--good); color:#fff; padding:.9vh; box-sizing:border-box; flex:none; }
 .frmtick svg{ width:100%; height:100%; display:block; }

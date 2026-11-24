@@ -176,3 +176,10 @@ test('every built-in game asks by dock: only the known keys, icons from the libr
     assert.ok(ps.every(p => !p.rect || p.rect.w > 0 && p.rect.h > 0), `${g.id}: every piece has a size`);
   }
 });
+
+test('the move card, settled, sits wholly on screen at every size (it is only off the edge while it slides in or out)', () => {
+  for (const [W, H] of [...SIZES, [1366, 768], [2560, 1440]]){
+    const b = slotBlock(W, H, 'card');
+    assert.ok(b.x >= 0 && b.y >= 0 && b.x + b.w <= W && b.y + b.h <= H, `${W}x${H}: card ${JSON.stringify(b)} is inside the screen`);
+  }
+});

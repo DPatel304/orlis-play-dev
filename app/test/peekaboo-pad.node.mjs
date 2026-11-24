@@ -5,6 +5,7 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { startPeekabooRig, TABLET, sleep, until } from './harness/peekaboo-rig.mjs';
+import { T } from './harness/slowness.mjs';
 
 let rig, tab;
 before(async () => {
@@ -59,7 +60,7 @@ test('3. a pot: walking in shows "Step out", the stick is ignored inside, "Step 
   await until(() => round().place === 'pot1', 8000, 'the host hider is in pot1');
   await until(() => pk(() => window.__pk.me.place === 'pot1'), 3000, 'and so is the tablet');
   await release();
-  await tab.page.locator('.pk-out.show').waitFor({ timeout: 5000 });
+  await tab.page.locator('.pk-out.show').waitFor({ timeout: T(5000) });
   assert.match(await tab.page.locator('.pk-out').textContent(), /Step out/);
   const inPotAt = { x: round().x, z: round().z };
   await drag(1, 0); await sleep(700);                                   /* the stick does nothing in a pot */
@@ -68,7 +69,7 @@ test('3. a pot: walking in shows "Step out", the stick is ignored inside, "Step 
   await tab.page.locator('.pk-out').tap();
   await until(() => round().place === null, 5000, 'the host let the hider out');
   assert.ok(round().z < 11 - 0.7, 'out at the front edge (nearest the TV)');
-  await tab.page.locator('.pk-out.show').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {});
+  await tab.page.locator('.pk-out.show').waitFor({ state: 'detached', timeout: T(3000) }).catch(() => {});
   assert.equal(await tab.page.locator('.pk-out.show').count(), 0, 'the button is gone');
   assert.ok(rig.host.sent.ev.includes('enter') && rig.host.sent.ev.includes('leave'), 'enter and leave events were sent');
   /* (the stray `act` is sent once, and again only while the host still says "pot") */
@@ -86,7 +87,7 @@ test('4. seeking: "They\'re looking!", a lantern pool appears, the screen edge g
   assert.ok(await pk(() => window.__pk.scene.children.some(o => o.material && o.material.blending === 2 && o.visible)), 'a light pool is drawn on the lawn');
   /* the lantern finds the hider (in the open: 0.4 s) */
   rig.host.lanterns = [{ seat: 1, x: r.x, z: r.z }];
-  await tab.page.locator('.pk-result.pk-on').waitFor({ timeout: 8000 });
+  await tab.page.locator('.pk-result.pk-on').waitFor({ timeout: T(8000) });
   assert.match(await tab.page.locator('.pk-result').textContent(), /They found you!/);
   assert.equal(await pk(() => window.__pk.net.phase), 'reveal');
   assert.equal(await pk(() => window.__pk.cs.face), 'front', 'the card turns to face you');
@@ -98,16 +99,16 @@ test('5. the next round starts with the same hider ("Hide!" again); time up show
   assert.match(await tab.page.locator('.pk-banner').textContent(), /Hide!/);
   assert.equal(await tab.page.locator('.pk-result.pk-on').count(), 0, 'the result card is gone');
   const r = round(); r.phase = 'seek'; r.t = 59.95; rig.host.sendState();
-  await tab.page.locator('.pk-result.pk-on').waitFor({ timeout: 8000 });
+  await tab.page.locator('.pk-result.pk-on').waitFor({ timeout: T(8000) });
   assert.match(await tab.page.locator('.pk-result').textContent(), /You stayed hidden!/);
 });
 
 test('6. a pause stops the stick and dims the screen; resume carries on; no page errors in all of it', async () => {
   await until(() => pk(() => window.__pk.net.phase === 'hide'), 12000, 'hide again');
   rig.host.send(rig.host.to, { t: 'pause', why: 'seat' });
-  await tab.page.locator('.pk-pause.on').waitFor({ timeout: 3000 });
+  await tab.page.locator('.pk-pause.on').waitFor({ timeout: T(3000) });
   rig.host.send(rig.host.to, { t: 'resume' });
-  await tab.page.locator('.pk-pause.on').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {});
+  await tab.page.locator('.pk-pause.on').waitFor({ state: 'detached', timeout: T(3000) }).catch(() => {});
   assert.equal(await tab.page.locator('.pk-pause.on').count(), 0);
   assert.deepEqual(tab.errors.filter(e => !/GL Driver|ReadPixels/.test(String(e))).map(String), []);
 });

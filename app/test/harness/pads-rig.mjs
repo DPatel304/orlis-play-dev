@@ -1,6 +1,7 @@
 /* The rig for the real game shell with phones (plan packages S1 and P5): the Node pad hub, the built pad page, the shell on the Vite dev server,
    headless Chromium for the TV and for phones. Used by app/test/pads-shell.node.mjs (the end-to-end test) and app/test/preview/pads-shots.mjs
    (the owner's pictures in docs/p5/). Plain Node, no test-runner code here. */
+import { T } from './slowness.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -25,8 +26,9 @@ export const PROFILES = [
 export const ACCOUNT = { token: 't', account: { id: 'a1', role: 'owner' }, household: { id: 'h1', name: 'Test' }, profiles: PROFILES, current: 'mia' };
 
 export async function until(fn, ms = 6000, label = '') {
+  /* the deadline scales with how busy the machine is (harness/slowness.mjs); it is only measured once the plain one has passed */
   const t0 = Date.now();
-  for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('timed out waiting for ' + (label || fn)); await new Promise(r => setTimeout(r, 40)); }
+  for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms && Date.now() - t0 > T(ms)) throw new Error('timed out waiting for ' + (label || fn)); await new Promise(r => setTimeout(r, 40)); }
 }
 
 export async function startRig({ tvSize = { width: 1280, height: 720 } } = {}) {
@@ -85,10 +87,10 @@ export async function toJoinCard(tv, ms = 20000) {
 export async function joinPhone(rig, tv, phone, who, { ready = true } = {}) {
   const ids = await tv.page.locator('.jpics canvas').evaluateAll(els => els.map(e => e.dataset.id));
   await phone.page.goto(rig.hub.url + '/');
-  await phone.page.getByText('Tap the three', { exact: false }).first().waitFor({ state: 'visible', timeout: 8000 });
+  await phone.page.getByText('Tap the three', { exact: false }).first().waitFor({ state: 'visible', timeout: T(8000) });
   for (const id of ids) await phone.page.locator(`.cell[data-id="${id}"]`).tap();
   await phone.page.locator(`.person[data-who="${who}"]`).tap();
-  await phone.page.getByRole('button', { name: "I'm ready" }).waitFor({ timeout: 8000 });
+  await phone.page.getByRole('button', { name: "I'm ready" }).waitFor({ timeout: T(8000) });
   if (ready) await phone.page.getByRole('button', { name: "I'm ready" }).tap();
   return ids;
 }

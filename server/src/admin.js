@@ -298,7 +298,7 @@ export function admin({ db, info, dataDir, shop, week, log, mail, mailState = { 
     return {
       now: now().toISOString(), health: health(),
       stats: { families: { total: n.families, newThisWeek: n.newWeek }, active7: { households: n.active7, pct: n.families ? Math.round(n.active7 / n.families * 100) : 0 },
-        plays: { today: n.playsToday, lastWeekSameTime: n.playsThen }, queue: qu.counts, games: (await shop.games()).length },
+        plays: { today: n.playsToday, lastWeekSameTime: n.playsThen }, queue: qu.counts, games: (await gameRows()).length },   /* (the Games page's own set: the Store, the built-in games and those in review) */
       series: { days: n.newSeries.days, newFamilies: n.newSeries.values, plays: n.playSeries.values },
       queue: { counts: qu.counts, items: qu.items.slice(0, 4) },
       activity: activityRows(new URLSearchParams({ limit: '8' })).rows,

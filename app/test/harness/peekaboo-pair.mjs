@@ -4,6 +4,7 @@
    (the owner's pictures). Plain Node, no test-runner code here. */
 import { startRig, joinPhone, toJoinCard, until } from './pads-rig.mjs';
 import { TABLET, sleep } from './peekaboo-rig.mjs';
+import { T } from './slowness.mjs';
 
 export { until, sleep };
 
@@ -12,7 +13,7 @@ export async function startPair({ scale = 1, hiderWho = 'ola' } = {}) {
   const tv = await rig.tv('peekaboo', { scale });
   const { page } = tv;
   /* fake hands: the shell's pose is told who is in the picture each frame (the real tracker is switched off) */
-  await page.waitForFunction(() => !!window.__pose, null, { timeout: 30000 });
+  await page.waitForFunction(() => !!window.__pose, null, { timeout: T(30000) });
   await page.evaluate(async () => {
     const { screenPoint } = await import('/src/games/peekaboo/camera.js');
     const pose = window.__pose; pose.update = () => {};
@@ -33,11 +34,11 @@ export async function startPair({ scale = 1, hiderWho = 'ola' } = {}) {
   const tab = await rig.phone({ ...TABLET, deviceScaleFactor: scale });
   tab.errors = []; tab.page.on('console', (m) => { if (m.type() === 'error' && !/GL Driver/.test(m.text())) tab.errors.push(new Error(m.text())); });
   await joinPhone(rig, tv, tab, hiderWho);
-  await tv.page.locator('.jslot.ready').waitFor({ timeout: 8000 });
-  await tab.page.waitForFunction(() => document.body.dataset.program === 'on', null, { timeout: 30000 });
+  await tv.page.locator('.jslot.ready').waitFor({ timeout: T(8000) });
+  await tab.page.waitForFunction(() => document.body.dataset.program === 'on', null, { timeout: T(30000) });
   await tv.page.locator('.joinstart').click();
   await until(() => tv.page.evaluate(() => { const r = window.__round && window.__round(); return !!(r && r.round && r.round.state); }), 15000, 'the round to start');
-  await tab.page.waitForFunction(() => window.__pk && window.__pk.net.seen, null, { timeout: 30000 });
+  await tab.page.waitForFunction(() => window.__pk && window.__pk.net.seen, null, { timeout: T(30000) });
   const pair = {
     rig, tv, tab,
     /* the host's rules state, read on the TV page */

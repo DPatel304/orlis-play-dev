@@ -102,3 +102,16 @@ test('first-time flag: remembered when storage works, never throws when it does 
   assert.equal(framingShown(), false); markFramingShown();
   if (saved === undefined) delete globalThis.localStorage; else globalThis.localStorage = saved;
 });
+
+test('the words card goes where it covers no figure: top centre when clear, else a clear corner or side', async () => {
+  const { bodyBox, placeCard } = await import('../src/ui/framing.js');
+  const W = 1920, H = 1080, w = 670, h = 64, hit = (p, b) => p.x < b.x1 && p.x + w > b.x0 && p.y < b.y1 && p.y + h > b.y0;
+  const off = bodyBox(body({ cx: 0.97, top: 0.15, span: 0.72 }), W, H);
+  const a = placeCard(W, H, w, h, [off]);
+  assert.equal(Math.round(a.x), Math.round((W - w) / 2), 'a figure off to the side leaves the top centre as it was'); assert.ok(!hit(a, off));
+  for (const spec of [{ cx: 0.5, top: 0.05, span: 1.25 }, { cx: 0.5, top: 0.02, span: 1.4 }, { cx: 0.3, top: 0.05, span: 1.25 }]){
+    const box = bodyBox(body(spec), W, H), p = placeCard(W, H, w, h, [box]);
+    assert.ok(!hit(p, box), 'a too-close figure ' + JSON.stringify(spec) + ' is not covered, card at ' + JSON.stringify(p));
+    assert.ok(p.x >= 0 && p.y >= 0 && p.x + w <= W && p.y + h <= H, 'and the card is on screen');
+  }
+});

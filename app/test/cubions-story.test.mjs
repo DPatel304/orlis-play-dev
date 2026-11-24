@@ -60,3 +60,13 @@ test('the card only covers the left: it ends before 0.47 of the width at 1920 x 
   const cuboLeft = 0.58 * 1920 - 125;
   assert.ok(cuboLeft > 907, 'Cubo’s left edge ' + cuboLeft + ' is right of the card');
 });
+
+test('at the end the "The end" card covers none of the animals (the card is 54..907 px by 233..479 px in the 1920 x 1080 picture: world 36..605 by 155..319)', async () => {
+  const { ANIMALS, END_ADJUST, CUBO_AT, GROUND } = await import('../src/games/story-player.js');
+  const vw = 1280, step = 0.1 * vw, card = { x1: 605 + 12, y1: 319 + 8 };         /* (a little air round it) */
+  for (const a of ANIMALS){
+    const adj = END_ADJUST[a.id] || {}, size = a.size * (1 - (adj.shrink || 0));
+    const x = CUBO_AT * vw + a.off + step + (adj.dx || 0), left = x - size * 0.475, top = GROUND + a.y - 0.925 * size;
+    assert.ok(left >= card.x1 || top >= card.y1, `${a.id}: left ${left.toFixed(0)}, top ${top.toFixed(0)} is clear of the card (right ${card.x1}, bottom ${card.y1})`);
+  }
+});

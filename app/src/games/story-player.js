@@ -19,11 +19,14 @@ import { PLAYER_COLORS } from '../tracking/pose.js';
 import { MEADOW, AHEAD, PLACES } from '../stories/cubions-long-way-home.js';
 
 const FONT = '"Segoe UI Variable Display","Segoe UI",-apple-system,Inter,system-ui,sans-serif';
-const GROUND = 500, UNIT = 720;                 /* the world is drawn 720 high, scaled to the screen */
-const CUBO_AT = 0.48;                            /* where Cubo stands across the screen */
+export const GROUND = 500, UNIT = 720;                 /* the world is drawn 720 high, scaled to the screen */
+export const CUBO_AT = 0.48;                            /* where Cubo stands across the screen */
 /* at the very end the "The end" card goes over the left half of the screen (about to 0.47 of the width): Cubo steps across to the right of it,
    and the animals standing round him with him (the world stays put, so the house is still all in view) */
 const END_STEP = 0.1;
+/* ...and the card is up on the left, from the top of the sky down to about 0.30 of the height, so at the end two of the animals make room for it: the giraffe
+   (the tallest) shrinks so that its head and ears stand clear under the card, and the bird, which flies at the card's height, moves right of its edge */
+export const END_ADJUST = { giraffe: { shrink: 0.15 }, bird: { dx: 80 } };
 const byte = (v) => Math.max(0, Math.min(255, v | 0)).toString(16).padStart(2, '0');
 const css = (a) => '#' + byte(a[0]) + byte(a[1]) + byte(a[2]);
 const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
@@ -35,7 +38,7 @@ const GRND = { planet: pal('night.farHills'), day: pal('meadow.fresh'), dusk: pa
 /* the meadow hills, far then near: by day, and at dusk */
 const HILL_DAY = [pal('meadow.grass'), pal('meadow.leaf')], HILL_DUSK = [pal('meadow.leaf', 'shade'), pal('meadow.deep', 'shade')];
 /* the Animal Gym animals, and where each stands (in front of Cubo at his stop) */
-const ANIMALS = [
+export const ANIMALS = [
   { id: 'giraffe', e: 'giraffe', at: PLACES.giraffe + AHEAD, size: 230, y: 14, off: -600 },
   { id: 'bunny', e: 'bunny', at: PLACES.bunny + AHEAD, size: 120, y: 14, off: -430 },
   { id: 'bird', e: 'bird', at: PLACES.bird + AHEAD, size: 100, y: -250, off: -120 },
@@ -223,11 +226,12 @@ class Story {
     const b = this.beat, ease = this.gather * this.gather * (3 - 2 * this.gather);
     const step = this.endStep(vw) * ease;                                      /* (and they go with him when he steps aside at the end) */
     ANIMALS.forEach((a, i) => {
-      const x = a.at + (this.pos + a.off - a.at) * ease + step;               /* gathered, they stand around Cubo */
+      const adj = END_ADJUST[a.id] || {}, ek = this.endShift * this.endShift * (3 - 2 * this.endShift);   /* (at the end: room for the card) */
+      const x = a.at + (this.pos + a.off - a.at) * ease + step + (adj.dx || 0) * ek;               /* gathered, they stand around Cubo */
       const sx = x - cam; if (sx < -200 || sx > vw + 200) return;
       const bob = a.id === 'bird' ? Math.sin(this.t * 3 + i) * 10 : 0;
       const w = this.wob * (0.22 * Math.sin(this.t * 5 + i * 1.7)), hop = this.wob * Math.abs(Math.sin(this.t * 4 + i)) * 24;
-      this.emoji(c, a.e, sx, GROUND + a.y - bob - hop, a.size, w, a.id !== 'frog' && a.id !== 'bunny' ? false : false);
+      this.emoji(c, a.e, sx, GROUND + a.y - bob - hop, a.size * (1 - (adj.shrink || 0) * ek), w, a.id !== 'frog' && a.id !== 'bunny' ? false : false);
     });
   }
   /* how far (in world units) Cubo has stepped to the right at the end, to clear the card */
