@@ -88,7 +88,8 @@ one called Orlis, and paste the 16 letters. It's kept on this laptop only
 email set up, approving shows the download link for you to send yourself.
 
 The download link is `downloadUrl` in settings.json (or `ORLIS_DOWNLOAD_URL`);
-it starts as the Orlis Play Beta installer on GitHub.
+it starts as the regular Orlis Play installer (always the latest release):
+`https://github.com/DPatel304/orlis-play-dev/releases/latest/download/Orlis-Play-Setup.exe`.
 
 ## On the internet, with Tailscale Funnel (only this laptop needs Tailscale)
 

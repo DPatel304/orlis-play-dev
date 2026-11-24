@@ -43,7 +43,7 @@ const BACKUP_LOOK = 60 * 60 * 1000, QUIET = 2 * 60 * 1000;
 /* restart(): how to start this server again (to finish a restore) - given
    when something's there to do it. status.update: what the updater last
    found, for the owner's page. */
-export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, approveJoins = false, betaPage = false, downloadUrl = 'https://github.com/DPatel304/orlis-play-dev/releases/download/beta/Orlis-Play-Beta-Setup.exe', publicUrl = null, mail = null, internetPort = null, files = null, notify = null, statfs = null } = {}){
+export async function start({ dataDir, port = PORT, discoveryPort = DISCOVERY_PORT, name, host = '0.0.0.0', starters = [], restart = null, status = { update: { state: 'off' } }, everyoneCreates = true, tailscaleJoin = true, approveJoins = false, betaPage = false, downloadUrl = 'https://github.com/DPatel304/orlis-play-dev/releases/latest/download/Orlis-Play-Setup.exe', publicUrl = null, mail = null, internetPort = null, files = null, notify = null, statfs = null } = {}){
   mkdirSync(dataDir, { recursive: true });
   const safe = backups(dataDir, { version: VERSION });
   /* a restore the owner asked for, done before anything is opened */

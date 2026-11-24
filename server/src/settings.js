@@ -33,7 +33,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DISCOVERY_PORT } from './discovery.js';
 
-export const DEFAULTS = { name: null, port: 47871, host: '0.0.0.0', discovery: true, everyoneCreates: true, tailscaleJoin: true, approveJoins: true, betaPage: false, downloadUrl: 'https://github.com/DPatel304/orlis-play-dev/releases/download/beta/Orlis-Play-Beta-Setup.exe', publicUrl: null, internetPort: 47872, maker: true };
+export const DEFAULTS = { name: null, port: 47871, host: '0.0.0.0', discovery: true, everyoneCreates: true, tailscaleJoin: true, approveJoins: true, betaPage: false, downloadUrl: 'https://github.com/DPatel304/orlis-play-dev/releases/latest/download/Orlis-Play-Setup.exe', publicUrl: null, internetPort: 47872, maker: true };
 const ENV = { dataDir: 'ORLIS_DATA', name: 'ORLIS_NAME', port: 'ORLIS_PORT', host: 'ORLIS_HOST', discovery: 'ORLIS_DISCOVERY',
   everyoneCreates: 'ORLIS_EVERYONE_CREATES', tailscaleJoin: 'ORLIS_TAILSCALE_JOIN', approveJoins: 'ORLIS_APPROVE_JOINS', betaPage: 'ORLIS_BETA_PAGE', downloadUrl: 'ORLIS_DOWNLOAD_URL', publicUrl: 'ORLIS_PUBLIC_URL', internetPort: 'ORLIS_INTERNET_PORT', maker: 'ORLIS_MAKER' };
 
