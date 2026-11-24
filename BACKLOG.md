@@ -784,3 +784,16 @@ weighed, none chosen: (1) the live camera only on the get-ready screen, with an 
 switchable in Settings; (3) each player's paper figure copying their whole body during play (no video); (4) full camera background,
 Nex-style (would replace 0035's player line). Pros of showing the camera: you can see you're seen, framing fixes itself, fun. Cons:
 kids and the room on the big screen, clashes with the painted look, lag shows, future privacy care if clips are ever shared.
+
+## Phase 2: automatic daily Featured picks (owner, 2026-11-24)
+Today the owner picks Featured's three slots by hand (decision 0058). Phase 2: the server picks them every day by itself, favouring
+up-and-coming games (new and getting popular), with the owner able to pin or block a game. A first sketch to refine then:
+- Score each Discover game daily from the last 14 days: new families playing it (more weight than total plays), replays (families
+  who came back to it on another day), finished rounds vs quit early, growth (this week vs last week), and a newness boost that fades
+  over about 3 weeks. Small games are judged on rates, not raw counts, so a new game isn't buried by old favourites.
+- Mix the three slots: one "rising" (best growth), one "new" (released in the last 2-3 weeks with good early replays), one "loved"
+  (best replay rate overall). No game featured two days running; no maker twice in one day; a game already owned by most families ranks lower.
+- The owner keeps control: pin a game to a slot for a day or a week, block a game from Featured, and see why each game was picked
+  ("rising: +40% new families this week").
+- Needs: per-day play stats per game (the plays table has most of it), a daily job on the server, and enough families for the
+  numbers to mean something; until then the hand-picked slots stay.
