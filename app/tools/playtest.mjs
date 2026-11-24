@@ -1,0 +1,480 @@
+/* Playtest rig, headless: plays every Home game with scripted children and grown-ups and writes numbers.
+
+     cd app && node tools/playtest.mjs                         # everything: 10 games x 4 line-ups x 3 seeds -> ../docs/playtest/results.json
+     node tools/playtest.mjs --games pop-party,leaf-pile       # some games
+     node tools/playtest.mjs --lineups 1c,4m --seeds 1,2       # some line-ups, some seeds
+     node tools/playtest.mjs --real                            # the real tracker's rules decide who joins (default: "assist": anyone it would
+                                                               #   turn away or drop is let in anyway, so the game itself can be judged)
+     node tools/playtest.mjs --jitter 0.004                    # camera jitter (picture widths, one sigma; default 0.0018)
+     node tools/playtest.mjs --admission                       # only who the tracker lets in, for each line-up and for cap 2 and 4
+     node tools/playtest.mjs --tables                          # print the summary tables from results.json (nothing is run)
+     node tools/playtest.mjs --calibrate                       # how big a hop / squat / lean / knee lift must be to count (game detectors)
+     node tools/playtest.mjs --sensitivity                     # Sleepy Bear: stars against reaction time and camera jitter
+     other flags: --cap N (places that can fill; 4 default, the app ships 2), --react X (scale reaction times), --seeds 1,2,3, --force, --fresh
+   (the full set in results.json was made with: --fresh; --calibrate; --sensitivity; --admission; --real --lineups 1c,4c,4m; --real --cap 2 --lineups 4c,4m)
+
+   Line-ups: 1c one child, 1a one adult, 4c four children, 4m two adults + two children (the family: children in front, lower).
+   Deterministic: a fixed seed gives the same round (the games' dice and the bodies' dice both come from it). 30 fps steps.
+   Not a test; it changes no game code. See tools/playtest/rig.mjs for the bodies and how each game is played, and
+   docs/playtest/REPORT.md for what the numbers mean (what is measured, what is assumed). */
+import '../test/harness/browser.mjs';
+import { register } from 'node:module';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+register('../test/harness/hooks.mjs', import.meta.url);
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const argv = process.argv.slice(2);
+const opt = (name, def = null) => { const i = argv.indexOf('--' + name); return i < 0 ? def : (argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : true); };
+const OUT = resolve(HERE, opt('out', '../../docs/playtest/results.json'));
+
+if (opt('tables')){ const { tables } = await import('./playtest/tables.mjs'); tables(JSON.parse(readFileSync(OUT, 'utf8'))); process.exit(0); }
+
+const poseMod = await import('../src/tracking/pose.js');
+const { pose, sizeOf, seated, CLOSE, WATCH_AFTER, headOf } = poseMod;
+const { L } = await import('../src/tracking/pose-shared.js');
+const { music } = await import('../src/audio/sound.js');
+const { byId } = await import('../src/games/index.js');
+const { underHud } = await import('../src/games/hud.js');
+const rig = await import('./playtest/rig.mjs');
+const { makeWorld, Feeder, resetPose, BRAINS, mulberry32, W, H, A } = rig;
+const lib = { sizeOf, seated, CLOSE, WATCH_AFTER, headOf };
+music.hold = () => {};
+
+const DT = 1 / 30;
+const GAME_IDS = ['pop-party', 'sky-painter', 'sleepy-bear', 'leaf-pile', 'stack-it-high', 'animal-gym', 'keep-it-up', 'ptero-flight', 'save-the-harvest', 'cubions-long-way-home'];
+const games = String(opt('games', GAME_IDS.join(','))).split(',');
+const lineups = String(opt('lineups', '1c,1a,4c,4m')).split(',');
+const seeds = String(opt('seeds', '1,2,3')).split(',').map(Number);
+const assist = !opt('real');
+const jitter = Number(opt('jitter', 0.0018));
+const CAP = Number(opt('cap', 4));
+const REACT = Number(opt('react', 1));
+
+/* the games roll dice (where a balloon rises, when the music stops): one seeded stream per run */
+const realRandom = Math.random;
+const reseed = (n) => { Math.random = mulberry32(n); };
+const hash = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7);
+
+const KINDS_DELAY = { child: [0.25, 0.6], adult: [0.4, 0.8] };
+const med = (a) => { const b = a.filter(Number.isFinite).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+const mean = (a) => { const b = a.filter(Number.isFinite); return b.length ? b.reduce((s, x) => s + x, 0) / b.length : null; };
+const r2 = (v) => v == null || !Number.isFinite(v) ? v : Math.round(v * 100) / 100;
+
+/* ---------------------------------------------------------------- checks the tests also make */
+function nonFinite(obj, path = 'game', seen = new Set(), depth = 0){
+  if (obj == null || depth > 4 || seen.has(obj)) return null;
+  if (typeof obj === 'number') return Number.isFinite(obj) ? null : `${path} is ${obj}`;
+  if (typeof obj !== 'object' || ArrayBuffer.isView(obj)) return null;
+  seen.add(obj);
+  if (obj.getContext || obj.nodeType) return null;
+  for (const [k, v] of Object.entries(obj)){
+    if (['scene', 'avatars', 'j', 'jumps', 'mask', 'bg', 'tmp', 'prev', 'last', 'jw'].includes(k)) continue;
+    const f = nonFinite(v, `${path}.${k}`, seen, depth + 1); if (f) return f;
+  }
+  return null;
+}
+
+/* ---------------------------------------------------------------- per-game probes: what to watch inside each game */
+const PROBES = {
+  'pop-party'(ctx){
+    const seen = new Map(), done = [];
+    const kindOf = (b) => b.giant ? 'giant' : b.parade ? 'parade' : b.bouquet ? 'bouquet' : b.r < 0.02 ? 'teeny' : b.r < 0.05 ? 'small' : b.r < 0.082 ? 'medium' : 'big';
+    let spec = null, an = null, animals = { seen: 0, popped: 0 };
+    return {
+      frame(dt, t, step){
+        const g = ctx.inst, live = new Set();
+        if (step % 30 === 0) spec = g.hud();
+        for (const b of g.balloons){
+          if (b.parade && b.x < 0 || b.parade && b.x > 1) { /* still marching in */ }
+          let rec = seen.get(b);
+          if (!rec){ if (b.y == null || b.y > 1.0 || b.bouquet) continue; rec = { b, kind: kindOf(b), worth: b.worth, born: t, dwell: ctx.world.persons.map(() => 0), dwellHop: ctx.world.persons.map(() => 0), above: ctx.world.persons.map(() => 0), aboveHop: ctx.world.persons.map(() => 0), hud: 0, life: 0, lastY: b.y }; seen.set(b, rec); }
+          live.add(b); rec.life += dt; rec.lastY = b.y;
+          ctx.world.persons.forEach((p, i) => {
+            if (!p.inScene) return;
+            const r = p.reach(b.x, b.y); if (r.kind === 'ok') rec.dwell[i] += dt; if (r.kind === 'ok' || r.kind === 'hop') rec.dwellHop[i] += dt;
+            const ceil = p.J.shY - p.armLen * p.k * 1.08, ceilHop = ceil - p.kind.hopGainM * p.ppm * p.k;
+            if (b.y < ceil) rec.above[i] += dt; if (b.y < ceilHop) rec.aboveHop[i] += dt;
+          });
+          if (underHud(W, H, b.x * W, b.y * H, spec)) rec.hud += dt;
+        }
+        for (const [b, rec] of seen) if (!live.has(b)){ rec.popped = !!b.dead; done.push(rec); seen.delete(b); }
+        if (g.animal && g.animal !== an){ an = g.animal; animals.seen++; }
+        if (an && an.popT >= 0 && !an.counted){ an.counted = true; animals.popped++; }
+      },
+      finish(){
+        for (const [b, rec] of seen){ rec.popped = !!b.dead; rec.open = true; done.push(rec); }
+        const recs = done.filter(r => r.kind !== 'bouquet');
+        const n = ctx.world.persons.length;
+        const per = ctx.world.persons.map((p, i) => ({
+          who: p.name, idx: i,
+          inZoneShare: r2(recs.filter(r => r.dwell[i] >= 0.3).length / Math.max(1, recs.length)),
+          inZoneWithHopShare: r2(recs.filter(r => r.dwellHop[i] >= 0.3).length / Math.max(1, recs.length)),
+          shareOfBalloonLifeAboveReach: r2(recs.reduce((s, r) => s + r.above[i] / Math.max(0.1, r.life), 0) / Math.max(1, recs.length)),
+          shareOfBalloonLifeAboveReachEvenHopping: r2(recs.reduce((s, r) => s + r.aboveHop[i] / Math.max(0.1, r.life), 0) / Math.max(1, recs.length)),
+          reachCeilingY: r2(p.J.shY - p.armLen * p.k * 1.08)
+        }));
+        const by = {};
+        for (const r of recs){ const k = by[r.kind] || (by[r.kind] = { n: 0, popped: 0, anyReach: 0 }); k.n++; if (r.popped) k.popped++; if (r.dwell.some(d => d >= 0.3)) k.anyReach++; }
+        return { balloons: recs.length, popped: recs.filter(r => r.popped).length, escaped: recs.filter(r => !r.popped && !r.open).length,
+          medianPopHeightY: r2(med(recs.filter(r => r.popped).map(r => r.lastY))),
+          underHudShare: r2(recs.reduce((s, r) => s + r.hud, 0) / Math.max(0.01, recs.reduce((s, r) => s + r.life, 0))),
+          pointsPoppedTotal: recs.filter(r => r.popped).reduce((s, r) => s + r.worth, 0), byKind: by, perPerson: per, animals };
+      }
+    };
+  },
+  'sleepy-bear'(ctx){
+    const freezes = []; let prev = 'dance', cur = null;
+    return {
+      frame(dt, t){
+        const g = ctx.inst;
+        if (prev === 'dance' && g.phase === 'freeze'){ cur = { at: t, len: 0, outcome: {} }; }
+        if (g.phase === 'freeze' && cur) cur.len += dt;
+        if (prev === 'freeze' && g.phase === 'dance' && cur){
+          ctx.world.persons.forEach((p, i) => {
+            const s = p.slot; if (s < 0) { cur.outcome[i] = 'absent'; return; }
+            cur.outcome[i] = g.caught[s] ? 'wobble' : g.frost[s] > 0.6 ? 'star' : 'nearly';
+          });
+          freezes.push(cur); cur = null;
+        }
+        prev = g.phase;
+      },
+      finish(){
+        const out = ctx.world.persons.map((p, i) => {
+          const o = freezes.map(f => f.outcome[i]).filter(Boolean), c = (k) => o.filter(x => x === k).length;
+          return { who: p.name, idx: i, freezes: o.length, stars: c('star'), wobbles: c('wobble'), nearly: c('nearly'), absent: c('absent'), starRate: r2(c('star') / Math.max(1, o.length)) };
+        });
+        return { freezes: freezes.length, meanFreezeLen: r2(mean(freezes.map(f => f.len))), perPerson: out };
+      }
+    };
+  },
+  'leaf-pile'(ctx){
+    const s = { pileAt: [], reachedBigAt: null, readyAt: null, burstAt: null, jumpedOfPresent: null, leavesLyingMin: 999 };
+    return {
+      frame(dt, t, step){
+        const g = ctx.inst;
+        if (step % 300 === 0) s.pileAt.push([Math.round(t), g.pile]);
+        if (s.reachedBigAt == null && g.pile >= 120) s.reachedBigAt = r2(t);
+        if (s.readyAt == null && g.ready) s.readyAt = r2(t);
+        if (s.burstAt == null && g.piles) s.burstAt = r2(t);
+        if (g.ready) s.jumpedOfPresent = [g.jumped.size, ctx.world.persons.filter(p => p.present).length];
+      },
+      finish(){ const g = ctx.inst; return { ...s, finalPile: g.pile, peakPile: g.peak, pileAtSweepEnd: s.pileAt.length ? s.pileAt[s.pileAt.length - 1][1] : null, leavesInPlay: g.leaves.length }; }
+    };
+  },
+  'stack-it-high'(ctx){
+    const seen = new Map(), done = []; let prevT = 0;
+    return {
+      frame(dt, t){
+        const g = ctx.inst, live = new Set();
+        for (const b of g.blocks){
+          let rec = seen.get(b); if (!rec){ rec = { b, born: t, grabbedAt: null, placed: false }; seen.set(b, rec); }
+          live.add(b); if (b.held && rec.grabbedAt == null) rec.grabbedAt = t;
+        }
+        for (const [b, rec] of seen) if (!live.has(b)){ rec.placed = !!b.placed; rec.end = t; done.push(rec); seen.delete(b); }
+        prevT = g.towers;
+      },
+      finish(){
+        const g = ctx.inst, recs = done;
+        const grabbed = recs.filter(r => r.grabbedAt != null);
+        return { blocksSpawned: recs.length + seen.size, placed: recs.filter(r => r.placed).length, towersBlastedOff: g.towers, towerHeightAtEnd: g.tower.length,
+          wastedInGrass: recs.filter(r => !r.placed && r.grabbedAt == null).length, grabbedNotPlaced: grabbed.filter(r => !r.placed).length,
+          meanSecondsToGrab: r2(mean(grabbed.map(r => r.grabbedAt - r.born))), meanSecondsToPlace: r2(mean(recs.filter(r => r.placed).map(r => r.end - r.grabbedAt))) };
+      }
+    };
+  },
+  'sky-painter'(ctx){
+    const s = { doneAt: [], topRow: 99, cov: [], lastDone: 0 };
+    return {
+      frame(dt, t, step){
+        const g = ctx.inst;
+        if (g.done > s.lastDone){ s.doneAt.push(r2(t)); s.lastDone = g.done; }
+        if (step % 150 === 0) s.cov.push([Math.round(t), r2(g.covered)]);
+        for (let c = 0; c < g.cells.length; c += 1){ if (g.cells[c]){ const row = (c / 48) | 0; if (row < s.topRow) s.topRow = row; break; } }
+      },
+      finish(){
+        const g = ctx.inst, handCells = g.score.reduce((a, b) => a + b, 0), allCells = g.done * g.cells.length + g.painted;
+        return { pictures: g.done, doneAt: s.doneAt, paintedFinal: r2(g.covered), spreadShare: r2(1 - handCells / Math.max(1, allCells)), cells: allCells, handCells, covAt: s.cov };
+      }
+    };
+  },
+  'animal-gym'(ctx){
+    const segs = []; let cur = null, prevSeg = -1;
+    return {
+      frame(dt, t){
+        const g = ctx.inst;
+        if (g.seg !== prevSeg){
+          if (cur){ cur.fill = r2(cur.lastFill); cur.filled = cur.filledAt != null; segs.push(cur); }
+          cur = { seg: g.seg, move: g.move, start: t, lastFill: 0, filledAt: null, triesBy: ctx.world.persons.map(() => 0), base: ctx.world.persons.map(p => p.slot >= 0 ? g.score[p.slot] : 0) };
+          prevSeg = g.seg;
+        }
+        cur.lastFill = g.fill; if (g.fill >= 1 && cur.filledAt == null) cur.filledAt = t - cur.start;
+        ctx.world.persons.forEach((p, i) => { if (p.slot >= 0) cur.triesBy[i] = g.score[p.slot] - cur.base[i]; });
+      },
+      finish(){
+        if (cur){ cur.fill = r2(cur.lastFill); cur.filled = cur.filledAt != null; segs.push(cur); }
+        return { segments: segs.map(s => ({ move: s.move, filled: s.filled, filledAfter: r2(s.filledAt), fill: s.fill, tries: s.triesBy })), circuits: ctx.inst.circuits,
+          filledOf: [segs.filter(s => s.filled).length, segs.length] };
+      }
+    };
+  },
+  'keep-it-up'(ctx){
+    const s = { drops: 0, lostBalls: 0, maxBalls: 1, prevStreak: 0, prevBalls: 1, lastHitT: 0, longestNoHit: 0, hitAt: [], bestAt: null };
+    let prevHits = 0;
+    return {
+      frame(dt, t){
+        const g = ctx.inst;
+        if (g.streak === 0 && s.prevStreak > 0) s.drops++;
+        s.prevStreak = g.streak;
+        if (g.balls.length < s.prevBalls) s.lostBalls += s.prevBalls - g.balls.length;
+        s.prevBalls = g.balls.length; s.maxBalls = Math.max(s.maxBalls, g.balls.length);
+        if (g.hits > prevHits){ s.longestNoHit = Math.max(s.longestNoHit, t - s.lastHitT); s.lastHitT = t; prevHits = g.hits; }
+      },
+      finish(t){ const g = ctx.inst; s.longestNoHit = Math.max(s.longestNoHit, t - s.lastHitT); return { bestStreak: g.best, totalHits: g.hits, streakResets: s.drops, ballsPopped: s.lostBalls, maxBalls: s.maxBalls, longestNoHit: r2(s.longestNoHit) }; }
+    };
+  },
+  'ptero-flight'(ctx){
+    const s = { atMin: 0, atMax: 0, spawned: 0, finds: [], prevFound: 0, born: new Map(), missed: 0 };
+    return {
+      frame(dt, t){
+        const g = ctx.inst;
+        if (g.alt <= 1.11) s.atMin += dt; if (g.alt >= 4.99) s.atMax += dt;
+        for (const w of g.wonders) if (!s.born.has(w)) s.born.set(w, t);
+        if (g.found.length > s.prevFound){ s.finds.push(r2(t)); s.prevFound = g.found.length; }
+      },
+      finish(t){
+        const g = ctx.inst, spawned = s.born.size, found = g.found.length;
+        const waiting = g.wonders.filter(w => !w.got).length;
+        const times = []; for (const [w, b] of s.born) if (w.got && w.goneAt != null) times.push(w.goneAt - b - 1.2 + 0);
+        return { wondersSpawned: spawned, found, missed: spawned - found - waiting, findAt: s.finds, secondsAtMinAlt: r2(s.atMin), secondsAtMaxAlt: r2(s.atMax), meanSecondsSpawnToFind: r2(mean(times)), distance: r2(g.dist) };
+      }
+    };
+  },
+  'save-the-harvest'(ctx){
+    const rounds = []; let prevPhase = null, prevKind = null;
+    return {
+      frame(dt, t){
+        const g = ctx.inst;
+        if (prevPhase === 'move' && g.phase !== 'move') rounds.push({ kind: g.kind, tries: g.tries, need: g.need, ok: !!g.ok, at: r2(t), len: r2(g.pt) });
+        prevPhase = g.phase;
+      },
+      finish(t){
+        const g = ctx.inst;
+        return { rounds: rounds.length, okRounds: rounds.filter(r => r.ok).length, byKind: ['apple', 'pear', 'berry', 'raven'].map(k => ({ kind: k, rounds: rounds.filter(r => r.kind === k).length, ok: rounds.filter(r => r.kind === k && r.ok).length, meanTries: r2(mean(rounds.filter(r => r.kind === k).map(r => r.tries))), need: r2(mean(rounds.filter(r => r.kind === k).map(r => r.need))) })),
+          won: !!g.win, wonAt: g.win ? r2(g.t) : null, basket: g.value(), ravenSnacks: 0, raven: g.raven };
+      }
+    };
+  },
+  'cubions-long-way-home'(ctx){
+    const cards = []; let cur = null, lastCardEnd = 0, longestGap = 0;
+    return {
+      frame(dt, t){
+        const g = ctx.inst, c = g.card && g.card();
+        if (c && !cur){ cur = { card: c, at: t }; longestGap = Math.max(longestGap, t - lastCardEnd); }
+        if (!c && cur){ cur.len = t - cur.at; cards.push(cur); cur = null; lastCardEnd = t; }
+      },
+      finish(t){
+        const g = ctx.inst; longestGap = Math.max(longestGap, t - lastCardEnd);
+        const words = g.beats.reduce((s, b) => s + (b.t ? b.t.trim().split(/\s+/).length : 0), 0);
+        return { beats: g.beats.length, words, cards: cards.length, cardMoves: [...new Set(cards.map(c => c.card))], cardTimeTotal: r2(cards.reduce((s, c) => s + c.len, 0)), longestGapBetweenCards: r2(longestGap), cardAt: cards.map(c => [r2(c.at), c.card, r2(c.len)]), estTotalNoVoice: r2(g.total) };
+      }
+    };
+  }
+};
+
+/* ---------------------------------------------------------------- one run */
+function runOne(gid, lineup, seed, o = {}){
+  const game = byId(gid);
+  if (!game) throw new Error('no game ' + gid);
+  reseed(seed * 7919 + hash(gid));
+  resetPose(pose);
+  const world = makeWorld(lineup, seed, { jitter: o.jitter ?? jitter, react: o.react ?? REACT });
+  const feeder = new Feeder(pose, lib, { assist: o.assist ?? assist, cap: o.cap ?? CAP });
+  pose.keepSitters = !!game.keepSitters;
+  const passive = !!game.passive;
+  /* before the round: everyone stands in view for a moment and the tracker lets them in */
+  if (!passive) for (let i = 0; i < 45; i++){ world.step(DT, null, null); feeder.step(world, DT); }
+  const joinedAtStart = world.persons.map(p => p.present);
+  world.t = 0;
+  const inst = game.create(o.cap ?? CAP);
+  const ctx = { inst, world, game };
+  const brain = BRAINS[gid];
+  const probe = (PROBES[gid] || (() => ({ frame(){}, finish(){ return {}; } })))(ctx);
+  const n = world.persons.length;
+  const stat = world.persons.map(p => ({ score: 0, firstPoint: null, lastPoint: 0, longestNoPoints: 0, present: 0, lost: 0, wasPresent: p.present, scoreWhileAway: 0, offTarget: 0, longestOff: 0, curOff: 0 }));
+  const limit = game.endless ? (gid === 'save-the-harvest' ? 340 : 420) : game.secs + 5;
+  let prev = inst.score ? inst.score.slice() : [], step = 0, t = 0, issues = [], scoreDown = 0, stuckFor = 0, longestStuck = 0, lastSum = 0, nonFin = null;
+  let ended = 'time';
+  for (;;){
+    world.step(DT, brain, ctx);
+    if (!passive) feeder.step(world, DT);
+    const before = inst.score ? inst.score.slice() : [];
+    inst.step(DT, W, H);
+    t += DT; step++;
+    if (inst.score){
+      for (let s = 0; s < inst.score.length; s++){
+        if (inst.score[s] < before[s]) scoreDown++;
+      }
+      world.persons.forEach((p, i) => {
+        const st = stat[i], s = p.slot;
+        if (p.present){ st.present++; if (!st.wasPresent) { /* came back */ } } else if (st.wasPresent) st.lost++;
+        st.wasPresent = p.present;
+        if (s >= 0 && s < before.length){
+          const d = inst.score[s] - before[s];
+          if (d > 0){ st.score += d; if (st.firstPoint == null) st.firstPoint = t; st.longestNoPoints = Math.max(st.longestNoPoints, t - st.lastPoint); st.lastPoint = t; }
+        }
+        if (p.state === 'on') st.curOff = 0; else { st.curOff += DT; st.longestOff = Math.max(st.longestOff, st.curOff); }
+      });
+      const sum = inst.score.reduce((a, b) => a + b, 0);
+      if (sum > lastSum){ stuckFor = 0; lastSum = sum; } else if (world.persons.some(p => p.present)) stuckFor += DT;
+      longestStuck = Math.max(longestStuck, stuckFor);
+    }
+    probe.frame(DT, t, step);
+    if (step % 90 === 0 && !nonFin){ nonFin = nonFinite(inst, gid); }
+    if (inst.over || (!game.endless && t >= game.secs)){ ended = inst.over ? 'over' : 'time'; break; }
+    if (t >= limit){ ended = 'cap'; break; }
+  }
+  const roundSecs = t;
+  /* the ending some games have before the results (Pop Party's bouquets) */
+  let outro = 0;
+  if (inst.outro){ for (let i = 0; i < 30 * 30 && !inst.outro(DT, W, H); i++) outro += DT; for (let i = 0; i < 30; i++){ world.step(DT, null, null); } }
+  if (!nonFin) nonFin = nonFinite(inst, gid);
+  const tally = (() => { try { return inst.tally(); } catch (e){ return null; } })();
+  const winner = (() => { try { return inst.winner(); } catch (e){ return 'error'; } })();
+  const value = (() => { try { return inst.value(); } catch (e){ return null; } })();
+  const summary = (() => { try { return inst.summary ? inst.summary(n) : null; } catch (e){ return null; } })();
+  const ex = probe.finish(t);
+  const frames = Math.max(1, step);
+  const players = world.persons.map((p, i) => {
+    const st = stat[i], ps = p.stats, tot = Math.max(1, ps.frames);
+    const score = st.score;
+    return {
+      who: p.name, idx: i, startX: r2(p.homeX), heightPic: r2(p.h), joinedAtStart: joinedAtStart[i], sizeRatioToBiggest: r2(p.sizeRatio),
+      score, perMin: r2(score / (roundSecs / 60)), firstPoint: st.firstPoint == null ? null : r2(st.firstPoint),
+      longestNoPoints: r2(Math.max(st.longestNoPoints, roundSecs - st.lastPoint)),
+      onShare: r2((ps.on || 0) / tot), idleShare: r2((ps.idle || 0) / tot), waitShare: r2((ps.wait || 0) / tot), lapseShare: r2((ps.lapse || 0) / tot),
+      longestOffTarget: r2(st.longestOff),
+      presentShare: r2(st.present / frames), timesLost: st.lost, slotChanges: p.slotChanges || 0, forcedIn: p.forced || 0, wouldBeDropped: p.ejections || 0,
+      armsUpShare: r2(ps.armsUp / tot), bentShare: r2(ps.bent / tot), hops: ps.hops, handPathM: r2((p.L.path + p.R.path)), handsOrHeadOffPictureShare: r2(ps.offFrame / tot), tooCloseShare: r2(ps.closeTime / roundSecs)
+    };
+  });
+  const kids = players.filter(p => p.who === 'child'), adults = players.filter(p => p.who === 'adult');
+  const scores = players.map(p => p.score), top = Math.max(...scores), tieTop = scores.filter(s => s === top).length;
+  const res = {
+    game: gid, lineup, seed, mode: (o.assist ?? assist) ? 'assist' : 'real', cap: o.cap ?? CAP,
+    roundSecs: r2(roundSecs), outroSecs: r2(outro), ended, nominalSecs: game.endless ? null : game.secs,
+    value, tally: tally ? tally.map(r => ({ label: r.label, value: r.value })) : null, winner, summary,
+    players, childMeanPerMin: r2(mean(kids.map(k => k.perMin))), adultMeanPerMin: r2(mean(adults.map(k => k.perMin))),
+    childMeanScore: r2(mean(kids.map(k => k.score))), adultMeanScore: r2(mean(adults.map(k => k.score))),
+    topTied: tieTop > 1 && top > 0, spread: Math.max(...scores) - Math.min(...scores),
+    issues: { nonFinite: nonFin, scoreWentDown: scoreDown, longestSecondsNoScoreAnywhere: r2(longestStuck), roundEndedEarly: ended === 'over' && !game.endless && roundSecs < game.secs - 1 ? r2(roundSecs) : null, neverEnded: ended === 'cap', anyoneNeverJoined: joinedAtStart.some(j => !j) && !passive },
+    game_: ex
+  };
+  return res;
+}
+
+/* ---------------------------------------------------------------- who the tracker lets in (the real rules; no assisting) */
+function admission(lineup, seed, cap){
+  resetPose(pose);
+  const world = makeWorld(lineup, seed, { jitter });
+  const feeder = new Feeder(pose, lib, { assist: false, cap });
+  pose.keepSitters = false;
+  const when = world.persons.map(() => null);
+  let t = 0;
+  for (let i = 0; i < 30 * 40; i++){
+    world.noLapse = false; world.step(DT, null, null); feeder.step(world, DT); t += DT;
+    world.persons.forEach((p, k) => { if (p.present && when[k] == null) when[k] = r2(t); });
+  }
+  return { lineup, seed, cap, people: world.persons.map((p, k) => ({ who: p.name, sizeRatio: r2(p.sizeRatio), joinedAfter: when[k], inAtEnd: p.present, ratioPicHeightToAdult: null })), inAtEnd: world.persons.filter(p => p.present).length, of: world.persons.length };
+}
+
+
+/* ---------------------------------------------------------------- how big a move has to be to count (the game's own detectors, on bodies of each size) */
+async function calibrate(){
+  const { triesOf } = await import('../src/games/animal-gym.js');
+  const { JumpWatch } = await import('../src/tracking/jump.js');
+  const out = [];
+  const sets = [['jump', [0.25, 0.4, 0.6, 0.8, 1, 1.25, 1.5, 2]], ['squat', [0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.2]], ['lean', [0.3, 0.5, 0.7, 0.9, 1.2, 1.5]], ['march', [0.3, 0.5, 0.7, 1]]];
+  for (const kind of ['child', 'adult']) for (const [move, amps] of sets) for (const amp of amps){
+    let reps = 0, tries = 0;
+    for (const seed of [1, 2, 3]){
+      resetPose(pose);
+      const world = makeWorld(kind === 'child' ? '1c' : '1a', seed, { jitter, noLapse: true });
+      const p = world.persons[0]; p.amp[move] = amp; p.closeNext = 1e9;
+      const feeder = new Feeder(pose, lib, { assist: true, cap: 4 });
+      for (let i = 0; i < 45; i++){ world.step(DT, null, null); feeder.step(world, DT); }
+      world.t = 0; const jw = new JumpWatch({ rise: 0.08, speed: 0.5 }), st = {};
+      const mover = { act(c, q, now, dt){ rig.doMove(q, move, now, dt); } };
+      let n = 0;
+      for (let i = 0; i < 30 * 30; i++){
+        world.step(DT, mover, {}); feeder.step(world, DT);
+        const slot = p.slot >= 0 ? p.slot : 0, q = pose.players[slot];
+        if (move === 'jump') n += jw.step(DT, pose.players, 4).filter(k => k === slot).length;
+        else n += triesOf(move, q, st, DT);
+      }
+      const period = { jump: [1.1, 1.6], squat: [1.2, 2.0], lean: [1.3, 2.0], march: [0.9, 1.3] }[move][kind === 'child' ? 0 : 1];
+      const per = move === 'march' || move === 'lean' ? 2 : 1;
+      tries += n; reps += Math.floor(30 / period) * per;
+    }
+    const real = kind === 'child' ? 1.2 : 1.75;
+    const cm = { jump: (kind === 'child' ? 20 : 22) * amp, squat: 0.85 * amp * 0.30 * real * 100, lean: 0.9 * amp * 0.22 * real * 100, march: amp * 0.5 * 0.30 * real * 100 }[move];
+    out.push({ kind, move, amp, approxCm: Math.round(cm), detected: tries, attempts: reps, rate: r2(tries / Math.max(1, reps)) });
+  }
+  return out;
+}
+
+/* ---------------------------------------------------------------- main */
+mkdirSync(dirname(OUT), { recursive: true });
+const prior = existsSync(OUT) && !opt('fresh') ? JSON.parse(readFileSync(OUT, 'utf8')) : { runs: [], admission: [], meta: {} };
+const started = Date.now();
+if (opt('admission')){
+  prior.admission = [];
+  for (const cap of [2, 4]) for (const lu of ['1c', '1a', '4c', '4m']) for (const s of seeds) prior.admission.push(admission(lu, s, cap));
+  prior.meta.admissionNote = 'The tracker\'s own rules, nothing assisted: 40 s standing in view. cap 2 is what ships today (PLAYING = 2); cap 4 is what the games are built for.';
+  writeFileSync(OUT, JSON.stringify(prior, null, 1));
+  console.log('admission written', OUT);
+  process.exit(0);
+}
+if (opt('sensitivity')){
+  /* Sleepy Bear: how quick does the stop have to be, and does camera jitter matter? */
+  prior.sensitivity = [];
+  for (const lu of ['1c', '1a']) for (const react of [0.25, 0.4, 0.55, 0.7, 1]) for (const jit of [0.0018, 0.004]){
+    let stars = 0, wob = 0, fr = 0;
+    for (const seed of [1, 2, 3]){
+      const r = runOne('sleepy-bear', lu, seed, { react, jitter: jit });
+      const pp = r.game_.perPerson[0]; stars += pp.stars; wob += pp.wobbles; fr += pp.freezes;
+    }
+    const kind = lu === '1c' ? 'child' : 'adult', base = KINDS_DELAY[kind];
+    prior.sensitivity.push({ game: 'sleepy-bear', kind, reactionScale: react, reactionSecs: [r2(base[0] * react), r2(base[1] * react)], jitter: jit, freezes: fr, stars, wobbles: wob, starRate: r2(stars / Math.max(1, fr)) });
+    console.log(kind, 'react x', react, 'jitter', jit, 'star rate', r2(stars / Math.max(1, fr)));
+  }
+  prior.meta.sensitivityNote = 'Sleepy Bear, one body, 3 seeds x 13 freezes. reactionScale 1 = the child 0.25-0.6 s / adult 0.4-0.8 s of the main runs; jitter is the camera noise in picture widths (one sigma).';
+  writeFileSync(OUT, JSON.stringify(prior, null, 1));
+  process.exit(0);
+}
+if (opt('calibrate')){
+  prior.calibration = await calibrate();
+  prior.meta.calibrationNote = 'Each move done at a steady rhythm for 3 x 30 s by one body (3 seeds), counted by the game\'s own detector (Animal Gym / Save the Harvest: triesOf and JumpWatch) behind the real tracker. approxCm: how big the move is (jump height; torso drop of a squat; sideways lean of the shoulders over the hips; knee raise). rate = detected / attempted (march and lean count each side).';
+  writeFileSync(OUT, JSON.stringify(prior, null, 1));
+  for (const r of prior.calibration) console.log(r.kind.padEnd(6), r.move.padEnd(6), String(r.approxCm).padStart(3) + ' cm', 'rate', r.rate);
+  process.exit(0);
+}
+const key = (r) => `${r.game}|${r.lineup}|${r.seed}|${r.mode}|${r.cap}|${jitter}`;
+const have = new Set(prior.runs.map(r => `${r.game}|${r.lineup}|${r.seed}|${r.mode}|${r.cap}|${r.jitter ?? 0.0018}`));
+for (const gid of games) for (const lu of lineups) for (const seed of seeds){
+  const k = `${gid}|${lu}|${seed}|${assist ? 'assist' : 'real'}|${CAP}|${jitter}`;
+  if (have.has(k) && !opt('force')) continue;
+  const t0 = Date.now();
+  let r;
+  try { r = runOne(gid, lu, seed); } catch (e){ console.log('ERROR', gid, lu, seed, e.stack); r = { game: gid, lineup: lu, seed, mode: assist ? 'assist' : 'real', cap: CAP, error: String(e.stack || e) }; }
+  r.jitter = jitter;
+  prior.runs = prior.runs.filter(x => `${x.game}|${x.lineup}|${x.seed}|${x.mode}|${x.cap}|${x.jitter ?? 0.0018}` !== k);
+  prior.runs.push(r);
+  console.log(`${gid} ${lu} seed ${seed}: ${r.error ? 'ERROR' : r.players.map(p => `${p.who[0]}${p.score}`).join(' ')} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+  writeFileSync(OUT, JSON.stringify(prior));
+}
+prior.meta = { ...prior.meta, made: new Date().toISOString().slice(0, 10), dt: DT, picture: [W, H], note: 'tools/playtest.mjs; see docs/playtest/REPORT.md' };
+writeFileSync(OUT, JSON.stringify(prior, null, 1));
+Math.random = realRandom;
+console.log('done in', ((Date.now() - started) / 1000).toFixed(0), 's ->', OUT);
