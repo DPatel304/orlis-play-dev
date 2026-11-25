@@ -1,4 +1,4 @@
-/* The rig for the end-to-end tests of Cubo's Create (decision 0060): the real shell on the Vite dev server in headless Chromium, the family's
+/* The rig for the end-to-end tests of Cubo's Create (decisions 0060, 0061): the real shell on the Vite dev server in headless Chromium, the family's
    server played by a small in-memory one (page.route), and a scripted body fed through the real tracker (pose._assign), the way tools/playtest and
    test/preview/cubo-create-shots.mjs do. Plain Node, no test-runner code here. Used by test/cubo-create-e2e.node.mjs.
 
@@ -8,8 +8,8 @@
      await rig.close();
 
    The body (in-page, window.__bodies) moves the way a person does, never faster: it walks at a walking pace, raises its arms over about half a
-   second, reaches a hand out to a thing on the screen (found by selector each frame, so a thing that moves is followed), swipes a wrist across,
-   jumps. Nothing here calls into the flow; everything goes through pose._assign and the page's own elements. */
+   second, reaches a hand out to a thing on the screen (found by selector each frame, so a thing that moves is followed), jumps. A body is a
+   grown-up's or a child's (opts.kid: lower in the picture, smaller, a shorter arm). Nothing here calls into the flow; everything goes through pose._assign and the page's own elements. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -31,6 +31,8 @@ const accountOf = (profiles) => ({
   household: { id: 'here', name: 'Home' }, profiles, current: profiles[profiles.length - 1].id
 });
 
+/* a child's body: lower in the picture (their head is lower), smaller, a shorter arm */
+export const KID = { top: 0.38, span: 0.5 };
 export const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 /* wait for fn() to be truthy; the deadline scales with how busy the machine is (harness/slowness.mjs) */
 export async function until(fn, ms = 6000, label = ''){
@@ -45,7 +47,7 @@ export async function until(fn, ms = 6000, label = ''){
 
 /* ---------- the person, in the page ---------- */
 function bodyScript(){
-  const STAND = { top: 0.15, span: 0.72 };
+  const DEFAULT_STAND = { top: 0.15, span: 0.72 };          /* a grown-up: head top and height, in picture heights (a child is lower and smaller) */
   const bodies = window.__bodies = [];
   const lerp = (a, b, k) => a + (b - a) * k;
   const toward = (v, goal, step) => Math.abs(goal - v) <= step ? goal : v + Math.sign(goal - v) * step;
@@ -53,40 +55,50 @@ function bodyScript(){
   const K = (x, y, v = vis) => ({ x, y, z: 0, v, visibility: v });
   class Person {
     constructor(o){
-      Object.assign(this, { x: 0.5, cx: 0.5, up: 0, upGoal: 0, lift: 0, legs: true, reach: { l: null, r: null }, hand: { l: null, r: null }, jumpT: -1, swipeT: null, present: true, speed: 0.22 }, o);
+      Object.assign(this, { x: 0.5, cx: 0.5, up: 0, upGoal: 0, lift: 0, legs: true, reach: { l: null, r: null }, hand: { l: null, r: null }, jumpT: -1, present: true, speed: 0.22, top: DEFAULT_STAND.top, span: DEFAULT_STAND.span }, o);
       this.cx = this.x;
     }
+    get sc(){ return this.span / DEFAULT_STAND.span; }
+    /* the shoulder (for reaching) and how long an arm is, in picture heights */
+    shoulder(s){ const sg = s === 'l' ? -1 : 1; return { x: this.cx + sg * 0.05 * this.sc, y: this.top + this.span * 0.22 - this.lift }; }
+    get arm(){ return this.span * 0.44; }
     /* one step of the person's own motion, dt seconds */
     move(dt){
       this.x = toward(this.x, this.goalX ?? this.x, this.speed * dt);
       this.cx = this.x;
       this.up = toward(this.up, this.upGoal, dt * 2.2);          /* both arms up take about half a second */
-      if (this.jumpT >= 0){ this.jumpT += dt; const k = this.jumpT / 0.5; this.lift = k >= 1 ? 0 : Math.sin(Math.PI * k) * 0.1; if (k >= 1){ this.jumpT = -1; this.lift = 0; } }
+      if (this.jumpT >= 0){ this.jumpT += dt; const k = this.jumpT / 0.5; this.lift = k >= 1 ? 0 : Math.sin(Math.PI * k) * 0.1 * this.sc; if (k >= 1){ this.jumpT = -1; this.lift = 0; } }
       /* hands: toward the thing reached for (or back to the side), at a hand's pace */
       for (const s of ['l', 'r']){
-        const want = this.reach[s] ? this.resolve(this.reach[s]) : null;
+        const want = this.reach[s] ? this.resolve(this.reach[s], s) : null;
         const rest = this.restPoint(s);
         const goal = want || rest;
         const cur = this.hand[s] || rest;
-        const sp = (this.swipeT && this.swipeT.side === s ? 2.6 : 1.9) * dt;
+        const sp = 1.9 * dt;
         const dx = goal.x - cur.x, dy = goal.y - cur.y, d = Math.hypot(dx, dy);
         this.hand[s] = d <= sp ? { x: goal.x, y: goal.y } : { x: cur.x + dx / d * sp, y: cur.y + dy / d * sp };
         this.hand[s].reaching = !!want;
       }
     }
-    resolve(r){
+    resolve(r, side){
       if (r.xy) return { x: r.xy[0], y: r.xy[1] };
-      const els = [...document.querySelectorAll(r.sel)].filter(e => !e.classList.contains('hide') && e.getBoundingClientRect().width > 0);
+      const els = [...document.querySelectorAll(r.sel)].filter(e => !e.classList.contains('hide') && !e.closest('.hide') && e.getBoundingClientRect().width > 0);
       const e = els[r.nth || 0];
       if (!e) return null;
       const b = e.getBoundingClientRect();
+      if (r.near){
+        /* the nearest point of the thing to the player's own shoulder, a little inside its edge (what a person would do: reach in as little as they can) */
+        const sh = this.shoulder(side || 'r'), inx = b.width * 0.22, iny = b.height * 0.22;
+        const x = Math.max(b.left + inx, Math.min(b.right - inx, sh.x * innerWidth)), y = Math.max(b.top + iny, Math.min(b.bottom - iny, sh.y * innerHeight));
+        return { x: x / innerWidth, y: y / innerHeight };
+      }
       return { x: (b.left + b.width * (r.fx ?? 0.5)) / innerWidth, y: (b.top + b.height * (r.fy ?? 0.5)) / innerHeight };
     }
-    restPoint(s){ const sg = s === 'l' ? -1 : 1; return { x: this.cx + sg * 0.08, y: STAND.top + STAND.span * 0.52 - this.lift }; }
+    restPoint(s){ const sg = s === 'l' ? -1 : 1; return { x: this.cx + sg * 0.08 * this.sc, y: this.top + this.span * 0.52 - this.lift }; }
     landmarks(){
-      const { top, span } = STAND, cx = this.cx, lift = this.lift;
+      const { top, span, sc } = this, cx = this.cx, lift = this.lift;
       const lm = Array.from({ length: 33 }, () => K(cx, 0.5));
-      const at = (i, dx, f) => { lm[i] = K(cx + dx, top + span * f - lift); };
+      const at = (i, dx, f) => { lm[i] = K(cx + dx * sc, top + span * f - lift); };
       at(0, 0, 0); at(2, -0.01, -0.02); at(5, 0.01, -0.02);
       at(11, -0.05, 0.22); at(12, 0.05, 0.22);
       at(23, -0.03, 0.55); at(24, 0.03, 0.55);
@@ -98,11 +110,11 @@ function bodyScript(){
         const sg = s === 'l' ? -1 : 1, sh = lm[si], h = this.hand[s] || this.restPoint(s);
         const upY = top + span * -0.1 - lift;
         let w = { x: h.x, y: h.y };
-        if (this.up > 0){ w = { x: lerp(h.x, cx + sg * 0.08, this.up), y: lerp(h.y, upY, this.up) }; }
+        if (this.up > 0){ w = { x: lerp(h.x, cx + sg * 0.08 * sc, this.up), y: lerp(h.y, upY, this.up) }; }
         const reaching = h.reaching || this.up > 0.2 || Math.hypot(h.x - this.restPoint(s).x, h.y - this.restPoint(s).y) > 0.04;
         /* (a straight arm to something out to the side; a hand held in front of the chest has the elbow out and the forearm across) */
-        const front = Math.abs(w.x - sh.x) < 0.1 && w.y > sh.y;
-        const e = reaching ? (front ? { x: sh.x + sg * 0.09, y: w.y + 0.03 } : { x: (sh.x + w.x) / 2, y: (sh.y + w.y) / 2 }) : { x: cx + sg * 0.075, y: top + span * 0.38 - lift };
+        const front = Math.abs(w.x - sh.x) < 0.1 * sc && w.y > sh.y;
+        const e = reaching ? (front ? { x: sh.x + sg * 0.09 * sc, y: w.y + 0.03 * sc } : { x: (sh.x + w.x) / 2, y: (sh.y + w.y) / 2 }) : { x: cx + sg * 0.075 * sc, y: top + span * 0.38 - lift };
         lm[ei] = K(e.x, e.y); lm[wi] = K(w.x, w.y);
       }
       return lm;
@@ -141,15 +153,14 @@ function bodyScript(){
     armsUp(i, on){ bodies[i].upGoal = on ? 1 : 0; },
     reach(i, side, r){ bodies[i].reach[side] = r; },
     jump(i){ bodies[i].jumpT = 0; },
-    /* a quick sideways wipe of one wrist: out, then back to the side */
-    async swipe(i, dir, side = 'r'){
-      const p = bodies[i], c = p.hand[side] || p.restPoint(side), y = STAND.top + STAND.span * 0.35;
-      p.swipeT = { side };
-      p.reach[side] = { xy: [Math.max(0.1, Math.min(0.9, p.cx - dir * 0.12)), y] };
-      await new Promise(r => setTimeout(r, 400));
-      p.reach[side] = { xy: [Math.max(0.1, Math.min(0.9, p.cx + dir * 0.2)), y] };
-      await new Promise(r => setTimeout(r, 350));
-      p.reach[side] = null; p.swipeT = null;
+    /* where a target is against a person's reach: how far the nearest point of it is from their shoulder (picture heights), how long their arm is, and where it is against their hips */
+    reachInfo(i, sel, nth = 0, side = 'r'){
+      const p = bodies[i];
+      const els = [...document.querySelectorAll(sel)].filter(e => !e.classList.contains('hide') && !e.closest('.hide') && e.getBoundingClientRect().width > 0), el = els[nth];
+      if (!el) return null;
+      const b = el.getBoundingClientRect(), sh = p.shoulder(side), A = innerWidth / innerHeight;
+      const nx = Math.max(b.left, Math.min(b.right, sh.x * innerWidth)) / innerWidth, ny = Math.max(b.top, Math.min(b.bottom, sh.y * innerHeight)) / innerHeight;
+      return { d: Math.hypot((nx - sh.x) * A, ny - sh.y), arm: p.arm, centreY: (b.top + b.height / 2) / innerHeight, bottom: b.bottom / innerHeight, top: b.top / innerHeight, hips: p.top + p.span * 0.55 - p.lift, head: p.top - p.lift, shoulder: sh.y, w: b.width / innerWidth };
     }
   };
 }
@@ -190,7 +201,7 @@ export async function startCuboRig(){
   /* a page on the Create tab: Player app, the family signed in, the server answered by the rig. opts: w, h, profiles, items (the games already made),
      down (the server out of reach), person (a body standing at x, or false for none), framed (false: the camera first shows legs cut off) */
   rig.open = async (opts = {}) => {
-    const { w = 1280, h = 720, profiles = PROFILES, items = [], down = false, person = null, quiet = false, reduced = false } = opts;
+    const { w = 1280, h = 720, profiles = PROFILES, items = [], down = false, person = null, quiet = false, reduced = false, kid = false } = opts;
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, reducedMotion: reduced ? 'reduce' : 'no-preference' });
     contexts.push(ctx);
     await ctx.addInitScript(([acc, items]) => {
@@ -204,7 +215,7 @@ export async function startCuboRig(){
     const fake = fakeServer({ items, profiles, down });
     await ctx.route(`${SERVER}/**`, fake.handler);
     const page = await ctx.newPage();
-    const s = { page, ctx, w, h, fake, errors: [], logs: [], shots: [] };
+    const s = { page, ctx, w, h, kid, fake, errors: [], logs: [], shots: [] };
     page.on('pageerror', (e) => { s.errors.push('pageerror: ' + (e.stack || e.message || e)); });
     page.on('console', (m) => {
       if (m.type() === 'error'){
@@ -216,7 +227,7 @@ export async function startCuboRig(){
     });
     await page.goto(`${base}/?splash=0`);
     await page.waitForFunction(() => !!(window.__go && window.__pose), null, { timeout: T(30000) });
-    if (person !== false && opts.mouse !== true){ await page.evaluate((o) => window.__body.add(0, o), { x: 0.5, ...(person || {}) }); }
+    if (person !== false && opts.mouse !== true){ await page.evaluate((o) => window.__body.add(0, o), { x: 0.5, ...(kid ? KID : {}), ...(person || {}) }); }
     Object.assign(s, helpers(s));
     /* what Cubo says, as the page's voice is asked (a line said twice, or at the wrong time, shows here) */
     await page.evaluate(async () => {
@@ -253,19 +264,24 @@ function helpers(s){
     async settled(ms = 1500){ await until(async () => !(await page.evaluate(() => document.querySelector('.cc')?.hasAttribute('data-locked'))), ms).catch(() => {}); await sleep(100); },
     text: (sel) => page.locator(sel).first().innerText(),
     visible: (sel) => page.evaluate((sel) => [...document.querySelectorAll(sel)].some(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && !e.closest('.hide'); }), sel),
+    /* a picture of the page now: docs/calm/cubo2-<name>[-child][-720].png */
     async shot(name){
       if (!SHOTS) return;
       fs.mkdirSync(SHOTS, { recursive: true });
-      const file = path.join(SHOTS, `cubo-create-e2e-${name}${s.w === 1920 ? '' : '-720'}.png`);
+      const file = path.join(SHOTS, `cubo2-${name}${s.kid ? '-child' : ''}${s.w === 1920 ? '' : '-720'}.png`);
       await page.screenshot({ path: file }); s.shots.push(file);
     },
-    /* the remote's focus picture (docs/calm/cubo-create-focus-<name>.png) */
-    async focusShot(name){
-      if (!SHOTS) return;
-      fs.mkdirSync(SHOTS, { recursive: true });
-      const file = path.join(SHOTS, `cubo-create-focus-${name}${s.w === 1920 ? '' : '-720'}.png`);
-      await page.screenshot({ path: file }); s.shots.push(file);
-    },
+    /* the remote's focus picture */
+    async focusShot(name){ return h.shot('focus-' + name); },
+    /* the page's own clock (seconds): it runs as fast as the page does, so a wait on it is steady however busy the machine is */
+    clock: () => page.evaluate(() => { const c = document.querySelector('.cc'); return c ? c.clock : 0; }),
+    async pageWait(secs, label = ''){ const t0 = await h.clock(); await until(async () => (await h.clock()) - t0 >= secs, Math.max(4000, secs * 3000), `${secs} s of the page's own time ${label}`); },
+    zone: () => page.evaluate(() => { const c = document.querySelector('.cc'); return c ? c.zone : null; }),
+    /* every target on the page now: name, rect (shares of the picture) */
+    targets: () => page.evaluate(() => [...document.querySelectorAll('.cc [data-t]')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 2 && r.height > 2 && !e.closest('.hide') && getComputedStyle(e).display !== 'none'; })
+      .map(e => { const r = e.getBoundingClientRect(); return { name: e.dataset.t, x: r.left / innerWidth, y: r.top / innerHeight, w: r.width / innerWidth, h: r.height / innerHeight }; })),
+    /* how far the player's arm has to go to a target (see reachInfo in the page's body) */
+    reachInfo: (sel, nth = 0, i = 0, side = 'r') => page.evaluate(([i, sel, nth, side]) => window.__body.reachInfo(i, sel, nth, side), [i, sel, nth, side]),
     /* the page's own words: the bubble, and any toast */
     bubble: () => page.evaluate(() => (document.querySelector('.ccbubble .cctext') || {}).textContent || ''),
     /* a record of what Cubo has said (the page's voice calls), so a line said twice or at the wrong time shows */
@@ -278,10 +294,11 @@ function helpers(s){
       async walk(i, x){ await h.body.walkTo(i, x); await until(() => page.evaluate(([i, x]) => Math.abs(window.__body.get(i).x - x) < 0.004, [i, x]), 20000, 'the walk'); },
       armsUp: (i = 0, on = true) => page.evaluate(([i, on]) => window.__body.armsUp(i, on), [i, on]),
       armsDown: (i = 0) => page.evaluate((i) => window.__body.armsUp(i, false), i),
+      /* reach for a thing the way a person would: to the nearest point of it, by the shoulder, else to its middle (reachEl) */
+      reachNear: (sel, nth = 0, o = {}) => page.evaluate(([sel, nth, o]) => window.__body.reach(o.i || 0, o.side || 'r', { sel, nth, near: true }), [sel, nth, o]),
       reachEl: (sel, nth = 0, o = {}) => page.evaluate(([sel, nth, o]) => window.__body.reach(o.i || 0, o.side || 'r', { sel, nth, ...o }), [sel, nth, o]),
       reachXY: (x, y, o = {}) => page.evaluate(([x, y, o]) => window.__body.reach(o.i || 0, o.side || 'r', { xy: [x, y] }), [x, y, o]),
       release: (i = 0) => page.evaluate((i) => { window.__body.reach(i, 'l', null); window.__body.reach(i, 'r', null); }, i),
-      swipe: (dir, i = 0, side = 'r') => page.evaluate(([i, dir, side]) => window.__body.swipe(i, dir, side), [i, dir, side]),
       jump: (i = 0) => page.evaluate((i) => window.__body.jump(i), i),
       legs: (i, on) => page.evaluate(([i, on]) => { window.__body.get(i).legs = on; }, [i, on]),
       /* a hand held in a thing until it has done what it does (pred, run in node), then taken away */

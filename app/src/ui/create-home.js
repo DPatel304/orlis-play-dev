@@ -111,5 +111,7 @@ export function createHome({ items = [], onMake = () => {}, onPlay = () => {}, o
 
   root.append(hero, lab, slots);
   Object.defineProperty(root, 'open', { get: () => !!pop });
-  return Object.assign(root, { update(next){ list = next; draw(); }, closePop, tick, arms, nope });
+  /* where Cubo is on the banner (a hand held on him starts it, as both arms up does: decision 0061) */
+  const cuboRect = () => (hero.isConnected && !hero.classList.contains('hide') ? cubo.getBoundingClientRect() : null);
+  return Object.assign(root, { update(next){ list = next; draw(); }, closePop, tick, arms, nope, cuboRect });
 }

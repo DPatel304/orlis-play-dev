@@ -1,4 +1,5 @@
-/* Cubo's Create gestures (decision 0060): both arms up, dwell, swipe, worlds by position, slider stops, the grab spot, and only the first player building. */
+/* Cubo's Create gestures (decisions 0060, 0061): both arms up, a hand held on a target, worlds by position, the meter's stops from a hand's height, the comfort zone
+   and its layouts, the magnet, and only the first player building. (No swipe: reach-and-hold and arms up are the two gestures.) */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { L } from '../src/tracking/pose-shared.js';
@@ -83,25 +84,6 @@ test('handActive: a hand hanging at the side never touches anything; a forearm r
   assert.deepEqual(r.step(0.03, [q]).hands.map(h => h.active), [false, true]);
 });
 
-test('SwipeWatch: a quick sideways wrist move gives its direction; slow drifts and up-and-down do not; then it rests', () => {
-  const sweep = (w, from, to, secs, y0 = 0.4, y1 = 0.4) => {
-    const out = [], n = Math.round(secs * 30);
-    for (let i = 0; i <= n; i++) out.push(w.step(1 / 30, from + (to - from) * i / n, y0 + (y1 - y0) * i / n));
-    return out;
-  };
-  let w = new G.SwipeWatch();
-  assert.deepEqual(sweep(w, 0.3, 0.6, 0.2).filter(Boolean), [1], 'a fast move right');
-  w = new G.SwipeWatch();
-  assert.deepEqual(sweep(w, 0.6, 0.3, 0.2).filter(Boolean), [-1], 'a fast move left');
-  w = new G.SwipeWatch();
-  assert.equal(sweep(w, 0.3, 0.6, 2).filter(Boolean).length, 0, 'a slow drift is not a swipe');
-  w = new G.SwipeWatch();
-  assert.equal(sweep(w, 0.4, 0.45, 0.2, 0.2, 0.7).filter(Boolean).length, 0, 'mostly up-and-down is not a swipe');
-  w = new G.SwipeWatch();
-  assert.equal(sweep(w, 0.2, 0.7, 0.3).filter(Boolean).length, 1, 'one big sweep is one swipe, not many');
-  assert.equal(w.step(1 / 30, null, null), 0, 'a hand out of the picture is nothing');
-});
-
 test('worldAt: hips across the picture pick the worlds in order, with hysteresis at the boundaries', () => {
   const n = 6, at = (x, c) => G.worldAt(x, n, c);
   assert.equal(at(0.0, 0), 0); assert.equal(at(0.2, 0), 0);
@@ -118,24 +100,18 @@ test('worldAt: hips across the picture pick the worlds in order, with hysteresis
   assert.equal(G.worldAt(0.5, 1, 0), 0);
 });
 
-test('stopAt: a hand along a slider track gives its stop, with a little stickiness', () => {
-  assert.equal(G.stopAt(0.1, 0.1, 0.9, 7, 3), 0);
-  assert.equal(G.stopAt(0.9, 0.1, 0.9, 7, 3), 6);
-  assert.equal(G.stopAt(0.5, 0.1, 0.9, 7, 0), 3);
-  assert.equal(G.stopAt(0.1 + 0.8 / 6 * 3.55, 0.1, 0.9, 7, 3), 3, 'just past halfway to the next: still here');
-  assert.equal(G.stopAt(0.1 + 0.8 / 6 * 4.0, 0.1, 0.9, 7, 3), 4);
-  assert.equal(G.stopAt(0.0, 0.1, 0.9, 7, 3), 0, 'past the end: the end stop');
-});
-
-test('Grabber: a hand in the spot as a thing passes grabs it once; a flick across, or the same thing, does not', () => {
-  const g = new G.Grabber();
-  assert.equal(run((dt) => g.step(dt, true, 'apple'), 0.04).filter(Boolean).length, 0, 'a flick is not a grab');
-  g.reset();
-  assert.deepEqual(run((dt) => g.step(dt, true, 'apple'), 0.5).filter(Boolean), ['apple']);
-  assert.equal(run((dt) => g.step(dt, true, 'apple'), 1).filter(Boolean).length, 0, 'the same thing is not grabbed twice');
-  assert.deepEqual(run((dt) => g.step(dt, true, 'pear'), 0.6).filter(Boolean), ['pear'], 'the next thing passing is');
-  assert.equal(run((dt) => g.step(dt, false, 'cherry'), 1).filter(Boolean).length, 0, 'no hand, no grab');
-  assert.equal(run((dt) => g.step(dt, true, null), 1).filter(Boolean).length, 0, 'nothing at the top');
+test('meterStop: a raised hand’s height gives the stop, the lowest at the bottom, with a little stickiness', () => {
+  const at = (y, c) => G.meterStop(y, 0.2, 0.8, 7, c);          /* the meter runs from y 0.8 (stop 0) up to y 0.2 (stop 6) */
+  assert.equal(at(0.8, 3), 0); assert.equal(at(0.9, 3), 0, 'below the bottom: the bottom stop');
+  assert.equal(at(0.2, 3), 6); assert.equal(at(0.05, 3), 6, 'above the top: the top stop');
+  assert.equal(at(0.5, 0), 3, 'the middle');
+  const stop = (i) => 0.8 - 0.6 * i / 6;
+  assert.equal(at(stop(3) - 0.6 / 6 * 0.55, 3), 3, 'just past halfway to the next: still here');
+  assert.equal(at(stop(3) - 0.6 / 6 * 0.9, 3), 4, 'past the stickiness: the next');
+  const seen = []; for (let y = 0.8; y >= 0.2; y -= 0.01) seen.push(G.meterStop(y, 0.2, 0.8, 7, seen.at(-1) ?? 0));
+  assert.deepEqual([...new Set(seen)], [0, 1, 2, 3, 4, 5, 6], 'raising a hand goes up through every stop in order');
+  assert.equal(G.METER_HOLD, 1, 'hold still about a second to set it');
+  assert.equal(G.HOLD, 0.7);
 });
 
 test('Builder: the first player builds; the others only watch, and the next takes over only after they have been gone a while', () => {
@@ -148,7 +124,7 @@ test('Builder: the first player builds; the others only watch, and the next take
   assert.equal(b.step(G.LOST_BUILDER, [a, c]), 0, 'gone for good: the next present body');
 });
 
-test('BodyReader: reads the builder only: their arms, hands and swipes; a second player does nothing', () => {
+test('BodyReader: reads the builder only: their arms and hands; a second player does nothing', () => {
   const r = new G.BodyReader();
   const first = body({ x: 0.3 }), second = body({ up: true, x: 0.7 });
   const seen = run((dt) => r.step(dt, [first, second]), 1.5);
@@ -158,24 +134,4 @@ test('BodyReader: reads the builder only: their arms, hands and swipes; a second
   const up = body({ up: true, x: 0.3 });
   assert.equal(run((dt) => r.step(dt, [up, second]), 1).filter(s => s.arms).length, 1, 'the builder with arms up does it, once');
   assert.equal(seen[0].hands.length, 2);
-});
-
-test('Wheel: turns slowly by itself, a swipe spins it that way then it settles; reduced motion steps instead; about 8 are in view', async () => {
-  const { Wheel, AUTO, SPIN, SHOWN } = await import('../src/create/wheel.js');
-  const w = new Wheel(12);
-  run((dt) => w.step(dt), 2); assert.ok(Math.abs(w.pos - AUTO * 2) < 0.1, 'slowly: about ' + AUTO + ' a second');
-  w.pos = 6; const before = w.pos; w.kick(1);
-  run((dt) => w.step(dt), 0.5);
-  assert.ok(w.pos < before, 'swiped right: things go right, the wheel goes down');
-  w.kick(-1); w.pos = 6; const mid = w.pos; run((dt) => w.step(dt), 0.3); assert.ok(w.pos - mid > 0.5 * SPIN * 0.3, 'swiped left spins the other way, fast');
-  run((dt) => w.step(dt), 8); assert.ok(Math.abs(w.vel - AUTO) < 0.05, 'and settles back to the slow turn');
-  assert.ok(w.top() >= 0 && w.top() < 12);
-  const v = new Wheel(12); assert.ok(v.placed().length >= SHOWN - 1 && v.placed().length <= SHOWN + 2, 'about 8 in view, was ' + v.placed().length);
-  assert.equal(v.placed().find(p => p.i === v.top()).angle, 0, 'the one at the top is straight up');
-  const s = new Wheel(5); assert.ok(s.placed().length <= 5, 'a small group shows each thing once');
-  const r = new Wheel(12, true);
-  run((dt) => r.step(dt), 1); assert.equal(r.pos, 0, 'reduced motion: still between steps');
-  run((dt) => r.step(dt), 1.6); assert.equal(r.pos, 1, 'one step after a while');
-  r.kick(-1); assert.equal(r.pos, 4, 'a swipe steps it on at once');
-  r.nudge(1); assert.equal(r.pos, 3);
 });
