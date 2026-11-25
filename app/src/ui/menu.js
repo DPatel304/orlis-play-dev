@@ -8,6 +8,7 @@ import { faceOf } from './avatar-maker.js';
 import { openTrustedPhones } from './trusted-phones.js';
 import { createTrust } from '../session/trust.js';
 import { HANDS, handsMode, setHandsMode } from './handshow.js';
+import { testGamesOn, setTestGames } from './testing.js';
 import { mayManageGames, openGames } from './mygames.js';
 
 /* What the home page (home.js) and the other pages share: a line about each game, each game's icon and look, what was played lately,
@@ -188,13 +189,15 @@ function settings(onRecalibrate){
     if (pending){ card.appendChild(h('div', 'setgroup', pending)); pending = null; }
     const r = h('div', 'setrow');
     const c = h('div', 'setctl'); c.append(...ctl);
-    r.append(h('span', 'setname', name), c);
+    const nm = h('span', 'setname', name);
+    if (hint){ nm.appendChild(h('span', 'sethint', hint)); hint = null; }        /* (one plain line under the name, set just before the row) */
+    r.append(nm, c);
     card.appendChild(r);
     return c;
   };
   const small = (label, fn, cls = '') => onPick(button(label, 'setbtn ' + cls), fn);
   /* a small heading over a few rows (not in the Creator app, where there's nothing to group yet) */
-  let pending = null;
+  let pending = null, hint = null;
   const group = (title) => { pending = title; };   /* (its heading comes with its first row: none for a group with nothing in it) */
 
   /* sound */
@@ -291,6 +294,13 @@ function settings(onRecalibrate){
     for (const [m, name] of HANDS) seg.appendChild(small(name, () => { sfx.select?.(); setHandsMode(m); mark(); }, 'hands'));
     mark();
     row('Hands on screen', seg);
+    /* the test games (Peekaboo Garden's 3D test, the phone stick's pad test) stay out of My library unless this is on */
+    const tseg = h('div', 'seg'), TG = [[false, 'Hidden'], [true, 'Shown']];
+    const tmark = () => TG.forEach(([v], i) => tseg.children[i].classList.toggle('chosen', testGamesOn() === v));
+    for (const [v, name] of TG) tseg.appendChild(small(name, () => { if (testGamesOn() === v) return; sfx.select?.(); setTestGames(v); s.remove(); }, 'hands'));
+    tmark();
+    hint = 'Adds the 3D and phone-stick test games to My library.';
+    row('Test games', tseg);
   }
 
   s.appendChild(card);

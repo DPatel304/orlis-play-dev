@@ -454,3 +454,21 @@ test('Games on this TV: the profile sheet offers it to grown-ups only; the list 
     assert.equal(changed, 1, 'Home is told it changed');
   } finally { library.remove = was; library.installed.delete('pop-party'); library.installed.delete('s9'); }
 });
+
+/* the owner's test games (Peekaboo Garden's 3D test, the phone stick's pad test): in My library only with Settings > Testing > Test games on */
+test('My library shows the test games only when the owner has Test games on', async () => {
+  const { setTestGames, testGamesOn } = await import('../src/ui/testing.js');
+  /* (the page is built the way build() does, but with the switch set after the little DOM's storage is cleared) */
+  const names = (role, on) => asRole(role, () => {
+    const ui = resetDom(); El.prototype.getContext = () => null; keyHandlers.length = 0; setTestGames(on);
+    const page = menu({ onPlay(){}, onRecalibrate(){}, onWho(){}, nav: { home(){}, store(){}, create(){}, pro(){} } });
+    const n = qa(q(ui, '.home'), '.htile').map(label).join('|'); page.leave(); return n;
+  });
+  try {
+    assert.ok(!/3D test|pad test/.test(names('owner', false)), 'off: not in My library');
+    assert.equal(testGamesOn(), false);
+    const on = names('owner', true); assert.equal(testGamesOn(), true);
+    assert.ok(/Peekaboo Garden \(3D test\)/.test(on) && /Phone stick \(pad test\)/.test(on), 'on: both are there');
+    assert.ok(!/3D test|pad test/.test(names('creator', true)), 'on, but not the owner: still not shown');
+  } finally { setTestGames(false); }
+});

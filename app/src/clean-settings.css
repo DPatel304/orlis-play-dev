@@ -8,7 +8,8 @@
 .setsheet .setgroup:first-of-type{ margin-top:0; }
 .setsheet .setrow{ display:flex; align-items:center; justify-content:space-between; gap:calc(var(--u)*3); min-height:calc(var(--u)*11); padding:calc(var(--u)*1.6) calc(var(--u)*3.4); margin-top:calc(var(--u)*1); border:0; border-radius:calc(var(--u)*2.4); background:var(--surface); box-shadow:var(--soft-sm); }
 .setsheet .setgroup + .setrow{ margin-top:0; }
-.setname{ font:700 calc(var(--u)*4) var(--ui); color:var(--ink); }
+.setname{ font:700 calc(var(--u)*4) var(--ui); color:var(--ink); display:flex; flex-direction:column; gap:calc(var(--u)*.4); }
+.sethint{ font:600 calc(var(--u)*2.8) var(--ui); color:var(--ink-soft); }
 .setctl{ gap:calc(var(--u)*1.4); }
 .setslider{ width:min(34vw, calc(var(--u)*40)); accent-color:var(--blue); height:calc(var(--u)*3); }
 .setval{ min-width:calc(var(--u)*9); font:700 calc(var(--u)*3.6) var(--ui); color:var(--ink); text-align:right; font-variant-numeric:tabular-nums; }

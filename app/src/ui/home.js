@@ -12,6 +12,7 @@
 
    The rows and focus live in home-model.js (tested). */
 import { GAMES, LABS, STARTER_GAMES } from '../games/index.js';
+import { testGamesOn } from './testing.js';
 import { button, onPick } from './cursor.js';
 import { screen, h, clearUI } from './screens.js';
 import { sfx, ambience } from '../audio/sound.js';
@@ -83,7 +84,7 @@ function build({ onPlay, onRecalibrate, onWho, nav = {}, arrive = false, onFresh
   /* ---------- what's here ---------- */
   const waiting = account.waiting;
   const showHidden = typeof location !== 'undefined' && /[?&]debug\b/.test(location.search) && /[?&]hidden=1/.test(location.search);
-  const labs = showHidden || account.role === 'owner' ? LABS : [];
+  const labs = showHidden || (account.role === 'owner' && testGamesOn()) ? LABS : [];   /* (the test games: Settings > Testing > Test games) */
   const pool = GAMES.concat(labs).filter(g => (showHidden || !HIDDEN.has(g.id)) && (!waiting || STARTER_GAMES.includes(g.id)));
   /* Discover's games not on this PC yet: a stand-in each that knows its entry (this week's featured first) */
   const standIn = (e) => ({ id: e.id, name: e.name, accent: (e.icon && e.icon.cols && e.icon.cols[0]) || color('fav.purple'), store: { icon: e.icon, blurb: e.blurb, version: e.version, cover: e.cover || '' }, discover: e });

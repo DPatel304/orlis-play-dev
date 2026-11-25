@@ -170,6 +170,11 @@ addEventListener('orlismode', (e) => {
   if (e.detail === 'creator') toStart(); else toMenu(false);
   toast(e.detail === 'creator' ? 'Creator app' : 'Player app', { ms: 2500 });
 });
+/* the owner turned test games on or off (Settings > Testing): My library again, without or with them */
+addEventListener('orlistesting', (e) => {
+  if (mode === 'menu') toMenu(false);
+  toast(e.detail ? 'Test games are on' : 'Test games are off', { ms: 2500 });
+});
 /* Create Pro: making games with Claude Code */
 function toPro(){
   go('pro', () => createPage({ pro: true, nav: tabs(), onPlay: toGame, onWho: () => toWho(false), onRecalibrate: toCalibration }));
