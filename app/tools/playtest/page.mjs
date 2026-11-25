@@ -94,3 +94,19 @@ export function skyDone(){
   const r = ff(400, (gg) => gg.alive > 1.2);
   return { ...r, cover: g.cover.id, done: g.done, shares: skyShares(g), alive: g.alive };
 }
+
+/* Bodies without a game (the camera check, the line-up, the pause card): the people stand in view and the real tracker sees them. Use window.__go.* to go
+   to a screen. lineup: 1c, 1a, 4c, 4m ... (rig.mjs LINEUPS). Returns who the tracker let in. */
+export function bodies({ lineup = '1c', seed = 1 } = {}){
+  pose.update = () => {};
+  resetPose(pose);
+  world = makeWorld(lineup, seed, {});
+  feeder = new Feeder(pose, lib, { assist: true, cap: 4 });
+  pose.on = true; pose.ready = true;
+  clearInterval(timer);
+  timer = setInterval(() => { world.step(1 / 30, null, null); feeder.step(world, 1 / 30); }, 33);
+  for (let i = 0; i < 40; i++){ world.step(1 / 30, null, null); feeder.step(world, 1 / 30); }
+  return pose.players.map(p => p.present);
+}
+/* everyone walks out of the picture */
+export function nobody(){ clearInterval(timer); resetPose(pose); pose.players.forEach(p => { p.present = false; }); }

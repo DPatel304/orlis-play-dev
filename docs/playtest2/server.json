@@ -1,0 +1,673 @@
+{
+ "made": "2026-11-25",
+ "pages": [
+  {
+   "page": "overview",
+   "w": 1920,
+   "ms": 2,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "button.more:All 3 → 40x19",
+    "button.more:All 15x19",
+    "button.more:All 15 → 44x19"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Overview Wed, Nov 25, 04:56 PM Funnel open · port 36337 (no public address set) SMTP ok · none sent yet Backup none yet Disk 95% used · 13.2 GB free Errors (24h) 0 · p95 64 ms Families 51 +4 this week Active (7d) 42 82% of families Plays today 8 −27% vs last Wed Queue 3 2 joins · 1 games Queue All 3 → join Sam · The Hopefuls hopeful@example.com · 2d ago · asked to join Approve Decline join Sam · The Newcomers newcomer@example.com · 24h ago · asked to join Approve Decline game New Game new-game@1.0 by The Newcomers · 24h ago · 1 KB · passed checks · not played yet Try Publish Reject… Activity All 16:56 owner.feature You featured Comet Catch · slot 1 Top games (7d) All 15 → Game Plays Families Avg round Featured Comet Catch comet-catch 27 11 1 min ★ Bubble Dash bubble-dash 25 11 1 min – Leaf Pile leaf-pile 25 10 1 min – Pop Party pop-party 24 10 1 min –",
+   "active": "body:Orlis Server Overview Queue3"
+  },
+  {
+   "page": "queue",
+   "w": 1920,
+   "ms": 73,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Emails to allow 1520x22"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Queue Joins and games waiting for you Add email to allowlist Allow All 3 Join requests 2 Games 1 Oldest first join Sam · The Hopefuls hopeful@example.com · 2d ago · asked to join Approve Decline join Sam · The Newcomers newcomer@example.com · 24h ago · asked to join Approve Decline game New Game new-game@1.0 by The Newcomers · 24h ago · 1 KB · passed checks · not played yet Try Publish Reject…",
+   "active": "a.on:Queue3"
+  },
+  {
+   "page": "families",
+   "w": 1920,
+   "ms": 56,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Search families 979x22",
+    "input:Select this page 13x13",
+    "button:Family 35x17",
+    "button:Status 34x17",
+    "button:Last played ↓ 74x17",
+    "button:Plays 28x17",
+    "button:Made 30x17",
+    "button:Joined 35x17",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Families 51 total / All 51 Active 42 New (7d) 2 Waiting 2 Inactive 30d+ 5 Export CSV Family Profiles Status Last played ↓ Plays Made Joined The Smiths 41 fam41@example.com S active just now 4 0/3 2026-07-23 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 36 fam36@example.com SABC active just now 8 0/3 2026-08-07 The Smiths 31 fam31@example.com SAB active just now 3 0/3 2026-08-22 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 26 fam26@example.com SA active just now 7 0/3 2026-09-06 The Smiths 21 fam21@example.com S active just now 2 0/3 2026-09-21 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 16 fam16@example.com SABC active just now 6 0/3 2026-10-06 The Smiths 11 fam11@example.com SAB active just now 1 0/3 2026-10-21 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs fam6@example.com SA active just now 5 0/3 2026-11-05 The Patels 47 fam47@example.com SAB active 24h ago 1 0/3 2026-07-05 The Lees 42 fam42@example.com SA active 24h ago 5 0/3 2026-07-20 The Le",
+   "active": "a.on:Families51"
+  },
+  {
+   "page": "families-detail",
+   "w": 1920,
+   "ms": 956,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Search families 979x22",
+    "input:Select this page 13x13",
+    "button:Family 35x17",
+    "button:Status 34x17",
+    "button:Last played ↓ 74x17",
+    "button:Plays 28x17",
+    "button:Made 30x17",
+    "button:Joined 35x17",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "button:Player 58x23",
+    "button.on:Creator 66x23"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Families 51 total / All 51 Active 42 New (7d) 2 Waiting 2 Inactive 30d+ 5 Export CSV Family Profiles Status Last played ↓ Plays Made Joined The Smiths 41 fam41@example.com S active just now 4 0/3 2026-07-23 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 36 fam36@example.com SABC active just now 8 0/3 2026-08-07 The Smiths 31 fam31@example.com SAB active just now 3 0/3 2026-08-22 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 26 fam26@example.com SA active just now 7 0/3 2026-09-06 The Smiths 21 fam21@example.com S active just now 2 0/3 2026-09-21 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 16 fam16@example.com SABC active just now 6 0/3 2026-10-06 The Smiths 11 fam11@example.com SAB active just now 1 0/3 2026-10-21 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs fam6@example.com SA active just now 5 0/3 2026-11-05 The Patels 47 fam47@example.com SAB active 24h ago 1 0/3 2026-07-05 The Lees 42 fam42@example.com SA active 24h ago 5 0/3 2026-07-20 The Le",
+   "active": "body:Orlis Server Overview Queue3"
+  },
+  {
+   "page": "families-search",
+   "w": 1920,
+   "ms": 926,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Search families 992x22",
+    "input:Select this page 13x13",
+    "button:Family 35x17",
+    "button:Status 34x17",
+    "button:Last played ↓ 74x17",
+    "button:Plays 28x17",
+    "button:Made 30x17",
+    "button:Joined 35x17",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Families 5 match / All 5 Active 4 New (7d) 0 Waiting 0 Inactive 30d+ 1 Export CSV Family Profiles Status Last played ↓ Plays Made Joined A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 36 fam36@example.com SABC active just now 8 0/3 2026-08-07 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 26 fam26@example.com SA active just now 7 0/3 2026-09-06 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 16 fam16@example.com SABC active just now 6 0/3 2026-10-06 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs fam6@example.com SA active just now 5 0/3 2026-11-05 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 46 fam46@example.com SA inactive never 0 0/3 2026-07-08 1–5 of 5 Page 1 / 1 ← →",
+   "active": "input:Search families"
+  },
+  {
+   "page": "games",
+   "w": 1920,
+   "ms": 80,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Search games 997x22",
+    "button:Game 33x17",
+    "button:Category 50x17",
+    "button:Made by 46x17",
+    "button:Status 34x17",
+    "button:Plays 7d ↓ 57x17",
+    "button:Families 7d 60x17",
+    "button:Featured 49x17"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Games 15 total FEATURED NOW 1 Comet Catch 2 rotating 3 rotating / All 15 Live 14 Featured 1 In review 1 Hidden 0 All categories Built in In review Party Game Category Made by Status Plays 7d ↓ Families 7d Featured Comet Catch comet-catch@1.0 Party Mia live 27 11 ★ slot 1 Bubble Dash bubble-dash@1.0 Party Mia live 25 11 – Leaf Pile leaf-pile · built in Built in Orlis live 25 10 – Pop Party pop-party · built in Built in Orlis live 24 10 – Animal Gym animal-gym · built in Built in Orlis live 0 0 – Cubion’s Long Way Home cubions-long-way-home · built in Built in Orlis live 0 0 – Keep It Up! keep-it-up · built in Built in Orlis live 0 0 – New Game new-game@1.0 In review The Newcomers review 0 0 – Peekaboo Garden peekaboo · built in Built in Orlis live 0 0 – Pterry Flight ptero-flight · built in Built in Orlis live 0 0 – Puddle Jump puddle-jump@1.2 Party The Lees live 0 0 – Save the Harvest save-the-harvest · built in Built in Orlis live 0 0 – Sky Painter sky-painter · built in Built in Orlis live 0 0 – Sleepy Bear sleepy-bear · built in Built in Orlis live 0 0 – Stack It High stack-it-hi",
+   "active": "a.on:Games15"
+  },
+  {
+   "page": "games-detail",
+   "w": 1920,
+   "ms": 941,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Search games 997x22",
+    "button:Game 33x17",
+    "button:Category 50x17",
+    "button:Made by 46x17",
+    "button:Status 34x17",
+    "button:Plays 7d ↓ 57x17",
+    "button:Families 7d 60x17",
+    "button:Featured 49x17"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Games 15 total FEATURED NOW 1 Comet Catch 2 rotating 3 rotating / All 15 Live 14 Featured 1 In review 1 Hidden 0 All categories Built in In review Party Game Category Made by Status Plays 7d ↓ Families 7d Featured Comet Catch comet-catch@1.0 Party Mia live 27 11 ★ slot 1 Bubble Dash bubble-dash@1.0 Party Mia live 25 11 – Leaf Pile leaf-pile · built in Built in Orlis live 25 10 – Pop Party pop-party · built in Built in Orlis live 24 10 – Animal Gym animal-gym · built in Built in Orlis live 0 0 – Cubion’s Long Way Home cubions-long-way-home · built in Built in Orlis live 0 0 – Keep It Up! keep-it-up · built in Built in Orlis live 0 0 – New Game new-game@1.0 In review The Newcomers review 0 0 – Peekaboo Garden peekaboo · built in Built in Orlis live 0 0 – Pterry Flight ptero-flight · built in Built in Orlis live 0 0 – Puddle Jump puddle-jump@1.2 Party The Lees live 0 0 – Save the Harvest save-the-harvest · built in Built in Orlis live 0 0 – Sky Painter sky-painter · built in Built in Orlis live 0 0 – Sleepy Bear sleepy-bear · built in Built in Orlis live 0 0 – Stack It High stack-it-hi",
+   "active": "body:Orlis Server Overview Queue3"
+  },
+  {
+   "page": "activity",
+   "w": 1920,
+   "ms": 35,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Filter activity 1083x22"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Activity Everything that changed, newest first. Heads-ups are marked ●. / All Joins First plays Games Owner actions Backups 16:56 owner.feature You featured Comet Catch · slot 1 1 event ← Newer Older →",
+   "active": "a.on:Activity"
+  },
+  {
+   "page": "settings",
+   "w": 1920,
+   "ms": 70,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Settings Server Name Orlis Rename Version 0.1.0 · up 0m Updates: this copy doesn’t update itself (the Windows app does) LAN http://192.0.2.2:38179 Internet (Funnel) no public address set → :36337 door open Start with Windows not Windows change it from the tray icon Data folder /tmp/orlis-pt2srv-UIM5NA Joining Mode allowlist + ask Emails on the allowlist are straight in; anyone else asks, and waits in the Queue. People on Tailscale join freely. Game slots 3 per family, for games made in Create (fixed) Heads-ups SMTP owner@example.com · smtp.example.com none sent since start Send a test Turn off Email me on join request, joined, first play by the clock; and by email when SMTP is set up Backups Schedule daily, at a quiet moment Back up now Also before each update and each restore. Keeps 7 daily, 3 before an update, 5 made by you, 3 before a restore. No backups yet.",
+   "active": "a.on:Settings"
+  },
+  {
+   "page": "keyboard tab order",
+   "w": 1920,
+   "tabs": [
+    {
+     "el": "a:Overview",
+     "ring": true
+    },
+    {
+     "el": "a:Queue3",
+     "ring": true
+    },
+    {
+     "el": "a:Families51",
+     "ring": true
+    },
+    {
+     "el": "a:Games15",
+     "ring": true
+    },
+    {
+     "el": "a:Activity",
+     "ring": true
+    },
+    {
+     "el": "a:Settings",
+     "ring": true
+    },
+    {
+     "el": "button:Rename",
+     "ring": true
+    },
+    {
+     "el": "button:Send a test",
+     "ring": true
+    },
+    {
+     "el": "button:Turn off",
+     "ring": true
+    },
+    {
+     "el": "button:Back up now",
+     "ring": true
+    },
+    {
+     "el": "body:Orlis Server\n  Ove",
+     "ring": false
+    },
+    {
+     "el": "a:Overview",
+     "ring": true
+    },
+    {
+     "el": "a:Queue3",
+     "ring": true
+    },
+    {
+     "el": "a:Families51",
+     "ring": true
+    }
+   ]
+  },
+  {
+   "page": "overview",
+   "w": 1280,
+   "ms": 4,
+   "offscreen": [],
+   "clipped": [
+    "ellipsis (cut with ...): div.v:open · port 36337 (no public",
+    "ellipsis (cut with ...): div.v:95% used · 13.2 GB free",
+    "ellipsis (cut with ...): span.m:You featured Comet Catch · s"
+   ],
+   "overlaps": [],
+   "tiny": [
+    "button.more:All 3 → 40x19",
+    "button.more:All 15x19",
+    "button.more:All 15 → 44x19"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Overview Wed, Nov 25, 04:56 PM Funnel open · port 36337 (no public address set) SMTP ok · none sent yet Backup none yet Disk 95% used · 13.2 GB free Errors (24h) 0 · p95 31 ms Families 51 +4 this week Active (7d) 42 82% of families Plays today 8 −27% vs last Wed Queue 3 2 joins · 1 games Queue All 3 → join Sam · The Hopefuls hopeful@example.com · 2d ago · asked to join Approve Decline join Sam · The Newcomers newcomer@example.com · 24h ago · asked to join Approve Decline game New Game new-game@1.0 by The Newcomers · 24h ago · 1 KB · passed checks · not played yet Try Publish Reject… Activity All 16:56 owner.feature You featured Comet Catch · slot 1 Top games (7d) All 15 → Game Plays Families Avg round Featured Comet Catch comet-catch 27 11 1 min ★ Bubble Dash bubble-dash 25 11 1 min – Leaf Pile leaf-pile 25 10 1 min – Pop Party pop-party 24 10 1 min –",
+   "active": "body:Orlis Server Overview Queue3"
+  },
+  {
+   "page": "queue",
+   "w": 1280,
+   "ms": 47,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Emails to allow 880x22"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Queue Joins and games waiting for you Add email to allowlist Allow All 3 Join requests 2 Games 1 Oldest first join Sam · The Hopefuls hopeful@example.com · 2d ago · asked to join Approve Decline join Sam · The Newcomers newcomer@example.com · 24h ago · asked to join Approve Decline game New Game new-game@1.0 by The Newcomers · 24h ago · 1 KB · passed checks · not played yet Try Publish Reject…",
+   "active": "a.on:Queue3"
+  },
+  {
+   "page": "families",
+   "w": 1280,
+   "ms": 59,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Search families 339x22",
+    "input:Select this page 13x13",
+    "button:Family 35x17",
+    "button:Status 34x17",
+    "button:Last played ↓ 74x17",
+    "button:Plays 28x17",
+    "button:Made 30x17",
+    "button:Joined 35x17",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Families 51 total / All 51 Active 42 New (7d) 2 Waiting 2 Inactive 30d+ 5 Export CSV Family Profiles Status Last played ↓ Plays Made Joined The Smiths 41 fam41@example.com S active just now 4 0/3 2026-07-23 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 36 fam36@example.com SABC active just now 8 0/3 2026-08-07 The Smiths 31 fam31@example.com SAB active just now 3 0/3 2026-08-22 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 26 fam26@example.com SA active just now 7 0/3 2026-09-06 The Smiths 21 fam21@example.com S active just now 2 0/3 2026-09-21 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 16 fam16@example.com SABC active just now 6 0/3 2026-10-06 The Smiths 11 fam11@example.com SAB active just now 1 0/3 2026-10-21 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs fam6@example.com SA active just now 5 0/3 2026-11-05 The Patels 47 fam47@example.com SAB active 24h ago 1 0/3 2026-07-05 The Lees 42 fam42@example.com SA active 24h ago 5 0/3 2026-07-20 The Le",
+   "active": "a.on:Families51"
+  },
+  {
+   "page": "families-detail",
+   "w": 1280,
+   "ms": 944,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Search families 339x22",
+    "input:Select this page 13x13",
+    "button:Family 35x17",
+    "button:Status 34x17",
+    "button:Last played ↓ 74x17",
+    "button:Plays 28x17",
+    "button:Made 30x17",
+    "button:Joined 35x17",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "button:Player 58x23",
+    "button.on:Creator 66x23"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Families 51 total / All 51 Active 42 New (7d) 2 Waiting 2 Inactive 30d+ 5 Export CSV Family Profiles Status Last played ↓ Plays Made Joined The Smiths 41 fam41@example.com S active just now 4 0/3 2026-07-23 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 36 fam36@example.com SABC active just now 8 0/3 2026-08-07 The Smiths 31 fam31@example.com SAB active just now 3 0/3 2026-08-22 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 26 fam26@example.com SA active just now 7 0/3 2026-09-06 The Smiths 21 fam21@example.com S active just now 2 0/3 2026-09-21 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 16 fam16@example.com SABC active just now 6 0/3 2026-10-06 The Smiths 11 fam11@example.com SAB active just now 1 0/3 2026-10-21 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs fam6@example.com SA active just now 5 0/3 2026-11-05 The Patels 47 fam47@example.com SAB active 24h ago 1 0/3 2026-07-05 The Lees 42 fam42@example.com SA active 24h ago 5 0/3 2026-07-20 The Le",
+   "active": "body:Orlis Server Overview Queue3"
+  },
+  {
+   "page": "families-search",
+   "w": 1280,
+   "ms": 930,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Search families 352x22",
+    "input:Select this page 13x13",
+    "button:Family 35x17",
+    "button:Status 34x17",
+    "button:Last played ↓ 74x17",
+    "button:Plays 28x17",
+    "button:Made 30x17",
+    "button:Joined 35x17",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13",
+    "input:Select 13x13"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Families 5 match / All 5 Active 4 New (7d) 0 Waiting 0 Inactive 30d+ 1 Export CSV Family Profiles Status Last played ↓ Plays Made Joined A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 36 fam36@example.com SABC active just now 8 0/3 2026-08-07 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 26 fam26@example.com SA active just now 7 0/3 2026-09-06 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 16 fam16@example.com SABC active just now 6 0/3 2026-10-06 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs fam6@example.com SA active just now 5 0/3 2026-11-05 A family with a very long name indeed, the Wolfeschlegelsteinhausenbergerdorffs 46 fam46@example.com SA inactive never 0 0/3 2026-07-08 1–5 of 5 Page 1 / 1 ← →",
+   "active": "input:Search families"
+  },
+  {
+   "page": "games",
+   "w": 1280,
+   "ms": 61,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Search games 357x22",
+    "button:Game 33x17",
+    "button:Category 50x17",
+    "button:Made by 46x17",
+    "button:Status 34x17",
+    "button:Plays 7d ↓ 57x17",
+    "button:Families 7d 60x17",
+    "button:Featured 49x17"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Games 15 total FEATURED NOW 1 Comet Catch 2 rotating 3 rotating / All 15 Live 14 Featured 1 In review 1 Hidden 0 All categories Built in In review Party Game Category Made by Status Plays 7d ↓ Families 7d Featured Comet Catch comet-catch@1.0 Party Mia live 27 11 ★ slot 1 Bubble Dash bubble-dash@1.0 Party Mia live 25 11 – Leaf Pile leaf-pile · built in Built in Orlis live 25 10 – Pop Party pop-party · built in Built in Orlis live 24 10 – Animal Gym animal-gym · built in Built in Orlis live 0 0 – Cubion’s Long Way Home cubions-long-way-home · built in Built in Orlis live 0 0 – Keep It Up! keep-it-up · built in Built in Orlis live 0 0 – New Game new-game@1.0 In review The Newcomers review 0 0 – Peekaboo Garden peekaboo · built in Built in Orlis live 0 0 – Pterry Flight ptero-flight · built in Built in Orlis live 0 0 – Puddle Jump puddle-jump@1.2 Party The Lees live 0 0 – Save the Harvest save-the-harvest · built in Built in Orlis live 0 0 – Sky Painter sky-painter · built in Built in Orlis live 0 0 – Sleepy Bear sleepy-bear · built in Built in Orlis live 0 0 – Stack It High stack-it-hi",
+   "active": "a.on:Games15"
+  },
+  {
+   "page": "games-detail",
+   "w": 1280,
+   "ms": 938,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Search games 357x22",
+    "button:Game 33x17",
+    "button:Category 50x17",
+    "button:Made by 46x17",
+    "button:Status 34x17",
+    "button:Plays 7d ↓ 57x17",
+    "button:Families 7d 60x17",
+    "button:Featured 49x17"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Games 15 total FEATURED NOW 1 Comet Catch 2 rotating 3 rotating / All 15 Live 14 Featured 1 In review 1 Hidden 0 All categories Built in In review Party Game Category Made by Status Plays 7d ↓ Families 7d Featured Comet Catch comet-catch@1.0 Party Mia live 27 11 ★ slot 1 Bubble Dash bubble-dash@1.0 Party Mia live 25 11 – Leaf Pile leaf-pile · built in Built in Orlis live 25 10 – Pop Party pop-party · built in Built in Orlis live 24 10 – Animal Gym animal-gym · built in Built in Orlis live 0 0 – Cubion’s Long Way Home cubions-long-way-home · built in Built in Orlis live 0 0 – Keep It Up! keep-it-up · built in Built in Orlis live 0 0 – New Game new-game@1.0 In review The Newcomers review 0 0 – Peekaboo Garden peekaboo · built in Built in Orlis live 0 0 – Pterry Flight ptero-flight · built in Built in Orlis live 0 0 – Puddle Jump puddle-jump@1.2 Party The Lees live 0 0 – Save the Harvest save-the-harvest · built in Built in Orlis live 0 0 – Sky Painter sky-painter · built in Built in Orlis live 0 0 – Sleepy Bear sleepy-bear · built in Built in Orlis live 0 0 – Stack It High stack-it-hi",
+   "active": "body:Orlis Server Overview Queue3"
+  },
+  {
+   "page": "activity",
+   "w": 1280,
+   "ms": 30,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [
+    "input:Filter activity 443x22"
+   ],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Activity Everything that changed, newest first. Heads-ups are marked ●. / All Joins First plays Games Owner actions Backups 16:56 owner.feature You featured Comet Catch · slot 1 1 event ← Newer Older →",
+   "active": "a.on:Activity"
+  },
+  {
+   "page": "settings",
+   "w": 1280,
+   "ms": 47,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "tiny": [],
+   "hScroll": false,
+   "text": "Orlis Server Overview Queue 3 Families 51 Games 15 Activity Settings v0.1.0 · up 0m funnelsmtpbackup Settings Server Name Orlis Rename Version 0.1.0 · up 0m Updates: this copy doesn’t update itself (the Windows app does) LAN http://192.0.2.2:38179 Internet (Funnel) no public address set → :36337 door open Start with Windows not Windows change it from the tray icon Data folder /tmp/orlis-pt2srv-UIM5NA Joining Mode allowlist + ask Emails on the allowlist are straight in; anyone else asks, and waits in the Queue. People on Tailscale join freely. Game slots 3 per family, for games made in Create (fixed) Heads-ups SMTP owner@example.com · smtp.example.com none sent since start Send a test Turn off Email me on join request, joined, first play by the clock; and by email when SMTP is set up Backups Schedule daily, at a quiet moment Back up now Also before each update and each restore. Keeps 7 daily, 3 before an update, 5 made by you, 3 before a restore. No backups yet.",
+   "active": "a.on:Settings"
+  },
+  {
+   "page": "keyboard tab order",
+   "w": 1280,
+   "tabs": [
+    {
+     "el": "a:Overview",
+     "ring": true
+    },
+    {
+     "el": "a:Queue3",
+     "ring": true
+    },
+    {
+     "el": "a:Families51",
+     "ring": true
+    },
+    {
+     "el": "a:Games15",
+     "ring": true
+    },
+    {
+     "el": "a:Activity",
+     "ring": true
+    },
+    {
+     "el": "a:Settings",
+     "ring": true
+    },
+    {
+     "el": "button:Rename",
+     "ring": true
+    },
+    {
+     "el": "button:Send a test",
+     "ring": true
+    },
+    {
+     "el": "button:Turn off",
+     "ring": true
+    },
+    {
+     "el": "button:Back up now",
+     "ring": true
+    },
+    {
+     "el": "body:Orlis Server\n  Ove",
+     "ring": false
+    },
+    {
+     "el": "a:Overview",
+     "ring": true
+    },
+    {
+     "el": "a:Queue3",
+     "ring": true
+    },
+    {
+     "el": "a:Families51",
+     "ring": true
+    }
+   ]
+  }
+ ],
+ "issues": [],
+ "errors": [],
+ "timings": [
+  {
+   "page": "first load",
+   "w": 1920,
+   "ms": 418
+  },
+  {
+   "page": "overview",
+   "w": 1920,
+   "ms": 2
+  },
+  {
+   "page": "queue",
+   "w": 1920,
+   "ms": 73
+  },
+  {
+   "page": "families",
+   "w": 1920,
+   "ms": 56
+  },
+  {
+   "page": "families-detail",
+   "w": 1920,
+   "ms": 956
+  },
+  {
+   "page": "families-search",
+   "w": 1920,
+   "ms": 926
+  },
+  {
+   "page": "games",
+   "w": 1920,
+   "ms": 80
+  },
+  {
+   "page": "games-detail",
+   "w": 1920,
+   "ms": 941
+  },
+  {
+   "page": "activity",
+   "w": 1920,
+   "ms": 35
+  },
+  {
+   "page": "settings",
+   "w": 1920,
+   "ms": 70
+  },
+  {
+   "page": "first load",
+   "w": 1280,
+   "ms": 249
+  },
+  {
+   "page": "overview",
+   "w": 1280,
+   "ms": 4
+  },
+  {
+   "page": "queue",
+   "w": 1280,
+   "ms": 47
+  },
+  {
+   "page": "families",
+   "w": 1280,
+   "ms": 59
+  },
+  {
+   "page": "families-detail",
+   "w": 1280,
+   "ms": 944
+  },
+  {
+   "page": "families-search",
+   "w": 1280,
+   "ms": 930
+  },
+  {
+   "page": "games",
+   "w": 1280,
+   "ms": 61
+  },
+  {
+   "page": "games-detail",
+   "w": 1280,
+   "ms": 938
+  },
+  {
+   "page": "activity",
+   "w": 1280,
+   "ms": 30
+  },
+  {
+   "page": "settings",
+   "w": 1280,
+   "ms": 47
+  }
+ ]
+}
