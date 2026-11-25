@@ -29,7 +29,12 @@
   content:''; position:absolute; inset:calc(var(--u)*-1); border-radius:inherit; padding:calc(var(--u)*.9); pointer-events:none;
   background:conic-gradient(var(--violet) var(--dw,0%), transparent 0);
   -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask:linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
-body.remote .cc .btn.sel,body.remote .cc .ccslider.sel{ box-shadow:0 0 0 calc(var(--u)*.8) #fff, 0 0 0 calc(var(--u)*1.6) var(--violet), var(--soft); }
+/* the remote's focus (the white ring plus the colour ring, as on the Home tiles): exactly one thing wears .sel, and only while the remote is in use */
+body.remote .cc .sel{ z-index:2; box-shadow:0 0 0 calc(var(--u)*.8) #fff, 0 0 0 calc(var(--u)*1.7) var(--violet), var(--soft); }
+body.remote .cc .btn.cccard.sel,body.remote .cc .btn.ccchip.sel,body.remote .cc .btn.ccarms.sel{ transform:scale(1.04); }
+body.remote .cc .btn.ccspot.sel{ animation:none; border-color:#fff; box-shadow:0 0 0 calc(var(--u)*.8) #fff, 0 0 0 calc(var(--u)*1.7) var(--violet), 0 0 calc(var(--u)*5) rgba(255,236,150,.95); }
+body.remote .cc .btn.cctrayslot.sel{ transform:scale(1.04); }
+body.remote .cc .ccslider.sel .btn.ccstop.on{ box-shadow:0 0 0 calc(var(--u)*.9) #fff, 0 0 0 calc(var(--u)*1.7) var(--violet); }
 
 /* "Arms up": the one big pill that goes on from a step (it fills while both arms stay up) */
 .btn.ccarms{ position:absolute; right:calc(var(--u)*4); bottom:calc(var(--u)*4); padding:0; border-radius:var(--pill); background:var(--ink); color:#fff; box-shadow:var(--soft); overflow:visible; }

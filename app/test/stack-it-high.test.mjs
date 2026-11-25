@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { pose, PLAYER_COLORS } from '../src/tracking/pose.js';
 import stackItHigh, { ROUND, GRAB_SECS, capFor, drawBlock } from '../src/games/stack-it-high.js';
-import { SHAPES, SHAPE_NAMES, GROUND, FADE_SECS } from '../src/games/stack-blocks.js';
+import { SHAPES, SHAPE_NAMES, GROUND, FADE_SECS, CEILING } from '../src/games/stack-blocks.js';
 import { PALETTE } from '../src/games/assets/palette.js';
 import { POSE_NAMES } from '../src/games/figure.js';
 
@@ -363,4 +363,47 @@ test('a block let go while the player is gone from the picture still lands; noth
   hands(0, 1.5, 0.3, 1.5 + b.w, 0.3); run(g, 1);
   pose.players[0].present = false; run(g, 5);
   assert.equal(b.held, null); assert.equal(b.state, 'rest');
+});
+
+/* ---------- the ceiling: nothing stands (or is carried) higher than CEILING, so the clock and the words stay clear ---------- */
+const topOf = (b) => b.Y - b.h / 2;
+const standing = (g) => g.yard.blocks.filter(b => b.state === 'rest' && !b.fade);
+
+test('a block carried up high is held at the ceiling, not in the clock; let go there it does not stay up', () => {
+  const g = start(1);
+  const b = stand(g, 'arch', 1.0);
+  grip(g, 0, b); run(g, 0.5);
+  assert.equal(b.state, 'held');
+  for (let k = 0; k < 90; k++){ hands(0, 1.0 - b.w / 2, 0.02, 1.0 + b.w / 2, 0.02); g.step(DT, W, H); }
+  assert.ok(topOf(b) >= CEILING - 1e-9, `carried no higher than the ceiling (top at ${topOf(b)})`);
+  away(0); run(g, 6);
+  assert.ok(topOf(b) >= CEILING - 1e-9 && Math.abs(b.Y + b.h / 2 - GROUND) < 1e-6, 'it came back down to the ground');
+});
+
+test('a block let go over a tall building tips off instead of standing above the ceiling', () => {
+  const g = start(1), y = g.yard;
+  for (let k = 0; k < 4; k++) stand(g, 'cube', 1.0);
+  for (const kind of ['plank', 'arch', 'roof']){
+    const b = y.add(kind, 1.0, 0.1); b.used = true; y.lift(b, 0);
+    g.hold[0] = { id: b.id, tilt: 0, tiltT: 0, armed: true, dropT: 0, pressT: 0, mouse: false, vx: 0, vy: 0 };
+    hands(0, 1.0 - b.w / 2, 0.02, 1.0 + b.w / 2, 0.02); run(g, 1);
+    assert.ok(topOf(b) >= CEILING - 1e-9, `${kind} held below the ceiling`);
+    away(0); run(g, 14);
+    for (const k of standing(g)) assert.ok(topOf(k) >= CEILING - 1e-6, `${kind}: a resting ${k.kind} has its top at ${topOf(k).toFixed(3)}, above the ceiling ${CEILING}`);
+  }
+});
+
+test('no path leaves a block standing above the ceiling: drops over buildings that reach it, including against the sides of the picture', () => {
+  const plank = Array(14).fill('plank'), cubes = Array(6).fill('cube');
+  for (const [X0, kinds] of [[A - 0.17, cubes], [0.17, cubes], [A - 0.3, plank], [1.0, ['pillar', 'pillar', 'pillar', 'pillar']]]){
+    for (const drop of SHAPE_NAMES){
+      for (const dx of [-0.1, 0, 0.12]){
+        const g = start(1), y = g.yard;
+        for (const k of kinds){ const l = y.land({ kind: k, w: SHAPES[k].w, h: SHAPES[k].h, X: X0 }, X0); if (l.bottom - SHAPES[k].h < CEILING) break; stand(g, k, X0); }
+        const b = y.add(drop, Math.min(A - SHAPES[drop].w / 2, Math.max(SHAPES[drop].w / 2, X0 + dx)), -0.2); b.used = true;
+        run(g, 20);
+        for (const k of standing(g)) assert.ok(topOf(k) >= CEILING - 1e-6, `${drop} dropped at ${(X0 + dx).toFixed(2)} on a building at ${X0.toFixed(2)}: a resting ${k.kind} reaches ${topOf(k).toFixed(3)}`);
+      }
+    }
+  }
 });
