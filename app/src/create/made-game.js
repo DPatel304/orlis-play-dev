@@ -8,7 +8,7 @@
    The Create screens' live preview uses the same engine (create/preview.js). */
 import { makePlay } from '../games/play/engine.js';
 import { assets } from '../games/assets/index.js';
-import { sayBubble, goalBar } from '../games/hud.js';
+import { sayBubble, goalBar, hudZones } from '../games/hud.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { color } from '../games/assets/palette.js';
@@ -47,7 +47,7 @@ const accentOf = (scene) => (ACCENT[scene] || ACCENT.meadow).map(n => color(n));
 export function madeGame(c){
   const picks = clean(c.picks || {}), spec = c.desc && typeof c.desc === 'object' && Array.isArray(c.desc.things) ? c.desc : build(picks);
   const [a, b] = accentOf(spec.scene), results = resultsOf(picks);
-  const env = { pose, sfx, assets, ui: { say: (cv, ...args) => sayBubble(cv, ...args), goal: (cv, ...args) => goalBar(cv, ...args) }, colors: PLAYER_COLORS, max: MAX_PLAYERS };
+  const env = { pose, sfx, assets, ui: { say: (cv, ...args) => sayBubble(cv, ...args), goal: (cv, ...args) => goalBar(cv, ...args), zones: hudZones }, colors: PLAYER_COLORS, max: MAX_PLAYERS };
   const play = makePlay(spec, env);
   return {
     id: 'made:' + c.id, name: c.name || spec.title || 'My game', unit: results.unit, prop: results.prop, done: results.done, accent: a, secs: play.secs, endless: play.endless,

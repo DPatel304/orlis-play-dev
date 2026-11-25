@@ -136,6 +136,8 @@ export function hudZones(W, H, spec = null){
     if (spec.left) out.left = z(0, 4, 1, 3);
     if (spec.right) out.right = z(19, 4, 1, 3);
     if (spec.bottom) out.bottom = z(5, 10, 10, 1);
+    /* areas the game says it does not use (a game with no badge, a move card that has gone) are its world again */
+    for (const k of spec.unused || []) delete out[k];
   }
   return out;
 }

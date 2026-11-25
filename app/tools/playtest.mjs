@@ -45,7 +45,9 @@ const { byId: byIdReal } = await import('../src/games/index.js');
 const madeMod = await import('./playtest/made.mjs');
 /* made-collect, made-dodge, made-keepup, made-stack: games made in Cubo's Create (tools/playtest/made.mjs) */
 const byId = (id) => madeMod.MADE_IDS.includes(id) ? madeMod.makeMade(id) : byIdReal(id);
-const { underHud } = await import('../src/games/hud.js');
+const { underHud, hudZones } = await import('../src/games/hud.js');
+/* which of the shell's areas a point is under (the first), or null */
+const underWhich = (W, H, x, y, spec) => { for (const [k, z] of Object.entries(hudZones(W, H, spec))) if (x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h) return k; return null; };
 const rig = await import('./playtest/rig.mjs');
 const jumpMod = await import('../src/tracking/jump.js');
 /* --jp rise,speed: try other hop thresholds (default: the games' HOP) */
@@ -321,15 +323,18 @@ const madeProbe = (ctx) => {
         if (!g._touchable(th) || th.d.move === 'bounce') continue;
         let rec = seen.get(th); if (!rec){ rec = { kind: th.d.name, life: 0, reach: ctx.world.persons.map(() => 0), hud: 0 }; seen.set(th, rec); }
         live.add(th); rec.life += dt;
-        ctx.world.persons.forEach((p, i) => { if (p.inScene && th.y > 0.05 && th.y < 0.98 && p.reach(th.x, th.y).kind !== 'no') rec.reach[i] += dt; });
-        if (underHud(W, H, th.x * W, th.y * H, spec)) rec.hud += dt;
+        /* (a thing under the clock, goal bar or scores is not there to be touched: it does not count as reachable) */
+        const under = underHud(W, H, th.x * W, th.y * H, spec);
+        ctx.world.persons.forEach((p, i) => { if (p.inScene && !under && th.y > 0.05 && th.y < 0.98 && p.reach(th.x, th.y).kind !== 'no') rec.reach[i] += dt; });
+        if (under){ rec.hud += dt; const k = underWhich(W, H, th.x * W, th.y * H, spec); rec.by = rec.by || {}; rec.by[k] = (rec.by[k] || 0) + dt; }
       }
       for (const [th, rec] of seen) if (!live.has(th)){ done.push(rec); seen.delete(th); }
     },
     finish(){
       for (const rec of seen.values()) done.push(rec);
       const recs = done.filter(r => r.life > 0.3), tot = Math.max(0.01, recs.reduce((s, r) => s + r.life, 0));
-      return { things: recs.length, underHudShare: r2(recs.reduce((s, r) => s + r.hud, 0) / tot),
+      const by = {}; for (const r of recs) for (const [k, v] of Object.entries(r.by || {})) by[k] = r2((by[k] || 0) + v / tot);
+      return { things: recs.length, underHudShare: r2(recs.reduce((s, r) => s + r.hud, 0) / tot), underHudBy: by,
         reachableShareByPerson: ctx.world.persons.map((p, i) => ({ who: p.name, idx: i, share: r2(recs.reduce((s, r) => s + r.reach[i], 0) / tot) })),
         neverReachableByAnyone: recs.filter(r => r.reach.every(x => x < 0.3)).length };
     }

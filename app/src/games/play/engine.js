@@ -9,6 +9,10 @@ import { handsMode } from '../../ui/handsmode.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const HAND_REACH = 0.045, SWIPE = 0.45, FLOOR = 0.9, CEIL = 0.2;
+/* a thing that comes out from under the shell's areas (the clock, goal bar and score corner) grows in below them over POPIN seconds, and one
+   floating up into them goes (fades) over LEAVE: nothing is ever touched, or looked for, under them (playtest 2, finding 1) */
+const POPIN = 0.4, LEAVE = 0.35;
+const ease = (k) => 1 - Math.pow(1 - clamp(k, 0, 1), 3);
 /* the tower a "stack" builds (as in Stack It High): one block's size (screen heights), where its ground is, where across the picture it stands,
    how long a block flies to it, how many blocks make a full one by default, and the bonus a full one is worth as it blasts off */
 const BLOCK = 0.075, GROUND = 0.93, TOWER_X = 0.5, FLY = 0.5, FULL = 6, BONUS = 5;
@@ -31,24 +35,74 @@ class PlayRound {
     this.feel = new HandFeel();         /* the players' glow orbs (ui/handfeel.js): only what is drawn; hits are worked out below from the hands themselves */
     this.counts = {};                 /* how many times each named thing scored (a catch, a dodge, a bat, a block stacked), for the results */
     this.tower = []; this.fliers = []; this.rockets = []; this.towers = 0; this.wob = 0;
-    this.t = 0; this.over = false; this.hint = spec.hint || null; this.hintIcon = spec.hintIcon || ''; this.hintT = 0; this.goalDone = false; this.endIn = -1; this.cheering = 0;
+    this.aspect = 16 / 9; this.zones = []; this._zoneKey = ''; this.t = 0;
+    this._refreshZones(1920, 1080);
+    this.over = false; this.hint = spec.hint || null; this.hintIcon = spec.hintIcon || ''; this.hintT = 0; this.goalDone = false; this.endIn = -1; this.cheering = 0;
     /* what's there from the start */
     this.defs.forEach((d, k) => { if (!d.appears){ const c = d.count ?? 1; for (let i = 0; i < c; i++) this._make(d, d.at ? { ...d.at } : c === 1 ? { x: 0.5, y: d.move === 'bounce' ? 0.4 : 0.5 } : { x: 0.15 + this.rnd() * 0.7, y: 0.3 + this.rnd() * 0.3 }); } });
   }
 
+  /* ---------- the shell's areas: where nothing may be touched, and nothing should start ---------- */
+  /* (re)read where the clock, goal bar, score corner and move card are, for this screen's shape (the move card only while it is up) */
+  _refreshZones(W, H){
+    const key = W + 'x' + H + (this.card() ? 'c' : '');
+    if (key === this._zoneKey) return;
+    this._zoneKey = key; this.aspect = W / H;
+    const zs = this.env.ui && this.env.ui.zones;
+    this.zones = zs ? Object.values(zs(W, H, this.hud())).map(z => ({ x0: z.x / W, y0: z.y / H, x1: (z.x + z.w) / W, y1: (z.y + z.h) / H })) : [];
+  }
+  /* is a thing of radius r (screen heights) at (x, y) under one of them? */
+  _under(x, y, r = 0){ const rx = r / this.aspect; return this.zones.some(z => x + rx > z.x0 && x - rx < z.x1 && y + r > z.y0 && y - r < z.y1); }
+  /* the lowest edge of the areas along the top over this column (0: none; sway: how far it may sway sideways as it falls): what comes from above starts below it */
+  _roof(x, r, sway = 0){ const rx = r / this.aspect + sway * 2.7; let low = 0; for (const z of this.zones) if (z.y0 < 0.4 && x + rx > z.x0 && x - rx < z.x1) low = Math.max(low, z.y1); return low; }
+  /* a spot from f() that is clear of them (a few tries; the last one if none is) */
+  _clearSpot(f, r){ let p = f(); for (let k = 0; k < 14 && this._under(p.x, p.y, r); k++) p = f(); return p; }
+  /* the heights a thing crossing the whole width can use: between the areas (r: its radius), within lo..hi */
+  _band(r, lo, hi){
+    const iv = this.zones.map(z => [z.y0 - r - 0.01, z.y1 + r + 0.01]).sort((a, b) => a[0] - b[0]), free = [];
+    let at = lo;
+    for (const [a, b] of iv){ if (a > at) free.push([at, Math.min(a, hi)]); at = Math.max(at, b); }
+    if (at < hi) free.push([at, hi]);
+    const ok = free.filter(f => f[1] - f[0] > 0.04);
+    return ok.length ? ok : [[lo, hi]];
+  }
+  _bandY(r, lo, hi){
+    const f = this._band(r, lo, hi), total = f.reduce((s, v) => s + v[1] - v[0], 0);
+    let k = this.rnd() * total;
+    for (const [a, b] of f){ if (k <= b - a) return a + k; k -= b - a; }
+    return f[0][0];
+  }
+  /* a ball (or anything that bounces) meeting one of the areas goes round it, as off a wall */
+  _offZones(th){
+    const r = th.sz / 2, rx = r / this.aspect;
+    for (const z of this.zones){
+      const l = th.x + rx - z.x0, rr = z.x1 - (th.x - rx), t = th.y + r - z.y0, b = z.y1 - (th.y - r);
+      if (l <= 0 || rr <= 0 || t <= 0 || b <= 0) continue;
+      const m = Math.min(l, rr, t, b);
+      if (m === b){ th.y = z.y1 + r; th.vy = Math.max(th.vy, 0.15); }
+      else if (m === t){ th.y = z.y0 - r; th.vy = -Math.abs(th.vy) * 0.5; }
+      else if (m === l){ th.x = z.x0 - rx; th.vx = -Math.abs(th.vx) * 0.7; }
+      else { th.x = z.x1 + rx; th.vx = Math.abs(th.vx) * 0.7; }
+    }
+  }
+
   _make(d, at){
     if (this.things.length >= 80) return null;
-    const r = this.rnd, from = (d.appears && d.appears.from) || (d.move === 'fall' ? 'top' : d.move === 'rise' ? 'bottom' : d.move === 'drift' ? (r() < 0.5 ? 'left' : 'right') : 'anywhere');
-    let x = 0.5, y = 0.5, dir = r() < 0.5 ? -1 : 1;
+    const r = this.rnd, rad = d.sz / 2, from = (d.appears && d.appears.from) || (d.move === 'fall' ? 'top' : d.move === 'rise' ? 'bottom' : d.move === 'drift' ? (r() < 0.5 ? 'left' : 'right') : 'anywhere');
+    let x = 0.5, y = 0.5, dir = r() < 0.5 ? -1 : 1, pop = false;
     if (at){ x = at.x; y = at.y; }
-    else if (from === 'top'){ x = 0.08 + r() * 0.84; y = -0.06; }
+    else if (from === 'top'){
+      x = 0.08 + r() * 0.84; y = -0.06;
+      /* (a column with the clock, goal bar or score over it: the thing grows in just below them) */
+      const roof = this._roof(x, rad, d.sway || 0); if (roof > 0){ y = roof + rad + 0.01; pop = true; }
+    }
     else if (from === 'bottom'){ x = 0.08 + r() * 0.84; y = 1.06; }
-    else if (from === 'left'){ x = -0.06; y = 0.2 + r() * 0.5; dir = 1; }
-    else if (from === 'right'){ x = 1.06; y = 0.2 + r() * 0.5; dir = -1; }
-    else { x = 0.12 + r() * 0.76; y = 0.2 + r() * 0.55; }
+    else if (from === 'left'){ x = -0.06; y = this._bandY(rad, 0.2, 0.7); dir = 1; }
+    else if (from === 'right'){ x = 1.06; y = this._bandY(rad, 0.2, 0.7); dir = -1; }
+    else { const p = this._clearSpot(() => ({ x: 0.12 + r() * 0.76, y: 0.2 + r() * 0.55 }), rad); x = p.x; y = p.y; }
     const pieces = Array.isArray(d.piece) ? d.piece : [d.piece], cols = d.color === undefined ? [null] : Array.isArray(d.color) ? d.color : [d.color];
     const th = { d, x, y, vx: 0, vy: 0, rot: 0, spin: d.spins ? (r() - 0.5) * 3 : 0, sz: d.sz, piece: pieces[(r() * pieces.length) | 0], color: cols[(r() * cols.length) | 0],
-      age: 0, ph: r() * 6.28, dir, cool: 0, base: y, dead: false, fired: {}, tx: x, ty: y, tt: 0, sp: d.sp * (0.8 + r() * 0.4), flip: false };
+      age: 0, ph: r() * 6.28, dir, cool: 0, base: y, dead: false, fired: {}, tx: x, ty: y, tt: 0, sp: d.sp * (0.8 + r() * 0.4), flip: false, pop, leaving: 0 };
     this.things.push(th);
     return th;
   }
@@ -67,6 +121,7 @@ class PlayRound {
   step(dt, W, H){
     this.t += dt; this.hintT += dt; this.cheering = Math.max(0, this.cheering - dt); this.wob = Math.max(0, this.wob - dt);
     const aspect = W / H, secs = this.spec.endless ? 600 : (this.spec.secs ?? 90);
+    this._refreshZones(W, H);
     if (this.endIn >= 0){ this.endIn -= dt; if (this.endIn <= 0) this.over = true; }
     else if (!this.spec.endless && this.t >= secs) this.over = true;
     /* more keep coming */
@@ -81,18 +136,21 @@ class PlayRound {
     const hands = this._hands();
     /* the orbs follow the hands; what a hand can touch (a good thing, never a thing to dodge) draws it a little toward that thing */
     this.feel.aspect = aspect;
-    this.feel.targets(this.things.filter(th => !th.dead && this._touchable(th) && th.x > -0.05 && th.x < 1.05 && th.y > -0.05 && th.y < 1.05).map(th => ({ x: th.x, y: th.y, r: th.sz / 2 })));
+    this.feel.targets(this.things.filter(th => !th.dead && !th.leaving && !this._under(th.x, th.y) && this._touchable(th) && th.x > -0.05 && th.x < 1.05 && th.y > -0.05 && th.y < 1.05).map(th => ({ x: th.x, y: th.y, r: th.sz / 2 })));
     this.feel.step(dt, hands.map(({ i, h }, k) => ({ key: i + (h === this.env.pose.players[i].hands.left ? 'L' : 'R'), who: i, x: h.x, y: h.y, col: this.env.colors[i] })),
       (k) => { const f = this.env.sfx.handWhoosh; if (f) f.call(this.env.sfx, k); });
     for (const th of this.things){
       if (th.dead) continue;
       th.age += dt; th.cool = Math.max(0, th.cool - dt); th.rot += th.spin * dt;
       this._move(th, dt);
+      /* floating up into the shell's areas: it goes, as it would at the edge of the screen */
+      if (th.d.move === 'rise' && !th.leaving && th.age > 0.3 && th.y < 0.5 && this._under(th.x, th.y, th.sz * 0.5)) th.leaving = 1e-6;
+      if (th.leaving > 0){ th.leaving += dt; if (th.leaving >= LEAVE){ th.dead = true; for (const rule of th.d.rules || []) if (rule.when === 'leftScreen' && !th.fired.left){ th.fired.left = true; this._fire(th, rule, -1); } continue; } }
       /* the rules */
       for (const rule of th.d.rules || []){
         if (th.dead) break;
         if (rule.when === 'touched' || rule.when === 'swiped'){
-          if (th.cool > 0) continue;
+          if (th.cool > 0 || th.leaving > 0 || this._under(th.x, th.y)) continue;   /* (under the clock, the goal bar, the scores: not there to touch) */
           for (const { i, h } of hands){
             const dx = (th.x - h.x) * aspect, dy = th.y - h.y;
             if (Math.hypot(dx, dy) > th.sz / 2 + HAND_REACH) continue;
@@ -142,7 +200,7 @@ class PlayRound {
       case 'bob': th.y = th.base + Math.sin(t * 2 + th.ph) * 0.012; break;
       case 'wander':
         th.tt -= dt;
-        if (th.tt <= 0){ th.tt = 2 + this.rnd() * 2; th.tx = 0.1 + this.rnd() * 0.8; th.ty = 0.22 + this.rnd() * 0.55; }
+        if (th.tt <= 0){ th.tt = 2 + this.rnd() * 2; const p = this._clearSpot(() => ({ x: 0.1 + this.rnd() * 0.8, y: 0.22 + this.rnd() * 0.55 }), th.sz / 2); th.tx = p.x; th.ty = p.y; }
         { const dx = th.tx - th.x, dy = th.ty - th.y, m = Math.hypot(dx, dy) || 1; th.x += dx / m * Math.min(m, sp * dt); th.y += dy / m * Math.min(m, sp * dt); th.flip = (dx < 0) === !!d.flips; }
         break;
       case 'bounce':
@@ -150,6 +208,7 @@ class PlayRound {
         if (th.x < 0.05){ th.x = 0.05; th.vx = Math.abs(th.vx) * 0.7; } if (th.x > 0.95){ th.x = 0.95; th.vx = -Math.abs(th.vx) * 0.7; }
         if (th.y < CEIL){ th.y = CEIL; th.vy = Math.abs(th.vy) * 0.3; }
         if (th.y > FLOOR){ th.y = FLOOR; if (th.vy > 0.2) th.landedNow = true; th.vy = -0.55; th.vx *= 0.5; th.spin = (this.rnd() - 0.5) * 6; }
+        this._offZones(th);
         break;
       default: break;          /* stay */
     }
@@ -255,9 +314,11 @@ class PlayRound {
     const orbs = handsMode() === 'orb';
     for (const th of [...this.things].sort((a, b) => a.y - b.y)){
       /* a hand near something it can touch: it grows up to 8% and glows (only drawn so) */
-      const k = orbs && this._touchable(th) ? this.feel.near(th.x, th.y, th.sz / 2) : 0;
+      const k = orbs && this._touchable(th) && !th.leaving ? this.feel.near(th.x, th.y, th.sz / 2) : 0;
       if (k > 0.01) A.draw(c, 'dot', th.x * W, th.y * H, th.sz * H * 2.4, { color: COLORS.yellow, alpha: 0.7 * k });
-      A.draw(c, th.piece, th.x * W, th.y * H, th.sz * H * (1 + FEEL.hoverGrow * k), { color: th.color ? hexOf(th.color, this.env) : undefined, rotate: th.rot, flip: th.flip, t: th.age, shadow: th.d.move === 'bounce' });
+      /* (growing in below the shell's areas, or going as it floats up into them) */
+      const born = th.pop ? ease(th.age / POPIN) : 1, gone = th.leaving > 0 ? 1 - th.leaving / LEAVE : 1;
+      A.draw(c, th.piece, th.x * W, th.y * H, th.sz * H * (1 + FEEL.hoverGrow * k) * (0.4 + 0.6 * born), { color: th.color ? hexOf(th.color, this.env) : undefined, rotate: th.rot, flip: th.flip, t: th.age, shadow: th.d.move === 'bounce', ...(born < 1 || gone < 1 ? { alpha: born * gone } : {}) });
     }
     /* blocks on their way to the tower */
     this.fliers.forEach((f, i) => {
@@ -279,7 +340,8 @@ class PlayRound {
 
   /* the move card, bottom left, for the first cardFor seconds (or all round) */
   card(){ const s = this.spec; return s.card && (s.cardFor == null || this.t < s.cardFor) ? s.card : null; }
-  hud(){ return { score: this.score, showLives: false, hideScore: !!this.spec.team }; }
+  /* (unused: the areas this game gives back to its world - it has no badge, and the move card is only there for a while - so nothing keeps out of them) */
+  hud(){ return { score: this.score, showLives: false, hideScore: !!this.spec.team, unused: this.card() ? ['badge'] : ['badge', 'card'] }; }
   value(){ return this.spec.team ? this.total : Math.max(0, ...this.score.slice(0, this.n)); }
   get mood(){ return clamp(0.2 + this.cheering * 0.5 + Math.min(0.4, this.total / 100), 0, 1); }
 }
