@@ -12,6 +12,8 @@ export async function startPair({ scale = 1, hiderWho = 'ola' } = {}) {
   const rig = await startRig();
   const tv = await rig.tv('peekaboo', { scale });
   const { page } = tv;
+  /* every wait and click without a deadline of its own (Playwright's 30 s) gets one that grows with how busy the machine is */
+  page.setDefaultTimeout(T(30000));
   /* fake hands: the shell's pose is told who is in the picture each frame (the real tracker is switched off) */
   await page.waitForFunction(() => !!window.__pose, null, { timeout: T(30000) });
   await page.evaluate(async () => {
@@ -32,6 +34,7 @@ export async function startPair({ scale = 1, hiderWho = 'ola' } = {}) {
   });
   await toJoinCard(tv);
   const tab = await rig.phone({ ...TABLET, deviceScaleFactor: scale });
+  tab.page.setDefaultTimeout(T(30000));
   tab.errors = []; tab.page.on('console', (m) => { if (m.type() === 'error' && !/GL Driver/.test(m.text())) tab.errors.push(new Error(m.text())); });
   await joinPhone(rig, tv, tab, hiderWho);
   await tv.page.locator('.jslot.ready').waitFor({ timeout: T(8000) });

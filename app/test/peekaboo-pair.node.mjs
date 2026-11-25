@@ -16,6 +16,7 @@ test('1. the tablet joined from the join card and the TV started: both sides are
   const s = await P.state();
   assert.equal(s.phase, 'hide');
   assert.equal(await P.tab.page.evaluate(() => window.__pk.net.phase), 'hide');
+  await until(() => P.tv.page.evaluate(() => window.__pads.session.phase === 'playing'), 8000, 'the TV session playing');     /* (wait for the state: a busy machine is slow to get there) */
   assert.equal(await P.tv.page.evaluate(() => window.__pads.session.phase), 'playing');
   assert.equal(await P.tv.page.evaluate(() => window.__round().seekers.length), 2, 'two seekers (the fake hands)');
   assert.ok(s.hiderSeat >= 2, 'the hider is the phone, numbered after the camera players');
@@ -105,6 +106,8 @@ test('6. the tablet drops: the TV pauses with "Waiting for … phone"; it rejoin
   const t0 = (await P.state()).t; await sleep(120); const t1 = (await P.state()).t;
   if (await P.tv.page.locator('.waitpill').count()) assert.ok(Math.abs(t1 - t0) < 0.02, `the round clock stands still while paused (${t0} -> ${t1})`);
   await P.tv.page.locator('.waitpill').waitFor({ state: 'detached', timeout: T(15000) });
+  /* (the pill is gone a moment before the session says "playing": wait for the state, however busy the machine is - T() scales the wait) */
+  await until(() => P.tv.page.evaluate(() => window.__pads.session.phase === 'playing'), 8000, 'the session playing again');
   assert.equal(await P.tv.page.evaluate(() => window.__pads.session.phase), 'playing');
   await P.tab.page.locator('.pk-base').waitFor({ timeout: T(8000) });
   await until(() => P.tab.page.evaluate(() => window.__pk && window.__pk.net.seen), 8000, 'the tablet is back on the garden');

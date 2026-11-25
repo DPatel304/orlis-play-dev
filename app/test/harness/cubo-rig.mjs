@@ -12,6 +12,7 @@
    grown-up's or a child's (opts.kid: lower in the picture, smaller, a shorter arm). Nothing here calls into the flow; everything goes through pose._assign and the page's own elements. */
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -191,7 +192,9 @@ function fakeServer(opts){
 }
 
 export async function startCuboRig(){
-  const dev = await createServer({ root: APP, configFile: path.join(APP, 'vite.config.js'), logLevel: 'silent', server: { host: '127.0.0.1', port: 0, strictPort: false }, clearScreen: false });
+  /* (its own dependency cache, as pads-rig.mjs: Vite servers of rigs running side by side must not re-optimise under each other, which reloads a page mid-test) */
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'orlis-vite-'));
+  const dev = await createServer({ root: APP, configFile: path.join(APP, 'vite.config.js'), cacheDir, logLevel: 'silent', server: { host: '127.0.0.1', port: 0, strictPort: false }, clearScreen: false });
   await dev.listen();
   const base = `http://127.0.0.1:${dev.httpServer.address().port}`;
   const browser = await chromium.launch({ args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
@@ -245,6 +248,7 @@ export async function startCuboRig(){
     for (const c of contexts.splice(0)) await c.close().catch(() => {});
     await browser.close().catch(() => {});
     await dev.close().catch(() => {});
+    fs.rmSync(cacheDir, { recursive: true, force: true });
   };
   return rig;
 }

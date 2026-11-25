@@ -35,7 +35,9 @@ export async function startRig({ tvSize = { width: 1280, height: 720 } } = {}) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'orlis-pads-'));
   await build({ configFile: path.join(APP, 'vite.pad.config.js'), logLevel: 'silent', build: { outDir: path.join(tmp, 'dist-pad'), emptyOutDir: true } });
   const hub = await startHub({ port: 0, host: '127.0.0.1', key: KEY, padDir: path.join(tmp, 'dist-pad'), gamesDir: path.join(APP, 'pads') });
-  const dev = await createServer({ root: APP, configFile: path.join(APP, 'vite.config.js'), logLevel: 'silent', server: { host: '127.0.0.1', port: 0, strictPort: false }, clearScreen: false });
+  /* (its own dependency cache: rigs run side by side, and two Vite servers sharing node_modules/.vite re-optimise under each other, which reloads a page in the middle
+     of a test - the TV came back as a new page, "paused", with no round) */
+  const dev = await createServer({ root: APP, configFile: path.join(APP, 'vite.config.js'), cacheDir: path.join(tmp, 'vite-cache'), logLevel: 'silent', server: { host: '127.0.0.1', port: 0, strictPort: false }, clearScreen: false });
   await dev.listen();
   const base = `http://127.0.0.1:${dev.httpServer.address().port}`;
   const browser = await chromium.launch();
