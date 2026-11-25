@@ -315,7 +315,7 @@ also only needs the server, so it'd work on a phone. Test stays on the laptop (i
 Needs a phone build or a small web page served by the Orlis Server. Coding in the cloud (Claude's own app) and
 getting the game home is a bigger design (needs a way in from outside the home network) - not started.
 
-## The dev kit: everything on the TV box, creators use their own Claude Code (design agreed, not built)
+## The dev kit: everything on the TV box, creators use their own Claude Code (design agreed; the `orlis` command and pairing are built, see "Built so far" below)
 
 Idea: a creator (e.g. a brother with Claude Code already) is given a TV box. It runs the Player app **and** its own
 Orlis Server. The creator codes with Claude Code on their own laptop, says "test it" / "publish it", and the game
@@ -401,7 +401,7 @@ shows what it holds back, so loosening is a one-line change. All of these were c
 5. Reports and control: "Report a problem" from the Player hides the game at once until the owner looks; owner "pause
    all creator games"; reviewer report visible in History.
 
-## Direction undecided: widen Create, or keep Create Pro (free coding) with a forced flow (thinking)
+## Direction undecided: widen Create, or keep Create Pro (free coding) with a forced flow (thinking) - DONE since: decided, Create is picture-built (decisions 0056, 0057, 0059, 0060, 0061); the history below stays
 
 Where it stands: Create Pro (Claude Code on the creator's laptop -> `orlis test` -> the family's TV box -> a grown-up
 presses Publish) is built, with guardrails stage 1. The owner is now leaning toward **expanding the existing Create
@@ -545,7 +545,7 @@ zones / under`, `hud().panel`, `card()`, picture-and-few-words hints, and keepin
 forwards `card()` and the first hint (said once, after the words check). Not done: nothing stops a creator's game drawing its own
 score or clock (it is only asked not to); a check for that could go in the guard hook.
 
-## Storytime: a passive "game" (design decided, not built)
+## Storytime: a passive "game" (design decided; first cut built, see "Storytime: built" below)
 Shows that Orlis is more than motion games: the TV reads a story, the children watch. Create-your-own-stories (Claude writes and
 draws, a grown-up or grandparent can record the voice) is **on hold** until Create mode is thought through.
 - **Look:** the "bedtime" mockup's layout for every story: the scene fills the screen, the words sit in a soft plate along the
@@ -600,7 +600,7 @@ Decision: games made in Create are built only from ready-made words - pieces fro
 - Phase 2: "Request a behaviour" (same queue as "Request a picture"). Phase 3: widen the words - follow/chase a hand, timers and stages, lives-free progress, collecting into a basket or pile, music beats, unlocking pieces by playing.
 - The creator hook (PowerShell) checks the shape and the JSON; the full word-by-word validation runs in Orlis Play's Check/Try it (and the maker). A later step could generate the word lists into the hook so Claude Code hears "did you mean" while it works.
 
-## Orlis look: the style kit (planning only - nothing is built yet)
+## Orlis look: the style kit (planning; built since: the master palette 0040, one colour per object 0041, the asset library `app/src/games/assets`; the history below stays)
 **Decision:** Last Known Position is the reference look (the style the owner has spent the most time on). Meadow games (Pop Party, Leaf Pile, Keep It Up, Stack It High, Sleepy Bear, Animal Gym) are on a shared flat scene; Save the Harvest, Ptero Flight, Castle Defense and Sky Painter each have their own plainer look. The plan is a shared style kit that creators and the asset library build from. It is designed and agreed on paper first; no kit code until the design is settled.
 
 **Rules the kit must follow (so the graphics can be upgraded in three years):**

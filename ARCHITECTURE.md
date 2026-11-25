@@ -1,7 +1,7 @@
 # Orlis architecture (draft)
 
 How the pieces fit together. Decisions live in `docs/decisions/`; this file describes the shape they add up to. Where a
-decision is only *Proposed* or *Open*, that is marked. Status: first draft, Nov 20, 2026.
+decision is only *Proposed* or *Open*, that is marked. Status: first draft, Nov 20, 2026; brought up to date with the built app, Nov 25, 2026.
 
 ## The pieces
 
@@ -24,9 +24,13 @@ decision is only *Proposed* or *Open*, that is marked. Status: first draft, Nov 
 - **The platform** (the Tauri app, `app/`): menu, games, Store, Create, body tracking, drawing the TV.
 - **The Orlis Server** (`server/`): accounts, kid profiles, the Store, submissions and approval. Needed for sign-in, the Store
   and updates; not needed to play an installed game.
-- **The pad** (being built): in Phase 1 a web page served by the Box, opened by QR or code on any phone (0019, 0030). A small hub in
+- **The pad** (built for Phase 1, `app/pad/`; the "PlayPad", 0054): a web page served by the Box, opened by QR or code on any phone (0019, 0030). A small hub in
   Orlis Play's Rust side serves it and relays messages; the game host is a client of that hub (0027, spec in `docs/specs/pad-protocol.md`).
   Later a native app (Android first, then iPad and iPhone in Phase 2, 0018) that can discover hosts and use tilt.
+- **Create** (`app/src/create/`, `app/src/ui/cubo-create.js`): Cubo's Create, a game made with your body, guided by Cubo (0060, 0061): reach-and-hold to pick, arms up to go on,
+  in the comfort zone. What is picked becomes a *description* of a game (`create/recipe.js`) that the one shared Play engine runs (`app/src/games/play/`), so a made game is data,
+  not code (0056, 0057, 0059).
+- **Hands on screen** (`app/src/ui/handfeel.js`, `avatars.js`): each hand is a smoothed glow orb with a trail, impact burst, pull toward targets and hover glow (0062).
 - **The kit** (`app/src/games/assets`, the creator kit): the closed library of pictures, behaviours and stage pieces that every
   game draws from.
 
@@ -63,8 +67,9 @@ A game is a package with two small programs, both sandboxed (no network, no stor
 
 ## Drawing
 
-*Proposed (0029, replacing 0020 and 0023): flat games stay on the 2D painter; 3D games use three.js on the TV and on pads, with camera
-tracking in its worker; a painted 2D overview is the TV fallback. Characters that move are paper puppets (cutout parts on a skeleton).*
+*Accepted (0029, with 0038 and 0039): flat games stay on the painted 2D painter (the asset library on a canvas; Phase 1 is 2D only, 0025); 3D games, later, use a
+painted-style 3D sibling that moves like a paper stage (three.js on the TV and on pads, with camera tracking in its worker; a painted 2D overview is the TV fallback).
+Characters that move are paper puppets (cutout parts on a skeleton). Colours come by name from the master palette (0040, 0041).*
 
 - **Flat games (about 80%):** the painted 2D backdrop and foreground behind paper cutouts, on a locked camera.
 - **3D games:** the same paper cutouts in a 3D world made of a small **stage set** (ground, walls, ramps, buildings, water),
