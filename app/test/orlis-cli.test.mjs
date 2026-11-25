@@ -6,15 +6,19 @@ import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { newGame } from '../src/ui/creator-kit.js';
+import { T } from './harness/slowness.mjs';
 import { start } from '../../server/src/app.js';
 
 const CLI = fileURLToPath(new URL('../kit/cli/orlis.mjs', import.meta.url));
 /* (the harness's own loader isn't wanted in the child: it's plain node, as on a creator's laptop) */
+/* The command waits up to 15 to 20 seconds for the server, and the server here is in this very process: on a busy machine (a full test run, a build)
+   that is not always enough, so the deadlines are scaled to how busy the machine is (T), and a command that still hangs is stopped and named. */
 const run = (args, cwd, home) => new Promise((ok) => {
-  const p = spawn(process.execPath, [CLI, ...args], { cwd, env: { ...process.env, ORLIS_HOME: home, NODE_OPTIONS: '' } });
+  const p = spawn(process.execPath, [CLI, ...args], { cwd, env: { ...process.env, ORLIS_HOME: home, NODE_OPTIONS: '', ORLIS_TIMEOUT_MS: String(T(20000)) } });
   let out = '', err = '';
   p.stdout.on('data', d => out += d); p.stderr.on('data', d => err += d);
-  p.on('close', code => ok({ code, out, err }));
+  const hung = setTimeout(() => { err += `(the test stopped "orlis ${args[0]}": no end after ${T(90000)} ms)`; p.kill(); }, T(90000));
+  p.on('close', code => { clearTimeout(hung); ok({ code, out, err }); });
 });
 
 test('the orlis command: connect once, then check, test, publish, status and take-off in a game folder', async () => {

@@ -17,6 +17,8 @@ import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { check, pack, nextVersion } from '../../src/ui/creator-kit.js';
 
+/* how long to wait for the TV's Orlis: 15 and 20 seconds, or ORLIS_TIMEOUT_MS if set (the tests set it longer when the machine is busy) */
+const WAIT = (ms) => Math.max(ms, Number(process.env.ORLIS_TIMEOUT_MS) || 0);
 const say = (t) => console.log(t);
 const stop = (t, code = 1) => { console.error(t); process.exit(code); };
 
@@ -40,7 +42,7 @@ async function call(method, path, { body, raw, quiet } = {}){
   if (!s) stop('Not connected yet. The creator connects this laptop once (in a terminal): orlis connect <address> <code>');
   let r;
   try {
-    r = await fetch(s.server.replace(/\/$/, '') + path, { method, signal: AbortSignal.timeout(20000),
+    r = await fetch(s.server.replace(/\/$/, '') + path, { method, signal: AbortSignal.timeout(WAIT(20000)),
       headers: { Authorization: `Bearer ${s.token}`, ...(raw ? { 'Content-Type': 'application/octet-stream' } : body ? { 'Content-Type': 'application/json' } : {}) },
       body: raw || (body ? JSON.stringify(body) : undefined) });
   } catch { stop('Can’t reach the TV’s Orlis. Is it on, on the same Wi-Fi as this laptop?'); }
@@ -61,7 +63,7 @@ const commands = {
     if (!address || !code) stop('Use: orlis connect <address> <code>   (the address and code are shown in Create Pro)');
     const url = /^https?:\/\//.test(address) ? address : `http://${address}`;
     let r;
-    try { r = await fetch(url.replace(/\/$/, '') + '/api/pair/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }), signal: AbortSignal.timeout(15000) }); }
+    try { r = await fetch(url.replace(/\/$/, '') + '/api/pair/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }), signal: AbortSignal.timeout(WAIT(15000)) }); }
     catch { stop('Can’t reach that address. Is the TV’s Orlis on, on the same Wi-Fi?'); }
     const d = await r.json().catch(() => ({}));
     if (!r.ok) stop(d.message || 'That didn’t work.');
