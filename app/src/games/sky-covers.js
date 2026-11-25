@@ -44,9 +44,8 @@ function frond(c, x, y, ang, len, depth, r){
 function cloudPuff(c, x, y, w, r){
   const n = 6 + ((r() * 4) | 0), parts = [];
   for (let i = 0; i < n; i++){ const t = i / (n - 1), s = Math.sin(t * Math.PI); parts.push([x + (t - 0.5) * w, y - s * w * 0.12 * (0.5 + r()), w * (0.12 + 0.12 * s) * (0.8 + r() * 0.4)]); }
-  c.fillStyle = alpha('shade.light', 0.7); for (const [px, py, pr] of parts) dot(c, px, py + pr * 0.38, pr);
+  c.fillStyle = color('shade.light', 'light'); for (const [px, py, pr] of parts) dot(c, px, py + pr * 0.38, pr);
   c.fillStyle = color('earth.snow'); for (const [px, py, pr] of parts) dot(c, px, py, pr * 0.96);
-  c.fillStyle = alpha('sky.sunGlow', 0.3); for (const [px, py, pr] of parts) dot(c, px - pr * 0.25, py - pr * 0.3, pr * 0.55);
   c.fillStyle = color('earth.snow'); c.beginPath(); c.ellipse(x, y + w * 0.04, w * 0.52, w * 0.06, 0, 0, TAU); c.fill();
 }
 function clouds0(c, W, H, r){

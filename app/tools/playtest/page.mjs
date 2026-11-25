@@ -73,7 +73,7 @@ export function toEnd(){
 
 /* Sky Painter's covers, for the shots: this cover (and picture) from the start. Returns the share of the paper in each layer (the last: clear). */
 export function skyFresh(id, which = 0){
-  const g = ctx.inst; g.which = which; g.useCover(id); g.step(1 / 30, window.innerWidth, window.innerHeight);
+  const g = ctx.inst; g.t = 3; g.over = false; g.which = which; g.useCover(id); g.step(1 / 30, window.innerWidth, window.innerHeight);
   return skyShares(g);
 }
 export function skyShares(g = ctx.inst){
@@ -84,13 +84,13 @@ export function skyShares(g = ctx.inst){
 /* run forward until the first layer is still on much of the paper, the second and third are showing through, and a first bit of the picture is clear */
 export function skyMid(){
   const g = ctx.inst;
-  const ok = (gg) => { const s = skyShares(gg); return s[0] >= 0.15 && s[1] + s[2] >= 0.25 && s[3] >= 0.03 && s[3] < 0.3; };
+  const ok = (gg) => { const s = skyShares(gg); return s[0] >= 0.1 && s[1] + s[2] >= 0.2 && s[3] >= 0.025 && s[3] < 0.3; };
   const r = ff(240, ok);
-  return { ...r, shares: skyShares(g), alive: g.alive };
+  return { ...r, cover: g.cover.id, done: g.done, shares: skyShares(g), alive: g.alive };
 }
 /* ... and until the picture has been uncovered and has been alive for a moment */
 export function skyDone(){
   const g = ctx.inst;
   const r = ff(400, (gg) => gg.alive > 1.2);
-  return { ...r, shares: skyShares(g), alive: g.alive };
+  return { ...r, cover: g.cover.id, done: g.done, shares: skyShares(g), alive: g.alive };
 }

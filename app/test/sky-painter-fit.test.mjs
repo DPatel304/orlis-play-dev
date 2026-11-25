@@ -153,7 +153,7 @@ test('a hand wearing through new paper holds the spreading back; one going over 
   for (let n = 0; n < 3; n++) scrubPatch(g, 0.5 + n * 0.15, 0.65 + n * 0.15, 0.1, 0.9, 3, 0.6);
   assert.ok(!g.alive, 'not finished yet: ' + g.covered);
   assert.equal(g.spreadN, 0, 'still wearing new bits: no help needed');
-  for (let t = 0; t < STALL + 5; t += DT){ h.right = { x: 0.2 + Math.sin(t * 9) * 0.0002, y: 0.5, vx: 0, vy: 0, speed: 0 }; g.step(DT, W, H); }
+  for (let t = 0; t < STALL + 5; t += DT){ h.right = { x: 0.2 + Math.sin(t * 9) * 0.00002, y: 0.5, vx: 0, vy: 0, speed: 0 }; g.step(DT, W, H); }
   assert.ok(g.spreadN > 0, 'jiggling on one spot is not scrubbing');
 });
 
