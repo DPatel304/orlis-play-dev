@@ -18,7 +18,7 @@ const POPIN = 0.4, LEAVE = 0.35;
    only there to touch once they are within the reach of the player who reaches least (a grown-up cannot take what a child cannot get to yet);
    they come down the lanes where people stand, a turn each; they go no faster than that player's reach is crossed in BAND_SECS seconds; and they
    are a little bigger for a short arm (up to BIG_MAX times, for an arm of ARM_REF or less). */
-const BAND_SECS = 3, ARM_REF = 0.19, BIG_MAX = 1.35, LANE_SPREAD = 0.07, LANE_ANYWHERE = 0.2, GHOST = 0.72;
+const BAND_SECS = 3, ARM_REF = 0.19, BIG_MAX = 1.35, LANE_SPREAD = 0.07, LANE_ANYWHERE = 0.2;
 /* ...and a thing that came down somebody's lane is theirs first: for its first RESERVE seconds in reach only they can touch it (it has their colour round it),
    then anyone can - so a quick grown-up cannot sweep a child's lane clear before the child has had a go */
 const RESERVE = 1.4;
@@ -498,8 +498,8 @@ class PlayRound {
     if (this.tower.length || this.fliers.length || this.rockets.length) this._drawTower(c, W, H);
     const orbs = handsMode() === 'orb';
     for (const th of [...this.things].sort((a, b) => a.y - b.y)){
-      /* a hand near something it can touch: it grows up to 8% and glows (only drawn so) */
-      const k = orbs && this._touchable(th) && !th.leaving ? this.feel.near(th.x, th.y, th.sz / 2) : 0;
+      /* a hand near something it can touch NOW (not one still above the smallest player's reach): it grows up to 8% and glows (only drawn so) */
+      const k = orbs && this._touchable(th) && this._live(th) && !th.leaving ? this.feel.near(th.x, th.y, th.sz / 2) : 0;
       if (k > 0.01) A.draw(c, 'dot', th.x * W, th.y * H, th.sz * H * 2.4, { color: COLORS.yellow, alpha: 0.7 * k });
       /* (a ball each: its player's colour round it) */
       if (th.d.each && th.owner != null) A.draw(c, 'dot', th.x * W, th.y * H, th.sz * H * 1.7, { color: this.env.colors[th.owner], alpha: 0.5 });
@@ -507,7 +507,7 @@ class PlayRound {
       if (th.resv > 0 && th.owner != null && this._live(th) && this._here(th.owner)) A.draw(c, 'dot', th.x * W, th.y * H, th.sz * H * 1.7, { color: this.env.colors[th.owner], alpha: 0.5 * Math.min(1, th.resv / 0.3) });
       /* (growing in below the shell's areas, or going as it floats up into them) */
       const born = th.pop ? ease(th.age / POPIN) : 1, gone = th.leaving > 0 ? 1 - th.leaving / LEAVE : 1;
-      A.draw(c, th.piece, th.x * W, th.y * H, th.sz * H * (1 + FEEL.hoverGrow * k) * (0.4 + 0.6 * born), { color: th.color ? hexOf(th.color, this.env) : undefined, rotate: th.rot, flip: th.flip, t: th.age, shadow: th.d.move === 'bounce', ...(born < 1 || gone < 1 || !this._live(th) ? { alpha: born * gone * (this._live(th) ? 1 : GHOST) } : {}) });
+      A.draw(c, th.piece, th.x * W, th.y * H, th.sz * H * (1 + FEEL.hoverGrow * k) * (0.4 + 0.6 * born), { color: th.color ? hexOf(th.color, this.env) : undefined, rotate: th.rot, flip: th.flip, t: th.age, shadow: th.d.move === 'bounce', ...(born < 1 || gone < 1 ? { alpha: born * gone } : {}) });
     }
     /* blocks on their way to the tower */
     this.fliers.forEach((f, i) => {

@@ -9,11 +9,11 @@ import { hudZones } from '../src/games/hud.js';
 const DT = 1 / 30, W = 1920, H = 1080;
 /* a child (low and small) and a grown-up (tall), standing where the camera would put them (no landmarks: the tracker's centre and scale) */
 const KID = { centre: { x: 0.3, y: 0.66 }, scale: 0.3 }, ADULT = { centre: { x: 0.7, y: 0.5 }, scale: 0.55 };
-function game(spec, bodies = [KID, ADULT]){
+function game(spec, bodies = [KID, ADULT], assets = null){
   let s = 7; const random = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const hand = () => ({ x: 0.5, y: 1.6, vx: 0, vy: 0, speed: 0 });
   const pose = { players: Array.from({ length: 4 }, (_, i) => bodies[i] ? { present: true, ...bodies[i], hands: { left: hand(), right: hand() } } : { present: false, hands: { left: hand(), right: hand() } }), mouse: { active: false } };
-  const A = { scene() {}, draw() {}, text() {}, color: () => '#ffd35c' };
+  const A = assets || { scene() {}, draw() {}, text() {}, color: () => '#ffd35c' };
   const g = makePlay(spec, { pose, sfx: new Proxy({}, { get: () => () => {} }), assets: A, ui: { say() {}, goal() {}, zones: hudZones }, colors: ['#3da9ff', '#ff8a3d', '#3fcf7f', '#c46bff'], max: 4, random });
   const round = g.create(bodies.length);
   for (let k = 0; k < 40; k++) round.step(DT, W, H);   /* (the bands settle) */
@@ -96,4 +96,19 @@ test('a Dodge thing is not made bigger or slower for a short player, and is alwa
   run(round, 10);
   assert.ok(round.things.every(th => th.sz === 0.09), 'size as written');
   assert.ok(round.things.every(th => round._live(th)), 'always live');
+});
+
+test('a thing still above the smallest player\'s reach is drawn as clearly as any other (no ghosting), and a hand near it makes no glow it cannot honour', () => {
+  const calls = [];
+  const A = { scene() {}, draw: (c, piece, x, y, size, o = {}) => { calls.push({ piece, y, alpha: o.alpha }); }, text() {}, color: () => '#ffd35c' };
+  const { round, pose } = game(still(0.7, 0.3), [KID, ADULT], A);
+  assert.ok(!round._live(round.things[0]), 'above the child\'s reach');
+  handOn(pose, 1, 0.7, 0.3);                               /* a hand right beside it: the glow would show if it were touchable */
+  round.step(DT, W, H);
+  const c = { save() {}, restore() {}, fillRect() {}, set globalAlpha(v) {}, get globalAlpha() { return 1; } };
+  round.draw(new Proxy(c, { get: (t, k) => (k in t ? t[k] : () => {}), set: () => true }), W, H);
+  const apple = calls.filter(x => x.piece === 'apple');
+  assert.equal(apple.length, 1);
+  assert.equal(apple[0].alpha, undefined, 'full strength: no alpha at all');
+  assert.ok(!calls.some(x => x.piece === 'dot'), 'no glow round something that cannot be touched yet');
 });
