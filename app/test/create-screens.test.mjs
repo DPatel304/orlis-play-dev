@@ -85,6 +85,8 @@ test('the made game plays on the real engine, and tells the shell what it needs'
     const r = headless({ ...defaultPicks(), ...one('apple', job) }, 25);
     assert.ok(r.score > 0 && r.sounds.length > 0, job + ' scores by itself');
   }
+  const again = headless({ ...defaultPicks(), ...one('apple', 'dodge') }, 25);
+  assert.equal(again.score, headless({ ...defaultPicks(), ...one('apple', 'dodge') }, 25).score, 'the scripted round is seeded: the same every run');
   /* a mix of all four jobs */
   let mix = { ...defaultPicks(), bomb: true };
   for (const [id, j] of [['bee', 'dodge'], ['banana', 'stack'], ['beachball', 'keepup']]) mix = setJob(addThing(mix, id), id, j);

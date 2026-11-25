@@ -15,11 +15,12 @@ const SILENT = new Proxy({}, { get: () => () => {} });
 const hand = () => ({ x: 0.5, y: 0.6, vx: 0, vy: 0, speed: 0 });
 
 /* the scripted player: it chases what it should catch, stack or bat up (the lowest first, a falling ball before it drops) and just waves about
-   when nothing is there yet. It does not chase a Dodge thing or a bomb, so now and then one touches it, and costs a point. */
-const CHASE = /^(collect|stack|keepup|golden)/;
+   when nothing is there yet. It does not chase a Dodge thing or a bomb, and it waves from the roomiest spot when Dodge things are about (a hand that never
+   did would be hit by nearly every one, and a round of only Dodge things would score nothing), so now and then one still touches it. */
+const CHASE = /^(collect|stack|keepup|golden)/, AVOID = /^dodge/;
 export function makeHand(){
   const h = hand();
-  let t = 0;
+  let t = 0, bx = 0.5, by = 0.6;
   return {
     h,
     step(dt, things){
@@ -31,6 +32,18 @@ export function makeHand(){
         const best = aim.reduce((a, b) => b.y > a.y ? b : a);
         kind = (best.d.name || '').startsWith('keepup') ? 'keepup' : '';
         tx = best.x; ty = kind ? Math.min(0.88, best.y + 0.06) : best.y;
+      }
+      if (!aim.length){
+        /* with Dodge things about, wave from the roomiest spot near the usual wave (the one furthest from them all) */
+        const bad = (things || []).filter(x => !x.dead && x.d && AVOID.test(x.d.name || '') && x.y > -0.1 && x.y < 1.1);
+        if (bad.length){
+          let best = -1e9;
+          for (let gx = 0.08; gx <= 0.92; gx += 0.06) for (let gy = 0.3; gy <= 0.85; gy += 0.06){
+            const room = Math.min(...bad.map(x => Math.hypot(gx - x.x, (gy - x.y) * 1.2))) - 0.25 * Math.hypot(gx - tx, gy - ty);
+            if (room > best){ best = room; bx = gx; by = gy; }
+          }
+          tx = bx; ty = by;
+        }
       }
       const k = Math.min(1, dt * (kind ? 5 : 3)), nx = h.x + (tx - h.x) * k, ny = h.y + (ty - h.y) * k;
       h.vx = (nx - h.x) / (dt || 1); h.vy = (ny - h.y) / (dt || 1); h.speed = Math.hypot(h.vx, h.vy); h.x = nx; h.y = ny;
@@ -79,12 +92,18 @@ export function makePreview(canvas){
   };
 }
 
-/* No canvas, a recording of what the scripted hand did in `secs` of the round (for the tests). */
-export function headless(picks, secs = 20){
+/* a small seeded random (mulberry32), so a headless round plays out the same every time */
+export function seeded(seed = 1){
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
+/* No canvas, a recording of what the scripted hand did in `secs` of the round (for the tests). Seeded, so the round is the same every run. */
+export function headless(picks, secs = 20, seed = 1){
   const sounds = [], sfx = new Proxy({}, { get: (_, k) => () => sounds.push(k) });
   const none = { scene(){}, draw(){}, text(){} };
   const p = clean(picks), hd = makeHand(), pose = { players: [{ present: true, hands: { left: null, right: hd.h } }], mouse: { active: true } };
-  const play = makePlay(build(p), { pose, sfx, assets: none, ui: { say(){}, goal(){} }, colors: ['#3da9ff'], max: 4 }).create(1);
+  const play = makePlay(build(p), { pose, sfx, assets: none, ui: { say(){}, goal(){} }, colors: ['#3da9ff'], max: 4, random: seeded(seed) }).create(1);
   const dt = 1 / 30;
   for (let t = 0; t < secs; t += dt){ hd.step(dt, play.things); play.step(dt, SIZE.w, SIZE.h); }
   return { round: play, score: play.total, sounds, hand: hd.h };
