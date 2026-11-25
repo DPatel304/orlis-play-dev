@@ -38,7 +38,7 @@ const JOB_BLURB = { collect: 'Reach out and touch', dodge: 'Lean away from it', 
 const ARMS_TEXT = { where: 'Arms up to choose', what: 'Arms up when done', rules: 'Arms up to play', name: 'Arms up to keep it' };
 const CUBO_X = { where: 0.105, game: 0.105, what: 0.105, rules: 0.105, name: 0.105, play: 0.5 };
 const WALKED = 0.04;               /* screen widths the hips must move to count as walking (tracker jitter and swaying are far less) */
-const SLIDER_SETTLE = 0.3;         /* seconds a hand must be in a slider before it pushes it */
+const SLIDER_SETTLE = 0.3;         /* seconds a hand must rest at a stop before the slider goes there */
 const LOCK = 0.9;                  /* seconds after a step opens before a hand can touch anything (it is probably still where the last pick was) */
 
 /* the little picture on a game card: Cubo doing it */
@@ -295,7 +295,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
     if (st.step === 'start'){ readStart(dt); return; }
     /* (a mouse standing in for the camera is clicks only: hovering over a target must not touch it) */
     const seen = pose.mouse.active ? [] : pose.players;
-    root.toggleAttribute('data-locked', lock > 0);
+    if (lock > 0) root.setAttribute('data-locked', ''); else if (root.removeAttribute) root.removeAttribute('data-locked');
     const body = reader.step(dt, seen);
     const px = body.hands.filter(p => p.active).map(p => ({ x: p.x * (typeof innerWidth === 'number' ? innerWidth : 1920), y: p.y * (typeof innerHeight === 'number' ? innerHeight : 1080) }));
 
@@ -348,11 +348,14 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
         const left = first.left + first.width / 2, right = last.left + last.width / 2;
         /* (a hand pushes it once it has come into the slider: one that was resting there when the step opened is waited out) */
         const inside = px.filter(p => p.y >= rb.top - rb.height * 0.2 && p.y <= rb.bottom + rb.height * 0.1 && p.x >= left - first.width && p.x <= right + last.width);
-        /* (and it has to stay a moment: both arms rising to go on sweep through the sliders on the way up, and must not push them) */
-        if (!inside.length){ s.armed = true; s.inFor = 0; } else s.inFor = (s.inFor || 0) + dt;
-        if (lock <= 0 && s.armed && s.inFor >= SLIDER_SETTLE) for (const p of inside){
+        /* (a value is set by a hand that rests at it a moment: one passing through - both arms rising to go on, or the hand dropping away after a push -
+           must not drag it) */
+        if (!inside.length){ s.armed = true; s.cand = null; }
+        else if (lock <= 0 && s.armed) for (const p of inside){
           const i = stopAt(p.x, left, right, s.r.steps, st.picks[k]);
-          if (i !== st.picks[k]){ sfx.tick(); dispatch({ t: k, i }); }
+          if (i === st.picks[k]){ s.cand = null; continue; }
+          if (s.cand && s.cand.i === i) s.cand.t += dt; else s.cand = { i, t: 0 };
+          if (s.cand.t >= SLIDER_SETTLE){ s.cand = null; sfx.tick(); dispatch({ t: k, i }); }
         }
       }
       dispatch({ t: 'tick', dt });
@@ -431,7 +434,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
       if (st.tray.includes(ids[it.i])){
         const tx = x + size * 0.42, ty = y - size * 0.42, tr = size * 0.2;
         c.globalAlpha = 1; c.fillStyle = col('ui.go'); c.beginPath(); c.arc(tx, ty, tr, 0, 7); c.fill();
-        c.strokeStyle = '#fff'; c.lineWidth = tr * 0.34; c.lineCap = 'round'; c.lineJoin = 'round';
+        c.strokeStyle = col('earth.snow'); c.lineWidth = tr * 0.34; c.lineCap = 'round'; c.lineJoin = 'round';
         c.beginPath(); c.moveTo(tx - tr * 0.45, ty); c.lineTo(tx - tr * 0.1, ty + tr * 0.4); c.lineTo(tx + tr * 0.5, ty - tr * 0.35); c.stroke();
       }
       c.restore();

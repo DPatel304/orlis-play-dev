@@ -89,3 +89,9 @@ Readings and choices (change any you disagree with):
 - Not done: the Store page and Create's request builder are only recoloured (the builder still has its emoji pictures: they were not in the U6 list); the intro (`boot.js`) is a short two-squares hop (2.5 s) instead of the 6-second cube show.
 - Not tested: a real camera, a real TV, Windows Big Picture, the real family server (the pictures use a pretend one, `tools/u5-shots.mjs`).
 
+
+## 2026-11-25, Cubo's Create end to end (decision 0060), Sonnet
+- **The camera was never on in Create.** `main.js` kept Create in the "mouse's and keyboard's" pages (camera asleep, `pose.update` not called, hand cursor off), so every body gesture was dead in the real app (the earlier pictures fed `pose._assign` by hand). Create (not Create Pro) now wakes the camera, reads the body each frame (still drawn at the calm pace) and shows the hand ring (`BODY_PAGES` in main.js). This follows 0060 but puts the camera light on in Create; say if you want it only after "Make a game" is pressed (it would need arms-up to work from a different start).
+- **Bee and Bumblebee** use the same picture, so they look like a duplicate in the wheel and the tray. Left for you to decide.
+- **Reach, needs real people:** targets below about hip height (the lower row of game cards, the "How many?" slider, the lower tray slots) are hard to touch from a standing position, because a forearm pointing down counts as "hanging" (`HANG` 0.6 in gestures.js). The tests use upper-row targets and a person who steps or bends the elbow. Worth trying with a child and an adult before moving the layout or relaxing `HANG`.
+- Gesture numbers I could not check with a real body: dwell 0.7 s, arms hold 0.6 s, walk threshold 0.04 of the screen (new), slider rest 0.3 s (new), swipe 0.16 in 0.25 s, jump.

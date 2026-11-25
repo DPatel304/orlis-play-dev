@@ -34,9 +34,10 @@ const accountOf = (profiles) => ({
 export const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 /* wait for fn() to be truthy; the deadline scales with how busy the machine is (harness/slowness.mjs) */
 export async function until(fn, ms = 6000, label = ''){
-  const t0 = Date.now();
+  const t0 = Date.now(); let said = false;
   for (;;){
     const v = await fn(); if (v) return v;
+    if (!said && Date.now() - t0 > 15000 && process.env.CUBO_DEBUG){ said = true; process.stderr.write('  ... still waiting for ' + (label || String(fn)) + '\n'); }
     if (Date.now() - t0 > ms && Date.now() - t0 > T(ms)) throw new Error('timed out waiting for ' + (label || String(fn)));
     await sleep(40);
   }

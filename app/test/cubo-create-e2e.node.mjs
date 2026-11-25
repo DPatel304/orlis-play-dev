@@ -77,6 +77,7 @@ async function playThenChange(s, how, saved){
   await s.shot('playing');
   await s.page.evaluate(() => window.__finish());
   await s.modeIs('results', 20000);
+  await sleep(1500);                                               /* (the scores card fades in) */
   await s.shot('results');
   const names = await s.page.evaluate(() => [...document.querySelectorAll('.screen .btn')].map(b => b.textContent.trim()));
   assert.deepEqual(names, ['Play again', 'Change it', 'Home'], 'the scores of a made game');
@@ -252,10 +253,10 @@ test('mouse only: clicks on the big targets, start to a saved, playing game, Cha
   const idsNow = await groupIds(s, 'food');
   if ((await st(s)).tray.includes(idsNow[await wheelTop(s)])){
     await s.click('.ccspot');
-    assert.equal((await st(s)).tray.length, 1);
-    await until(async () => /have that one/i.test(await toastText(s)), 3000, 'the words');
+    /* (the wheel may have turned on to a new thing between the check and the click: then that one is taken, which is right too) */
+    if ((await st(s)).tray.length === 1) await until(async () => /have that one/i.test(await toastText(s)), 3000, 'the words');
   }
-  await grabOne();
+  if ((await st(s)).tray.length < 2) await grabOne();
   assert.equal((await st(s)).tray.length, 2);
   assert.equal(await s.visible('.ccarms'), true);
   await s.click('.cctrayslot:not(.empty)', 0); assert.equal((await st(s)).tray.length, 1, 'a click on the tray takes one back');
@@ -536,6 +537,7 @@ test('the server out of reach: the game is kept on this TV and plays; and when t
   assert.equal(await s.mode(), 'create');
   await s.shot('save-refused');
   await s.keys('Escape'); await s.stepIs('rules');
+  s.errors = s.errors.filter(e => !/status of 409/.test(e));         /* (the browser's own note of the refusal this test asked for) */
   noErrors(s);
   await s.ctx.close();
 });
