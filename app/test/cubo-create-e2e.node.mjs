@@ -89,13 +89,19 @@ const ready = (s) => s.settled(4000);
 /* a flow with no tick for a moment: just let the page's own clock run */
 const waitSaid = (s, line) => until(async () => (await said(s)).includes(line), 8000, `Cubo to say "${line}"`);
 
+/* a person reaches with the nearer hand: the reach of the nearer shoulder to a target */
+async function nearerHand(s, sel, nth = 0){
+  const r = await s.reachInfo(sel, nth, 0, 'r'), l = await s.reachInfo(sel, nth, 0, 'l');
+  if (!r || !l) return r || l;
+  return l.d < r.d ? { ...l, side: 'l' } : { ...r, side: 'r' };
+}
 /* the targets of a step are in the first player's comfort zone: an arm's reach from where they stand, between chest and just above the head, never below the hips */
 async function assertInReach(s, label){
   const ts = await s.targets(), bad = [];
   let items = 0, itemsInReach = 0;
   for (const t of ts){
     if (['back', 'arms'].includes(t.name) || t.name.startsWith('stop-')) continue;           /* (the two corners; the meter is a height, not a place) */
-    const info = await s.reachInfo(`.cc [data-t="${t.name}"]`);
+    const info = await nearerHand(s, `.cc [data-t="${t.name}"]`);
     if (!info) continue;
     const reach = info.arm * 1.15;
     const chest = info.shoulder + 0.35 * (info.hips - info.shoulder);
@@ -321,7 +327,8 @@ test('mouse only: clicks on the big targets, start to a saved, playing game, Cha
 /* a hand held on a target (found each frame, so a floating one is followed) until `pred` is true; the ring, the tone and the glow are looked at on the way */
 async function holdOn(s, sel, pred, { shot = null, label = sel, nth = 0 } = {}){
   const b = s.body;
-  await b.reachNear(sel, nth);
+  const near = await nearerHand(s, sel, nth);
+  await b.reachNear(sel, nth, { side: near ? near.side : 'r' });
   try {
     if (shot){
       await until(async () => { const hd = await s.holding(); return hd && hd.k > 0.35; }, 8000, `the ring to fill round the hand on ${label}`);
@@ -373,10 +380,10 @@ async function bodyFlow(s, { how }){
   /* stepping sideways still slides it */
   await b.walk(0, 0.3 + 0.0); await b.walk(0, 0.7);
   await until(async () => (await st(s)).worldIx >= 4, 8000, 'walking right to slide the carousel on');
-  await b.walk(0, 0.5);
+  await b.walk(0, 0.58);
+  /* arms up chooses (the world settles first: the slide that the walk back set going) */
+  await s.pageWait(1.5);
   const world = (await st(s)).worldIx;
-  /* arms up chooses */
-  await s.pageWait(1.2);
   await b.armsUp(0, true);
   await s.stepIs('game', 12000); await b.armsDown(0);
   assert.equal((await st(s)).picks.where, await s.page.evaluate(async (i) => (await import('/src/create/recipe.js')).choices.where[i].id, world), 'the world on show is the world picked');
@@ -583,7 +590,7 @@ test('the camera check: someone cut off sees it, steps back, and it passes by it
     await b.armsUp(0, true);
     await until(() => s.page.evaluate(() => !!document.querySelector('.screen.framing')), 12000, 'the camera check');
     await b.armsDown(0);
-    await s.pageWait(0.6);
+    await new Promise(r => setTimeout(r, 700));                      /* (the page's own clock is not running under the check) */
     assert.equal(await s.step(), 'start', 'the flow waits while the check is up');
     await s.shot('camera-check');
     assert.match(await s.page.evaluate(() => document.querySelector('.screen.framing').innerText), /camera|step back|fit/i);

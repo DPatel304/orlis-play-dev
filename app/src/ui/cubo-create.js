@@ -168,7 +168,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
     if (gone) return;
     /* leaving the start screen is the page's to allow first (the camera check): it sends the event back with `force` */
     if (st.step === 'start' && onStart && !ev.force && (ev.t === 'arms' || ev.t === 'ok')){ onStart(); return; }
-    const was = st.step, wasWorld = st.worldIx, r = F.reduce(st, ev);
+        const was = st.step, wasWorld = st.worldIx, r = F.reduce(st, ev);
     if (r.state === st && !r.fx.length) return;                 /* (nothing changed: the clock ticking in Rules) */
     if (r.state.step !== st.step) cubo.later = null;
     st = r.state;
@@ -470,19 +470,19 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
   function carouselBox(b){ return { x: b.w * 0.1, y: b.h * 0.14, w: b.w * 0.8, h: b.h * 0.56 }; }
   function wheelBox(z, sw, sh){
     const w = sw * 0.5, hh = sh * 0.3, cx = clamp(z.x, 0.3, 0.7) * sw, mid = (z.top + z.bottom) / 2 * sh;
-    const y = clamp(mid - hh / 2, TOP_LIMIT * sh, z.floor * sh - hh);
+    const y = clamp(mid - hh / 2, Math.max(TOP_LIMIT, 0.17) * sh, Math.max(0.17 * sh, z.floor * sh - hh));   /* (below the corner targets) */
     return { x: cx - w / 2, y, w, h: hh };
   }
   function layoutParade(b, z, X, Y, sw, sh){
     const zoneH = (z.bottom - z.top) * sh, size = clamp(zoneH * 0.85, sw * 0.07, sw * 0.105);
     /* the tray, at the side of the player's reach (the other side if there is no room) */
     const pad = sh * 0.012, head = sh * 0.075;
-    const top = Math.max(sh * 0.17, z.top * sh), avail = z.floor * sh - top - head - pad * 4;
+    const top = Math.max(sh * 0.17, z.top * sh), avail = z.floor * sh - top - head - pad * 6;
     const cell = clamp(avail / 2, 28, sw * 0.07), gap = pad, pw = cell * 3 + gap * 2 + pad * 2;
     let tx = (z.x + z.half * 0.85) * sw;
     if (tx + pw > sw * 0.985) tx = (z.x - z.half * 0.85) * sw - pw;
     tx = clamp(tx, sw * 0.012, sw * 0.988 - pw);
-    const th = head + pad * 4 + cell * 2;
+    const th = head + pad * 6 + cell * 2;      /* (a clear gap between Groups and the first slots: a hand reaching for one must not touch the other) */
     place(ui.tray, tx - b.x, top - b.y, pw, th);
     ui.tray.style.setProperty('--cell', `${Math.round(cell)}px`); ui.tray.style.setProperty('--gap', `${Math.round(gap)}px`);
     place(ui.groupsBtn, tx - b.x + pad, top - b.y + pad, pw - pad * 2, head);
@@ -584,6 +584,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
     /* (game cards: a hand near a card, and its Cubo does the move - and says its name, once) */
     if (st.step === 'game') nearCards();
     if (lock > 0 || !touch.length){ holding = null; return; }          /* (a hand resting where the last pick was is waited out: the dwell stays blocked) */
+    if (body && body.armsProgress > 0) hit = null;                     /* (both arms going up is the arms-up gesture, not a touch: a raised hand passing a target does not pick it) */
     const d = dwell.step(dt, hit);
     touch.forEach(t => t.el.style.setProperty('--dw', t === hit ? `${Math.round(d.progress * 100)}%` : '0%'));
     holding = hit && d.progress > 0 && !d.fired ? { x: hitHand.sx, y: hitHand.sy, k: d.progress } : null;

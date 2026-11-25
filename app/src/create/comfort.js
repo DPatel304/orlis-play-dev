@@ -41,7 +41,7 @@ export function zoneOf(p, reach){
   /* just above the head: a head is about half a torso tall, and a hand held at its top is comfortable */
   const headTop = nose - 0.45 * torso, chest = shY + 0.35 * torso;
   let top = Math.max(headTop, reach.top, TOP_LIMIT);
-  const floor = Math.min(0.92, hipY);
+  const floor = Math.min(0.92, hipY - DEAD * 1.2);        /* (a little above the hips: the dead band may leave it a hair low) */
   const bottom = Math.min(chest, floor - 0.1 * torso);
   if (bottom - top < MIN_BAND) top = Math.max(0.1, bottom - MIN_BAND);
   const half = clamp(reach.arm / ASPECT * ARM_SLACK, MIN_HALF, MAX_HALF);
@@ -83,7 +83,7 @@ export function cardsBand(z, kind = 'cards'){
     const y = clamp(mid - h / 2, TOP_LIMIT, z.floor - h);
     return { y, h };
   }
-  const y = z.top, h = Math.max(0.2, Math.min(0.34, z.floor - z.top));
+  const h = Math.max(0.2, Math.min(0.34, z.floor - z.top)), y = Math.max(TOP_LIMIT, Math.min(z.top, z.floor - h));   /* (never below the hips) */
   return { y, h };
 }
 

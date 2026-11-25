@@ -9,7 +9,7 @@
 .cclayer{ position:absolute; inset:0; }
 .cc .btn{ pointer-events:auto; border:0; font-family:var(--painted); color:var(--ink); }
 .cc .btn .fill{ display:none; }
-.cc .btn.hide,.cc .hide{ display:none; }
+.cc .btn.hide,.cc .hide{ display:none!important; }
 
 /* every target: placed by the page, grows and glows as a hand comes near, rings while held */
 .cc [data-t]{ position:absolute; margin:0; padding:0; box-sizing:border-box; scale:calc(1 + .12 * var(--near, 0));
