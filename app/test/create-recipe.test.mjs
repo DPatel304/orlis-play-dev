@@ -115,8 +115,10 @@ test('one job for the whole game (what the builder asks for): every thing has it
   /* the engine plays each, with several things */
   for (const job of JOBS){
     const { round, pose } = headless(build(setAllJobs(picksOf(['apple', 'collect'], ['bee', 'collect'], ['star', 'collect']), job)));
-    for (let k = 0; k < 8 * 30; k++){ Object.assign(pose.players[0].hands.right, { x: 0.5 + 0.4 * Math.sin(k / 20), y: 0.5 + 0.3 * Math.sin(k / 7), speed: 0.6, vx: 0.5, vy: -0.5 }); round.step(DT, W, H); }
-    assert.ok(round.things.length > 0 && round.score.every(v => v >= 0), job);
+    /* (a ball each: one a player never bats pops on the floor and floats back a second later, so "things on the screen" is looked at all through the round, not at one moment) */
+    let there = 0;
+    for (let k = 0; k < 8 * 30; k++){ Object.assign(pose.players[0].hands.right, { x: 0.5 + 0.4 * Math.sin(k / 20), y: 0.5 + 0.3 * Math.sin(k / 7), speed: 0.6, vx: 0.5, vy: -0.5 }); round.step(DT, W, H); if (round.things.length > 0) there++; }
+    assert.ok(there > 8 * 30 * 0.5 && round.score.every(v => v >= 0), job);
   }
 });
 

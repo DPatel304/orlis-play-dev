@@ -85,6 +85,8 @@ const keepup = {
     let best = null, bc = 1e9;
     for (const b of g.things){
       if (b.dead) continue;
+      /* (a ball each: players go for the ball in their own colour; only that one can be batted by them) */
+      if (b.owner != null && b.owner !== p.slot) continue;
       const sy = p.restShY() + p.armLen * p.k * 0.2, gr = 0.5;
       let yHit = clamp(sy, 0.3, 0.8), disc = b.vy * b.vy + 2 * gr * (yHit - b.y);
       for (let k = 0; disc < 0 && k < 8; k++){ yHit = Math.min(0.88, yHit + 0.06); disc = b.vy * b.vy + 2 * gr * (yHit - b.y); }

@@ -52,6 +52,8 @@ export function validate(spec, env){
       if (t.count !== undefined) num(t.count, 'count', where);
       const moves = t.moves ?? 'stay';
       if (!(moves in MOVES)) unknown('movement', moves, Object.keys(MOVES), where + ': "moves"');
+      if (t.each !== undefined && t.each !== true && t.each !== false) bad(where + ': "each" is true or false.');
+      if (t.each === true && moves !== 'bounce') bad(where + ': "each" is for a ball (moves: "bounce"): one for every player.');
       if (t.at !== undefined && !(t.at && isNum(t.at.x) && isNum(t.at.y) && t.at.x >= 0 && t.at.x <= 1 && t.at.y >= 0 && t.at.y <= 1)) bad(where + ': "at" is { "x": 0 to 1, "y": 0 to 1 }.');
       if (t.appears !== undefined){
         const a = t.appears;

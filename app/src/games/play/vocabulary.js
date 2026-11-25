@@ -58,6 +58,7 @@ export const THING_KEYS = {
   name: 'a name other things can refer to (spawn)', piece: 'a piece, or a list to pick from', color: 'a colour name, #rrggbb, or a list to pick from',
   size: 'height, as a share of the screen (0.02 to 0.4)', speed: 'how fast it moves', sway: 'side-to-side wobble as it moves (0 to 0.2)', spins: 'true: it turns as it goes',
   count: 'how many at the start (static things)', at: '{ "x": 0.5, "y": 0.8 } where it starts', appears: '{ "every": 1.2, "from": "top", "max": 8, "everyEnd": 0.6, "wait": 1 } more keep coming (wait: the least seconds before one takes the place of a thing that has gone)',
+  each: 'true, for a ball (moves "bounce"): one for every player, floating in their own part of the screen - only that player can bat it, and it goes up only as high as that player can reach ("appears.max" is how many each, up to 3; "wait" how long before a dropped one floats back)',
   moves: 'one of the movements', rules: 'a list of { "when": trigger, "then": [results] }', flips: 'true: faces the way it moves'
 };
 export const LIMITS = { secs: [20, 600], size: [0.02, 0.4], speed: [0, 1], every: [0.08, 30], max: [1, 40], count: [1, 30], sway: [0, 0.2], hintFor: [1, 60], cardFor: [1, 600], tower: [3, 10], wait: [0.2, 10] };

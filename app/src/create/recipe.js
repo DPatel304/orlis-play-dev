@@ -209,7 +209,7 @@ export const SPEED_X = [0.3, 0.45, 0.7, 1, 1.45, 2.1, 3];
 export const ON_SCREEN = [1, 2, 4, 7, 12, 18, 25];
 const CROSS = 1.15;                        /* screens to cross, so a thing is about CROSS / speed seconds on it */
 const SIZE = [0.06, 0.075, 0.095, 0.12, 0.15];
-const BALLS = [1, 1, 1, 1, 2, 4, 5];       /* keep up: how many balls (how many) */
+const BALLS = [1, 1, 1, 1, 2, 3, 3];       /* keep up: how many balls each player has (how many) */
 const BALL_SIZE = [1.3, 1.2, 1.1, 1, 0.9, 0.8, 0.7]; /* keep up: a faster game is a smaller ball (speed) */
 export const FLOAT_BACK = 1;               /* keep up: seconds before a popped ball floats back in */
 export const TOWER = 6;                    /* stack: blocks in a full tower */
@@ -236,10 +236,11 @@ export function build(picks){
   for (const t of p.things){
     const name = `${t.job}-${t.id}`, move = MOVE_OF(t);
     if (t.job === 'keepup'){
-      /* a ball: it bounces, each touch bats it up; one that drops pops, and a new one floats in a moment later */
+      /* a ball for each player (each: it floats in their own part of the screen, only they can bat it, and it goes up only as high as they can reach:
+         fair for a child beside a grown-up); each touch bats it up; one that drops pops, and a new one floats in a moment later */
       const balls = keepers > 1 ? 1 : BALLS[p.many], s = lim('size', round3(size * BALL_SIZE[p.speed]));
       game.things.push({
-        name, piece: t.id, size: s, moves: 'bounce', spins: true, appears: { every: 1, everyEnd: 1, max: balls, from: 'anywhere', wait: FLOAT_BACK },
+        name, piece: t.id, size: s, moves: 'bounce', spins: true, each: true, appears: { every: 1, everyEnd: 1, max: balls, from: 'anywhere', wait: FLOAT_BACK },
         rules: [{ when: 'touched', then: ['kickUp', 'score', { sound: 'pop' }] }, { when: 'lands', then: ['pop', { sound: 'plop' }, 'vanish'] }]
       });
       continue;

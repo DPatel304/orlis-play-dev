@@ -21,6 +21,12 @@ const BAND_SECS = 3, ARM_REF = 0.19, BIG_MAX = 1.35, LANE_SPREAD = 0.07, LANE_AN
 /* ...and a thing that came down somebody's lane is theirs first: for its first RESERVE seconds in reach only they can touch it (it has their colour round it),
    then anyone can - so a quick grown-up cannot sweep a child's lane clear before the child has had a go */
 const RESERVE = 1.4;
+/* A ball each (a thing with "each"): it floats in its player's own part of the screen (a lane: LANE_MOST of the way to the next player at most, LANE_LEAST at least),
+   is batted up only by that player, goes up to the top of that player's own reach (no faster than RALLY, no slower than LIFT_MIN, in screen heights
+   a second: a grown-up's ball cannot be rattled at the ceiling, and a child's never goes where only a grown-up can meet it), and can be batted again only after it has come down below REHIT of the way down its player's reach (0 the top, 1 the knees). A player who
+   is gone more than GONE seconds takes their ball with them. A ball cannot be batted again for BAT seconds (a ball under the corner has little room to go up in,
+   and a quick hand could otherwise rattle it three times a second). */
+const LANE_MOST = 0.2, LANE_LEAST = 0.07, RALLY = 0.45, LIFT_MIN = 0.25, REHIT = 0.45, GONE = 5, BAT = 0.7;
 const ease = (k) => 1 - Math.pow(1 - clamp(k, 0, 1), 3);
 /* the tower a "stack" builds (as in Stack It High): one block's size (screen heights), where its ground is, where across the picture it stands,
    how long a block flies to it, how many blocks make a full one by default, and the bonus a full one is worth as it blasts off */
@@ -39,7 +45,7 @@ class PlayRound {
       const move = t.moves || 'stay';
       /* (fair: something to touch that falls or floats - a Dodge thing is not made bigger or slower for a short player, who is smaller to hit already) */
       const fair = (move === 'fall' || move === 'rise') && (t.rules || []).some(r => (r.when === 'touched' || r.when === 'swiped') && !r.then.some(x => typeof x === 'object' && Object.keys(x)[0] === 'score' && x.score < 0));
-      return { ...t, id: i, move, sz: t.size ?? 0.09, sp: t.speed ?? MOVES[move].speed, timer: 0.4, fair };
+      return { ...t, id: i, move, sz: t.size ?? 0.09, sp: t.speed ?? MOVES[move].speed, timer: 0.4, fair, each: t.each === true && move === 'bounce' };
     });
     this.score = Array.from({ length: env.max }, () => 0); this.total = 0;
     this.things = []; this.fx = []; this.texts = [];
@@ -47,6 +53,7 @@ class PlayRound {
     this.counts = {};                 /* how many times each named thing scored (a catch, a dodge, a bat, a block stacked), for the results */
     this.tower = []; this.fliers = []; this.rockets = []; this.towers = 0; this.wob = 0;
     this.reach = reaches(env.max); this.here = []; this.low = null; this.laneTurns = {};
+    this.eachT = {}; this.eachHad = {}; this.eachGone = {};
     this.aspect = 16 / 9; this.zones = []; this._zoneKey = ''; this.t = 0;
     this._refreshZones(1920, 1080);
     this.over = false; this.hint = spec.hint || null; this.hintIcon = spec.hintIcon || ''; this.hintT = 0; this.goalDone = false; this.endIn = -1; this.cheering = 0;
@@ -82,6 +89,36 @@ class PlayRound {
     this.laneTurns[pick.i] = (this.laneTurns[pick.i] || 0) + 1;
     this.laneOwner = pick.i;
     return clamp(pick.x + (this.rnd() - 0.5) * 2 * LANE_SPREAD, 0.06, 0.94);
+  }
+
+  /* ---------- a ball each ---------- */
+  /* where player i's ball floats: the middle of their lane and how far it goes either side (never into the next player's) */
+  _lane1(i){
+    const r = this.reach[i], x = r.ready ? r.x : 0.5;
+    let gap = 1;
+    for (const h of this.here) if (h.i !== i) gap = Math.min(gap, Math.abs(h.x - x));
+    return { x, hw: clamp(gap * 0.45, LANE_LEAST, LANE_MOST) };
+  }
+  /* every player here has their ball (up to "appears.max" of them): one floats in a moment after one is lost, and a player who is gone takes theirs with them */
+  _balls(dt){
+    for (const d of this.defs){
+      if (!d.each) continue;
+      const per = clamp((d.appears && d.appears.max) ?? 1, 1, 3), wait = d.appears && d.appears.wait != null ? d.appears.wait : 1;
+      for (let i = 0; i < this.n; i++){
+        const key = d.id + ':' + i, p = this.env.pose.players[i], mine = this.things.filter(t => t.d === d && t.owner === i && !t.dead);
+        if (!p || !p.present){ this.eachGone[key] = (this.eachGone[key] || 0) + dt; if (this.eachGone[key] > GONE) for (const t of mine) t.dead = true; continue; }
+        this.eachGone[key] = 0;
+        if (this.eachT[key] == null) this.eachT[key] = 0.4;
+        if (mine.length < (this.eachHad[key] ?? 0)) this.eachT[key] = wait;                  /* one was lost: the next floats in after the wait */
+        this.eachHad[key] = mine.length;
+        if (mine.length >= per) continue;
+        this.eachT[key] -= dt;
+        if (this.eachT[key] > 0) continue;
+        this.eachT[key] = 0.4;
+        const l = this._lane1(i), th = this._make(d, { x: l.x + (this.rnd() - 0.5) * l.hw, y: clamp(this.reach[i].ready ? this.reach[i].top : 0.3, 0.25, 0.5) });
+        if (th){ th.owner = i; th.resv = 0; this.eachHad[key] = mine.length + 1; }
+      }
+    }
   }
 
   /* ---------- the shell's areas: where nothing may be touched, and nothing should start ---------- */
@@ -169,8 +206,9 @@ class PlayRound {
     if (this.endIn >= 0){ this.endIn -= dt; if (this.endIn <= 0) this.over = true; }
     else if (!this.spec.endless && this.t >= secs) this.over = true;
     /* more keep coming */
+    this._balls(dt);
     for (const d of this.defs){
-      if (!d.appears) continue;
+      if (!d.appears || d.each) continue;
       d.timer -= dt;
       if (d.timer > 0) continue;
       const a = d.appears, e0 = a.every, e1 = a.everyEnd ?? a.every;
@@ -198,10 +236,11 @@ class PlayRound {
           if (th.cool > 0 || th.leaving > 0 || this._under(th.x, th.y) || !this._live(th)) continue;   /* (under the clock, the goal bar, the scores, or not yet in reach of the smallest player: not there to touch) */
           for (const { i, h } of hands){
             if (th.resv > 0 && th.owner != null && th.owner !== i && this._here(th.owner)) continue;   /* (reserved for the player whose lane it came down) */
+            if (th.d.each && (th.owner !== i || th.up)) continue;                                     /* (a ball each: only its player, and not again until it has come down) */
             const dx = (th.x - h.x) * aspect, dy = th.y - h.y;
             if (Math.hypot(dx, dy) > th.sz / 2 + HAND_REACH) continue;
             if (rule.when === 'swiped' && !(h.speed > SWIPE)) continue;
-            th.cool = th.d.move === 'bounce' ? 0.25 : 0.2;
+            th.cool = th.d.each ? BAT : th.d.move === 'bounce' ? 0.25 : 0.2;
             this._fire(th, rule, i, h);
             break;
           }
@@ -250,6 +289,12 @@ class PlayRound {
         { const dx = th.tx - th.x, dy = th.ty - th.y, m = Math.hypot(dx, dy) || 1; th.x += dx / m * Math.min(m, sp * dt); th.y += dy / m * Math.min(m, sp * dt); th.flip = (dx < 0) === !!d.flips; }
         break;
       case 'bounce':
+        if (d.each){
+          const l = this._lane1(th.owner), k = clamp((l.x - th.x) * 2.2, -0.25, 0.25) * dt;
+          th.vx += k + (Math.abs(th.x - l.x) > l.hw ? clamp(l.x - th.x, -0.1, 0.1) * dt * 6 : 0);
+          const r = this.reach[th.owner];
+          if (th.up && th.vy > 0 && th.y > (r.ready ? r.at(REHIT) : 0.5)) th.up = false;
+        }
         th.vy += 0.5 * dt; th.x += th.vx * dt; th.y += th.vy * dt; th.vx *= Math.pow(0.6, dt); th.rot += th.spin * dt; th.spin *= Math.pow(0.5, dt);
         if (th.x < 0.05){ th.x = 0.05; th.vx = Math.abs(th.vx) * 0.7; } if (th.x > 0.95){ th.x = 0.95; th.vx = -Math.abs(th.vx) * 0.7; }
         if (th.y < CEIL){ th.y = CEIL; th.vy = Math.abs(th.vy) * 0.3; }
@@ -295,6 +340,13 @@ class PlayRound {
         case 'say': if (v && typeof v === 'object'){ this.hint = v.text; this.hintIcon = v.icon || ''; } else { this.hint = v; this.hintIcon = ''; } this.hintT = 0; break;
         case 'spawn': { const d = this.defs.find(x => x.name === v); if (d) this._make(d, { x: th.x, y: th.y }); break; }
         case 'kickUp':
+          if (th.d.each && this.reach[th.owner].ready){
+            /* up to the top of its own player's reach (and no faster than RALLY, so a tall player's ball hangs about as long as a short one's), a little the way the hand was going */
+            /* (and not up into the clock, the goal bar or the scores: the top it aims for is below whatever is over it) */
+            const roof = this._roof(th.x, th.sz / 2), top = Math.max(this.reach[th.owner].top, roof ? roof + th.sz / 2 : 0);
+            th.vy = -clamp(Math.sqrt(Math.max(0, th.y - (top + 0.02))), LIFT_MIN, RALLY); th.up = true;
+            th.vx = clamp(th.vx * 0.3 + ((hand && hand.vx) || 0) * 0.3, -0.25, 0.25); th.spin = th.vx * 8 + (this.rnd() - 0.5) * 4; break;
+          }
           th.vy = -(0.62 + clamp(-((hand && hand.vy) || 0) * 0.15, 0, 0.2)); th.vx = clamp(th.vx * 0.3 + ((hand && hand.vx) || 0) * 0.5, -0.45, 0.45); th.spin = th.vx * 8 + (this.rnd() - 0.5) * 4; break;
         case 'celebrate': this._celebrate(); break;
         case 'wobble': this.wob = 0.5; break;
@@ -362,6 +414,8 @@ class PlayRound {
       /* a hand near something it can touch: it grows up to 8% and glows (only drawn so) */
       const k = orbs && this._touchable(th) && !th.leaving ? this.feel.near(th.x, th.y, th.sz / 2) : 0;
       if (k > 0.01) A.draw(c, 'dot', th.x * W, th.y * H, th.sz * H * 2.4, { color: COLORS.yellow, alpha: 0.7 * k });
+      /* (a ball each: its player's colour round it) */
+      if (th.d.each && th.owner != null) A.draw(c, 'dot', th.x * W, th.y * H, th.sz * H * 1.7, { color: this.env.colors[th.owner], alpha: 0.5 });
       /* (a thing that is still somebody's first: their colour round it) */
       if (th.resv > 0 && th.owner != null && this._live(th) && this._here(th.owner)) A.draw(c, 'dot', th.x * W, th.y * H, th.sz * H * 1.7, { color: this.env.colors[th.owner], alpha: 0.5 * Math.min(1, th.resv / 0.3) });
       /* (growing in below the shell's areas, or going as it floats up into them) */

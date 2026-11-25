@@ -312,7 +312,7 @@ const PROBES = {
 
 
 /* games made in Create (the Orlis.play engine): how long a thing is on the screen, how much of that a body could reach it, and how much it spends under the shell's areas */
-const madeProbe = (ctx) => {
+const madeProbe = (ctx, balls = false) => {
   const seen = new Map(), done = [];
   let spec = null;
   return {
@@ -320,7 +320,7 @@ const madeProbe = (ctx) => {
       const g = ctx.inst, live = new Set();
       if (step % 30 === 0) try { spec = g.hud ? g.hud() : null; } catch (e){ spec = null; }
       for (const th of g.things){
-        if (!g._touchable(th) || th.d.move === 'bounce') continue;
+        if (!g._touchable(th) || (th.d.move === 'bounce') !== balls) continue;
         let rec = seen.get(th); if (!rec){ rec = { kind: th.d.name, life: 0, reach: ctx.world.persons.map(() => 0), hud: 0, x0: th.x, y0: th.y }; seen.set(th, rec); }
         rec.x1 = th.x; rec.y1 = th.y;
         live.add(th); rec.life += dt;
@@ -345,6 +345,7 @@ const madeProbe = (ctx) => {
   };
 };
 for (const id of ['made-collect', 'made-dodge', 'made-stack']) PROBES[id] = madeProbe;
+PROBES['made-keepup'] = (ctx) => madeProbe(ctx, true);
 
 /* the hand orbs (decision 0062): where they are, are they apart, are they under the shell's areas, are bursts left at the end */
 const feelOf = (inst) => (inst.avatars && inst.avatars.feel) || inst.feel || null;
