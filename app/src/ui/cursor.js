@@ -3,6 +3,7 @@ import { sfx } from '../audio/sound.js';
 import { handsMode } from './handsmode.js';
 import { keepOut } from './keepout.js';
 import { magnet } from './magnet.js';
+import { Orb, drawOrb } from './handfeel.js';
 
 /* Point and wave. Every button in Orlis Play is a DOM .btn; the cursor
    finds the one each player's hand is pointing at and lights it up - and a
@@ -76,11 +77,14 @@ export const cursor = {
 
     for (let i = 0; i < pose.players.length; i++){
       const p = pose.players[i], s = this._state[i];
-      if (!p.present){ s.el = null; s.t = 0; s.cand = null; s.turns = 0; s.ease = null; continue; }
+      if (!p.present){ s.el = null; s.t = 0; s.cand = null; s.turns = 0; s.ease = null; s.orb = null; continue; }
       const h = pose.cursorHand(p);
       const x = h.x, y = h.y;
       const e = easeCursor(s.ease || (s.ease = {}), x, y, dt);
-      this.rings.push({ x: e.x, y: e.y, color: PLAYER_COLORS[i], progress: 0, id: i, waving: 0 });
+      /* the orb that is drawn: already smoothed just above, so it only adds the comet, the squash and the pull (Cubo's Create's magnet) */
+      const orb = (s.orb ||= new Orb());
+      orb.update(e.x, e.y, dt, typeof innerWidth === 'number' && innerHeight ? innerWidth / innerHeight : 16 / 9, magnet.targets, false);
+      this.rings.push({ x: e.x, y: e.y, color: PLAYER_COLORS[i], progress: 0, id: i, waving: 0, orb });
 
       if (s.cool > 0){
         s.cool -= dt;
@@ -167,29 +171,15 @@ export const cursor = {
     return null;
   },
 
-  /* Drawn on the game canvas so it sits above everything, including games. */
+  /* Drawn on the game canvas so it sits above everything, including games: the player's glow orb (ui/handfeel.js), with the hold ring round it. */
   draw(c, W, H){
-    if (handsMode() !== 'rings') return;       /* (the other ways to show hands draw no ring: the button under the hand lights and fills its own) */
+    if (handsMode() !== 'orb') return;       /* (the other ways to show hands draw no orb: the button under the hand lights and fills its own) */
     for (const r of this.rings){
       if (keepOut(r.x, r.y)) continue;
-      /* over a button with its own ring (the clean look's .ringed), the ring runs round the button: no dot on top of its words */
+      /* over a button with its own ring (the clean look's .ringed), the ring runs round the button: no orb on top of its words */
       if (r.el && r.el.classList && r.el.classList.contains('ringed')) continue;
-      const m = magnet.targets.length ? magnet.pull(r.x, r.y, W / H) : r;      /* (Cubo's Create pulls the marker a little toward a target near it) */
-      const x = m.x * W, y = m.y * H, rad = Math.max(16, H * 0.035);
-      c.save();
-      c.lineWidth = Math.max(4, H * 0.008);
-      c.strokeStyle = 'rgba(0,0,0,.45)';
-      c.beginPath(); c.arc(x, y, rad, 0, 6.2832); c.stroke();
-      c.strokeStyle = r.color;
-      c.beginPath(); c.arc(x, y, rad, 0, 6.2832); c.stroke();
-      if (r.progress > 0){
-        c.lineWidth = Math.max(6, H * 0.013);
-        c.strokeStyle = '#fff';
-        c.beginPath(); c.arc(x, y, rad, -Math.PI/2, -Math.PI/2 + r.progress * 6.2832); c.stroke();
-      }
-      c.fillStyle = r.color; c.globalAlpha = .35;
-      c.beginPath(); c.arc(x, y, rad * 0.4, 0, 6.2832); c.fill();
-      c.restore();
+      const orb = r.orb || new Orb().update(r.x, r.y, 1 / 60, W / H, magnet.targets, false);
+      drawOrb(c, W, H, orb, r.color, { progress: r.progress, phase: r.id * 1.7 });
     }
   }
 };

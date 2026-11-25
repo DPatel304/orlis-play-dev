@@ -1,8 +1,9 @@
-/* Hands on screen: three ways to draw them (rings, body outline, glow), remembered, cycled with H - and only the drawing changes. */
+/* Hands on screen: three ways to draw them (glow orb, body outline, glow), remembered, cycled with H - and only the drawing changes. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { HANDS, handsMode, setHandsMode, cycleHands, handsName } from '../src/ui/handshow.js';
+import { useHandsStore } from '../src/ui/handsmode.js';
 import { Avatars } from '../src/ui/avatars.js';
 import { cursor } from '../src/ui/cursor.js';
 import { pose, L } from '../src/tracking/pose.js';
@@ -27,40 +28,52 @@ function seat(){
 }
 const wasMouse = pose.mouse.active;
 
-test('three ways, rings the first, remembered, and H goes round them', () => {
-  assert.deepEqual(HANDS.map(h => h[0]), ['rings', 'body', 'glow']);
-  assert.equal(handsMode(), 'rings');
+test('three ways, the glow orb the first, remembered, and H goes round them', () => {
+  assert.deepEqual(HANDS.map(h => h[0]), ['orb', 'body', 'glow']);
+  assert.equal(handsMode(), 'orb');
   assert.equal(cycleHands(), 'Body outline'); assert.equal(handsMode(), 'body');
   assert.equal(cycleHands(), 'Glow'); assert.equal(handsName(), 'Glow');
-  assert.equal(cycleHands(), 'Rings');
+  assert.equal(cycleHands(), 'Glow orb');
   setHandsMode('glow');
   assert.equal(localStorage.getItem('orlis_handsmode'), 'glow', 'kept for next time');
   setHandsMode('nonsense'); assert.equal(handsMode(), 'glow', 'an unknown way changes nothing');
-  setHandsMode('rings');
+  setHandsMode('orb');
 });
 
-test('rings: the mitts as ever; body: a faint outline and a glow; glow: a glow and nothing white', () => {
+test('a stored "rings" (the old way) moves over to the glow orb, and is stored as it', () => {
+  const was = localStorage.getItem('orlis_handsmode');
+  try {
+    localStorage.setItem('orlis_handsmode', 'rings');
+    useHandsStore({ read: () => localStorage.getItem('orlis_handsmode'), write: (m) => localStorage.setItem('orlis_handsmode', m) });
+    assert.equal(handsMode(), 'orb');
+    assert.equal(localStorage.getItem('orlis_handsmode'), 'orb');
+    assert.equal(setHandsMode('rings'), 'orb', 'an old name asked for is the orb');
+  } finally { if (was == null) localStorage.removeItem('orlis_handsmode'); else localStorage.setItem('orlis_handsmode', was); setHandsMode('orb'); }
+});
+
+test('orb: the glow orbs; body: a faint outline and a glow; glow: a glow and nothing white as ever; body: a faint outline and a glow; glow: a glow and nothing white', () => {
   pose.mouse.active = false; seat();
   const a = new Avatars();
   const draw = (way) => { setHandsMode(way); const c = canvas(); a.drawMitts(c, 1920, 1080, 1); return c.calls; };
-  const rings = draw('rings'), body = draw('body'), glow = draw('glow');
-  assert.ok(rings.includes('stroke') && rings.includes('fill'), 'a mitt: a white disc with a coloured rim');
+  const orb = draw('orb'), body = draw('body'), glow = draw('glow');
+  assert.ok(orb.includes('fill') && orb.filter(k => k === 'createRadialGradient').length >= 4, 'an orb for each hand: a soft shadow, a halo and a bright core');
+  assert.ok(!orb.includes('stroke'), 'no ring round it (no hold to show)');
   assert.ok(!glow.includes('stroke'), 'glow: no rim');
   assert.ok(glow.filter(k => k === 'createRadialGradient').length === 2, 'glow: one soft glow for each hand');
   assert.ok(body.filter(k => k === 'createRadialGradient').length === 2, 'body: a glow for each hand too');
   assert.ok(body.includes('stroke') && body.includes('lineTo'), 'body: and the outline of the player (limbs and torso)');
   assert.ok(!glow.includes('lineTo'), 'glow: no body');
-  setHandsMode('rings'); pose.players[0].present = false; pose.mouse.active = wasMouse;
+  setHandsMode('orb'); pose.players[0].present = false; pose.mouse.active = wasMouse;
 });
 
-test('the ring cursor on menus is drawn only in the rings way', () => {
+test('the orb cursor on menus is drawn only in the orb way', () => {
   cursor.rings.length = 0;
   cursor.rings.push({ x: 0.5, y: 0.5, color: '#f00', progress: 0.5, id: 0, waving: 1 });
-  for (const way of ['rings', 'body', 'glow']){
+  for (const way of ['orb', 'body', 'glow']){
     setHandsMode(way); const c = canvas(); cursor.draw(c, 1920, 1080);
-    assert.equal(c.calls.includes('arc'), way === 'rings', way);
+    assert.equal(c.calls.includes('arc'), way === 'orb', way);
   }
-  setHandsMode('rings'); cursor.rings.length = 0;
+  setHandsMode('orb'); cursor.rings.length = 0;
 });
 
 test('only the drawing changes: picking and pointing never ask which way hands are shown', () => {
