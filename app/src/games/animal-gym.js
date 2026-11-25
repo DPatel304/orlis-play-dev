@@ -11,7 +11,6 @@
    The moves are the body's, from the camera's landmarks (a jump uses the jump watch the other games use). With no
    landmarks - the mouse, in testing - a fast hand counts as a try, so the game can still be played. */
 import { color, alpha } from './assets/palette.js';
-import { assets } from './assets/index.js';
 import { Juice } from './common.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { L } from '../tracking/pose-shared.js';
@@ -19,6 +18,11 @@ import { sfx } from '../audio/sound.js';
 import { JumpWatch, HOP } from '../tracking/jump.js';
 import { Scene } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
+import { poseAt, drawCoach, coachUnit } from './animal-coaches.js';
+
+/* the coach stands on the ground at this share of the height, and is this share tall at its tallest */
+const GROUND = 0.79, SHARE = 0.5;
+const reducedMotion = () => { try { return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 
 export const ROUND = 180;
 /* tries per player that fill one animal's bar */
@@ -176,26 +180,17 @@ class AnimalGym {
     this.scene.drawBack(c, W, H);
     const shook = this.j.applyShake ? this.j.applyShake(c) : false;
     this.scene.drawFront(c, W, H);
-    /* the coach: the animal, big, doing the move (and bouncing a little more with every try) */
-    const m = MOVES[this.move], t = this.t, mv = this.move;
-    let rot = 0, dx = 0, dy = 0, sx = 1, sy = 1;
-    if (mv === 'reach'){ sy = 1 + 0.12 * Math.sin(t * 3); sx = 1 - 0.05 * Math.sin(t * 3); }
-    else if (mv === 'jump'){ dy = -Math.abs(Math.sin(t * 5)) * H * 0.06; }
-    else if (mv === 'flap'){ rot = Math.sin(t * 6) * 0.12; dy = -Math.abs(Math.sin(t * 6)) * H * 0.015; }
-    else if (mv === 'squat'){ sy = 1 - 0.14 * (0.5 + 0.5 * Math.sin(t * 3)); sx = 1 + 0.06 * (0.5 + 0.5 * Math.sin(t * 3)); }
-    else if (mv === 'march'){ rot = Math.sin(t * 4) * 0.1; dy = -Math.max(0, Math.sin(t * 4)) * H * 0.03; }
-    else if (mv === 'lean'){ dx = Math.sin(t * 3) * W * 0.035; rot = Math.sin(t * 3) * 0.12; }
-    const bob = Math.sin(t * 4) * H * 0.006 - this.pulse * H * 0.03, sc = 1 + this.pulse * 0.12;
-    c.save(); c.translate(W * 0.5 + dx, H * 0.58 + bob + dy); c.rotate(rot); c.scale(sc * sx, sc * sy);
-    c.fillStyle = alpha('shade.shadow', 0.16); c.beginPath(); c.ellipse(0, H * 0.2, H * 0.17, H * 0.03, 0, 0, 6.2832); c.fill();
-    assets.draw(c, m.animal, 0, 0, H * 0.36);
-    c.restore();
+    /* the coach: the animal, full-length and big, doing the move on the beat (with a hop and a sparkle for every try, a flourish on
+       "Great job!"); its feet are on the ground of the scene */
+    const m = MOVES[this.move], an = m.animal, reduced = reducedMotion();
+    const o = { slow: this.cool, reduced, tryK: this.pulse, joy: this.cheered ? this.cheerT : -1 };
+    drawCoach(c, an, poseAt(an, this.t, o), W * 0.5, H * GROUND, coachUnit(an, H, SHARE), o);
     /* the animal's name, and where we are in the workout (a dot for each stretch) */
     c.save(); c.textAlign = 'center'; c.textBaseline = 'middle';
     c.font = `800 ${Math.round(H * 0.045)}px Inter, Segoe UI, sans-serif`; c.fillStyle = color('shade.ink');
-    c.fillText(m.name, W * 0.5, H * 0.8);
+    c.fillText(m.name, W * 0.5, H * 0.855);
     /* where we are in the workout: a track that fills as the minutes go, with the animals done so far as dots on it */
-    const tw = W * 0.26, tx = W * 0.5 - tw / 2, ty = H * 0.87, th = H * 0.014, k = Math.min(1, this.t / ROUND);
+    const tw = W * 0.26, tx = W * 0.5 - tw / 2, ty = H * 0.92, th = H * 0.014, k = Math.min(1, this.t / ROUND);
     c.fillStyle = alpha('earth.snow', 0.8); c.beginPath(); c.roundRect(tx, ty - th / 2, tw, th, th / 2); c.fill();
     c.fillStyle = color('touch.mint', 'shade'); c.beginPath(); c.roundRect(tx, ty - th / 2, Math.max(th, tw * k), th, th / 2); c.fill();
     c.fillStyle = color('ui.gold'); c.beginPath(); c.arc(tx + Math.max(th / 2, tw * k), ty, th * 0.9, 0, 6.2832); c.fill();
