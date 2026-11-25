@@ -4,6 +4,7 @@
    Each is a function (c, s, o): c is already moved to the middle of the asset, s is its height in pixels, o its options
    (o.color for the ones that take a colour; o.t for the ones that move). Widths follow from `aspect` in the table. */
 import { color as pal, alpha as palAlpha } from './palette.js';
+import { drawOrb, drawTrail } from '../../ui/handfeel.js';
 const INK = pal('shade.ink'), SHADOW = pal('shade.shadow'), SNOW = pal('earth.snow');
 const rr = (c, x, y, w, h, r) => { c.beginPath(); c.roundRect(x, y, w, h, r); };
 const outline = (c, s, w = 0.045) => { c.lineWidth = s * w; c.strokeStyle = INK; c.lineJoin = 'round'; c.stroke(); };
@@ -108,6 +109,12 @@ export const PROPS = {
   /* a player's hand: the glowing mitt every Orlis game shows (o.color: the player's colour). The soft glow is an effect, so it stays a gradient. */
   hand: ['Hand', 'player hand', 1, (c, s, o) => {
     const r = s * 0.25, col = o.color || pal('fav.sky');
+    /* with o.orb (the engine's: ui/handfeel.js) it is the glow orb every Orlis game shows, with its trail; o.W and o.H are the picture's size */
+    if (o.orb && o.H){
+      const orb = o.orb, W = o.W || o.H, here = { ...orb, x: 0, y: 0, trail: orb.trail.map(p => ({ x: p.x - orb.x, y: p.y - orb.y })) };
+      drawTrail(c, W, o.H, here, col); drawOrb(c, W, o.H, here, col, { phase: o.phase || 0 });
+      return;
+    }
     const g = c.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 2.4); g.addColorStop(0, o.color ? col + 'aa' : palAlpha('fav.sky', 0.67)); g.addColorStop(1, o.color ? col + '00' : palAlpha('fav.sky', 0));
     c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 2.4, 0, 7); c.fill();
     c.fillStyle = SNOW; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.lineWidth = r * 0.28; c.strokeStyle = col; c.stroke();
@@ -135,6 +142,18 @@ export const PROPS = {
     c.globalAlpha *= a; c.fillStyle = o.color || pal('touch.sunflower');
     for (let i = 0; i < 8; i++){ const ang = i * Math.PI / 4, d = s * (0.15 + k * 0.35), r = s * 0.07 * (1 - k * 0.5); c.beginPath();
       for (let j = 0; j < 8; j++){ const q = j % 2 ? r * 0.4 : r, b = -Math.PI / 2 + j * Math.PI / 4; c.lineTo(Math.cos(ang) * d + Math.cos(b) * q, Math.sin(ang) * d + Math.sin(b) * q); } c.closePath(); c.fill(); }
+  }],
+  /* what a hand's hit looks like: a ring wave and sparks flying out and falling, over o.t (0 to 1) in o.color (the same as handfeel.js's burst, for a game that draws only with the library) */
+  hitburst: ['Hit burst', 'effect', 1, (c, s, o) => {
+    const k = Math.max(0, Math.min(1, o.t == null ? 0.5 : o.t)), col = o.color || SNOW, g = c.globalAlpha;
+    c.globalAlpha = g * (1 - k) * 0.7; c.strokeStyle = col; c.lineWidth = s * (0.03 * (1 - k) + 0.005);
+    c.beginPath(); c.arc(0, 0, s * (0.1 + k * 0.5), 0, 7); c.stroke();
+    for (let i = 0; i < 12; i++){
+      const a = i * 2.399 + 0.5, sp = 0.35 + (i % 4) * 0.12, x = Math.cos(a) * sp * k * s * 0.9, y = Math.sin(a) * sp * k * s * 0.9 - 0.2 * k * s * 0.5 + 0.9 * k * k * s * 0.4;
+      c.globalAlpha = g * Math.max(0, 1 - k * 1.1); c.fillStyle = i % 4 === 1 ? SNOW : i % 4 === 3 ? pal('touch.sunflower') : col;
+      c.beginPath(); c.arc(x, y, s * (0.012 + (i % 3) * 0.006), 0, 7); c.fill();
+    }
+    c.globalAlpha = g;
   }],
   popring: ['Pop ring', 'effect', 1, (c, s, o) => {
     const k = Math.max(0, Math.min(1, o.t == null ? 0.5 : o.t)); c.globalAlpha *= 1 - k; c.strokeStyle = o.color || SNOW; c.lineWidth = s * 0.06 * (1 - k * 0.6);

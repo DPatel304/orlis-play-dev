@@ -4,6 +4,8 @@
 
    env says what to use: { pose, sfx, assets, ui: { say, goal }, colors, max } - the sandbox's own in a creator's game, stand-ins in the tests. */
 import { MOVES, COLORS, LIMITS } from './vocabulary.js';
+import { HandFeel, FEEL } from '../../ui/handfeel.js';
+import { handsMode } from '../../ui/handsmode.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const HAND_REACH = 0.045, SWIPE = 0.45, FLOOR = 0.9, CEIL = 0.2;
@@ -26,6 +28,7 @@ class PlayRound {
     });
     this.score = Array.from({ length: env.max }, () => 0); this.total = 0;
     this.things = []; this.fx = []; this.texts = [];
+    this.feel = new HandFeel();         /* the players' glow orbs (ui/handfeel.js): only what is drawn; hits are worked out below from the hands themselves */
     this.counts = {};                 /* how many times each named thing scored (a catch, a dodge, a bat, a block stacked), for the results */
     this.tower = []; this.fliers = []; this.rockets = []; this.towers = 0; this.wob = 0;
     this.t = 0; this.over = false; this.hint = spec.hint || null; this.hintIcon = spec.hintIcon || ''; this.hintT = 0; this.goalDone = false; this.endIn = -1; this.cheering = 0;
@@ -76,6 +79,11 @@ class PlayRound {
       if (this.things.filter(x => x.d === d && !x.dead).length < (a.max ?? 8)) this._make(d);
     }
     const hands = this._hands();
+    /* the orbs follow the hands; what a hand can touch (a good thing, never a thing to dodge) draws it a little toward that thing */
+    this.feel.aspect = aspect;
+    this.feel.targets(this.things.filter(th => !th.dead && this._touchable(th) && th.x > -0.05 && th.x < 1.05 && th.y > -0.05 && th.y < 1.05).map(th => ({ x: th.x, y: th.y, r: th.sz / 2 })));
+    this.feel.step(dt, hands.map(({ i, h }, k) => ({ key: i + (h === this.env.pose.players[i].hands.left ? 'L' : 'R'), who: i, x: h.x, y: h.y, col: this.env.colors[i] })),
+      (k) => { const f = this.env.sfx.handWhoosh; if (f) f.call(this.env.sfx, k); });
     for (const th of this.things){
       if (th.dead) continue;
       th.age += dt; th.cool = Math.max(0, th.cool - dt); th.rot += th.spin * dt;
@@ -119,6 +127,11 @@ class PlayRound {
     }
   }
 
+  /* a thing a hand is meant to touch: one with a touched or swiped rule that is not a loss (a thing to dodge is not a target) */
+  _touchable(th){
+    return (th.d.rules || []).some(r => (r.when === 'touched' || r.when === 'swiped') && !r.then.some(x => typeof x === 'object' && Object.keys(x)[0] === 'score' && x.score < 0));
+  }
+
   _move(th, dt){
     const d = th.d, t = this.t, sp = th.sp, sway = d.sway || 0;
     th.landedNow = false;
@@ -154,6 +167,11 @@ class PlayRound {
     /* a rule that scores a point (or stacks a block) is one more for its thing, in the results */
     if (rule.then.some(r => { const k = typeof r === 'string' ? r : Object.keys(r)[0], v = typeof r === 'object' ? r[k] : undefined; return k === 'stack' || (k === 'score' && (v ?? 1) > 0); })){
       const nm = th.d.name || ''; this.counts[nm] = (this.counts[nm] || 0) + 1;
+    }
+    /* a hand caught, popped, batted or grabbed something good: the orb squashes and a burst plays where it was */
+    if (who >= 0 && hand && this._touchable(th) && (rule.when === 'touched' || rule.when === 'swiped') && !rule.then.some(x => typeof x === 'object' && Object.keys(x)[0] === 'score' && x.score < 0)){
+      this.feel.hit(th.x, th.y, who, this.env.colors[who]);
+      this.fx.push({ kind: 'hitburst', x: th.x, y: th.y, size: 0.32, color: this.env.colors[who], age: 0 });
     }
     for (const res of rule.then){
       const key = typeof res === 'string' ? res : Object.keys(res)[0], v = typeof res === 'object' ? res[key] : undefined;
@@ -234,8 +252,13 @@ class PlayRound {
     if (wob){ c.save(); c.translate(Math.sin(this.t * 55) * H * 0.008 * this.wob * 2, Math.cos(this.t * 47) * H * 0.004 * this.wob * 2); }
     A.scene(c, W, H, this.spec.scene || 'meadow', { t: this.t, p: clamp(this.t / secs, 0, 1) });
     if (this.tower.length || this.fliers.length || this.rockets.length) this._drawTower(c, W, H);
-    for (const th of [...this.things].sort((a, b) => a.y - b.y))
-      A.draw(c, th.piece, th.x * W, th.y * H, th.sz * H, { color: th.color ? hexOf(th.color, this.env) : undefined, rotate: th.rot, flip: th.flip, t: th.age, shadow: th.d.move === 'bounce' });
+    const orbs = handsMode() === 'orb';
+    for (const th of [...this.things].sort((a, b) => a.y - b.y)){
+      /* a hand near something it can touch: it grows up to 8% and glows (only drawn so) */
+      const k = orbs && this._touchable(th) ? this.feel.near(th.x, th.y, th.sz / 2) : 0;
+      if (k > 0.01) A.draw(c, 'dot', th.x * W, th.y * H, th.sz * H * 2.4, { color: COLORS.yellow, alpha: 0.7 * k });
+      A.draw(c, th.piece, th.x * W, th.y * H, th.sz * H * (1 + FEEL.hoverGrow * k), { color: th.color ? hexOf(th.color, this.env) : undefined, rotate: th.rot, flip: th.flip, t: th.age, shadow: th.d.move === 'bounce' });
+    }
     /* blocks on their way to the tower */
     this.fliers.forEach((f, i) => {
       const k = clamp(f.t / FLY, 0, 1), e = 1 - Math.pow(1 - k, 3), slot = this.tower.length + this.fliers.slice(0, i).length;
@@ -249,7 +272,9 @@ class PlayRound {
     if (this.hint) this.env.ui.say(c, W, H, { icon: this.hintIcon, text: this.hint, t: this.hintT, until: hf });
     if (this.spec.goal) this.env.ui.goal(c, W, H, clamp(this.total / this.spec.goal.score, 0, 1));
     /* the players' hands, last, on top of everything */
-    for (const { i, h } of this._hands()) A.draw(c, 'hand', h.x * W, h.y * H, H * 0.12, { color: this.env.colors[i] });
+    const glow = this.feel.list();
+    if (orbs && glow.length) for (const e of glow) A.draw(c, 'hand', e.orb.x * W, e.orb.y * H, H * 0.12, { color: e.col, orb: e.orb, W, H });
+    else for (const { i, h } of this._hands()) A.draw(c, 'hand', h.x * W, h.y * H, H * 0.12, { color: this.env.colors[i] });
   }
 
   /* the move card, bottom left, for the first cardFor seconds (or all round) */
