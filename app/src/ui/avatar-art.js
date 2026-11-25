@@ -154,32 +154,35 @@ function drawCape(x, a, S, bw, bh){
 }
 /* ---------- the arms and legs: straight blocks ----------
    An arm is a block 0.11 wide and 0.255 long hanging beside the torso with a small gap, ending in a light square hand; a leg is a block 0.17
-   wide and 0.19 long with a slim gap between the two, ending in a dark square foot. Faint seams show the shoulder, elbow and wrist, and the
-   hip and knee. Where a pose needs it a limb bends at its elbow or knee seam and is drawn as two blocks. Angles are in degrees: 0 is straight
+   wide and 0.19 long with a slim gap between the two, ending in a dark square foot. No seam lines (smooth, owner 2026-11-25); where a pose needs it a limb
+   bends at its elbow or knee and is drawn as two blocks sharing one outline. Angles are in degrees: 0 is straight
    down, plus is towards the right of the picture (so for the left arm, plus is inwards, over the body). */
 const DEG = Math.PI / 180;
-const SEAM = () => alpha('shade.ink', 0.28);
-/* one block: its top (y0) and bottom (y1) along its own length from the joint (px, py), rotated by th; w wide; `end` paints the hand or foot;
-   `seams` are the distances of the faint seams along it */
-function block(x, S, px, py, th, y0, y1, w, fill, end, seams){
+/* one block: its top (y0) and bottom (y1) along its own length from the joint (px, py), rotated by th; w wide; `end` paints the hand or foot.
+   pass: 'ink' draws only its outline, 'fill' only its colours, both by default - so a bent limb's two blocks share one outline and read as
+   one smooth piece (owner, 2026-11-25: no seam lines across the arms and legs) */
+function block(x, S, px, py, th, y0, y1, w, fill, end, pass = 'both'){
   const r = Math.min(S * BODY.blockR, (y1 - y0) / 2, w / 2);
   x.save(); x.translate(px, py); x.rotate(-th * DEG);
-  rr(x, -w / 2, y0, w, y1 - y0, r); x.fillStyle = fill; x.fill();
-  x.save(); rr(x, -w / 2, y0, w, y1 - y0, r); x.clip();
-  if (end){ x.fillStyle = end.col; x.fillRect(-w / 2 - 1, y1 - end.len, w + 2, end.len + 1); }
-  x.strokeStyle = SEAM(); x.lineWidth = S * 0.008; x.lineCap = 'butt';
-  for (const q of seams || []){ x.beginPath(); x.moveTo(-w / 2, q); x.lineTo(w / 2, q); x.stroke(); }
-  x.restore();
-  x.strokeStyle = INK(); x.lineWidth = S * 0.016; x.lineJoin = 'round'; rr(x, -w / 2, y0, w, y1 - y0, r); x.stroke();
+  if (pass !== 'fill'){ x.strokeStyle = INK(); x.lineWidth = S * 0.016 * (pass === 'ink' ? 2 : 1); x.lineJoin = 'round'; rr(x, -w / 2, y0, w, y1 - y0, r); x.stroke(); }
+  if (pass !== 'ink'){
+    rr(x, -w / 2, y0, w, y1 - y0, r); x.fillStyle = fill; x.fill();
+    if (end){ x.save(); rr(x, -w / 2, y0, w, y1 - y0, r); x.clip(); x.fillStyle = end.col; x.fillRect(-w / 2 - 1, y1 - end.len, w + 2, end.len + 1); x.restore(); }
+  }
+  if (pass === 'both'){ x.strokeStyle = INK(); x.lineWidth = S * 0.016; x.lineJoin = 'round'; rr(x, -w / 2, y0, w, y1 - y0, r); x.stroke(); }
   x.restore();
 }
-/* a limb of two blocks: it is one straight block (with its seam) when both angles are the same, and bends at the seam when they are not.
-   (px, py) is its joint at the body, `reach` its length from there, `elbow` the seam's distance from the joint, `top` how far the first block
+/* a limb of two blocks: it is one straight block when both angles are the same, and bends at the elbow or knee when they are not (both
+   outlines first, then both fills, so there is no line where they meet).
+   (px, py) is its joint at the body, `reach` its length from there, `elbow` the bend's distance from the joint, `top` how far the first block
    reaches up behind the body. */
-function limb(x, S, px, py, a1, a2, reach, elbow, top, w, fill, end, seamsTop){
+function limb(x, S, px, py, a1, a2, reach, elbow, top, w, fill, end){
   const ex = px + Math.sin(a1 * DEG) * elbow, ey = py + Math.cos(a1 * DEG) * elbow;
-  if (Math.abs(a1 - a2) < 0.5) block(x, S, px, py, a1, -top, reach, w, fill, end, [...seamsTop, elbow, reach - end.len]);
-  else { block(x, S, ex, ey, a2, -S * 0.03, reach - elbow, w, fill, end, [reach - elbow - end.len]); block(x, S, px, py, a1, -top, elbow + S * 0.02, w, fill, null, seamsTop); }
+  if (Math.abs(a1 - a2) < 0.5) return block(x, S, px, py, a1, -top, reach, w, fill, end);
+  for (const pass of ['ink', 'fill']){
+    block(x, S, px, py, a1, -top, elbow + S * 0.02, w, fill, null, pass);
+    block(x, S, ex, ey, a2, -S * 0.03, reach - elbow, w, fill, end, pass);
+  }
 }
 /* a bold motion arrow (the ink colour, rounded; the paper edge goes round it with the rest): from (px, py) along th, len long */
 function motionArrow(x, S, px, py, th, len){
@@ -193,13 +196,13 @@ function motionArrow(x, S, px, py, th, len){
 /* a leg, hanging from the hip joint (hx, hy) at the bottom edge of the torso; s shortens it (a squat, a lifted foot); a1 the thigh, a2 the shin */
 function drawLeg(x, a, S, hx, hy, a1, a2, s = 1){
   const L = S * BODY.legLen * s, w = S * BODY.legW;
-  limb(x, S, hx, hy, a1, a2, L, L / 2, S * 0.03, w, a.fit === 'overalls' ? toneRaw(a, 'shade') : a.shade, { col: INK(), len: Math.min(S * BODY.foot, L * 0.4) }, L > S * 0.15 ? [S * 0.045] : []);
+  limb(x, S, hx, hy, a1, a2, L, L / 2, S * 0.03, w, a.fit === 'overalls' ? toneRaw(a, 'shade') : a.shade, { col: INK(), len: Math.min(S * BODY.foot, L * 0.4) });
 }
 /* an arm, hanging from the shoulder joint (sx, sy) (the middle of its top square); the left one is in shade */
 function drawArm(x, a, S, sx, sy, a1, a2, left){
   const w = S * BODY.armW, reach = S * BODY.armLen - w / 2, hand = S * BODY.hand, elbow = (S * BODY.armLen - hand) / 2 + S * 0.03 - w / 2;
   const sleeve = a.fit === 'hoodie' ? a.c2 : a.c;
-  limb(x, S, sx, sy, a1, a2, reach, elbow, w / 2, w, left ? (a.fit === 'hoodie' ? toneRaw(a, 'shade') : a.shade) : sleeve, { col: a.light, len: hand }, [S * 0.01]);
+  limb(x, S, sx, sy, a1, a2, reach, elbow, w / 2, w, left ? (a.fit === 'hoodie' ? toneRaw(a, 'shade') : a.shade) : sleeve, { col: a.light, len: hand });
 }
 
 /* ---------- the edge around everything drawn ----------
@@ -481,7 +484,7 @@ export function portrait(c, x, y, s, look, t = 0, { tile = true, bare = false, f
 /* ---------- the character as a player: posed by the camera ----------
    The character drawn where a player is, as a mirror: it takes only the DIRECTIONS of the player's limbs from the camera (the angles of
    their upper arms, forearms, thighs and shins, how much their torso leans, how their head tilts), never their lengths. It is always the
-   Chibi character with its own fixed proportions (the same block arms and legs, which bend at their elbow and knee seams), sized from the
+   Chibi character with its own fixed proportions (the same block arms and legs, which bend at their elbow and knee), sized from the
    player's head-to-hip span, standing on the floor line under the player (the lower ankle - so it lifts when they jump), with its hips over
    theirs. Only the drawing is done here: games use the real landmarks for hit points, and this changes none of that.
    lm: the pose landmarks (0..1, mirrored); lift: how far up to draw them (px). */
