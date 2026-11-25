@@ -71,6 +71,13 @@ summary{cursor:pointer;font-weight:600;font-size:15px;color:var(--blue);min-heig
 .sl input{width:100%;accent-color:var(--violet);min-height:28px}
 .sl output{font-variant-numeric:tabular-nums;min-width:3.4em;text-align:right}
 .note{color:var(--ink-soft);font-size:14px;margin-top:18px}
+.looks{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+.chip{font:600 16px/1 var(--ui);padding:10px 18px;min-height:44px;border-radius:999px;border:2px solid var(--line);
+  background:var(--surface);color:var(--ink);cursor:pointer;box-shadow:var(--soft-sm);transition:transform .12s}
+.chip:active{transform:scale(.97)}
+.chip[aria-pressed="true"]{background:var(--grad) border-box;border-color:transparent;color:#fff}
+.chip:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.lookline{margin:8px 2px 0;color:var(--ink-soft);font-size:15px;min-height:1.4em}
 @media (max-width:520px){.big{padding:12px 18px;font-size:17px}}
 </style>
 
@@ -89,9 +96,12 @@ summary{cursor:pointer;font-weight:600;font-size:15px;color:var(--blue);min-heig
   <div class="stage" id="stage"><canvas id="cv" aria-label="Game stage. Move your mouse or finger here to be the hand; pop the balloons."></canvas></div>
   <p class="hint" id="hint"></p>
 
+  <div class="looks" id="looks" role="group" aria-label="Hand look"></div>
+  <p class="lookline" id="lookline" aria-live="polite"></p>
+
   <ul class="cap" id="cap" aria-label="What each idea costs"></ul>
 
-  <h2>The seven ideas</h2>
+  <h2>The six ideas</h2>
   <div class="grid" id="cards"></div>
   <p class="note">Simulated tracker: 30 samples a second, about 50 ms behind, 6 px of jitter, and now and then a dropped sample. The gameplay hit always uses the real (filtered) hand position, never the pulled drawing.</p>
 </div>
@@ -107,9 +117,17 @@ const PLAYER = '#3da9ff';           /* player 1 colour */
 const BALLOON = ['#3da9ff', '#ff8a3d', '#22c55e', '#a855f7', '#ff5c8a'];
 
 /* ---------- state ---------- */
-const KEYS = ['smooth', 'mitt', 'trail', 'impact', 'pull', 'glow', 'sound'];
-const opts = { smooth: true, mitt: true, trail: true, impact: true, pull: true, glow: true, sound: false };
-const OFF = { smooth: false, mitt: false, trail: false, impact: false, pull: false, glow: false, sound: false };
+const KEYS = ['smooth', 'trail', 'impact', 'pull', 'glow', 'sound'];
+/* look: 'today' (the plain ring, only the Today preset) or one of LOOKS below */
+const opts = { smooth: true, trail: true, impact: true, pull: true, glow: true, sound: false, look: 'orb' };
+const OFF = { smooth: false, trail: false, impact: false, pull: false, glow: false, sound: false, look: 'today' };
+const CUBO_BLUE = '#3da9ff';        /* Cubo is the 'sky' favourite (app/src/ui/look.js) */
+const LOOKS = [
+  { k: 'orb', name: 'Glow orb', line: 'A soft glowing ball in your colour with a bright core. It stretches into a comet when you move fast.' },
+  { k: 'avatar', name: 'Avatar bubble', line: 'A round badge with your face and a ring in your colour, so four players can tell which dot is theirs.' },
+  { k: 'cubo', name: 'Cubo hand', line: 'A chunky blue block with a darker outline, like Cubo\u2019s own hands. It ties the hand to the mascot.' },
+  { k: 'ring', name: 'Ring+', line: 'Today\u2019s ring, polished: thicker, softly filled, gently pulsing, and it fills when you are near a target.' }
+];
 const params = { minCutoff: 0.8, beta: 0.012, dCutoff: 1.0, pullR: 150, pullK: 0.5 };
 const ui = { split: true, auto: true };
 
@@ -189,39 +207,95 @@ function drawStar(c, x, y) {
   c.fillStyle = PLAYER; c.globalAlpha = .35; c.beginPath(); c.arc(x, y, rad * 0.4, 0, 6.2832); c.fill();
   c.restore();
 }
-function drawMitt(c, x, y, tilt, sx, sy, shadowK) {
+const TAU = 6.2832;
+function handShadow(c, x, y, w, off, k) {
   /* soft shadow on the "floor" under the hand (does not tilt) */
-  c.save(); c.translate(x, y + 66 + 8 * shadowK);
-  c.scale(1, 0.26);
-  const sg = c.createRadialGradient(0, 0, 4, 0, 0, 56);
+  c.save(); c.translate(x, y + off + 8 * k); c.scale(1, 0.26);
+  const sg = c.createRadialGradient(0, 0, 4, 0, 0, w);
   sg.addColorStop(0, 'rgba(20,16,40,.30)'); sg.addColorStop(1, 'rgba(20,16,40,0)');
-  c.fillStyle = sg; c.beginPath(); c.arc(0, 0, 56, 0, 6.2832); c.fill(); c.restore();
-
-  c.save(); c.translate(x, y); c.rotate(tilt); c.scale(sx, sy);
-  const dark = mix(PLAYER, 0, 0.32), light = mix(PLAYER, 255, 0.35);
-  c.lineJoin = 'round'; c.lineCap = 'round'; c.lineWidth = 4.5; c.strokeStyle = dark;
-  /* thumb (behind the palm) */
-  c.save(); c.translate(-37, 3); c.rotate(-0.5);
-  c.beginPath(); c.ellipse(0, 0, 15, 25, 0, 0, 6.2832);
-  c.fillStyle = PLAYER; c.fill(); c.stroke(); c.restore();
-  /* palm */
-  c.beginPath();
-  c.moveTo(-32, 34); c.lineTo(-34, -14);
-  c.bezierCurveTo(-36, -68, 36, -68, 34, -14);
-  c.lineTo(32, 34); c.quadraticCurveTo(0, 42, -32, 34); c.closePath();
-  const g = c.createLinearGradient(0, -62, 0, 38);
-  g.addColorStop(0, light); g.addColorStop(0.55, PLAYER); g.addColorStop(1, mix(PLAYER, 0, 0.12));
-  c.fillStyle = g; c.fill(); c.stroke();
-  /* cuff */
-  c.beginPath(); c.roundRect(-37, 30, 74, 23, 9);
-  c.fillStyle = '#fff'; c.fill(); c.stroke();
-  c.setLineDash([5, 6]); c.lineWidth = 2; c.strokeStyle = rgba(PLAYER, 0.65);
-  c.beginPath(); c.moveTo(-26, 41.5); c.lineTo(26, 41.5); c.stroke(); c.setLineDash([]);
-  /* highlight */
-  c.fillStyle = 'rgba(255,255,255,.42)';
-  c.beginPath(); c.ellipse(-15, -34, 8, 15, 0.35, 0, 6.2832); c.fill();
+  c.fillStyle = sg; c.beginPath(); c.arc(0, 0, w, 0, TAU); c.fill(); c.restore();
+}
+function drawOrb(c, h) {
+  const R = 22, st = clamp((h.speed - 250) / 900, 0, 1), ang = Math.atan2(h.vy, h.vx);
+  handShadow(c, h.x, h.y, 44, 44, h.shadowK);
+  c.save(); c.translate(h.x, h.y); c.scale(h.sx, h.sy);
+  const breathe = 1 + 0.07 * Math.sin(h.t * 3.2);
+  /* halo */
+  const hr = R * 2.5 * breathe;
+  let g = c.createRadialGradient(0, 0, R * 0.3, 0, 0, hr);
+  g.addColorStop(0, rgba(PLAYER, 0.5)); g.addColorStop(1, rgba(PLAYER, 0));
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, hr, 0, TAU); c.fill();
+  /* comet: stretch along the motion, tail behind */
+  c.rotate(ang);
+  if (st > 0.02) {
+    const L = 24 + 90 * st;
+    g = c.createLinearGradient(0, 0, -L, 0);
+    g.addColorStop(0, rgba(PLAYER, 0.75)); g.addColorStop(1, rgba(PLAYER, 0));
+    c.fillStyle = g; c.beginPath(); c.moveTo(0, -R * 0.95); c.quadraticCurveTo(-L * 0.5, -R * 0.6, -L, 0);
+    c.quadraticCurveTo(-L * 0.5, R * 0.6, 0, R * 0.95); c.closePath(); c.fill();
+  }
+  c.scale(1 + 0.45 * st, 1 - 0.18 * st);
+  g = c.createRadialGradient(-R * 0.2, -R * 0.25, 1, 0, 0, R);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, mix(PLAYER, 255, 0.55)); g.addColorStop(0.75, PLAYER); g.addColorStop(1, rgba(PLAYER, 0.55));
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, R, 0, TAU); c.fill();
   c.restore();
 }
+function drawAvatar(c, h) {
+  const R = 34;
+  handShadow(c, h.x, h.y, 48, 50, h.shadowK);
+  c.save(); c.translate(h.x, h.y); c.rotate(h.tilt); c.scale(h.sx, h.sy);
+  /* player-colour ring, then the white rim */
+  c.fillStyle = PLAYER; c.beginPath(); c.arc(0, 0, R + 7, 0, TAU); c.fill();
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, R + 1, 0, TAU); c.fill();
+  c.save(); c.beginPath(); c.arc(0, 0, R - 4, 0, TAU); c.clip();
+  c.fillStyle = '#cfeaff'; c.fillRect(-R, -R, 2 * R, 2 * R);
+  /* shoulders and head */
+  c.fillStyle = '#ff8a3d'; c.beginPath(); c.ellipse(0, R - 3, R * 0.8, R * 0.42, 0, 0, TAU); c.fill();
+  c.fillStyle = '#f6c9a0'; c.beginPath(); c.arc(0, 2, R * 0.6, 0, TAU); c.fill();
+  /* hair cap */
+  c.fillStyle = '#5a3a28'; c.beginPath(); c.arc(0, 2, R * 0.62, Math.PI * 1.02, Math.PI * 1.98);
+  c.quadraticCurveTo(R * 0.25, -R * 0.2, -R * 0.1, -R * 0.2); c.quadraticCurveTo(-R * 0.45, -R * 0.18, -R * 0.62, 2); c.closePath(); c.fill();
+  /* eyes (blink now and then) and smile */
+  const blink = (h.t % 3.6) < 0.12;
+  c.fillStyle = '#2f2b45';
+  for (const ex of [-R * 0.22, R * 0.22]) { c.beginPath(); c.ellipse(ex, 5, 3.2, blink ? 0.8 : 3.8, 0, 0, TAU); c.fill(); }
+  c.strokeStyle = '#2f2b45'; c.lineWidth = 2.6; c.lineCap = 'round';
+  c.beginPath(); c.arc(0, 10, R * 0.24, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
+  c.fillStyle = 'rgba(255,110,140,.4)';
+  for (const ex of [-R * 0.4, R * 0.4]) { c.beginPath(); c.arc(ex, 12, 4, 0, TAU); c.fill(); }
+  c.restore();
+  c.strokeStyle = 'rgba(0,0,0,.18)'; c.lineWidth = 1.5; c.beginPath(); c.arc(0, 0, R + 1, 0, TAU); c.stroke();
+  c.restore();
+}
+function drawCuboHand(c, h) {
+  const S = 62, dark = mix(CUBO_BLUE, 0, 0.42);
+  handShadow(c, h.x, h.y, 50, 48, h.shadowK);
+  c.save(); c.translate(h.x, h.y); c.rotate(h.tilt); c.scale(h.sx, h.sy);
+  c.lineJoin = 'round'; c.lineWidth = 5.5; c.strokeStyle = dark;
+  const g = c.createLinearGradient(0, -S / 2, 0, S / 2);
+  g.addColorStop(0, mix(CUBO_BLUE, 255, 0.35)); g.addColorStop(0.5, CUBO_BLUE); g.addColorStop(1, mix(CUBO_BLUE, 0, 0.14));
+  c.beginPath(); c.roundRect(-S / 2, -S / 2, S, S, 17); c.fillStyle = g; c.fill(); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.4)'; c.beginPath(); c.roundRect(-S / 2 + 8, -S / 2 + 7, 22, 8, 4); c.fill();
+  /* Cubo's face: two dots and a smile */
+  c.fillStyle = dark; for (const ex of [-11, 11]) { c.beginPath(); c.arc(ex, -3, 3.6, 0, TAU); c.fill(); }
+  c.strokeStyle = dark; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.arc(0, 4, 9, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
+  c.restore();
+}
+function drawRingPlus(c, h) {
+  const R = 28 * (1 + 0.05 * Math.sin(h.t * 4)), n = h.nearK;
+  handShadow(c, h.x, h.y, 46, 44, h.shadowK);
+  c.save(); c.translate(h.x, h.y); c.rotate(h.tilt * 0.5); c.scale(h.sx, h.sy);
+  /* soft fill: faint always, full when near a target */
+  const g = c.createRadialGradient(0, 0, 2, 0, 0, R);
+  g.addColorStop(0, rgba(PLAYER, 0.30 + 0.55 * n)); g.addColorStop(1, rgba(PLAYER, 0.14 + 0.45 * n));
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, R, 0, TAU); c.fill();
+  c.lineWidth = 11; c.strokeStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.arc(0, 0, R, 0, TAU); c.stroke();
+  c.lineWidth = 8; c.strokeStyle = PLAYER; c.beginPath(); c.arc(0, 0, R, 0, TAU); c.stroke();
+  c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.arc(0, 0, R - 2, Math.PI * 1.1, Math.PI * 1.6); c.stroke();
+  c.restore();
+}
+const DRAW_LOOK = { orb: drawOrb, avatar: drawAvatar, cubo: drawCuboHand, ring: drawRingPlus };
 function drawBalloon(c, t, x, y, scale, glow, alpha, time) {
   const r = t.r;
   c.save(); c.globalAlpha = alpha; c.translate(x, y);
@@ -256,7 +330,7 @@ class Scene {
     this.vx = 0; this.vy = 0; this.speed = 0; this.tilt = 0;
     this.sq = 0; this.sqv = 0; this.pause = 0; this.whooshAt = 0;
     this.targets = []; this.parts = []; this.rings = []; this.trail = [];
-    this.pops = 0; this.pullNear = null;
+    this.pops = 0; this.pullNear = null; this.nearK = 0;
   }
   sample(s) {
     if (s.drop) return;
@@ -306,6 +380,7 @@ class Scene {
     while (this.trail.length && t - this.trail[0].t > 0.24) this.trail.shift();
     /* squash spring */
     this.sqv += (-170 * this.sq - 15 * this.sqv) * dt; this.sq += this.sqv * dt;
+    this.nearK += ((near && nd < near.r + 80 ? 1 : 0) - this.nearK) * (1 - Math.exp(-dt / 0.12));
     /* hover glow */
     for (const g of this.targets) {
       const isNear = Math.hypot(g.x - hp.x, g.y - hp.y) < g.r + 80;
@@ -383,9 +458,11 @@ class Scene {
     /* the hand */
     const d = this.dp;
     if (this.raw) {
-      if (o.mitt) {
+      const fn = DRAW_LOOK[o.look];
+      if (fn) {
         const sq = o.impact ? this.sq : 0;
-        drawMitt(c, d.x, d.y + 4, this.tilt, 1 + sq, 1 - sq, clamp(this.speed / 1500, 0, 1));
+        fn(c, { x: d.x, y: d.y, tilt: this.tilt, sx: 1 + sq, sy: 1 - sq, shadowK: clamp(this.speed / 1500, 0, 1),
+          vx: this.vx, vy: this.vy, speed: this.speed, nearK: this.nearK, t });
       } else drawStar(c, d.x, d.y);
     }
     c.restore();
@@ -494,7 +571,7 @@ function resize() {
   scale = w / W;
 }
 new ResizeObserver(resize).observe(stage);
-const presetName = () => KEYS.every(k => !opts[k]) ? 'Today' : (KEYS.slice(0, 6).every(k => opts[k]) ? 'Polished' : 'Custom');
+const presetName = () => KEYS.every(k => !opts[k]) && opts.look === 'today' ? 'Today' : (KEYS.slice(0, 5).every(k => opts[k]) && opts.look === 'orb' ? 'Polished' : 'Custom');
 
 let last = 0, frameN = 0;
 function frame(ms) {
@@ -516,7 +593,6 @@ function frame(ms) {
 /* ---------- controls ---------- */
 const IDEAS = [
   { k: 'smooth', name: 'Smoothing', line: 'A One Euro filter: steady when your hand rests, quick when it moves fast.', cost: 'free', cap: 'A few sums per frame, shared by every game.' },
-  { k: 'mitt', name: 'Mitt', line: 'A big friendly mitten in your colour, with a soft shadow, that leans into its motion.', cost: 'free', cap: 'One shared drawing routine replaces the ring.' },
   { k: 'trail', name: 'Trail', line: 'A short fading ribbon behind fast movement only.', cost: 'free', cap: 'Only needs how fast the hand moves.' },
   { k: 'impact', name: 'Impact', line: 'On a pop: squash and stretch, sparks, a ring wave and a tiny freeze.', cost: 'work', cap: 'Each game must say when and where something pops.' },
   { k: 'pull', name: 'Pull', line: 'Near a target, the drawn hand eases toward it. The real hit stays honest.', cost: 'work', cap: 'Each game must list where its targets are.' },
@@ -549,7 +625,18 @@ for (const key of ['minCutoff', 'beta', 'pullR', 'pullK']) {
   el.addEventListener('input', () => { params[key] = +el.value; out.textContent = (+el.value).toFixed(key === 'pullR' ? 0 : key === 'beta' ? 3 : 2); });
 }
 const byId = id => document.getElementById(id);
-function setAll(v) { for (const k of KEYS) opts[k] = v; if (v && !audioInit()) opts.sound = false; hintMsg = ''; sync(); }
+const looksEl = byId('looks'), lookBtn = {};
+{
+  const li = document.createElement('li');
+  li.innerHTML = '<span class="tag free">Free</span><span><b>Hand look.</b> One shared drawing routine replaces the ring: a glow orb, an avatar bubble, a Cubo hand or Ring+. Each keeps the soft shadow, the lean with motion and the squash on impact.</span>';
+  capEl.insertBefore(li, capEl.firstChild);
+}
+for (const L of LOOKS) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = L.name; b.setAttribute('aria-pressed', 'false');
+  b.addEventListener('click', () => { opts.look = L.k; hintMsg = ''; sync(); });
+  looksEl.appendChild(b); lookBtn[L.k] = b;
+}
+function setAll(v) { for (const k of KEYS) opts[k] = v; opts.look = v ? 'orb' : 'today'; if (v && !audioInit()) opts.sound = false; hintMsg = ''; sync(); }
 byId('pTody').addEventListener('click', () => setAll(false));
 byId('pPol').addEventListener('click', () => setAll(true));
 byId('mSplit').addEventListener('click', () => { ui.split = !ui.split; buildScenes(); sync(); });
@@ -560,10 +647,13 @@ function sync() {
   for (const k of KEYS) { sw[k].setAttribute('aria-checked', String(opts[k])); cards[k].classList.toggle('on', opts[k]); }
   const pn = presetName();
   byId('pTody').classList.toggle('on', pn === 'Today'); byId('pPol').classList.toggle('on', pn === 'Polished');
+  for (const L of LOOKS) lookBtn[L.k].setAttribute('aria-pressed', String(opts.look === L.k));
+  const cur = LOOKS.find(L => L.k === opts.look);
+  byId('lookline').textContent = cur ? cur.line : 'Today: the plain ring, as the app draws it now. Pick a look to change it.';
   byId('mSplit').classList.toggle('on', ui.split); byId('mAuto').classList.toggle('on', ui.auto);
   byId('mSplit').setAttribute('aria-pressed', String(ui.split)); byId('mAuto').setAttribute('aria-pressed', String(ui.auto));
   byId('hint').textContent = hintMsg ||
-    ((ui.split ? 'Left: Today, as it is now. Right: your chosen ideas. Same hand, same tracker.' : 'One view; the ideas you switch on apply here.') +
+    ((ui.split ? 'Left: Today, as it is now. Right: your chosen look and ideas. Same hand, same tracker.' : 'One view; the look and ideas you choose apply here.') +
      (ui.auto ? ' The ghost hand pauses while you hold the mouse or a finger over the stage.' : ' Move the mouse or a finger over the stage to be the hand.'));
 }
 
