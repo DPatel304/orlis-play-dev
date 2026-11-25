@@ -11,7 +11,7 @@
      cardsBand(zone)          the rows' vertical place: tall cards from the head down, group tiles at shoulder height -> { y, h }
      meterBand(zone)          the stretch of height a raised hand runs along for the meter -> { top, bottom }
      near(d, size)            0..1: how close a hand is to a target (d: its distance from the target's edge, size: the target's smaller side)  */
-import { Reach, ARM_UP } from '../games/reach.js';
+import { Reach } from '../games/reach.js';
 import { L } from '../tracking/pose-shared.js';
 
 export const ASPECT = 16 / 9;
@@ -98,5 +98,3 @@ export function meterBand(z){
 /* how near a hand is to a target: 0 far, 1 on it. d: the distance to the target's edge (0 when inside), size: its smaller side, in the same unit */
 export const near = (d, size) => clamp(1 - d / (size * 0.9), 0, 1);
 
-/* a Reach's highest wrist for a body (for tests and the screen's own sanity) */
-export const wristTop = (shoulderY, arm) => shoulderY - ARM_UP * arm;

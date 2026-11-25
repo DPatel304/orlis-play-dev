@@ -407,7 +407,6 @@ export function drawPad(c, W, H, pad, glow = 0){
   for (let k = 0; k < 6; k++){ const a = k * 1.047; c.beginPath(); c.moveTo(x, y - r * 0.06); c.lineTo(x + Math.cos(a) * r * 0.82, y - r * 0.06 + Math.sin(a) * r * 0.38); c.stroke(); }
 }
 
-export const TOWER_COLS = { archer: '#c98a4b', cannon: '#6d6f82', frost: '#7fd6ff' };
 
 /* How big a tower is at each level, and how tall, in screen heights: a
    little bigger every time. */
@@ -473,25 +472,6 @@ export function star(c, x, y, r, col){
   c.fillStyle = col; c.beginPath();
   for (let j = 0; j < 10; j++){ const a = -Math.PI / 2 + j * Math.PI / 5, d = (j % 2 ? 0.45 : 1) * r; c.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d); }
   c.closePath(); c.fill();
-}
-
-/* A tower as a picture in a bubble, for picking which to build. `cost`
-   coins shown as dots under it; dim if there aren't enough. */
-export function drawChoice(c, x, y, r, kind, cost, can, fill, col){
-  c.save();
-  c.globalAlpha = can ? 1 : 0.45;
-  c.fillStyle = 'rgba(255,250,235,.95)'; c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.fill();
-  c.strokeStyle = TOWER_COLS[kind]; c.lineWidth = r * 0.12; c.stroke();
-  if (fill > 0){ c.strokeStyle = col; c.lineWidth = r * 0.16; c.beginPath(); c.arc(x, y, r * 1.12, -Math.PI / 2, -Math.PI / 2 + fill * 6.2832); c.stroke(); }
-  /* A small tower in the bubble: the same drawing, on a pretend screen
-     sized so the tower fits. */
-  const S = r * 7;
-  drawTower(c, S, S, { x: x / S, y: (y + r * 0.6) / S, i: 0 }, kind, 1, -0.4, 'rgba(0,0,0,0)', 0);
-  for (let k = 0; k < cost; k++){
-    const cx = x + (k - (cost - 1) / 2) * r * 0.32, cy = y + r * 1.35;
-    coin(c, cx, cy, r * 0.13);
-  }
-  c.restore();
 }
 
 export function coin(c, x, y, r){

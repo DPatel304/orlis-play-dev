@@ -55,7 +55,6 @@ const DEMO_LATE = 1.6;             /* seconds after a step's line before Cubo sh
 
 /* Cubo has shown these this session (a page opened again, Change it, a second game: he does not show them again) */
 const SESSION = { hold: false, arms: false };
-export const resetDemos = () => { SESSION.hold = false; SESSION.arms = false; };
 
 /* the little picture on a game card: Cubo doing it (or standing, till a hand comes near) */
 function cardArt(c, W, Hc, job, t, still, live){

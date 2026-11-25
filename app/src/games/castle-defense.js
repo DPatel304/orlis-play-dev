@@ -116,7 +116,6 @@ export const WALK = 0.08, RUN = 0.16, KNIGHT_SIZE = 0.085, POINT_HOLD = 0.35;
 export const HURT_SLOW = 0.6;
 /* With the mouse, it just walks at MOUSE_RUN. */
 export const MOUSE_RUN = 0.24;
-export const KNIGHT_SPEED = Math.max(MOUSE_RUN, RUN * TWO_HANDS, ROOM_RUN);
 /* The sword: swung by itself at a monster within reach - ROLL_FAST times as
    often while the child rolls their arms round each other, the wheels on
    the bus going round. That's the hands circling each other: the line from
@@ -134,7 +133,7 @@ export const ROLL_FAST = 2, ROLL_SPIN = 3, ROLL_FOR = 0.6, ROLL_GAP = 0.4;
 export const KNIGHT_MAX = 99;
 export const killsFor = (lvl) => 4 + Math.floor(lvl / 10);
 export const swordAt = (lvl) => { const f = lvl / KNIGHT_MAX; return { reach: 0.06 + 0.04 * f, dmg: 0.5 + 2 * f, cool: 0.8 - 0.3 * f, size: 0.4 + 1.3 * f }; };
-export const SWORD_R = swordAt(0).reach, SWORD_COOL = swordAt(0).cool, SWORD_DMG = swordAt(0).dmg;
+export const SWORD_COOL = swordAt(0).cool, SWORD_DMG = swordAt(0).dmg;
 /* Ogres go for knights close by, but slowly: an ogre that sees one lifts its
    club high over its head and a warning ring spreads on the ground round
    it, and only after WINDUP seconds does the club come down - on whoever is

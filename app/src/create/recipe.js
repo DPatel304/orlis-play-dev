@@ -82,7 +82,6 @@ export const choices = {
 };
 /* a piece's words ({ id, label, plural, category }), or null */
 export const pieceInfo = (id) => { const p = piece(id); return p ? { ...p } : null; };
-export const jobInfo = (id) => { const j = job(id); return j ? { ...j } : null; };
 
 /* ---------- picks ---------- */
 export const defaultPicks = () => ({ things: [{ id: 'apple', job: 'collect' }], where: 'meadow', speed: 3, many: 3, size: 2, minutes: 1, mode: 'together', golden: true, bomb: false });
