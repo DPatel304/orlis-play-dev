@@ -116,6 +116,8 @@ class StackItHigh {
     this._after(this.yard.step(dt));
     this._tidy(dt);
     this.scene.step(dt, { t: this.t, p: Math.min(1, this.t / ROUND) * 0.6, storm: false, wind: 0.004, joy: Math.min(1, this.peak / 6), look: 0.5, rainbow: false });
+    /* the blocks a pair of hands can lift: the drawn hand leans a little toward one close by (a short reach, as it takes both hands) */
+    this.avatars.targets(this._pickable().map(b => ({ x: b.X / this.A, y: b.Y, r: Math.max(b.w, b.h) / 2, reach: Math.max(b.w, b.h) / 2 + 0.04 })));
     this.avatars.step(dt, this.players);
   }
 
@@ -147,6 +149,7 @@ class StackItHigh {
   _pickable(){ return this.blocks.filter(b => this.yard.liftable(b)); }
   _take(b, i, mouse){
     this.yard.lift(b, i); b.used = true;
+    this.avatars.hit(b.X / this.A, b.Y, i);
     this.hold[i] = { id: b.id, tilt: 0, tiltT: 0, armed: true, dropT: 0, pressT: 0, mouse, vx: 0, vy: 0 };
     this.pend[i] = null; b.pend = null;
     b.wob = Math.max(b.wob, 0.06);
@@ -269,7 +272,7 @@ class StackItHigh {
       if (!e.stable) continue;
       /* put down by somebody, somewhere new: that is a block placed */
       if (b.from && b.by >= 0){
-        if (Math.hypot(b.X - b.from.X, b.Y - b.from.Y) >= 0.1){ this.score[b.by]++; this.stacked++; }
+        if (Math.hypot(b.X - b.from.X, b.Y - b.from.Y) >= 0.1){ this.score[b.by]++; this.stacked++; this.avatars.hit(b.X / this.A, b.Y, b.by); }
         b.from = null; b.by = -1;
       }
       b.sky = false;
@@ -342,7 +345,11 @@ class StackItHigh {
       c.fillStyle = alpha('shade.shadow', 0.1 + 0.12 * near);
       c.beginPath(); c.ellipse(b.X * H, l.bottom * H, b.w * H * 0.5 * (0.8 + 0.2 * near), H * 0.01 * (0.6 + near * 0.6), 0, 0, 6.2832); c.fill();
     }
-    for (const b of this.blocks) if (b.held == null || this.cam) drawPiece(c, b, H, this.t, b.held);
+    for (const b of this.blocks) if (b.held == null || this.cam){
+      /* a hand near a block that can be lifted: it grows up to 8% and glows */
+      const k = !this.cam && b.held == null && this.yard.liftable(b) ? this.avatars.near(b.X / this.A, b.Y, Math.max(b.w, b.h) / 2) : 0;
+      drawPiece(c, b, H, this.t, b.held, k);
+    }
     for (const f of this.fx){
       c.globalAlpha = 0.5 * (1 - f.age / f.life); c.fillStyle = color('earth.sand');
       c.beginPath(); c.arc(f.X * H, f.Y * H, H * f.r * (1 + f.age * 2.2), 0, 6.2832); c.fill();
@@ -433,14 +440,15 @@ export function drawBlock(c, x, y, kind, wp, hp, rot, col, mark = 'dot', { glow 
   c.restore();
 }
 /* one block of the yard, with the sway, the wobble and the glow of whoever is carrying it or is about to */
-function drawPiece(c, b, H, t, holder){
+function drawPiece(c, b, H, t, holder, near = 0){
   const x = (b.X + b.nx) * H, y = b.Y * H, a = b.fade ? Math.max(0, 1 - b.fade) : 1;
   const rot = b.ang + b.wob * 0.9 + (b.spinAng || 0) + (b.state === 'slide' ? b.dir * Math.min(0.3, b.spin * 0.4) : 0);
   /* the corner it turns about is its bottom: tilt there, not at the middle */
   const bx = x, by = y + b.h * H / 2;
-  c.save(); c.translate(bx, by); c.rotate(rot); c.translate(-bx, -by);
+  c.save(); c.translate(bx, by); c.rotate(rot); if (near > 0) c.scale(1 + 0.08 * near, 1 + 0.08 * near); c.translate(-bx, -by);
   let glow = null;
   if (holder != null) glow = PLAYER_COLORS[holder];
+  else if (near > 0.2) glow = color('sky.sunGlow');
   if (b.pend){
     const col = PLAYER_COLORS[b.pend.who], p = b.pend.p;
     c.save(); c.globalAlpha = 0.25 + 0.5 * p; c.strokeStyle = col; c.lineWidth = Math.max(3, H * 0.006);

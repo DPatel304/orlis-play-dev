@@ -154,6 +154,8 @@ class KeepItUp {
     }
     if (this.balls.some(x => x.gone)) this.balls = this.balls.filter(x => !x.gone);
     this.scene.step(dt, { t: this.t, p: 0.3 + 0.5 * Math.min(1, this.t / ROUND), storm: false, wind: 0.01 + Math.abs(this.breeze) * 0.1, joy: Math.min(1, 0.3 + this.streak / 30), look: 0.5, rainbow: false });
+    /* where a hand can bat a ball (only the drawing leans toward it: a hit is still worked out from the hand) */
+    this.avatars.targets(this.balls.filter(b => !b.gone).map(b => ({ x: b.x, y: b.y, r: BALL_R })));
     this.avatars.step(dt, this.players);
   }
 
@@ -179,6 +181,7 @@ class KeepItUp {
 
   _hit(b, who, h, W, H){
     b.cool = COOL; b.up = true;
+    this.avatars.hit(b.x, b.y, who);
     /* up to just above this player's reach: a child's ball doesn't go where only a grown-up can meet it */
     const r = this.reach[who];
     const cap = this.own ? RALLY : LIFT;
@@ -239,7 +242,16 @@ class KeepItUp {
       const hgt = Math.max(0, Math.min(1, (FLOOR - b.y) / 0.8)), sw = BALL_R * H * (1.1 - hgt * 0.5);
       c.fillStyle = alpha('shade.shadow', 0.2 - hgt * 0.1); c.beginPath(); c.ellipse(b.x * W, FLOOR * H + BALL_R * H * 0.9, sw, sw * 0.28, 0, 0, 6.2832); c.fill();
     }
-    for (const b of this.balls) this._ballAt(c, b.x * W, b.y * H, BALL_R * H, b.rot, b.owner);
+    for (const b of this.balls){
+      /* a hand near it: it grows up to 8% and glows */
+      const k = this.avatars.near(b.x, b.y, BALL_R), r = BALL_R * H * (1 + 0.08 * k);
+      if (k > 0.01){
+        const gl = c.createRadialGradient(b.x * W, b.y * H, r * 0.6, b.x * W, b.y * H, r * 2.1);
+        gl.addColorStop(0, alpha('sky.sunGlow', 0.55 * k)); gl.addColorStop(1, alpha('sky.sunGlow', 0));
+        c.fillStyle = gl; c.beginPath(); c.arc(b.x * W, b.y * H, r * 2.1, 0, 6.2832); c.fill();
+      }
+      this._ballAt(c, b.x * W, b.y * H, r, b.rot, b.owner);
+    }
     this.j.draw(c, H);
     if (this.breezeLeft > 0){
       c.save(); c.strokeStyle = alpha('earth.snow', 0.7); c.lineWidth = Math.max(2, H * 0.004); c.lineCap = 'round';

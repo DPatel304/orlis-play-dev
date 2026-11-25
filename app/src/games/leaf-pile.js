@@ -227,7 +227,7 @@ class LeafPile {
       /* in! */
       if (!this.ready && !this.piles && d < this._pileR()){
         L.inPile = true; this.pile++;
-        if (L.who >= 0) this.score[L.who]++;
+        if (L.who >= 0){ this.score[L.who]++; this.avatars.hit(L.x, L.y, L.who); }
         sfx.pop?.(0.5 + this._k() * 0.7);
         this._milestone();
       }

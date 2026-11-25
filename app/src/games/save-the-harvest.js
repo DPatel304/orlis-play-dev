@@ -137,6 +137,7 @@ class SaveTheHarvest {
       this.score[i] += n; this.tries += n;
       const c = p.centre || { x: 0.5, y: 0.5 };
       this.j.pop(c.x * W, (c.y - 0.15) * H, '+1', PLAYER_COLORS[i]);
+      this.avatars.hit(c.x, c.y - 0.15, i);
       sfx.pop?.(0.5 + this.fill * 0.6);
     }
     this.fill = clamp(this.tries / this.need);

@@ -266,6 +266,8 @@ class PopParty {
       return b.y > -0.2 - b.r * 3;
     });
     this._stepFx(sdt, H);
+    /* where a hand can pop something (the drawn hand leans toward the nearest; what pops is still the hand itself) */
+    this.avatars.targets(this.balloons.filter(b => !b.dead && !b.giant && b.y > -0.05 && b.y < 1.05).map(b => ({ x: b.x, y: b.y, r: b.r })));
     this.avatars.step(dt, this.players, this.combo.map((c, i) => this.comboT[i] > 0 ? (c >= 10 ? 2 : c >= 5 ? 1 : 0) : 0));
   }
 
@@ -360,6 +362,7 @@ class PopParty {
 
   _slap(b, who, W, H){
     b.slaps++; b.wob = 1;
+    this.avatars.hit(b.x, b.y, who);
     if (b.slaps >= GIANT_SLAPS && this._giantUp(b)) return this._hit(b, who, W, H);
     sfx.boing(Math.min(b.slaps, GIANT_SLAPS));
     this.j.kick(6);
@@ -402,6 +405,7 @@ class PopParty {
   }
   _hit(b, who, W, H){
     b.dead = true;
+    this.avatars.hit(b.x, b.y, who);
     const px = b.x * W, py = b.y * H, r = b.r * H;
     const col = b.kind === 'rainbow' ? null : bitCol(b.hue);
 
@@ -639,6 +643,7 @@ class PopParty {
   _hitAnimal(who, W, H){
     const an = this.animal;
     an.popT = 0;
+    this.avatars.hit(an.x, an.y, who);
     this.score[who] += ANIMAL_WORTH;
     this.popped[who].push(an.hue);
     this.scene.pop(an.x, an.hue);
@@ -675,7 +680,7 @@ class PopParty {
     c.lineWidth = Math.max(1.5, H * 0.0022);
     for (const b of this.balloons) this._shadow(c, b, W, H);
     for (const b of this.balloons) rope(c, b.str);
-    for (const b of this.balloons) this._balloon(c, b, W, H);
+    for (const b of this.balloons) this._balloon(c, b, W, H, b.giant ? 0 : this.avatars.near(b.x, b.y, b.r));
     if (this.animal) drawAnimal(c, this.animal, W, H);
     this._drawFx(c, H);
     this.j.draw(c, H);
@@ -699,11 +704,17 @@ class PopParty {
     c.globalAlpha = 0.5 - up * 0.28; c.drawImage(blob, b.x * W + b.r * H * (0.4 + up * 0.8) - r, gy - r * 0.22, r * 2, r * 0.44); c.globalAlpha = 1;
   }
 
-  _balloon(c, b, W, H){
+  /* near: 0..1, how close a hand is - the balloon grows up to 8% and glows (only drawn so; what pops it is unchanged) */
+  _balloon(c, b, W, H, near = 0){
     const x = b.x * W, y = b.y * H, r = b.r * H;
+    if (near > 0.01){
+      const gl = c.createRadialGradient(x, y, r * 0.6, x, y, r * 2.1);
+      gl.addColorStop(0, alpha('sky.sunGlow', 0.55 * near)); gl.addColorStop(1, alpha('sky.sunGlow', 0));
+      c.fillStyle = gl; c.beginPath(); c.arc(x, y, r * 2.1, 0, 6.2832); c.fill();
+    }
     /* A slow breath in the rubber, out of step between balloons. */
     const br = 1 + Math.sin(this.t * 2.6 + b.ph) * 0.018 + (b.wob ? Math.sin(this.t * 32) * 0.07 * b.wob : 0) + Math.sin(this.t * 2.6 + b.ph) * 0.03 + Math.sin(this.t * 5.3 + b.ph * 2) * 0.012;
-    c.save(); c.translate(x, y); c.rotate(b.tilt); c.scale(br, 2 - br);
+    c.save(); c.translate(x, y); c.rotate(b.tilt); c.scale(br * (1 + 0.08 * near), (2 - br) * (1 + 0.08 * near));
 
     let fill;
     if (b.kind === 'rainbow'){
