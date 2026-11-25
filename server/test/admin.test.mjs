@@ -508,6 +508,12 @@ test('the page: one file, nothing from the internet, its key kept out of sight',
     assert.doesNotMatch(html, /<link |<script src|@import/);
     assert.match(html, /replaceState/, 'the key is taken out of the address');
     assert.match(html, /@font-face\{ font-family:"Outfit"/);
+    /* plain words on the page, the technical term kept in a tooltip (title) */
+    for (const old of ["['Funnel'", "['SMTP'", "set('SMTP'", "Internet (Funnel)", "Add email to allowlist", "On the allowlist", "' · p95 '", "not on the allowlist", "when SMTP is set up"]) assert.ok(!html.includes(old), `${old} is gone from what the page shows`);
+    assert.match(html, /Public link/); assert.match(html, /Email sending/); assert.match(html, /Approved emails/); assert.match(html, /slowest 5%/);
+    assert.doesNotMatch(html, /hour12|hour: '2-digit'|toLocaleTimeString/, 'one time format everywhere: 24 hour (stamp)');
+    assert.match(html, /input\[type=checkbox\]\{ width:24px; height:24px/, 'tick boxes are at least 24 px');
+    assert.doesNotMatch(html, /\.health \.v\{[^}]*ellipsis/, 'health values wrap, they are not cut with ...');
     /* only this laptop */
     assert.equal((await fetch(`http://127.0.0.1:${s.internetPort}/manage`)).status, 404);
     void call;

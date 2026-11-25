@@ -75,7 +75,7 @@ h1{ margin:0; font-size:22px; font-weight:700 }
 .health > div:last-child{ border-right:0 }
 .health > div:first-child{ flex:1.45 1 190px }
 .health .k{ color:var(--soft); font-size:12px }
-.health .v{ font:500 12.5px var(--mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.health .v{ font:500 12.5px var(--mono); overflow-wrap:anywhere }
 /* stats */
 .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0 }
 .stat{ padding:14px 18px; min-width:0 }
@@ -139,10 +139,18 @@ td.cb, th.cb{ width:34px; padding-right:0 }
 .log li:last-child{ border-bottom:0 }
 .log .t{ font:12px var(--mono); color:var(--faint); white-space:nowrap }
 .log .e{ font:11px var(--mono); color:var(--soft); white-space:nowrap }
-.log .m{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.log .m{ overflow-wrap:anywhere }
 .log .m .h{ color:var(--violet); margin-right:4px }
 .mini li{ grid-template-columns:92px 118px minmax(0,1fr) }
 @media (max-width:820px){ .log li, .mini li{ grid-template-columns:78px minmax(0,1fr) } .log .e{ display:none } #fhead th:nth-child(7), #fbody td:nth-child(7){ display:none } td, th{ padding-left:8px; padding-right:8px } }
+/* every target is at least 24 px: the tick boxes, the sort headings, the little links and buttons, the text boxes */
+input[type=checkbox]{ width:24px; height:24px; margin:0; cursor:pointer; vertical-align:middle; accent-color:var(--violet) }
+td.cb, th.cb{ width:32px; padding-left:8px }
+th button{ min-height:24px; min-width:24px; padding:0 }
+.more, .btn.sm, .chip, .pager button, .seg button{ min-height:24px }
+.more{ padding:3px 6px; min-width:24px }
+input:not([type=checkbox]), select, textarea{ min-height:24px }
+.hint{ border-bottom:1px dotted var(--faint); cursor:help }
 /* detail panel */
 .panel{ position:fixed; top:0; right:0; bottom:0; width:min(440px,100%); background:var(--surface); box-shadow:-12px 0 40px rgba(29,27,46,.15); transform:translateX(105%); visibility:hidden; transition:transform .25s cubic-bezier(.2,.8,.25,1), visibility 0s .25s; z-index:20; display:flex; flex-direction:column; padding-top:env(safe-area-inset-top,0px); padding-right:env(safe-area-inset-right,0px) }
 .panel.open{ transform:none; visibility:visible; transition:transform .25s cubic-bezier(.2,.8,.25,1) }
@@ -224,12 +232,12 @@ const BODY = String.raw`
 <!-- QUEUE -->
 <section data-v="queue" hidden>
   <div class="top"><h1>Queue</h1><span class="sub">Joins and games waiting for you</span></div>
-  <div class="card"><h2>Add email to allowlist</h2>
+  <div class="card"><h2>Add to <span class="hint" title="The allowlist: emails that can join without asking.">approved emails</span></h2>
     <form class="bar" id="allowform" style="border:0"><label class="search"><input id="allow" type="text" placeholder="name@example.com, one or more, comma-separated" aria-label="Emails to allow" autocomplete="off"></label><button class="btn" id="allowgo">Allow</button></form>
     <div id="allowmsg"></div>
   </div>
   <div class="card"><div class="bar"><span class="chips" id="qchips"></span><span style="margin-left:auto" class="sub">Oldest first</span></div><div id="qfull"></div></div>
-  <div class="card" id="allowcard" hidden><h2>On the allowlist<span class="sub" id="allowcount"></span></h2><div class="pad sub" id="allowlist"></div></div>
+  <div class="card" id="allowcard" hidden><h2><span class="hint" title="The allowlist: emails that can join without asking.">Approved emails</span><span class="sub" id="allowcount"></span></h2><div class="pad sub" id="allowlist"></div></div>
 </section>
 
 <!-- FAMILIES -->
@@ -301,6 +309,9 @@ const SCRIPT = String.raw`
   /* T('<b>{name}</b>{!html}', { name, html }): {x} is put in as text, {!x} as it is */
   function T(s, v){ return s.replace(/\{(!?)(\w+)\}/g, function(_, raw, k){ var x = v[k]; if (x == null) x = ''; return raw ? x : esc(x); }); }
   function fmt(n){ return Number(n || 0).toLocaleString('en-US'); }
+  /* plain words first, the technical term in a tooltip: hint('Public link', 'Tailscale Funnel: ...') */
+  function hint(text, tip){ return '<span class="hint" title="' + esc(tip) + '">' + esc(text) + '</span>'; }
+  var TIP = { link: 'Tailscale Funnel: a public address that lets people reach this server from outside your home.', mail: 'SMTP: how this server sends email.', approved: 'The allowlist: emails that can join without asking.', slow: 'p95 (95th percentile): 95 replies out of 100 are quicker than this.' };
   function pad(n){ return (n < 10 ? '0' : '') + n; }
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   function ago(iso){
@@ -309,10 +320,11 @@ const SCRIPT = String.raw`
     var h = Math.round(m / 60); if (h < 48) return h + 'h ago';
     var d = Math.round(h / 24); return d < 60 ? d + 'd ago' : Math.round(d / 30) + 'mo ago';
   }
-  function stamp(iso){
+  /* the one time format everywhere: 24 hour (16:56); older than today it gets the date first (Nov 24 16:56); timeOnly: never the date */
+  function stamp(iso, timeOnly){
     var d = new Date(iso); if (isNaN(d)) return '';
     var t = pad(d.getHours()) + ':' + pad(d.getMinutes()), n = new Date();
-    return d.toDateString() === n.toDateString() ? t : MON[d.getMonth()] + ' ' + d.getDate() + ' ' + t;
+    return timeOnly || d.toDateString() === n.toDateString() ? t : MON[d.getMonth()] + ' ' + d.getDate() + ' ' + t;
   }
   function dateOf(iso){ var d = new Date(iso); return isNaN(d) ? '' : d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function size(n){ return n >= 1073741824 ? (n / 1073741824).toFixed(1) + ' GB' : n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
@@ -383,14 +395,14 @@ const SCRIPT = String.raw`
   function drawHealth(o){
     var h = o.health, f = h.funnel, s = h.smtp, b = h.backup, d = h.disk, e = h.errors;
     var cells = [
-      ['Funnel', f.level, f.door ? 'open · ' + (f.publicUrl ? hostOf(f.publicUrl) : 'port ' + f.port + ' (no public address set)') : 'off · internet door closed'],
-      ['SMTP', s.level, !s.ready ? 'not set up' : s.error ? 'error · ' + s.error : 'ok · ' + (s.lastSent ? 'sent ' + ago(s.lastSent) : 'none sent yet')],
+      ['Public link', f.level, f.door ? 'on · ' + (f.publicUrl ? hostOf(f.publicUrl) : 'port ' + f.port + ' (no public address set)') : 'off · only reachable at home', TIP.link],
+      ['Email sending', s.level, !s.ready ? 'not set up' : s.error ? 'error · ' + s.error : 'ok · ' + (s.lastSent ? 'sent ' + ago(s.lastSent) : 'none sent yet'), TIP.mail],
       ['Backup', b.level, b.last ? stamp(b.last.at) + ' · ' + b.count + ' kept · ' + size(b.bytes) : 'none yet'],
       ['Disk', d ? d.level : 'warn', d ? d.usedPct + '% used · ' + size(d.freeBytes) + ' free' : 'unknown'],
-      ['Errors (24h)', e.level, e.count24h + ' · p95 ' + (e.p95ms == null ? '–' : Math.round(e.p95ms) + ' ms')]
+      ['Errors (last 24 h)', e.level, e.count24h + ' · slowest 5%: ' + (e.p95ms == null ? '–' : Math.round(e.p95ms) + ' ms'), TIP.slow]
     ];
-    $('health').innerHTML = cells.map(function(c){ return T('<div><div class="k">{k}</div><div class="v" title="{v}">{!l}{v}</div></div>', { k: c[0], v: c[2], l: led(c[1]) }); }).join('');
-    $('foot').innerHTML = T('{!l}v{v} · up {u}<br><span class="fi">{!f}funnel</span><span class="fi">{!s}smtp</span><span class="fi">{!b}backup</span>', { l: '<span class="led"></span>', v: h.server.version, u: up(h.server.uptimeSecs), f: led(f.level), s: led(s.level), b: led(b.level) });
+    $('health').innerHTML = cells.map(function(c){ return T('<div><div class="k">{!k}</div><div class="v" title="{v}">{!l}{v}</div></div>', { k: c[3] ? hint(c[0], c[3]) : esc(c[0]), v: c[2], l: led(c[1]) }); }).join('');
+    $('foot').innerHTML = T('{!l}v{v} · up {u}<br><span class="fi">{!f}public link</span><span class="fi">{!s}email</span><span class="fi">{!b}backup</span>', { l: '<span class="led"></span>', v: h.server.version, u: up(h.server.uptimeSecs), f: led(f.level), s: led(s.level), b: led(b.level) });
   }
   function drawCounts(o){
     var q = o.stats.queue.all; $('nq').textContent = q ? q : '';
@@ -399,13 +411,13 @@ const SCRIPT = String.raw`
   function qrow(x){
     var when = ago(x.at);
     if (x.kind === 'join') return T('<div class="q"><span class="tag wait">join</span><div class="w"><b>{name}</b> · {family}<br><small>{email} · {when} · asked to join</small></div><button class="btn" data-act="join-ok" data-id="{id}">Approve</button><button class="btn no" data-act="join-no" data-id="{id}" data-sure="Decline? Click again">Decline</button></div>', { name: x.name || x.email, family: x.family, email: x.email, when: when, id: x.id });
-    if (x.kind === 'beta') return T('<div class="q"><span class="tag wait">beta</span><div class="w"><b>{email}</b><br><small>asked on the beta page · {when} · not on the allowlist</small></div><button class="btn" data-act="beta-ok" data-email="{email}">Allow</button><button class="btn no" data-act="beta-no" data-email="{email}" data-sure="Decline? Click again">Decline</button></div>', { email: x.email, when: when });
+    if (x.kind === 'beta') return T('<div class="q"><span class="tag wait">beta</span><div class="w"><b>{email}</b><br><small>asked on the beta page · {when} · not approved yet</small></div><button class="btn" data-act="beta-ok" data-email="{email}">Allow</button><button class="btn no" data-act="beta-no" data-email="{email}" data-sure="Decline? Click again">Decline</button></div>', { email: x.email, when: when });
     return T('<div class="q" data-sub="{id}"><span class="tag new">game</span><div class="w"><b>{name}</b> <span class="id">{gid}@{ver}</span><br><small>by {family} · {when} · {size} · passed checks · {played}</small></div><button class="btn ghost" data-act="game-try">Try</button><button class="btn" data-act="game-publish" data-id="{id}" {!dis}>Publish</button><button class="btn no" data-act="game-reject" data-id="{id}">Reject&hellip;</button></div>',
       { id: x.id, name: x.name, gid: x.gameId, ver: x.version, family: x.family, when: when, size: size(x.bytes), played: x.tried ? 'played ✓' : 'not played yet', dis: x.tried ? '' : 'disabled title="Play it first in Orlis Play (Try it, ' + TRY + ' seconds)"' });
   }
   function drawHome(o){
     var st = o.stats, wd = new Date().toLocaleDateString([], { weekday: 'short' });
-    $('now').textContent = new Date(o.now).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    $('now').textContent = new Date(o.now).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + stamp(o.now, true);
     drawHealth(o); drawCounts(o);
     var p = st.plays, delta = p.lastWeekSameTime ? Math.round((p.today - p.lastWeekSameTime) / p.lastWeekSameTime * 100) : null;
     var dcls = delta == null || delta === 0 ? 'flat' : delta < 0 ? 'dn' : '';
@@ -652,14 +664,14 @@ const SCRIPT = String.raw`
   /* ---------- settings ---------- */
   var KINDS = { daily: 'Daily', update: 'Before an update', manual: 'Made by you', 'before-restore': 'Before a restore' };
   var UPDATE = { 'up to date': 'up to date', ready: 'a newer version is ready - it switches at a quiet moment', offline: 'couldn’t check just now', waiting: 'checking soon', off: 'this copy doesn’t update itself (the Windows app does)' };
-  function set(k, v, right, extra){ return T('<div class="set"><span class="k">{k}</span><span>{!v}</span><span class="r">{!r}</span>{!x}</div>', { k: k, v: v, r: right || '', x: extra || '' }); }
+  function set(k, v, right, extra){ return T('<div class="set"><span class="k">{!k}</span><span>{!v}</span><span class="r">{!r}</span>{!x}</div>', { k: k, v: v, r: right || '', x: extra || '' }); }
   var code = function(s){ return '<code>' + esc(s) + '</code>'; };
   function drawSets(s, srv, o){
     var net = s.internet, mailBox;
     var smtp = s.mail.ready
-      ? set('SMTP', code((s.mail.user || '') + (s.mail.host ? ' · ' + s.mail.host : '')) + '<br><small class="sub">' + (s.mail.error ? 'last send failed: ' + esc(s.mail.error) : s.mail.lastSent ? 'last sent ' + esc(ago(s.mail.lastSent)) : 'none sent since start') + '</small>',
+      ? set(hint('Email sending', TIP.mail), code((s.mail.user || '') + (s.mail.host ? ' · ' + s.mail.host : '')) + '<br><small class="sub">' + (s.mail.error ? 'last send failed: ' + esc(s.mail.error) : s.mail.lastSent ? 'last sent ' + esc(ago(s.mail.lastSent)) : 'none sent since start') + '</small>',
           '<button class="btn ghost" data-act="mail-test">Send a test</button><button class="btn no" data-act="mail-off" data-sure="Turn off? Click again">Turn off</button>')
-      : set('SMTP', '<span class="sub">Not set up. Without it, approving someone shows their download link for you to send, and heads-ups stay by the clock.</span>', '',
+      : set(hint('Email sending', TIP.mail), '<span class="sub">Not set up. Without it, approving someone shows their download link for you to send, and heads-ups stay by the clock.</span>', '',
           '<form class="form" id="mailform"><input type="email" name="user" placeholder="you@gmail.com" required aria-label="Gmail address"><input type="password" name="pass" placeholder="App password (16 letters)" required aria-label="App password"><button class="btn">Save</button></form>');
     var backups = srv.backups.map(function(b){
       var what = [b.accounts != null ? b.accounts + ' account' + (b.accounts === 1 ? '' : 's') : '', b.profiles != null ? b.profiles + ' profile' + (b.profiles === 1 ? '' : 's') : '', b.games + ' game' + (b.games === 1 ? '' : 's'), size(b.bytes)].filter(Boolean).join(' · ');
@@ -669,14 +681,14 @@ const SCRIPT = String.raw`
       '<div class="card"><h2>Server</h2>' +
         '<div class="set" id="namerow"><span class="k">Name</span><span>' + code(s.name) + '</span><span class="r"><button class="btn ghost" data-act="rename">Rename</button></span></div>' +
         set('Version', code(s.version + ' · up ' + up(s.uptimeSecs)) + '<br><small class="sub">Updates: ' + esc(UPDATE[(srv.update || {}).state] || (srv.update || {}).state || '') + '</small>') +
-        set('LAN', s.lan.length ? s.lan.map(code).join(' ') : '<span class="sub">no home network found</span>') +
-        set('Internet (Funnel)', net.door === null ? '<span class="sub">The internet door is off.</span>' : code((net.publicUrl || 'no public address set') + ' → :' + net.door), net.door === null ? '<span class="tag off">off</span>' : '<span class="tag act">door open</span>') +
+        set(hint('Home network', 'LAN: the addresses other devices at home use to reach this server.'), s.lan.length ? s.lan.map(code).join(' ') : '<span class="sub">no home network found</span>') +
+        set(hint('Public link', TIP.link), net.door === null ? '<span class="sub">Off: this server can only be reached at home.</span>' : code((net.publicUrl || 'no public address set') + ' → :' + net.door), net.door === null ? '<span class="tag off">off</span>' : '<span class="tag act">on</span>') +
         set('Start with Windows', code(s.startWithWindows), '<span class="sub">change it from the tray icon</span>') +
         set('Data folder', code(s.dataDir)) + '</div>' +
       '<div class="card"><h2>Joining</h2>' +
-        set('Mode', code(s.joining.mode) + '<br><small class="sub">' + (s.joining.approveJoins ? 'Emails on the allowlist are straight in; anyone else asks, and waits in the Queue.' : 'Emails on the allowlist are straight in; everyone else needs an invite code.') + (s.joining.awayJoins ? ' People on Tailscale join freely.' : '') + '</small>') +
+        set('How people join', code(s.joining.approveJoins ? 'approved emails + ask' : 'approved emails + invite codes') + '<br><small class="sub">' + (s.joining.approveJoins ? 'Approved emails are straight in; anyone else asks, and waits in the Queue.' : 'Approved emails are straight in; everyone else needs an invite code.') + (s.joining.awayJoins ? ' People on Tailscale join freely.' : '') + '</small>') +
         set('Game slots', code(s.defaultSlots), '<span class="sub">per family, for games made in Create (fixed)</span>') + '</div>' +
-      '<div class="card"><h2>Heads-ups</h2>' + smtp + set('Email me on', code(s.heads.join(', ')), '<span class="sub">by the clock; and by email when SMTP is set up</span>') + '<div id="mailmsg"></div></div>' +
+      '<div class="card"><h2>Heads-ups</h2>' + smtp + set('Email me on', code(s.heads.join(', ')), '<span class="sub">by the clock; and by email when email sending is set up</span>') + '<div id="mailmsg"></div></div>' +
       '<div class="card"><h2>Backups</h2>' +
         set('Schedule', code('daily, at a quiet moment'), '<button class="btn ghost" data-act="backup-now">Back up now</button>', '<span class="sub" style="grid-column:2 / 4">Also before each update and each restore. Keeps ' + Object.keys(s.backups.keep).map(function(k){ return s.backups.keep[k] + ' ' + (KINDS[k] || k).toLowerCase(); }).join(', ') + '.</span>') +
         (backups || '<div class="empty">No backups yet.</div>') +
