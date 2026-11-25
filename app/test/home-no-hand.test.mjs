@@ -23,8 +23,10 @@ test('the camera never starts for home, whatever the build or address says', () 
   const main = read('../src/main.js');
   assert.ok(!/handWanted|pose\.lite|LOOKS/.test(main), 'main has no home hand mode');
   assert.ok(!/'menu'/.test(main.match(/const CAMERA = new Set\(\[([^\]]*)\]\)/)[1]), 'menu is not a camera page');
+  assert.ok(/'create'/.test(main.match(/const CAMERA = new Set\(\[([^\]]*)\]\)/)[1]), 'Create is (Cubo\'s Create, decision 0060)');
   assert.match(main, /if \(CAMERA\.has\(next\)\) pose\.wake\(\); else pose\.sleep\(\)/);
-  assert.match(main, /if \(!away && !CALM\.has\(mode\)\) pose\.update/, 'calm pages (home) never run the tracker');
+  assert.match(main, /if \(!away && \(!CALM\.has\(mode\) \|\| BODY_PAGES\.has\(mode\)\)\) pose\.update/, 'calm pages (home) never run the tracker, but Create (made with the body) does');
+  assert.match(main, /const BODY_PAGES = new Set\(\['create'\]\)/, 'Create is the only calm page with a body');
 });
 
 test('nothing left over: the cursor and the pose have no home-only switches', () => {

@@ -61,14 +61,21 @@ test('What: five at most, a sixth is turned down with a line; touching the tray 
   assert.equal(gameJob(r.s.picks), 'collect');
 });
 
-test('Rules: nothing touched for 8 s and Cubo picks, with the usual rules, and goes on to the name; touching restarts the wait', () => {
+test('Rules: nothing touched for 8 s and Cubo picks, with the usual rules, and goes on to the name; once anything is touched Cubo never picks over it', () => {
   let { s } = go(F.newFlow(), 'arms', 'arms', { t: 'job', id: 'keepup' }, { t: 'group', id: 'toys' }, { t: 'grab', id: 'beachball' }, 'arms');
   assert.equal(s.step, 'rules');
   let r = go(s, { t: 'tick', dt: 7 }); assert.equal(r.s.step, 'rules');
-  r = go(r.s, { t: 'speed', i: 5 }, { t: 'tick', dt: 7 }); assert.equal(r.s.step, 'rules', 'a touch restarts the wait'); assert.equal(r.s.picks.speed, 5);
+  const touched = go(r.s, { t: 'speed', i: 5 }, { t: 'tick', dt: 30 });
+  assert.equal(touched.s.step, 'rules', 'a touch ends the wait: the choosing is theirs'); assert.equal(touched.s.picks.speed, 5, 'and what they chose stays');
   r = go(r.s, { t: 'tick', dt: 1.5 });
   assert.equal(r.s.step, 'name'); assert.deepEqual(says(r.fx), ["I'll pick!", F.LINES.name]);
   assert.equal(r.s.picks.speed, 3, 'the usual speed'); assert.equal(r.s.picks.many, 3);
+  /* a game being changed keeps its own rules when Cubo picks */
+  const edit = F.newFlow({ creation: { id: 'c1', name: 'N', picks: { things: [{ id: 'apple', job: 'collect' }], speed: 5, many: 4 } } });
+  let e = go(edit, 'arms', { t: 'job', id: 'collect' }, 'arms', { t: 'tick', dt: 9 });
+  assert.equal(e.s.step, 'name'); assert.equal(e.s.picks.speed, 5, 'its own speed'); assert.equal(e.s.picks.many, 4);
+  assert.equal(F.reduce(F.newFlow({ full: true }), { t: 'full', full: false }).state.full, false, 'a slot freed while waiting at the start');
+  assert.equal(F.reduce(F.newFlow(), { t: 'full', full: true }).state.full, true);
   assert.equal(go(F.newFlow(), { t: 'tick', dt: 30 }).s.step, 'start', 'the clock only runs in Rules');
 });
 

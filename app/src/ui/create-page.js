@@ -85,7 +85,7 @@ export function createMakePage({ nav = {}, onPlay = () => {}, onWho, onRecalibra
   const say = (text, bad = false) => toast(text, { bad });
 
   function end(){ gone = true; if (check){ try { check.leave && check.leave(); } catch {} check = null; } if (studio){ studio.dispose(); studio = null; } if (home) home.closePop(); }
-  function showHome(){
+  function showHome({ quiet = false } = {}){
     if (studio){ studio.dispose(); studio = null; }
     body.innerHTML = '';
     home = createHome({
@@ -93,16 +93,18 @@ export function createMakePage({ nav = {}, onPlay = () => {}, onWho, onRecalibra
       onMake: () => begin(),
       onPlay: (c) => playMade(c, onPlay),
       onChange: (c) => showSteps(c),
-      onRemove: async (c) => { await creations.remove(c.id); home.update(creations.items); say(`${c.name} is removed`); }
+      onRemove: async (c) => { await creations.remove(c.id); home.update(creations.items); if (studio) studio.setFull(creations.full); say(`${c.name} is removed`); }
     });
     body.appendChild(home);
     bar.el.classList.remove('hide'); sys.classList.remove('hide');
     /* Cubo's Create waits on the start screen for both arms (or OK on the remote) */
-    startSteps(null);
-    if (document.body.classList && document.body.classList.contains('remote')) remote.mark(home.querySelector('.chero'));
+    startSteps(null, { quiet });
+    markBanner();
   }
+  /* the remote starts on the banner ("Make a game"), never on the tab bar's Create tab (which the page marks as its default): OK begins Cubo's Create */
+  function markBanner(){ const hero = home && home.querySelector('.chero'); if (hero && hero.isConnected) remote.mark(hero); }
   /* the steps: on the start screen the flow waits; once it leaves Start the home is hidden and Cubo's Create has the whole screen */
-  function startSteps(creation){
+  function startSteps(creation, { quiet = false } = {}){
     if (studio){ studio.dispose(); studio = null; }
     studio = cuboCreate({
       creation, full: creations.full, say,
@@ -114,15 +116,16 @@ export function createMakePage({ nav = {}, onPlay = () => {}, onWho, onRecalibra
         const start = step === 'start';
         if (home) home.classList.toggle('hide', !start);
         bar.el.classList.toggle('hide', !start); sys.classList.toggle('hide', !start);
+        if (start) markBanner();
       }
     });
     if (home) studio.useHome(home);
     stage.appendChild(studio);
-    studio.start();
+    studio.start({ quiet });
   }
   /* "Make a game" (the banner, or OK): Cubo's Create goes on from Start. The camera check comes first if the player is not framed. */
   function begin(){
-    if (!studio || studio.step !== 'start') return;
+    if (!studio || studio.step !== 'start' || gone || (home && home.open)) return;       /* (not behind a game's Play / Change / Remove card) */
     const p = pose.players[0], lm = p && p.present && p.lm && !pose.mouse.active ? p.lm : null;
     if (lm && !frameOf(lm).ok && !check){
       check = framingCheck({ onDone: () => { if (check){ try { check.leave && check.leave(); } catch {} check = null; } if (studio) studio.event({ t: 'ok', force: true }); }, players: 1 });
@@ -141,15 +144,17 @@ export function createMakePage({ nav = {}, onPlay = () => {}, onWho, onRecalibra
     if (!BACK_KEYS.includes(e.key) || !s.isConnected || sheet || document.querySelector('.dim:not(.lost)')) return;
     e.preventDefault && e.preventDefault(); e.stopImmediatePropagation && e.stopImmediatePropagation();
     document.body.classList.add('remote'); sfx.back?.();
-    if (studio && studio.step !== 'start') studio.event({ t: 'back' });
+    if (check){ try { check.leave && check.leave(); } catch {} check = null; }        /* (Back out of the camera check: the start screen again) */
+    else if (studio && studio.step === 'play') return;                              /* (saving: nothing to go back to) */
+    else if (studio && studio.step !== 'start') studio.event({ t: 'back' });
     else if (nav.home) nav.home();
   }
   addEventListener('keydown', keys, true);
 
   const was = creations.items;
-  showHome();
+  showHome({ quiet: !!edit });
   /* the family's games as the server has them now (shown again if they changed - not while building) */
-  creations.refresh().then((changed) => { if (changed && !gone && home && (!studio || studio.step === 'start')) home.update(creations.items); }, () => {});
+  creations.refresh().then((changed) => { if (changed && !gone && home && (!studio || studio.step === 'start')){ home.update(creations.items); if (studio) studio.setFull(creations.full); } }, () => {});
   /* "Change it" from the scores: the studio, on that game */
   /* a new grown-up who picked "Make a game" on joining: straight into it */
   const first = !edit && account.state && account.state.firstGame === 'make';

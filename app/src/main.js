@@ -68,7 +68,10 @@ const DEV = !!(import.meta.env && import.meta.env.DEV);
 /* The camera's on only where it's used: a game, its scores (a wave picks
    "again"), and the camera check. Everywhere else - the intro, signing in,
    the home screen - it's off: no light, and no work for the laptop. */
-const CAMERA = new Set(['starting', 'lineup', 'framing', 'join', 'play', 'outro', 'results', 'calibrate']);
+const CAMERA = new Set(['starting', 'lineup', 'framing', 'join', 'play', 'outro', 'results', 'calibrate', 'create']);
+/* Create is Cubo's Create, made with the body (decision 0060): its camera is on and read each frame, though it still draws at the calm pace, and the
+   hands point there (the ring that shows where yours is). */
+const BODY_PAGES = new Set(['create']);
 /* The pages that are the mouse's and the keyboard's: Home, the Store,
    Create, and signing in. */
 const HOMEY = new Set(['menu', 'store', 'create', 'pro', 'who']);
@@ -103,7 +106,7 @@ function go(next, build){
   cursor.reset();
   /* For now the home screen (and signing in) is the mouse's and the
      keyboard's: hands don't point there. The games still play by moving. */
-  cursor.enabled = !HOMEY.has(next);
+  cursor.enabled = !HOMEY.has(next) || BODY_PAGES.has(next);
   titlebarPlaying(next === 'play' || next === 'outro');
   /* (a page can move straight on while it's being made - "Who's playing?"
      with one profile goes on to Home - and then the newer page is the one) */
@@ -519,7 +522,7 @@ function tick(now){
   last = now;
 
   pose.paused = !!paused;
-  if (!away && !CALM.has(mode)) pose.update(now, dt);
+  if (!away && (!CALM.has(mode) || BODY_PAGES.has(mode))) pose.update(now, dt);
 
   /* paper, under the menus; dark under a game while it loads */
   c.fillStyle = mode === 'play' || mode === 'outro' || mode === 'results' || mode === 'starting' || mode === 'framing' ? '#0d0b1a' : PAPER;

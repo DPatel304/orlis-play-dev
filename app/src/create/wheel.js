@@ -2,7 +2,8 @@
 
    pos is where the wheel is, in things: thing i is at the top when pos is i. It turns slowly by itself (AUTO things a second); a swipe
    sets it spinning faster in the swipe's direction, and it settles back to the slow turn. With reduced motion it does not spin: it steps
-   one thing every STEP_EVERY seconds, and a swipe steps it SWIPE_STEPS things. */
+   one thing every STEP_EVERY seconds, and a swipe steps it SWIPE_STEPS things. The remote (nudge) takes it over: it settles on a thing and stays
+   there, one thing per press, so what is at the top is what OK grabs; a swipe gives it back to its own turning. */
 export const AUTO = 0.3;            /* things a second, on its own */
 export const SPIN = 3.4;            /* things a second just after a swipe */
 export const SETTLE = 1.1;          /* seconds for a swipe's speed to fade back (a time constant) */
@@ -12,21 +13,24 @@ export const SHOWN = 8;             /* about how many things can be seen at once
 export const SPREAD = 26;           /* degrees between neighbours on the wheel */
 
 export class Wheel {
-  constructor(n = 1, reduced = false){ this.n = Math.max(1, n); this.pos = 0; this.vel = AUTO; this.reduced = reduced; this.wait = 0; }
+  constructor(n = 1, reduced = false){ this.n = Math.max(1, n); this.pos = 0; this.vel = AUTO; this.reduced = reduced; this.wait = 0; this.manual = false; }
   setSize(n){ this.n = Math.max(1, n); this.pos = ((this.pos % this.n) + this.n) % this.n; }
   /* which way a swipe turns it: swiping right turns the top of the wheel to the right, so things go right and pos goes down */
   kick(dir){
     if (!dir) return;
+    this.manual = false;
     if (this.reduced){ this.pos += -dir * SWIPE_STEPS; this.pos = Math.round(this.pos); this.wait = 0; }
     else this.vel = -dir * SPIN;
   }
   /* the remote: one thing along (dir -1 | 1: the next thing to the right is dir 1, so pos goes down) */
-  nudge(dir){ this.pos = Math.round(this.pos) - dir; this.vel = AUTO; this.wait = 0; }
+  nudge(dir){ this.pos = ((Math.round(this.pos) - dir) % this.n + this.n) % this.n; this.vel = 0; this.wait = 0; this.manual = true; }
   step(dt){
     if (this.reduced){
-      this.wait += dt;
+      if (!this.manual) this.wait += dt;
       if (this.wait >= STEP_EVERY){ this.wait = 0; this.pos = Math.round(this.pos) + 1; }
       this.pos = Math.round(this.pos);
+    } else if (this.manual){
+      this.pos += (Math.round(this.pos) - this.pos) * Math.min(1, dt * 12);       /* (it settles on a thing and waits for the next press) */
     } else {
       this.pos += this.vel * dt;
       this.vel += (AUTO - this.vel) * Math.min(1, dt / SETTLE);
@@ -34,7 +38,7 @@ export class Wheel {
     this.pos = ((this.pos % this.n) + this.n) % this.n;
   }
   /* the thing at the top now (the nearest) */
-  top(){ return Math.round(this.pos) % this.n; }
+  top(){ return (((Math.round(this.pos) % this.n) + this.n) % this.n); }
   /* every thing's place: angle in degrees from the top (negative left, positive right), nearest first wrapping, for the ones in view */
   placed(){
     const out = [];

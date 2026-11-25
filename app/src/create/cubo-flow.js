@@ -8,7 +8,7 @@
      nameWheel(picks)                the goofy names the wheel spins through (all pass isGoodName)
 
    Events (t): arms (both arms up held) | ok | back | key (key: left right up down) | tick (dt) | world (ix) | job (id) | group (id) | grab (id) | take (id)
-               speed (i) | many (i) | spin (by) | saved-failed.  Remote keys act on the same states as touch does.
+               speed (i) | many (i) | spin (by) | full (full) | saved-failed.  Remote keys act on the same states as touch does.
    Effects (fx, in order): { say } Cubo says it | { cheer: job|'pick' } | { pop: id } | { full } slots full | { msg } a short line on screen
                { wheel: by } turn the wheel one step (the remote) | { grabTop } grab what is at the top of the wheel (the remote's OK) | { play: {...} } save and play | { exit } leave. */
 import { choices, clean, setAllJobs, defaultPicks, isGoodName, suggestNames, MAX_THINGS, pieceInfo } from './recipe.js';
@@ -49,7 +49,7 @@ export function newFlow({ creation = null, full = false } = {}){
     gameIx: Math.max(0, JOBS.indexOf(job)),
     tray: creation ? base.things.map(t => t.id) : [],
     group: null, groupIx: 0, zone: 'wheel', trayIx: 0, row: 0,
-    quiet: 0, names: [], nameIx: 0, startName: creation ? (creation.name || creation.picks.name || null) : null,
+    quiet: 0, touched: false, names: [], nameIx: 0, startName: creation ? (creation.name || creation.picks.name || null) : null,
     say: null
   };
   return { ...flow, say: creation ? LINES.where : LINES.start };
@@ -72,7 +72,7 @@ const picksFrom = (state) => state.tray.length
   : state.picks;
 
 const enter = (state, step, fx, extra = {}) => {
-  const next = { ...state, ...extra, step, quiet: 0 };
+  const next = { ...state, ...extra, step, quiet: 0, touched: false };
   next.say = lineFor(next);
   if (next.say) fx.push({ say: next.say });
   return next;
@@ -84,11 +84,11 @@ export function reduce(state, ev){
   const done = () => ({ state: s, fx });
   const { t } = ev;
 
-  /* a quiet clock in Rules: nothing touched for a while and Cubo picks */
+  /* a quiet clock in Rules: nothing touched for a while and Cubo picks (once anything is touched, the choosing is theirs: Cubo never picks over it) */
   if (t === 'tick'){
-    if (s.step === 'rules'){
+    if (s.step === 'rules' && !s.touched){
       s = { ...s, quiet: s.quiet + ev.dt };
-      if (s.quiet >= RULES_QUIET){ fx.push({ say: LINES.pick }); s = toName(usualRules(s), fx); }
+      if (s.quiet >= RULES_QUIET){ fx.push({ say: LINES.pick }); s = toName(s.editing ? s : usualRules(s), fx); }      /* (a game being changed keeps its own rules) */
     }
     return done();
   }
@@ -132,7 +132,7 @@ export function reduce(state, ev){
         if (!s.tray.length){ fx.push({ say: LINES.none }); break; }
         s = enter(s, 'rules', fx, { picks: picksFrom(s), row: 0 }); break;
       case 'rules':
-        if (t === 'ok' && s.row < 2){ s = { ...s, row: s.row + 1, quiet: 0 }; break; }
+        if (t === 'ok' && s.row < 2){ s = { ...s, row: s.row + 1, quiet: 0, touched: true }; break; }
         s = toName(s, fx); break;
       case 'name':
         s = keepName(s, fx); break;
@@ -162,7 +162,8 @@ export function reduce(state, ev){
       break;
     }
     case 'grab': {
-      if (s.step !== 'what' || !pieceInfo(ev.id) || s.tray.includes(ev.id)) break;
+      if (s.step !== 'what' || !pieceInfo(ev.id)) break;
+      if (s.tray.includes(ev.id)){ if (ev.explicit) fx.push({ msg: 'You have that one! Wait for another.' }); break; }      /* (OK or a click on a thing already picked says so) */
       if (s.tray.length >= MAX_THINGS){ fx.push({ msg: `${MAX_THINGS} is plenty! Touch one below to put it back.` }); break; }
       s = { ...s, tray: [...s.tray, ev.id] };
       fx.push({ pop: ev.id }, { cheer: 'pick' });
@@ -177,7 +178,7 @@ export function reduce(state, ev){
     case 'speed': case 'many': {
       if (s.step !== 'rules') break;
       const n = t === 'speed' ? SPEED_STOPS : MANY_STOPS, i = clampi(ev.i, 0, n - 1);
-      s = { ...s, picks: clean({ ...s.picks, [t]: i }), quiet: 0, row: t === 'speed' ? 0 : 1 };
+      s = { ...s, picks: clean({ ...s.picks, [t]: i }), quiet: 0, touched: true, row: t === 'speed' ? 0 : 1 };
       break;
     }
     case 'spin': {                       /* a jump: the name wheel turns on */
@@ -186,6 +187,7 @@ export function reduce(state, ev){
       break;
     }
     case 'key': s = keyed(s, ev.key, fx); break;
+    case 'full': s = { ...s, full: !!ev.full && !s.editing }; break;      /* (the family's slots filled or freed while the start screen waits) */
   }
   return done();
 }
@@ -216,7 +218,7 @@ function keyed(s, key, fx){
       }
       break;
     case 'rules':
-      if (dy) s = { ...s, row: clampi(s.row + dy, 0, 2), quiet: 0 };
+      if (dy) s = { ...s, row: clampi(s.row + dy, 0, 2), quiet: 0, touched: true };
       else if (dx && s.row < 2) s = reduce(s, { t: s.row ? 'many' : 'speed', i: s.picks[s.row ? 'many' : 'speed'] + dx }).state;
       break;
     case 'name':
