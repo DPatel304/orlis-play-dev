@@ -243,36 +243,46 @@ test('Cubo’s Create walks the steps on the screen: big things to touch, Cubo�
   /* where */
   cc.event({ t: 'ok' }); assert.equal(cc.step, 'where');
   assert.match(txt(q(cc, '.cctext')), /Where shall we play/, 'Cubo says the step’s line');
-  assert.equal(qa(cc, '.ccdot').length, 6, 'a dot row shows the world');
-  cc.event({ t: 'key', key: 'right' }); assert.ok(qa(cc, '.ccdot')[1].classList.contains('on'));
+  assert.equal(qa(cc, '.ccsd').length, 5, 'step dots across the top: Where, Game, What, Rules, Name');
+  assert.ok(qa(cc, '.ccsd')[0].classList.contains('on'));
+  assert.equal(qa(cc, '.ccpeek').length, 2, 'the previous and next worlds peek in at the sides');
+  cc.event({ t: 'key', key: 'right' }); assert.equal(cc.state.worldIx, 1);
   assert.match(txt(q(cc, '.ccworld')), new RegExp(choices.where[1].label));
+  pickEl(q(cc, '.ccpeek.left')); assert.equal(cc.state.worldIx, 0, 'a hand held on a peek (here a pick) slides it in');
+  cc.event({ t: 'key', key: 'right' });
   cc.event({ t: 'arms' }); assert.equal(cc.step, 'game');
   /* the game: four big cards, each a single touch */
   assert.equal(qa(cc, '.cccard').length, 4);
-  assert.deepEqual(qa(cc, '.cccard').map(b => b.getAttribute('aria-label').split(':')[0]), ['Collect', 'Dodge', 'Keep up', 'Stack']);
+  assert.deepEqual(qa(cc, '.cccard').map(b => b.getAttribute('aria-label')), ['Collect', 'Dodge', 'Keep up', 'Stack']);
   pickEl(qa(cc, '.cccard')[1]); assert.equal(cc.step, 'what'); assert.equal(cc.state.job, 'dodge');
   assert.match(txt(q(cc, '.cctext')), /What shall we dodge/);
-  /* what: five group bubbles; a group; the wheel's grab spot; the tray */
-  assert.deepEqual(qa(cc, '.ccchip').map(b => b.getAttribute('aria-label')), ['Food', 'Animals', 'Sky', 'Toys', 'Nature']);
-  assert.ok(qa(cc, '.ccgroups')[0].classList.contains('big'));
-  pickEl(qa(cc, '.ccchip')[1]); assert.equal(cc.state.group, 'animals'); assert.ok(!qa(cc, '.ccgroups')[0].classList.contains('big'));
-  assert.ok(cc.wheel.n >= 8, 'the group’s things ride the wheel');
+  /* what: five group tiles; a group opens its parade; the tray */
+  assert.deepEqual(qa(cc, '.cctile').map(b => b.getAttribute('aria-label')), ['Food', 'Animals', 'Sky', 'Toys', 'Nature']);
+  assert.equal(qa(cc, '.ccfloat').length, 0, 'no parade until a group is open');
+  pickEl(qa(cc, '.cctile')[1]); assert.equal(cc.state.group, 'animals');
+  assert.equal(qa(cc, '.ccfloat').length, choices.what[1].pieces.length, 'the group’s things float by');
+  pickEl(qa(cc, '.ccfloat')[0]); assert.deepEqual(cc.state.tray, ['bee'], 'touching one in the parade grabs it'); cc.event({ t: 'take', id: 'bee' });
+  pickEl(q(cc, '.ccgroups')); assert.equal(cc.state.group, null, 'the Groups target goes back to the tiles'); pickEl(qa(cc, '.cctile')[1]);
   cc.event({ t: 'grab', id: 'bee' }); cc.event({ t: 'grab', id: 'frog' });
   assert.equal(qa(cc, '.cctrayslot').filter(b => !b.classList.contains('empty')).length, 2, 'two in the tray');
   assert.match(txt(q(cc, '.cctray')), /2 of 5/);
-  pickEl(byLabel(cc, 'Take off the frog')); assert.deepEqual(cc.state.tray, ['bee'], 'touch a tray item to take it back');
+  pickEl(byLabel(cc, 'Put back the frog')); assert.deepEqual(cc.state.tray, ['bee'], 'touch a tray item to take it back');
   cc.event({ t: 'grab', id: 'frog' });
   cc.event({ t: 'arms' }); assert.equal(cc.step, 'rules');
-  /* rules: two giant sliders with seven stops */
-  assert.equal(qa(cc, '.ccstop').length, 14);
-  pickEl(byLabel(cc, 'How fast?: Rocket')); assert.equal(cc.state.picks.speed, 6);
-  pickEl(byLabel(cc, 'How many?: A storm')); assert.equal(cc.state.picks.many, 6);
-  assert.match(txt(qa(cc, '.ccslab')[0]), /Rocket/);
+  /* rules: one question at a time on a tall meter of seven stops */
+  assert.equal(qa(cc, '.ccmstop').length, 7);
+  assert.match(txt(q(cc, '.ccq')), /How fast/);
+  pickEl(byLabel(cc, 'How fast: Rocket')); assert.equal(cc.state.picks.speed, 6); assert.equal(cc.state.q, 'many', 'set: on to the next question');
+  assert.match(txt(q(cc, '.ccq')), /How many/);
+  pickEl(byLabel(cc, 'How many: A storm')); assert.equal(cc.state.picks.many, 6);
+  assert.match(txt(q(cc, '.ccq')), /A storm/);
   cc.event({ t: 'arms' }); assert.equal(cc.step, 'name');
   assert.ok(cc.state.names.length >= 6);
   const keep = cc.state.names[0];
   cc.event({ t: 'arms' });
   await new Promise(r => setTimeout(r, 30));
+  assert.equal(cc.step, 'play'); assert.equal(played.length, 0, 'a 3-2-1 with Cubo first');
+  tickFor(cc, 1); assert.equal(played.length, 0); tickFor(cc, 1.6);
   assert.equal(played.length, 1); assert.equal(played[0].name, keep); assert.equal(played[0].makerId, 'p2');
   assert.equal(creations.items.length, 1); assert.deepEqual(played[0].picks.things.map(t => t.id), ['bee', 'frog']); assert.equal(played[0].picks.speed, 6);
   assert.deepEqual(played[0].picks.things.map(t => t.job), ['dodge', 'dodge']);
@@ -319,16 +329,16 @@ test('Cubo’s Create: Change it opens at Where on the game’s own picks and sa
   const played = [];
   const cc = cuboCreate({ creation: mine, onPlay: (g) => played.push(g) }); cc.start();
   assert.equal(cc.step, 'where'); assert.equal(cc.state.picks.where, 'beach');
-  cc.event({ t: 'arms' }); cc.event({ t: 'job', id: 'dodge' }); cc.event({ t: 'arms' }); cc.event({ t: 'arms' });
+  cc.event({ t: 'arms' }); cc.event({ t: 'job', id: 'dodge' }); cc.event({ t: 'arms' }); cc.event({ t: 'arms' }); cc.event({ t: 'arms' });
   assert.equal(cc.step, 'name'); assert.equal(cc.state.names[0], 'Super Bee Dodge Party');
-  cc.event({ t: 'arms' }); await new Promise(r => setTimeout(r, 30));
+  cc.event({ t: 'arms' }); await new Promise(r => setTimeout(r, 30)); tickFor(cc, 3.2);
   assert.equal(played[0].id, mine.id); assert.equal(creations.items.length, 1, 'the same slot');
   /* a full family cannot make another from here */
   await creations.save({ name: 'B', picks: defaultPicks(), makerId: 'p1' }); await creations.save({ name: 'C', picks: defaultPicks(), makerId: 'p1' });
   const said = [], third = cuboCreate({ onPlay: (g) => played.push(g), say: (t, bad) => said.push([t, bad]) }); third.start();
   for (const e of ['ok', 'ok']) third.event({ t: e });
-  third.event({ t: 'job', id: 'collect' }); third.event({ t: 'group', id: 'food' }); third.event({ t: 'grab', id: 'apple' }); third.event({ t: 'arms' }); third.event({ t: 'arms' }); third.event({ t: 'arms' });
-  await new Promise(r => setTimeout(r, 30));
+  third.event({ t: 'job', id: 'collect' }); third.event({ t: 'group', id: 'food' }); third.event({ t: 'grab', id: 'apple' }); third.event({ t: 'arms' }); third.event({ t: 'arms' }); third.event({ t: 'arms' }); third.event({ t: 'arms' });
+  await new Promise(r => setTimeout(r, 30)); tickFor(third, 3.2);
   assert.equal(played.length, 1); assert.deepEqual(said, [[FULL_LINE, true]]); assert.equal(third.step, 'name', 'a play that did not save goes back to the name');
   cc.dispose(); third.dispose(); signedOut();
 });

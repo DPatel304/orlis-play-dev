@@ -2,6 +2,7 @@ import { pose, PLAYER_COLORS, MAX_PLAYERS, oneEuro } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { handsMode } from './handsmode.js';
 import { keepOut } from './keepout.js';
+import { magnet } from './magnet.js';
 
 /* Point and wave. Every button in Orlis Play is a DOM .btn; the cursor
    finds the one each player's hand is pointing at and lights it up - and a
@@ -173,7 +174,8 @@ export const cursor = {
       if (keepOut(r.x, r.y)) continue;
       /* over a button with its own ring (the clean look's .ringed), the ring runs round the button: no dot on top of its words */
       if (r.el && r.el.classList && r.el.classList.contains('ringed')) continue;
-      const x = r.x * W, y = r.y * H, rad = Math.max(16, H * 0.035);
+      const m = magnet.targets.length ? magnet.pull(r.x, r.y, W / H) : r;      /* (Cubo's Create pulls the marker a little toward a target near it) */
+      const x = m.x * W, y = m.y * H, rad = Math.max(16, H * 0.035);
       c.save();
       c.lineWidth = Math.max(4, H * 0.008);
       c.strokeStyle = 'rgba(0,0,0,.45)';

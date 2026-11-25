@@ -568,6 +568,10 @@ export const sfx = {
             blip({ freq: 330 * Math.pow(2, s/12), dur: 0.42, type:'sawtooth',
                    gain:0.2, delay:i*0.13 })); },
   whoosh(){ hiss({ dur: 0.3, gain: 0.18, hp: 300, sweep: 2600 }); },
+  /* A hand held on a target: a soft tone that climbs as the ring fills (k: 0 at the start .. 1 when it is picked). Call it a few times a second. */
+  rise(k = 0){ const f = 330 * Math.pow(2, Math.max(0, Math.min(1, k)) * 1.5); blip({ freq: f, dur: 0.14, type: 'sine', gain: 0.07 }); blip({ freq: f * 2, dur: 0.1, type: 'sine', gain: 0.02 }); },
+  /* The countdown before a made game starts: a short even beep, a longer higher one on the last. */
+  count(last = false){ blip({ freq: last ? 880 : 587, dur: last ? 0.34 : 0.16, type: 'triangle', gain: 0.16 }); },
   /* Last Known Position's fights: a hit landing on metal, a shot, and a robot
      bursting into scrap. */
   clank(){ blip({ freq: 980, to: 640, dur: 0.09, type: 'square', gain: 0.08 }); hiss({ dur: 0.08, gain: 0.1, hp: 2500 }); },
