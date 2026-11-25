@@ -397,14 +397,17 @@ async function bodyFlow(s, { how }){
   await b.reachNear('.cccard', 1);
   await until(async () => parseFloat(await s.page.evaluate(() => document.querySelectorAll('.cccard')[1].style.getPropertyValue('--near') || '0')) > 0.5, 8000, 'the card to grow and glow as the hand nears');
   assert.equal(await s.step(), 'game', 'a pick takes a moment: the ring fills first');
-  await until(async () => (await s.holding()) && (await s.holding()).k > 0.3, 8000, 'the ring round the hand');
-  await s.shot('game-hold');
-  const pulled = await s.page.evaluate(async () => {            /* the marker is drawn pulled toward the card's centre */
-    const { magnet } = await import('/src/ui/magnet.js'), h = document.querySelector('.cc').holding;
-    if (!h || !magnet.targets.length) return null;
-    const p = magnet.pull(h.x, h.y), t = magnet.targets.reduce((a, c) => (Math.hypot(c.x - h.x, c.y - h.y) < Math.hypot(a.x - h.x, a.y - h.y) ? c : a));
-    return { moved: Math.hypot(p.x - h.x, p.y - h.y), before: Math.hypot(t.x - h.x, t.y - h.y), after: Math.hypot(t.x - p.x, t.y - p.y) };
-  });
+  /* (sampled in the page the moment the ring is half full: a picture taken first would outlast the hold) */
+  let pulled = null;
+  await until(async () => {
+    pulled = await s.page.evaluate(async () => {            /* the marker is drawn pulled toward the card's centre */
+      const { magnet } = await import('/src/ui/magnet.js'), h = document.querySelector('.cc').holding;
+      if (!h || h.k <= 0.3 || !magnet.targets.length) return null;
+      const p = magnet.pull(h.x, h.y), t = magnet.targets.reduce((a, c) => (Math.hypot(c.x - h.x, c.y - h.y) < Math.hypot(a.x - h.x, a.y - h.y) ? c : a));
+      return { moved: Math.hypot(p.x - h.x, p.y - h.y), before: Math.hypot(t.x - h.x, t.y - h.y), after: Math.hypot(t.x - p.x, t.y - p.y) };
+    });
+    return !!pulled;
+  }, 8000, 'the ring round the hand');
   assert.ok(pulled && pulled.after <= pulled.before + 1e-9, 'the hand marker is pulled toward the card’s centre (a magnet)');
   await until(async () => (await s.step()) === 'what', 12000, 'a hand held on the Dodge card');
   await b.release(0);

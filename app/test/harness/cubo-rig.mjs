@@ -1,6 +1,6 @@
 /* The rig for the end-to-end tests of Cubo's Create (decisions 0060, 0061): the real shell on the Vite dev server in headless Chromium, the family's
-   server played by a small in-memory one (page.route), and a scripted body fed through the real tracker (pose._assign), the way tools/playtest and
-   test/preview/cubo-create-shots.mjs do. Plain Node, no test-runner code here. Used by test/cubo-create-e2e.node.mjs.
+   server played by a small in-memory one (page.route), and a scripted body fed through the real tracker (pose._assign), the way tools/playtest does.
+   Plain Node, no test-runner code here. Used by test/cubo-create-e2e.node.mjs.
 
      const rig = await startCuboRig();
      const s = await rig.open({ w: 1280, h: 720, items: [] });     // a page on the Create tab, errors counted
