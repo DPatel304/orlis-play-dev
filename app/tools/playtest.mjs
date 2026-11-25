@@ -321,11 +321,12 @@ const madeProbe = (ctx) => {
       if (step % 30 === 0) try { spec = g.hud ? g.hud() : null; } catch (e){ spec = null; }
       for (const th of g.things){
         if (!g._touchable(th) || th.d.move === 'bounce') continue;
-        let rec = seen.get(th); if (!rec){ rec = { kind: th.d.name, life: 0, reach: ctx.world.persons.map(() => 0), hud: 0 }; seen.set(th, rec); }
+        let rec = seen.get(th); if (!rec){ rec = { kind: th.d.name, life: 0, reach: ctx.world.persons.map(() => 0), hud: 0, x0: th.x, y0: th.y }; seen.set(th, rec); }
+        rec.x1 = th.x; rec.y1 = th.y;
         live.add(th); rec.life += dt;
-        /* (a thing under the clock, goal bar or scores is not there to be touched: it does not count as reachable) */
-        const under = underHud(W, H, th.x * W, th.y * H, spec);
-        ctx.world.persons.forEach((p, i) => { if (p.inScene && !under && th.y > 0.05 && th.y < 0.98 && p.reach(th.x, th.y).kind !== 'no') rec.reach[i] += dt; });
+        /* (a thing under the clock, goal bar or scores, or not yet in reach of the smallest player, is not there to be touched: it does not count as reachable) */
+        const under = underHud(W, H, th.x * W, th.y * H, spec), inReach = g._live ? g._live(th) : true;
+        ctx.world.persons.forEach((p, i) => { if (p.inScene && !under && inReach && th.y > 0.05 && th.y < 0.98 && p.reach(th.x, th.y).kind !== 'no') rec.reach[i] += dt; });
         if (under){ rec.hud += dt; const k = underWhich(W, H, th.x * W, th.y * H, spec); rec.by = rec.by || {}; rec.by[k] = (rec.by[k] || 0) + dt; }
       }
       for (const [th, rec] of seen) if (!live.has(th)){ done.push(rec); seen.delete(th); }
@@ -333,10 +334,13 @@ const madeProbe = (ctx) => {
     finish(){
       for (const rec of seen.values()) done.push(rec);
       const recs = done.filter(r => r.life > 0.3), tot = Math.max(0.01, recs.reduce((s, r) => s + r.life, 0));
+      /* (never reachable: nobody could touch it for as long as 0.3 s, and it left the screen rather than being touched the moment it was in reach) */
+      const missed = (r) => r.reach.every(x => x < 0.3) && (r.y1 > 0.95 || r.y1 < 0.05 || r.x1 < 0.02 || r.x1 > 0.98);
       const by = {}; for (const r of recs) for (const [k, v] of Object.entries(r.by || {})) by[k] = r2((by[k] || 0) + v / tot);
       return { things: recs.length, underHudShare: r2(recs.reduce((s, r) => s + r.hud, 0) / tot), underHudBy: by,
         reachableShareByPerson: ctx.world.persons.map((p, i) => ({ who: p.name, idx: i, share: r2(recs.reduce((s, r) => s + r.reach[i], 0) / tot) })),
-        neverReachableByAnyone: recs.filter(r => r.reach.every(x => x < 0.3)).length };
+        neverReachableByAnyone: recs.filter(missed).length,
+        sampleNeverReached: recs.filter(missed).slice(0, 4).map(r => ({ kind: r.kind, life: r2(r.life), from: [r2(r.x0), r2(r.y0)], to: [r2(r.x1), r2(r.y1)] })) };
     }
   };
 };

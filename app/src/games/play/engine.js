@@ -6,12 +6,21 @@
 import { MOVES, COLORS, LIMITS } from './vocabulary.js';
 import { HandFeel, FEEL } from '../../ui/handfeel.js';
 import { handsMode } from '../../ui/handsmode.js';
+import { reaches } from '../reach.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const HAND_REACH = 0.045, SWIPE = 0.45, FLOOR = 0.9, CEIL = 0.2;
 /* a thing that comes out from under the shell's areas (the clock, goal bar and score corner) grows in below them over POPIN seconds, and one
    floating up into them goes (fades) over LEAVE: nothing is ever touched, or looked for, under them (playtest 2, finding 1) */
 const POPIN = 0.4, LEAVE = 0.35;
+/* Fair for the smallest player (playtest 2, finding 4; games/reach.js says where each player's hands can get to): things that fall or float are
+   only there to touch once they are within the reach of the player who reaches least (a grown-up cannot take what a child cannot get to yet);
+   they come down the lanes where people stand, a turn each; they go no faster than that player's reach is crossed in BAND_SECS seconds; and they
+   are a little bigger for a short arm (up to BIG_MAX times, for an arm of ARM_REF or less). */
+const BAND_SECS = 3, ARM_REF = 0.19, BIG_MAX = 1.35, LANE_SPREAD = 0.07, LANE_ANYWHERE = 0.2, GHOST = 0.72;
+/* ...and a thing that came down somebody's lane is theirs first: for its first RESERVE seconds in reach only they can touch it (it has their colour round it),
+   then anyone can - so a quick grown-up cannot sweep a child's lane clear before the child has had a go */
+const RESERVE = 1.4;
 const ease = (k) => 1 - Math.pow(1 - clamp(k, 0, 1), 3);
 /* the tower a "stack" builds (as in Stack It High): one block's size (screen heights), where its ground is, where across the picture it stands,
    how long a block flies to it, how many blocks make a full one by default, and the bonus a full one is worth as it blasts off */
@@ -28,18 +37,51 @@ class PlayRound {
     this.spec = spec; this.n = players; this.env = env; this.rnd = env.random || Math.random;
     this.defs = spec.things.map((t, i) => {
       const move = t.moves || 'stay';
-      return { ...t, id: i, move, sz: t.size ?? 0.09, sp: t.speed ?? MOVES[move].speed, timer: 0.4 };
+      /* (fair: something to touch that falls or floats - a Dodge thing is not made bigger or slower for a short player, who is smaller to hit already) */
+      const fair = (move === 'fall' || move === 'rise') && (t.rules || []).some(r => (r.when === 'touched' || r.when === 'swiped') && !r.then.some(x => typeof x === 'object' && Object.keys(x)[0] === 'score' && x.score < 0));
+      return { ...t, id: i, move, sz: t.size ?? 0.09, sp: t.speed ?? MOVES[move].speed, timer: 0.4, fair };
     });
     this.score = Array.from({ length: env.max }, () => 0); this.total = 0;
     this.things = []; this.fx = []; this.texts = [];
     this.feel = new HandFeel();         /* the players' glow orbs (ui/handfeel.js): only what is drawn; hits are worked out below from the hands themselves */
     this.counts = {};                 /* how many times each named thing scored (a catch, a dodge, a bat, a block stacked), for the results */
     this.tower = []; this.fliers = []; this.rockets = []; this.towers = 0; this.wob = 0;
+    this.reach = reaches(env.max); this.here = []; this.low = null; this.laneTurns = {};
     this.aspect = 16 / 9; this.zones = []; this._zoneKey = ''; this.t = 0;
     this._refreshZones(1920, 1080);
     this.over = false; this.hint = spec.hint || null; this.hintIcon = spec.hintIcon || ''; this.hintT = 0; this.goalDone = false; this.endIn = -1; this.cheering = 0;
     /* what's there from the start */
     this.defs.forEach((d, k) => { if (!d.appears){ const c = d.count ?? 1; for (let i = 0; i < c; i++) this._make(d, d.at ? { ...d.at } : c === 1 ? { x: 0.5, y: d.move === 'bounce' ? 0.4 : 0.5 } : { x: 0.15 + this.rnd() * 0.7, y: 0.3 + this.rnd() * 0.3 }); } });
+  }
+
+  /* ---------- who is here, and what the one who reaches least can get to ---------- */
+  /* where each player's hands can get to (games/reach.js, from their own body); `low` is the band of whoever reaches least: the lowest top, the highest bottom */
+  _reaches(dt){
+    const pose = this.env.pose, mouse = !!(pose.mouse && pose.mouse.active), here = [];
+    for (let i = 0; i < this.n; i++){
+      const p = pose.players[i]; if (!p || !p.present) continue;
+      const r = this.reach[i].step(dt, p, mouse);
+      if (r.ready) here.push({ i, x: r.x, top: r.top, bottom: r.bottom, arm: r.arm });
+    }
+    this.here = here;
+    this.low = here.length ? { top: Math.max(...here.map(h => h.top)), bottom: Math.max(...here.map(h => h.bottom)), arm: Math.min(...here.map(h => h.arm)) } : null;
+  }
+  _here(i){ return this.here.some(h => h.i === i); }
+  /* is a thing that falls or floats within reach of the player who reaches least? (others - balls, things that stay or drift - always are) */
+  _live(th){
+    const low = this.low;
+    if (!low || !th.d.fair) return true;
+    return th.d.move === 'fall' ? th.y >= low.top - 0.02 : th.y <= low.bottom + 0.02;
+  }
+  /* where across the screen the next thing comes down: mostly where somebody stands, a turn each (the one who has had the fewest first), a little spread; laneOwner is whose lane it is (null: nobody's) */
+  _lane(){
+    const h = this.here; this.laneOwner = null;
+    if (!h.length || this.rnd() < LANE_ANYWHERE) return 0.08 + this.rnd() * 0.84;
+    let pick = h[0];
+    for (const q of h){ const a = this.laneTurns[q.i] || 0, b = this.laneTurns[pick.i] || 0; if (a < b || (a === b && this.rnd() < 0.5)) pick = q; }
+    this.laneTurns[pick.i] = (this.laneTurns[pick.i] || 0) + 1;
+    this.laneOwner = pick.i;
+    return clamp(pick.x + (this.rnd() - 0.5) * 2 * LANE_SPREAD, 0.06, 0.94);
   }
 
   /* ---------- the shell's areas: where nothing may be touched, and nothing should start ---------- */
@@ -88,21 +130,23 @@ class PlayRound {
 
   _make(d, at){
     if (this.things.length >= 80) return null;
-    const r = this.rnd, rad = d.sz / 2, from = (d.appears && d.appears.from) || (d.move === 'fall' ? 'top' : d.move === 'rise' ? 'bottom' : d.move === 'drift' ? (r() < 0.5 ? 'left' : 'right') : 'anywhere');
+    const r = this.rnd, from = (d.appears && d.appears.from) || (d.move === 'fall' ? 'top' : d.move === 'rise' ? 'bottom' : d.move === 'drift' ? (r() < 0.5 ? 'left' : 'right') : 'anywhere');
+    /* (a bit bigger for a short arm, and never faster than the one who reaches least can follow: only for what falls or floats to be touched) */
+    const fair = d.fair, big = fair && this.low ? clamp(ARM_REF / Math.max(0.05, this.low.arm), 1, BIG_MAX) : 1, sz = clamp(d.sz * big, LIMITS.size[0], LIMITS.size[1]), rad = sz / 2;
     let x = 0.5, y = 0.5, dir = r() < 0.5 ? -1 : 1, pop = false;
     if (at){ x = at.x; y = at.y; }
     else if (from === 'top'){
-      x = 0.08 + r() * 0.84; y = -0.06;
+      x = this._lane(); y = -0.06;
       /* (a column with the clock, goal bar or score over it: the thing grows in just below them) */
       const roof = this._roof(x, rad, d.sway || 0); if (roof > 0){ y = roof + rad + 0.01; pop = true; }
     }
-    else if (from === 'bottom'){ x = 0.08 + r() * 0.84; y = 1.06; }
+    else if (from === 'bottom'){ x = this._lane(); y = 1.06; }
     else if (from === 'left'){ x = -0.06; y = this._bandY(rad, 0.2, 0.7); dir = 1; }
     else if (from === 'right'){ x = 1.06; y = this._bandY(rad, 0.2, 0.7); dir = -1; }
     else { const p = this._clearSpot(() => ({ x: 0.12 + r() * 0.76, y: 0.2 + r() * 0.55 }), rad); x = p.x; y = p.y; }
     const pieces = Array.isArray(d.piece) ? d.piece : [d.piece], cols = d.color === undefined ? [null] : Array.isArray(d.color) ? d.color : [d.color];
-    const th = { d, x, y, vx: 0, vy: 0, rot: 0, spin: d.spins ? (r() - 0.5) * 3 : 0, sz: d.sz, piece: pieces[(r() * pieces.length) | 0], color: cols[(r() * cols.length) | 0],
-      age: 0, ph: r() * 6.28, dir, cool: 0, base: y, dead: false, fired: {}, tx: x, ty: y, tt: 0, sp: d.sp * (0.8 + r() * 0.4), flip: false, pop, leaving: 0 };
+    const th = { d, x, y, vx: 0, vy: 0, rot: 0, spin: d.spins ? (r() - 0.5) * 3 : 0, sz, owner: fair && (from === 'top' || from === 'bottom') && !at ? this.laneOwner : null, resv: RESERVE, piece: pieces[(r() * pieces.length) | 0], color: cols[(r() * cols.length) | 0],
+      age: 0, ph: r() * 6.28, dir, cool: 0, base: y, dead: false, fired: {}, tx: x, ty: y, tt: 0, sp: Math.min(d.sp * (0.8 + r() * 0.4), fair && this.low ? Math.max(0.05, (this.low.bottom - this.low.top) / BAND_SECS) : 9), flip: false, pop, leaving: 0 };
     this.things.push(th);
     return th;
   }
@@ -121,7 +165,7 @@ class PlayRound {
   step(dt, W, H){
     this.t += dt; this.hintT += dt; this.cheering = Math.max(0, this.cheering - dt); this.wob = Math.max(0, this.wob - dt);
     const aspect = W / H, secs = this.spec.endless ? 600 : (this.spec.secs ?? 90);
-    this._refreshZones(W, H);
+    this._refreshZones(W, H); this._reaches(dt);
     if (this.endIn >= 0){ this.endIn -= dt; if (this.endIn <= 0) this.over = true; }
     else if (!this.spec.endless && this.t >= secs) this.over = true;
     /* more keep coming */
@@ -136,12 +180,13 @@ class PlayRound {
     const hands = this._hands();
     /* the orbs follow the hands; what a hand can touch (a good thing, never a thing to dodge) draws it a little toward that thing */
     this.feel.aspect = aspect;
-    this.feel.targets(this.things.filter(th => !th.dead && !th.leaving && !this._under(th.x, th.y) && this._touchable(th) && th.x > -0.05 && th.x < 1.05 && th.y > -0.05 && th.y < 1.05).map(th => ({ x: th.x, y: th.y, r: th.sz / 2 })));
+    this.feel.targets(this.things.filter(th => !th.dead && !th.leaving && !this._under(th.x, th.y) && this._live(th) && this._touchable(th) && th.x > -0.05 && th.x < 1.05 && th.y > -0.05 && th.y < 1.05).map(th => ({ x: th.x, y: th.y, r: th.sz / 2 })));
     this.feel.step(dt, hands.map(({ i, h }, k) => ({ key: i + (h === this.env.pose.players[i].hands.left ? 'L' : 'R'), who: i, x: h.x, y: h.y, col: this.env.colors[i] })),
       (k) => { const f = this.env.sfx.handWhoosh; if (f) f.call(this.env.sfx, k); });
     for (const th of this.things){
       if (th.dead) continue;
       th.age += dt; th.cool = Math.max(0, th.cool - dt); th.rot += th.spin * dt;
+      if (th.resv > 0 && this._live(th) && !this._under(th.x, th.y)) th.resv = Math.max(0, th.resv - dt);
       this._move(th, dt);
       /* floating up into the shell's areas: it goes, as it would at the edge of the screen */
       if (th.d.move === 'rise' && !th.leaving && th.age > 0.3 && th.y < 0.5 && this._under(th.x, th.y, th.sz * 0.5)) th.leaving = 1e-6;
@@ -150,8 +195,9 @@ class PlayRound {
       for (const rule of th.d.rules || []){
         if (th.dead) break;
         if (rule.when === 'touched' || rule.when === 'swiped'){
-          if (th.cool > 0 || th.leaving > 0 || this._under(th.x, th.y)) continue;   /* (under the clock, the goal bar, the scores: not there to touch) */
+          if (th.cool > 0 || th.leaving > 0 || this._under(th.x, th.y) || !this._live(th)) continue;   /* (under the clock, the goal bar, the scores, or not yet in reach of the smallest player: not there to touch) */
           for (const { i, h } of hands){
+            if (th.resv > 0 && th.owner != null && th.owner !== i && this._here(th.owner)) continue;   /* (reserved for the player whose lane it came down) */
             const dx = (th.x - h.x) * aspect, dy = th.y - h.y;
             if (Math.hypot(dx, dy) > th.sz / 2 + HAND_REACH) continue;
             if (rule.when === 'swiped' && !(h.speed > SWIPE)) continue;
@@ -316,9 +362,11 @@ class PlayRound {
       /* a hand near something it can touch: it grows up to 8% and glows (only drawn so) */
       const k = orbs && this._touchable(th) && !th.leaving ? this.feel.near(th.x, th.y, th.sz / 2) : 0;
       if (k > 0.01) A.draw(c, 'dot', th.x * W, th.y * H, th.sz * H * 2.4, { color: COLORS.yellow, alpha: 0.7 * k });
+      /* (a thing that is still somebody's first: their colour round it) */
+      if (th.resv > 0 && th.owner != null && this._live(th) && this._here(th.owner)) A.draw(c, 'dot', th.x * W, th.y * H, th.sz * H * 1.7, { color: this.env.colors[th.owner], alpha: 0.5 * Math.min(1, th.resv / 0.3) });
       /* (growing in below the shell's areas, or going as it floats up into them) */
       const born = th.pop ? ease(th.age / POPIN) : 1, gone = th.leaving > 0 ? 1 - th.leaving / LEAVE : 1;
-      A.draw(c, th.piece, th.x * W, th.y * H, th.sz * H * (1 + FEEL.hoverGrow * k) * (0.4 + 0.6 * born), { color: th.color ? hexOf(th.color, this.env) : undefined, rotate: th.rot, flip: th.flip, t: th.age, shadow: th.d.move === 'bounce', ...(born < 1 || gone < 1 ? { alpha: born * gone } : {}) });
+      A.draw(c, th.piece, th.x * W, th.y * H, th.sz * H * (1 + FEEL.hoverGrow * k) * (0.4 + 0.6 * born), { color: th.color ? hexOf(th.color, this.env) : undefined, rotate: th.rot, flip: th.flip, t: th.age, shadow: th.d.move === 'bounce', ...(born < 1 || gone < 1 || !this._live(th) ? { alpha: born * gone * (this._live(th) ? 1 : GHOST) } : {}) });
     }
     /* blocks on their way to the tower */
     this.fliers.forEach((f, i) => {
