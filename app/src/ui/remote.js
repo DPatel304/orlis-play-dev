@@ -71,6 +71,24 @@ export const remote = {
     return band[0].b;
   },
 
+  /* A slider shares its row with a button (Settings: the speaker, then the Volume bar), so Down from the button would skip over it. Up and Down
+     make it a stop of its own: going Down the order is the button, then the slider; going Up it is the slider, then the button. */
+  rowSlider(b, bs){
+    const a = b.getBoundingClientRect(), ay = a.top + a.height / 2, ax = a.left + a.width / 2;
+    return bs.find(x => { if (!isSlider(x) || x === b) return false; const r = x.getBoundingClientRect(); return Math.abs(r.top + r.height / 2 - ay) < Math.max(a.height, r.height) * 0.6 && r.left > ax; }) || null;
+  },
+  vertical(cur, bs, dir){
+    const dy = dir[1];
+    if (dy > 0 && !isSlider(cur)){ const sl = this.rowSlider(cur, bs); if (sl) return sl; }
+    if (dy < 0 && isSlider(cur)){
+      const a = cur.getBoundingClientRect(), ay = a.top + a.height / 2;
+      const left = bs.filter(x => x !== cur && !isSlider(x) && x.classList.contains('btn') && Math.abs(x.getBoundingClientRect().top + x.getBoundingClientRect().height / 2 - ay) < a.height * 0.6 && x.getBoundingClientRect().right <= a.left + 4).pop();
+      if (left) return left;
+    }
+    const next = this.nearest(cur, bs, dir);
+    return next && dy < 0 && !isSlider(next) && this.rowSlider(next, bs) || next;
+  },
+
   key(e){
     /* typing in a box (an email, a password): the keys are the box's */
     if (typing(e)) return false;
@@ -87,7 +105,7 @@ export const remote = {
       if (OK.has(e.key)){ const b = cur || bs[0]; this.mark(b); if (!isSlider(b)) b.click(); return true; }
       /* a slider: Left and Right move it a step; at its end the key moves on to the next button that way, as it does anywhere else */
       if (cur && isSlider(cur) && dir[0] && stepSlider(cur, dir[0])){ this.mark(cur); sfx.nav?.(); return true; }
-      const next = cur ? this.nearest(cur, bs, dir) : bs[0];
+      const next = cur ? (dir[1] ? this.vertical(cur, bs, dir) : this.nearest(cur, bs, dir)) : bs[0];
       if (!next) return true;
       this.mark(next);
       if (!next.classList.contains('tvtile')) sfx.nav();

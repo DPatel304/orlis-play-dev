@@ -124,7 +124,7 @@ function volumeRow(){
   const other = btn(s, 'display', 100, 500, 300, 120);
   const heard = []; sl.addEventListener('input', () => heard.push(+sl.value));
   remote.cur = null;
-  return { sl, mute, other, heard };
+  return { sl, mute, other, heard, s };
 }
 test('the remote reaches the Volume slider and Left and Right move it in steps, telling the page each time', () => {
   const { sl, mute, heard } = volumeRow();
@@ -137,6 +137,17 @@ test('the remote reaches the Volume slider and Left and Right move it in steps, 
   assert.equal(+sl.value, 0.6);
   assert.deepEqual(heard, [0.6, 0.7, 0.6], 'one input event per step');
   assert.equal(remote.cur, sl, 'it keeps the highlight while it is moved');
+});
+test('Down reaches the Volume slider as a stop of its own: the button above, Mute, the slider, then the next row; Up goes back the same way', () => {
+  const { sl, mute, other, s } = volumeRow();
+  const home = btn(s, 'home', 100, 100, 300, 80);
+  remote.mark(home);
+  press('ArrowDown'); assert.equal(remote.cur, mute, 'Home, then Mute');
+  press('ArrowDown'); assert.equal(remote.cur, sl, 'the slider is not skipped');
+  press('ArrowDown'); assert.equal(remote.cur, other, 'then the next row');
+  press('ArrowUp'); assert.equal(remote.cur, sl, 'Up lands on the slider again');
+  press('ArrowUp'); assert.equal(remote.cur, mute);
+  press('ArrowUp'); assert.equal(remote.cur, home);
 });
 test('a slider stops at its ends, and Left at the bottom moves on to the button beside it; Up and Down leave it', () => {
   const { sl, mute, other } = volumeRow();
