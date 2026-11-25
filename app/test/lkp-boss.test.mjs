@@ -164,3 +164,22 @@ test('the Warden draws', () => {
   inst.boss.blasts = [{ kind: 'wave', d: 0.3 }, { kind: 'sweep', d: 0.2 }];
   inst.draw(new Proxy({}, { get: (_, k) => k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop(){} }) : k === 'measureText' ? () => ({ width: 10 }) : () => {}, set: () => true }), W, H);
 });
+
+test('the arms\' health bars stop short of the top-right badges (the level, and the level-ups waiting) and of the core\'s bar', async () => {
+  const { layoutDocks } = await import('../src/games/hud.js');
+  for (const [w, h] of [[1920, 1080], [1280, 720], [1366, 768]]){
+    const inst = boss();
+    const rects = []; let fill = null;
+    const c = new Proxy({}, { get: (_, k) => k === 'fillRect' ? (x, y, ww, hh) => { if (fill === 'rgba(5,6,15,.8)') rects.push({ x, y, w: ww, h: hh }); } : (...a) => {}, set: (_, k, v) => { if (k === 'fillStyle') fill = v; return true; } });
+    inst.boss.hud(c, w, h);
+    const [core, ...arms] = rects;
+    assert.equal(arms.length, 2, 'both arms have a bar');
+    const badges = layoutDocks(w, h, { top: { badges: [{ icon: 'a', value: 2 }, { icon: 'b', value: 1 }] } }, { players: [0] }).filter(p => p.key.startsWith('tb')).map(p => p.rect);
+    const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+    for (const a of arms){
+      for (const b of badges) assert.ok(!hit(a, b), `${w}x${h}: an arm's bar is clear of a badge`);
+      assert.ok(!hit(a, core), `${w}x${h}: and of the core's bar`);
+      assert.ok(a.w > h * 0.05, 'still a bar to read');
+    }
+  }
+});

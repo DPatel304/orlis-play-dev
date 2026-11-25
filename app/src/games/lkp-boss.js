@@ -259,9 +259,12 @@ export class Warden {
   hud(c, W, H){
     healthBar(c, W, H, this.core.hp / this.core.max, this.phase === 'overload');
     const w = W * 0.4, y = H * 0.11, h = H * 0.03;
+    /* An arm's bar sits right beside the core's, between it and the top-right badges (the shell's level badge and the level-ups waiting, from
+       0.75 of the width): short enough to stop before them, 4 px clear of the core's bar on its other side. */
+    const aw = W * 0.034, gap = W * 0.006;
     for (const a of this.arms){
       if (a.hp <= 0) continue;
-      const ax = W / 2 + a.side * (w / 2 + W * 0.05) - W * 0.035, aw = W * 0.07;
+      const ax = a.side > 0 ? W / 2 + w / 2 + 4 + gap + 3 : W / 2 - w / 2 - 4 - gap - 3 - aw;
       c.fillStyle = 'rgba(5,6,15,.8)'; c.fillRect(ax - 3, y - 3, aw + 6, h + 6);
       c.fillStyle = '#c2410c'; c.fillRect(ax, y, aw * a.hp / a.max, h);
     }
