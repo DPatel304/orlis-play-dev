@@ -52,7 +52,7 @@ chain reaction ("spawn"). Mix the words; give things names and have one spawn an
 
 ## The players
 
-Everyone plays with their **hands**: a glowing mitt in their colour follows each hand (the engine draws it). Up to two play at
+Everyone plays with their **hands**: a glowing mitt in their colour follows each hand (the engine draws it). Up to four play at
 once; a game must work for one child alone. A thing is touched by any player's hand, and the points go to whoever did it
 (`"team": true` makes it one shared score and hides the pills). Nobody is ever out: no lives, no game over.
 

@@ -156,3 +156,20 @@ test('finishing twice does not fire the callback twice', () => {
   }
   assert.equal(calls, 1);
 });
+
+test('the words say up to four can play, and count three or four players right', () => {
+  const ui = setup();
+  const scr = { _done: false }, api = calibration(() => { scr._done = true; });
+  const said = () => ui.querySelectorAll('p').map(p => p.textContent).join(' ');
+  const text = said();
+  assert.match(text, /Up to four people can play/);
+  assert.doesNotMatch(text, /Two people can play/);
+  for (const [n, word] of [[1, 'One player'], [2, 'Two players'], [3, 'Three players'], [4, 'Four players']]){
+    pose.personCount = n;
+    for (let i = 0; i < n; i++){ pose.players[i].present = true; pose.players[i].lm = SEEN; }
+    for (let i = n; i < 4; i++){ pose.players[i].present = false; pose.players[i].lm = null; }
+    api.tick(0.05);
+    assert.ok(said().includes(word), `${n} bodies in view should read "${word}", got: ${said()}`);
+    scr._done = false;
+  }
+});

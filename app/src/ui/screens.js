@@ -33,7 +33,7 @@ export function h(tag, cls, html){
 export function calibration(onDone){
   const s = screen('dim');
   const title = h('h2', '', 'Stand back until we can see all of you');
-  const info  = h('p', 'lede', 'Two people can play. Stand side by side, about two metres back.');
+  const info  = h('p', 'lede', 'Up to four people can play. Stand side by side, about two metres back.');
   const state = h('p', 'lede', '');
   s.append(title, info, state);
 
@@ -86,7 +86,7 @@ export function calibration(onDone){
 
       if (ratio > NEED * 0.6){
         const left = Math.max(0, WINDOW - total) + (ratio > NEED ? 0 : 0.8);
-        state.textContent = (full === 2 ? 'Two players' : 'One player') +
+        state.textContent = (['One player', 'One player', 'Two players', 'Three players'][full] || 'Four players') +
                             ` — starting in ${left.toFixed(1)}s`;
         state.style.color = 'var(--good)';
         if (total >= WINDOW * 0.7 && ratio > NEED) done();

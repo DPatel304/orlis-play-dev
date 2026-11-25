@@ -56,7 +56,7 @@ the library), say so plainly to the grown-up - it can be asked for - and offer t
   that Orlis Play games can't, and suggest a gentle version instead.
 - **Moving is the controller.** Big, simple movements anyone can do. No
   reading needed to play; show, don't tell.
-- **Fair for everyone at once.** Two players together for now (make it work
+- **Fair for everyone at once.** Up to four players together (make it work
   for one alone, too); each has their own colour (`Orlis.PLAYER_COLORS`) and
   score. A child joining, leaving, or the camera losing them for a moment
   partway mustn't break anything - and nobody scores while they're away.
