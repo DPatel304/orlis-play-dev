@@ -23,6 +23,7 @@ import { cuboFigure } from './avatar-art.js';
 import { reduced } from './chkit.js';
 import { magnet } from './magnet.js';
 import { assets } from '../games/assets/index.js';
+import { alpha as paletteAlpha } from '../games/assets/palette.js';
 import { pose } from '../tracking/pose.js';
 import { JumpWatch } from '../tracking/jump.js';
 import { choices, pieceInfo } from '../create/recipe.js';
@@ -34,6 +35,7 @@ import { Comfort, rowOf, cardsBand, meterBand, near as nearK, TOP_LIMIT } from '
 import * as F from '../create/cubo-flow.js';
 
 const col = (n, tone) => assets.color(n, tone);
+const al = paletteAlpha;
 const REMOTE_KEYS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
 const OK_KEYS = new Set(['Enter', 'NumpadEnter', ' ', 'Select', 'Accept']);
 export const BACK_KEYS = ['Escape', 'Backspace', 'BrowserBack', 'GoBack', 'Back'];
@@ -750,7 +752,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
     const x = m.x * VW() , y = m.y * VH(), rad = Math.max(24, VH() * 0.058);
     c.save();
     c.lineWidth = Math.max(5, VH() * 0.012); c.lineCap = 'round';
-    c.strokeStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.arc(x, y, rad, 0, 6.2832); c.stroke();
+    c.strokeStyle = al('earth.snow', 0.55); c.beginPath(); c.arc(x, y, rad, 0, 6.2832); c.stroke();
     c.strokeStyle = col('ui.gold'); c.beginPath(); c.arc(x, y, rad, -Math.PI / 2, -Math.PI / 2 + holding.k * 6.2832); c.stroke();
     c.restore();
   }
@@ -773,9 +775,9 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
       assets.scene(c, b.w, b.h, id, { t: clock, p: 0.3 });
       c.restore();
       ambient(c, id, x0, y0, cb.w, cb.h, clock, still);
-      if (!cur){ c.fillStyle = 'rgba(29,27,46,.28)'; c.fillRect(x0, y0, cb.w, cb.h); }
+      if (!cur){ c.fillStyle = al('shade.ink', 0.28); c.fillRect(x0, y0, cb.w, cb.h); }
       c.restore();
-      c.save(); rrect(c, x0, y0, cb.w, cb.h, u * 3.4); c.lineWidth = u * (cur ? 1.1 : 0.6); c.strokeStyle = cur ? col('earth.snow') : 'rgba(255,255,255,.7)'; c.stroke(); c.restore();
+      c.save(); rrect(c, x0, y0, cb.w, cb.h, u * 3.4); c.lineWidth = u * (cur ? 1.1 : 0.6); c.strokeStyle = cur ? col('earth.snow') : al('earth.snow', 0.7); c.stroke(); c.restore();
     }
   }
   function drawCubo(c, b, u){
@@ -797,7 +799,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
     if (extra === 'demoHold'){
       /* his hand reaches out and rests on a glowing spot while a ring fills */
       const k = clamp((clock - act.from) / 2.2, 0, 1), sx = x + u * 15, sy = base - hh * 0.62;
-      c.save(); c.fillStyle = 'rgba(255,236,150,.55)'; c.beginPath(); c.arc(sx, sy, u * 5, 0, 7); c.fill();
+      c.save(); c.fillStyle = al('touch.sunflower', 0.55); c.beginPath(); c.arc(sx, sy, u * 5, 0, 7); c.fill();
       c.lineWidth = u * 1.1; c.lineCap = 'round'; c.strokeStyle = col('ui.gold'); c.beginPath(); c.arc(sx, sy, u * 5.6, -Math.PI / 2, -Math.PI / 2 + k * 6.2832); c.stroke(); c.restore();
     }
     if (extra === 'demoArms'){
