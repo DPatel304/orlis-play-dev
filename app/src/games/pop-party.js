@@ -1,5 +1,5 @@
 import { PALETTE, color, alpha } from './assets/palette.js';
-import { Juice, clamp } from './common.js';
+import { Juice, fxState, clamp } from './common.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx, music } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
@@ -751,7 +751,7 @@ class PopParty {
   }
 
   _drawFx(c, H){
-    for (const f of this.fx){
+    for (const f of fxState.hidden ? [] : this.fx){
       const k = f.age / f.life;
       if (f.k === 'ring'){
         c.globalAlpha = 1 - k;

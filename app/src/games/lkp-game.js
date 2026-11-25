@@ -1,6 +1,6 @@
 import { worldOverlook } from './lkp-world.js';
 import { layoutDocks } from './hud.js';
-import { clamp, scores } from './common.js';
+import { clamp, scores, fxState } from './common.js';
 import { pose, L, PLAYER_COLORS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { FaceCam } from '../ui/faces.js';
@@ -2122,7 +2122,7 @@ class LastKnownPosition {
   }
 
   _drawBits(c, W, H){
-    for (const b of this.bits){
+    for (const b of fxState.hidden ? [] : this.bits){
       const k = b.age / b.life;
       /* (a giant's footfall: dust rolling out round its foot, on the ground where it came down) */
       if (b.kind === 'dust'){

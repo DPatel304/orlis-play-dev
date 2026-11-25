@@ -9,6 +9,7 @@
    Nothing in this file reads the camera, the sound engine or the page, so a game running in the sandbox carries it as it is.
    Every number below is a starting guess, to be tuned at home on a real webcam (decision 0062). */
 import { color } from '../games/assets/palette.js';
+import { fxState } from '../games/common.js';
 
 export const FEEL = {
   /* smoothing: a One Euro filter on what is drawn. The tracker's own filter (pose.js: 0.7 Hz at rest, + 6 Hz per screen-width/s) and its
@@ -157,6 +158,7 @@ export class Bursts {
   }
   get alive(){ return this.sparks.length + this.rings.length; }
   draw(c, W, H){
+    if (fxState.hidden) return;
     for (const r of this.rings){
       const k = 1 - r.life / r.max;
       c.strokeStyle = withAlpha(r.col, 0.7 * (1 - k)); c.lineWidth = H * (0.0097 * (1 - k) + 0.0014);

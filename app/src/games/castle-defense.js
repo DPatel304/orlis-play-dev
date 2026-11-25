@@ -1,4 +1,4 @@
-import { clamp } from './common.js';
+import { clamp, fxState } from './common.js';
 import { pose, L, PLAYER_COLORS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { Avatars } from '../ui/avatars.js';
@@ -1638,7 +1638,7 @@ class CastleDefense {
   }
 
   _drawBits(c, W, H){
-    for (const b of this.bits){
+    for (const b of fxState.hidden ? [] : this.bits){
       if (b.age < 0) continue;
       const k = b.age / b.life;
       if (b.kind === 'spark'){ c.globalAlpha = 1 - k; c.fillStyle = b.col; c.beginPath(); c.arc(b.x * W, b.y * H, H * 0.006, 0, 6.2832); c.fill(); c.globalAlpha = 1; }

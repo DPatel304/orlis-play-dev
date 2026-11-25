@@ -4,6 +4,7 @@ import { handsMode } from './handsmode.js';
 import { keepOut } from './keepout.js';
 import { HandFeel } from './handfeel.js';
 import { sfx } from '../audio/sound.js';
+import { fxState } from '../games/common.js';
 
 /* The players, in the picture. Two layers, drawn by the game at different
    depths:
@@ -148,6 +149,7 @@ export class Avatars {
 
   /* the sparkles a quick hand throws (a trail), a little fainter by `fade` */
   _drawSparks(c, W, H, fade){
+    if (fxState.hidden) return;
     for (const s of this.sparks){
       const k = s.age / s.life, r = H * 0.009 * s.s * (1 - k * 0.5);
       c.globalAlpha = (1 - k) * fade;

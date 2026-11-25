@@ -19,7 +19,7 @@
    How much is worn is kept on a coarse grid (GRID), a wear count for each cell; the layers are drawn on offscreen canvases that are
    rubbed out cell by cell as the counts rise. */
 import { color, alpha, tone } from './assets/palette.js';
-import { Juice } from './common.js';
+import { Juice, fxState } from './common.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { Avatars } from '../ui/avatars.js';
@@ -389,7 +389,7 @@ class SkyPainter {
       for (let j = 2; j >= 0; j--) if (this.visOk[j] && (j === 0 || this.started[j - 1] > 0) && k < 1) c.drawImage(cv.vis[j], 0, 0);
       c.globalAlpha = 1;
     }
-    for (const b of this.bits) drawBit(c, b, W, H);
+    if (!fxState.hidden) for (const b of this.bits) drawBit(c, b, W, H);
     c.globalAlpha = 1;
     this.avatars.drawMitts(c, W, H, this.players);
   }

@@ -14,7 +14,7 @@
    camera pans across what everyone built and the results say how many blocks tall the tallest thing was.
    First person: the players are their hands. */
 import { color, alpha } from './assets/palette.js';
-import { Juice } from './common.js';
+import { Juice, fxState } from './common.js';
 import { reaches } from './reach.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
@@ -350,7 +350,7 @@ class StackItHigh {
       const k = !this.cam && b.held == null && this.yard.liftable(b) ? this.avatars.near(b.X / this.A, b.Y, Math.max(b.w, b.h) / 2) : 0;
       drawPiece(c, b, H, this.t, b.held, k);
     }
-    for (const f of this.fx){
+    for (const f of fxState.hidden ? [] : this.fx){
       c.globalAlpha = 0.5 * (1 - f.age / f.life); c.fillStyle = color('earth.sand');
       c.beginPath(); c.arc(f.X * H, f.Y * H, H * f.r * (1 + f.age * 2.2), 0, 6.2832); c.fill();
     }

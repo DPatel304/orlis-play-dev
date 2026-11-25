@@ -155,3 +155,13 @@ test('a hit never uses Math.random: a game\'s own dice (seeded by the playtest r
   } finally { Math.random = real; }
   assert.equal(used, 0);
 });
+
+test('bursts are not drawn while the pause card is up', async () => {
+  const { fxState } = await import('../src/games/common.js');
+  const calls = []; const c = new Proxy({}, { get: (_, k) => (...a) => { calls.push(k); }, set: () => true });
+  const b = new Bursts(); b.add(0.5, 0.5, '#3da9ff');
+  fxState.hidden = true;
+  try { b.draw(c, 1920, 1080); assert.equal(calls.length, 0); } finally { fxState.hidden = false; }
+  assert.ok(b.alive > 0, 'state kept');
+  b.draw(c, 1920, 1080); assert.ok(calls.length > 0);
+});

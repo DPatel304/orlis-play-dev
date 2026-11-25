@@ -7,6 +7,7 @@ import { MOVES, COLORS, LIMITS } from './vocabulary.js';
 import { HandFeel, FEEL } from '../../ui/handfeel.js';
 import { handsMode } from '../../ui/handsmode.js';
 import { reaches } from '../reach.js';
+import { fxState } from '../common.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const HAND_REACH = 0.045, SWIPE = 0.45, FLOOR = 0.9, CEIL = 0.2;
@@ -514,8 +515,8 @@ class PlayRound {
       const x = f.x0 + (TOWER_X - f.x0) * e, y = f.y0 + ((GROUND - (slot + 0.5) * BLOCK) - f.y0) * e - Math.sin(k * Math.PI) * 0.12, sz = f.s0 + (BLOCK - f.s0) * e;
       A.draw(c, f.piece, x * W, y * H, sz * H, { color: f.color ? hexOf(f.color, this.env) : undefined, rotate: k * 6.28, t: f.t });
     });
-    for (const f of this.fx) if (f.age >= 0) A.draw(c, f.kind, f.x * W, f.y * H, f.big ? H * 0.28 : f.size * H, { color: f.color, t: f.age / 0.6 });
-    for (const x of this.texts) A.text(c, x.text, x.x * W, x.y * H, H * 0.05, { color: '#fff', outline: x.color, alpha: 1 });
+    if (!fxState.hidden) for (const f of this.fx) if (f.age >= 0) A.draw(c, f.kind, f.x * W, f.y * H, f.big ? H * 0.28 : f.size * H, { color: f.color, t: f.age / 0.6 });
+    if (!fxState.hidden) for (const x of this.texts) A.text(c, x.text, x.x * W, x.y * H, H * 0.05, { color: '#fff', outline: x.color, alpha: 1 });
     if (wob) c.restore();
     const hf = this.spec.hintFor ?? 8;
     if (this.hint) this.env.ui.say(c, W, H, { icon: this.hintIcon, text: this.hint, t: this.hintT, until: hf });

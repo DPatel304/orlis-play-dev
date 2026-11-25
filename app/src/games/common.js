@@ -21,6 +21,10 @@ export const scores = {
 /* Particles, score pops and screen shake. Juice is the difference between a
    tech demo and something a four-year-old shrieks at, so it lives in the
    shared layer rather than being reinvented per game. */
+/* While the pause card is up the game's own state stays as it is, but its bursts, sparks and "+1" pop-ups (frozen mid-air) are not
+   drawn: main.js sets hidden each frame, and every effects layer (Juice here, Bursts and the sparks in ui/) checks it. */
+export const fxState = { hidden: false };
+
 export class Juice {
   constructor(){ this.bits = []; this.pops = []; this.shake = 0; }
   burst(x, y, color, n = 14, power = 1){
@@ -41,6 +45,7 @@ export class Juice {
     this.pops = this.pops.filter(p => p.age < p.life);
   }
   draw(c, H){
+    if (fxState.hidden) return;
     for (const b of this.bits){
       c.globalAlpha = Math.max(0, 1 - b.age / b.life);
       c.fillStyle = b.color;

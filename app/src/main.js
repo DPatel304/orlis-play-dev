@@ -27,7 +27,7 @@ import { calibration, results, pauseOverlay, lostOverlay,
          clearUI, drawSkeletons } from './ui/screens.js';
 import { audio, music, sfx, ambience } from './audio/sound.js';
 import { voice } from './audio/voice.js';
-import { scores } from './games/common.js';
+import { scores, fxState } from './games/common.js';
 import { byId } from './games/index.js';
 import { PLAYER_COLORS, MAX_PLAYERS } from './tracking/pose.js';
 import { crew } from './ui/crew.js';
@@ -523,6 +523,7 @@ function tick(now){
   last = now;
 
   pose.paused = !!paused;
+  fxState.hidden = !!paused;      /* (frozen bursts and "+1"s would hang over the pause card) */
   if (!away && (!CALM.has(mode) || BODY_PAGES.has(mode))) pose.update(now, dt);
 
   /* paper, under the menus; dark under a game while it loads */

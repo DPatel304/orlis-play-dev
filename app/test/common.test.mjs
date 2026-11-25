@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scores, Juice, clamp, lerp } from '../src/games/common.js';
+import { scores, Juice, fxState, clamp, lerp } from '../src/games/common.js';
 
 test('an unplayed game has no best score', () => {
   localStorage.clear();
@@ -133,4 +133,15 @@ test('the old Astra Park settings and scores move to their Orlis names, once', a
   assert.equal(scores.best('pop-party', 1), 12);
   assert.equal(localStorage.getItem('orlis_audio'), '{"vol":0.4}', 'a newer setting is kept');
   assert.ok(!Object.keys(localStorage).some(k => k.startsWith('astrapark_')), 'the old names are gone');
+});
+
+/* The pause card: bursts and "+1" pop-ups are not drawn while paused (and nothing is lost: they carry on after). */
+test('juice draws nothing while the pause card is up, and keeps its state', () => {
+  const calls = []; const c = new Proxy({}, { get: (_, k) => k === 'measureText' ? () => ({ width: 1 }) : (...a) => { calls.push(k); }, set: () => true });
+  const j = new Juice(); j.burst(10, 10, '#fff', 5); j.pop(10, 10, '+1', '#fff');
+  fxState.hidden = true;
+  try { j.draw(c, 1080); assert.equal(calls.length, 0, 'nothing drawn'); }
+  finally { fxState.hidden = false; }
+  assert.equal(j.bits.length, 5); assert.equal(j.pops.length, 1);
+  j.draw(c, 1080); assert.ok(calls.length > 0, 'drawn again after resume');
 });
