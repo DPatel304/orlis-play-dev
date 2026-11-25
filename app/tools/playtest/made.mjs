@@ -7,12 +7,14 @@ import { defaultPicks } from '../../src/create/recipe.js';
 
 const A = 16 / 9;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-export const MADE_IDS = ['made-collect', 'made-dodge', 'made-keepup', 'made-stack'];
+/* (made-dodge-still: the same game with players who never move - the control for the rule that standing still must not win) */
+export const MADE_IDS = ['made-collect', 'made-dodge', 'made-dodge-still', 'made-keepup', 'made-stack'];
 
 /* the picks a child would make with the defaults (speed 3, many 3, size 2, together) apart from the job and the piece; two minutes */
 const PICKS = {
   'made-collect': { things: [{ id: 'apple', job: 'collect' }] },
-  'made-dodge': { things: [{ id: 'rock', job: 'dodge' }] },
+  'made-dodge': { things: [{ id: 'bee', job: 'dodge' }] },
+  'made-dodge-still': { things: [{ id: 'bee', job: 'dodge' }] },
   'made-keepup': { things: [{ id: 'beachball', job: 'keepup' }] },
   'made-stack': { things: [{ id: 'apple', job: 'stack' }] }
 };
@@ -106,4 +108,7 @@ const keepup = {
     p.other(r.side).release(now);
   }
 };
+/* dodge, standing still: hands at the sides, never a step: what a child who does not know it is a game does */
+const still = { act(ctx, p, now){ p.mem.now = now; p.state = 'on'; p.releaseHands(now); } };
+BRAINS['made-dodge-still'] = still;
 BRAINS['made-collect'] = grab; BRAINS['made-stack'] = grab; BRAINS['made-dodge'] = dodge; BRAINS['made-keepup'] = keepup;

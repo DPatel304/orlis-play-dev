@@ -119,16 +119,14 @@ test('Collect: things come in and a touch scores one with a sparkle; some float,
   assert.ok(round.score[0] > was); assert.ok(round.fx.some(f => f.kind === 'sparkle')); assert.ok(sounds.includes('twinkle')); assert.equal(round.counts['collect-apple'], 1);
 });
 
-test('Dodge: things drift through; a touch costs a point (never below zero) with a bump, a sound and a wobble; one let go by is a point', () => {
+test('Dodge (decision 0063): no score - a touch takes a chunk off the health bar with a flash, a wobble and an ouch, and a thing that goes past is worth nothing', () => {
   const g = build(withJobs(['bee', 'dodge']));
-  assert.equal(g.things[0].moves, 'drift');
+  assert.equal(g.things[0].moves, 'seek'); assert.equal(g.health, true);
   const { round, pose, sounds } = game(g); run(round, 30);
-  const before = round.score[0]; assert.ok(before > 0, 'dodged things score');
-  const t = round.things[0]; round.things = [t]; touch(pose, t.x, t.y); round.step(DT, W, H); away(pose);
-  assert.equal(round.score[0], before - 1); assert.ok(sounds.includes('boing')); assert.ok(round.wob > 0, 'a wobble');
-  /* a fresh round: nothing scored, a touch cannot go below zero */
-  const z = game(g); run(z.round, 0.6); const tz = z.round.things[0]; touch(z.pose, tz.x, tz.y); z.round.step(DT, W, H);
-  assert.equal(z.round.score[0], 0); assert.equal(z.round.total, 0);
+  assert.equal(round.score[0], 0, 'standing still earns nothing'); assert.equal(round.total, 0);
+  const t = round.things[0]; round.things = [t]; round.safe[0] = 0; round.dizzy[0] = 0; round.hp[0] = 1; touch(pose, t.x, t.y); round.step(DT, W, H); away(pose);
+  assert.ok(round.hp[0] < 1, 'a chunk off'); assert.ok(sounds.includes('ouch')); assert.ok(round.wob > 0, 'a wobble'); assert.ok(round.flash[0] > 0, 'a flash');
+  assert.equal(round.score[0], 0, 'still no score');
 });
 
 test('Keep up: a ball bounces, each touch bats it up and scores, a drop pops it and a new one floats in about a second later', () => {

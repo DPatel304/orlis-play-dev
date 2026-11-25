@@ -35,8 +35,8 @@ const isLoss = (x) => keyOf(x) === 'hurt' || (typeof x === 'object' && keyOf(x) 
    cannot take several; an empty bar means DIZZY seconds in which nothing hurts, then a refill to REFILL (and SAFE_AFTER seconds' grace). Things steer toward the
    players (SEEK_TURN radians a second at most, and straight on once within SEEK_COMMIT of them, so a player who moves is missed) and give up after SEEK_LIFE seconds.
    These are starting values, tuned with the playtest rig so a child in a family and a grown-up empty their bars about as often. */
-const CHUNK = 0.25, SAFE = 1.2, DIZZY = 3, REFILL = 0.5, SAFE_AFTER = 1;
-const SEEK_TURN = 1.1, SEEK_COMMIT = 0.17, SEEK_LIFE = 14;
+const CHUNK = 0.2, SAFE = 2, DIZZY = 3, REFILL = 0.5, SAFE_AFTER = 1;
+const SEEK_TURN = 0.5, SEEK_COMMIT = 0.3, SEEK_LIFE = 14;
 /* the tower a "stack" builds (as in Stack It High): one block's size (screen heights), where its ground is, where across the picture it stands,
    how long a block flies to it, how many blocks make a full one by default, and the bonus a full one is worth as it blasts off */
 const BLOCK = 0.075, GROUND = 0.93, TOWER_X = 0.5, FLY = 0.5, FULL = 6, BONUS = 5;

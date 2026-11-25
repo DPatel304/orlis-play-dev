@@ -344,7 +344,17 @@ const madeProbe = (ctx, balls = false) => {
     }
   };
 };
-for (const id of ['made-collect', 'made-dodge', 'made-stack']) PROBES[id] = madeProbe;
+for (const id of ['made-collect', 'made-stack']) PROBES[id] = madeProbe;
+/* a Dodge game has a health bar each and no score: how many hits each player took, how many times their bar emptied, and where it stood at the end */
+const dodgeProbe = (ctx) => {
+  const base = madeProbe(ctx);
+  return { frame: base.frame, finish(t){
+    const r = base.finish(t), g = ctx.inst;
+    r.health = { perPerson: ctx.world.persons.map((p, i) => ({ who: p.name, idx: i, hits: g.hits[p.slot] || 0, emptied: g.lost[p.slot] || 0, finalFill: r2(g.hp[p.slot] ?? 1) })) };
+    return r;
+  } };
+};
+PROBES['made-dodge'] = dodgeProbe; PROBES['made-dodge-still'] = dodgeProbe;
 PROBES['made-keepup'] = (ctx) => madeProbe(ctx, true);
 
 /* the hand orbs (decision 0062): where they are, are they apart, are they under the shell's areas, are bursts left at the end */

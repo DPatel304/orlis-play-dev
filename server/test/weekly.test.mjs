@@ -56,3 +56,11 @@ test('rounds reported from Orlis Play count for the family this week; a done cha
     assert.ok((await call('GET', '/api/history', null, null, true)).history.some(x => x.what === 'featured'));
   } finally { await s.close(); }
 });
+
+test('a round with no score (a Dodge game: a health bar, no points) counts as played, by game and minutes, not by value', () => {
+  const list = challenges(new Date(2026, 10, 18)), rounds = list.find(c => c.kind === 'rounds');
+  const plays = [...Array(rounds.need)].map(() => ({ game_id: rounds.game, value: 0, secs: 120 })).concat([{ game_id: 'dodge-one', value: 0, secs: 120 }]);
+  const got = progress(list, plays);
+  assert.ok(got.find(c => c.id === rounds.id).done, 'rounds with value 0 still count');
+  assert.equal(got.find(c => c.kind === 'different').have, 2, 'and a different game');
+});
