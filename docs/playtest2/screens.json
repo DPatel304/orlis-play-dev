@@ -1,0 +1,1330 @@
+{
+ "made": "2026-11-25",
+ "screens": [
+  {
+   "screen": "sign-in first screen",
+   "w": 1920,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "input:",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 2,
+   "remote": false,
+   "active": "input:"
+  },
+  {
+   "screen": "sign-in asleep",
+   "w": 1920,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [],
+   "tiny": [],
+   "interactive": 1,
+   "remote": false,
+   "active": "body:Orlis PlayzzzOrlis is as"
+  },
+  {
+   "screen": "sign-in offline",
+   "w": 1920,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [],
+   "tiny": [],
+   "interactive": 1,
+   "remote": false,
+   "active": "body:Orlis PlayzzzThis laptop"
+  },
+  {
+   "screen": "Who's playing",
+   "w": 1920,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [
+    "button.btn.who:Deep x button.btn.whoedit:Change Deep 63x63",
+    "button.btn.who:Mia x button.btn.whoedit:Change Mia 63x63"
+   ],
+   "focus": [],
+   "tiny": [],
+   "interactive": 7,
+   "remote": false,
+   "active": "body:Orlis PlayThe PatelsWho’"
+  },
+  {
+   "screen": "Home (Featured)",
+   "w": 1920,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [54,972,318,1137]",
+    "button.btn.htile.game:Play Sleepy Bear [341,972,605,1137]",
+    "button.btn.htile.game:Play Leaf Pile [629,972,892,1137]",
+    "button.btn.htile.game:Play Stack It High [916,972,1179,1137]",
+    "button.btn.htile.game:Play Sky Painter [1203,972,1467,1137]",
+    "button.btn.htile.game:Play Animal Gym [1490,972,1754,1137]",
+    "button.btn.htile.game:Play Keep It Up! [1778,972,2041,1137]",
+    "button.btn.htile.game:Play Pterry Flight [2065,972,2328,1137]",
+    "button.btn.htile.game:Play Save the Harvest [2352,972,2616,1137]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [2639,972,2903,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden [2927,972,3190,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [3214,972,3477,1137]",
+    "button.btn.htile.game:Play Phone stick (pad te [3501,972,3765,1137]"
+   ],
+   "clipped": [
+    "text off the right edge: span.hname:Peekaboo Garden (3D test",
+    "text off the right edge: span.hname:Phone stick (pad test)"
+   ],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.htile.get:Get Bubble Dash",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 21,
+   "remote": false,
+   "active": "body:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Home (My library, remote)",
+   "w": 1920,
+   "offscreen": [
+    "button.btn.htile.game:Play Keep It Up! [1778,700,2041,865]",
+    "button.btn.htile.game:Play Pterry Flight [2065,700,2328,865]",
+    "button.btn.htile.game:Play Save the Harvest [2352,700,2616,865]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [2639,700,2903,865]",
+    "button.btn.htile.game:Play Peekaboo Garden [2927,700,3190,865]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [3214,700,3477,865]",
+    "button.btn.htile.game:Play Phone stick (pad te [3501,700,3765,865]"
+   ],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.htile.game:Play Sky Painter",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 17,
+   "remote": true,
+   "active": "body.remote:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Discover",
+   "w": 1920,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.htile.get:Get Bubble Dash",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 4,
+   "remote": false,
+   "active": "body:HomePop the bubbles befo"
+  },
+  {
+   "screen": "Discover > Back (Escape)",
+   "w": 1920,
+   "mode": "menu",
+   "tab": "Play",
+   "title": null
+  },
+  {
+   "screen": "Home: Ups from My library to the top bar",
+   "w": 1920,
+   "ups": 2
+  },
+  {
+   "screen": "Create home",
+   "w": 1920,
+   "offscreen": [
+    "button.btn.chero.focus:Make a game [-9,147,1929,609]"
+   ],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.chero.focus:Make a game",
+     "inView": false,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 7,
+   "remote": true,
+   "active": "body.remote:Orlis PlayPlayCreateCubo"
+  },
+  {
+   "screen": "Create home > Back (Escape)",
+   "w": 1920,
+   "mode": "menu",
+   "tab": "Play",
+   "title": null
+  },
+  {
+   "screen": "Profile sheet",
+   "w": 1920,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [54,972,318,1137]",
+    "button.btn.htile.game:Play Sleepy Bear [341,972,605,1137]",
+    "button.btn.htile.game:Play Leaf Pile [629,972,892,1137]",
+    "button.btn.htile.game:Play Stack It High [916,972,1179,1137]",
+    "button.btn.htile.game:Play Sky Painter [1203,972,1467,1137]",
+    "button.btn.htile.game:Play Animal Gym [1490,972,1754,1137]",
+    "button.btn.htile.game:Play Keep It Up! [1778,972,2041,1137]",
+    "button.btn.htile.game:Play Pterry Flight [2065,972,2328,1137]",
+    "button.btn.htile.game:Play Save the Harvest [2352,972,2616,1137]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [2639,972,2903,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden [2927,972,3190,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [3214,972,3477,1137]",
+    "button.btn.htile.game:Play Phone stick (pad te [3501,972,3765,1137]"
+   ],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.sheetitem.kfocus:Profile",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 26,
+   "remote": true,
+   "active": "body.remote:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Settings",
+   "w": 1920,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [54,972,318,1137]",
+    "button.btn.htile.game:Play Sleepy Bear [341,972,605,1137]",
+    "button.btn.htile.game:Play Leaf Pile [629,972,892,1137]",
+    "button.btn.htile.game:Play Stack It High [916,972,1179,1137]",
+    "button.btn.htile.game:Play Sky Painter [1203,972,1467,1137]",
+    "button.btn.htile.game:Play Animal Gym [1490,972,1754,1137]",
+    "button.btn.htile.game:Play Keep It Up! [1778,972,2041,1137]",
+    "button.btn.htile.game:Play Pterry Flight [2065,972,2328,1137]",
+    "button.btn.htile.game:Play Save the Harvest [2352,972,2616,1137]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [2639,972,2903,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden [2927,972,3190,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [3214,972,3477,1137]",
+    "button.btn.htile.game:Play Phone stick (pad te [3501,972,3765,1137]",
+    "button.btn.setbtn.mode:Player [1205,1049,1389,1125]",
+    "button.btn.setbtn.mode:Creator [1394,1049,1593,1125]",
+    "button.btn.setbtn.hands:Glow orb [907,1181,1125,1257]",
+    "button.btn.setbtn.hands:Body outline [1130,1181,1404,1257]",
+    "button.btn.setbtn.hands:Glow [1409,1181,1593,1257]"
+   ],
+   "clipped": [],
+   "overlaps": [
+    "button.btn.htile.game:Play Sky Painter x button.btn.setbtn.mode:Player 184x76",
+    "button.btn.htile.game:Play Sky Painter x button.btn.setbtn.mode:Creator 73x76",
+    "button.btn.htile.game:Play Animal Gym x button.btn.setbtn.mode:Creator 103x76"
+   ],
+   "focus": [
+    {
+     "el": "button.btn.htile.discover:Open Discover",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 31,
+   "remote": false,
+   "active": "body:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Settings > Testing (scrolled)",
+   "w": 1920,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [54,972,318,1137]",
+    "button.btn.htile.game:Play Sleepy Bear [341,972,605,1137]",
+    "button.btn.htile.game:Play Leaf Pile [629,972,892,1137]",
+    "button.btn.htile.game:Play Stack It High [916,972,1179,1137]",
+    "button.btn.htile.game:Play Sky Painter [1203,972,1467,1137]",
+    "button.btn.htile.game:Play Animal Gym [1490,972,1754,1137]",
+    "button.btn.htile.game:Play Keep It Up! [1778,972,2041,1137]",
+    "button.btn.htile.game:Play Pterry Flight [2065,972,2328,1137]",
+    "button.btn.htile.game:Play Save the Harvest [2352,972,2616,1137]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [2639,972,2903,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden [2927,972,3190,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [3214,972,3477,1137]",
+    "button.btn.htile.game:Play Phone stick (pad te [3501,972,3765,1137]",
+    "button.btn.homebtn.close:Home [43,-256,300,-172]"
+   ],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.setbtn.hands:Glow",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 31,
+   "remote": true,
+   "active": "body.remote:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Settings > Back (Escape)",
+   "w": 1920,
+   "mode": "menu",
+   "tab": "Play",
+   "title": null
+  },
+  {
+   "screen": "Games on this TV",
+   "w": 1920,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [54,972,318,1137]",
+    "button.btn.htile.game:Play Sleepy Bear [341,972,605,1137]",
+    "button.btn.htile.game:Play Leaf Pile [629,972,892,1137]",
+    "button.btn.htile.game:Play Stack It High [916,972,1179,1137]",
+    "button.btn.htile.game:Play Sky Painter [1203,972,1467,1137]",
+    "button.btn.htile.game:Play Animal Gym [1490,972,1754,1137]",
+    "button.btn.htile.game:Play Keep It Up! [1778,972,2041,1137]",
+    "button.btn.htile.game:Play Pterry Flight [2065,972,2328,1137]",
+    "button.btn.htile.game:Play Save the Harvest [2352,972,2616,1137]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [2639,972,2903,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden [2927,972,3190,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [3214,972,3477,1137]",
+    "button.btn.htile.game:Play Phone stick (pad te [3501,972,3765,1137]"
+   ],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.htile.discover:Open Discover",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 22,
+   "remote": false,
+   "active": "body:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "after Get (lineup)",
+   "w": 1920,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.setbtn.lubtn:Not here",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 2,
+   "remote": true,
+   "active": "body.remote:Who’s who?Deep - wave!De"
+  },
+  {
+   "screen": "sign-in first screen",
+   "w": 1280,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "input:",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 2,
+   "remote": false,
+   "active": "input:"
+  },
+  {
+   "screen": "sign-in asleep",
+   "w": 1280,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [],
+   "tiny": [],
+   "interactive": 1,
+   "remote": false,
+   "active": "body:Orlis PlayzzzOrlis is as"
+  },
+  {
+   "screen": "sign-in offline",
+   "w": 1280,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [],
+   "tiny": [],
+   "interactive": 1,
+   "remote": false,
+   "active": "body:Orlis PlayzzzThis laptop"
+  },
+  {
+   "screen": "Who's playing",
+   "w": 1280,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [
+    "button.btn.who:Deep x button.btn.whoedit:Change Deep 42x42",
+    "button.btn.who:Mia x button.btn.whoedit:Change Mia 42x42"
+   ],
+   "focus": [],
+   "tiny": [],
+   "interactive": 7,
+   "remote": false,
+   "active": "body:Orlis PlayThe PatelsWho’"
+  },
+  {
+   "screen": "Home (Featured)",
+   "w": 1280,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [36,648,212,758]",
+    "button.btn.htile.game:Play Sleepy Bear [227,648,403,758]",
+    "button.btn.htile.game:Play Leaf Pile [419,648,595,758]",
+    "button.btn.htile.game:Play Stack It High [610,648,786,758]",
+    "button.btn.htile.game:Play Sky Painter [802,648,978,758]",
+    "button.btn.htile.game:Play Animal Gym [993,648,1169,758]",
+    "button.btn.htile.game:Play Keep It Up! [1185,648,1361,758]",
+    "button.btn.htile.game:Play Pterry Flight [1376,648,1552,758]",
+    "button.btn.htile.game:Play Save the Harvest [1568,648,1744,758]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [1759,648,1935,758]",
+    "button.btn.htile.game:Play Peekaboo Garden [1951,648,2127,758]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [2142,648,2318,758]",
+    "button.btn.htile.game:Play Phone stick (pad te [2334,648,2510,758]"
+   ],
+   "clipped": [
+    "text off the right edge: span.hname:Cubion’s Long Way Home",
+    "text off the right edge: span.hname:Peekaboo Garden",
+    "text off the right edge: span.hname:Peekaboo Garden (3D test",
+    "text off the right edge: span.hname:Phone stick (pad test)"
+   ],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.htile.get:Get Bubble Dash",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 21,
+   "remote": false,
+   "active": "body:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Home (My library, remote)",
+   "w": 1280,
+   "offscreen": [
+    "button.btn.htile.game:Play Keep It Up! [1185,467,1361,576]",
+    "button.btn.htile.game:Play Pterry Flight [1376,467,1552,576]",
+    "button.btn.htile.game:Play Save the Harvest [1568,467,1744,576]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [1759,467,1935,576]",
+    "button.btn.htile.game:Play Peekaboo Garden [1951,467,2127,576]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [2142,467,2318,576]",
+    "button.btn.htile.game:Play Phone stick (pad te [2334,467,2510,576]"
+   ],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.htile.game:Play Animal Gym",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 17,
+   "remote": true,
+   "active": "body.remote:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Discover",
+   "w": 1280,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.htile.get:Get Bubble Dash",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 4,
+   "remote": false,
+   "active": "body:HomePop the bubbles befo"
+  },
+  {
+   "screen": "Discover > Back (Escape)",
+   "w": 1280,
+   "mode": "menu",
+   "tab": "Play",
+   "title": null
+  },
+  {
+   "screen": "Home: Ups from My library to the top bar",
+   "w": 1280,
+   "ups": 2
+  },
+  {
+   "screen": "Create home",
+   "w": 1280,
+   "offscreen": [
+    "button.btn.chero.focus:Make a game [-6,98,1286,406]"
+   ],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.chero.focus:Make a game",
+     "inView": false,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 7,
+   "remote": true,
+   "active": "body.remote:Orlis PlayPlayCreateCubo"
+  },
+  {
+   "screen": "Create home > Back (Escape)",
+   "w": 1280,
+   "mode": "menu",
+   "tab": "Play",
+   "title": null
+  },
+  {
+   "screen": "Profile sheet",
+   "w": 1280,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [36,648,212,758]",
+    "button.btn.htile.game:Play Sleepy Bear [227,648,403,758]",
+    "button.btn.htile.game:Play Leaf Pile [419,648,595,758]",
+    "button.btn.htile.game:Play Stack It High [610,648,786,758]",
+    "button.btn.htile.game:Play Sky Painter [802,648,978,758]",
+    "button.btn.htile.game:Play Animal Gym [993,648,1169,758]",
+    "button.btn.htile.game:Play Keep It Up! [1185,648,1361,758]",
+    "button.btn.htile.game:Play Pterry Flight [1376,648,1552,758]",
+    "button.btn.htile.game:Play Save the Harvest [1568,648,1744,758]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [1759,648,1935,758]",
+    "button.btn.htile.game:Play Peekaboo Garden [1951,648,2127,758]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [2142,648,2318,758]",
+    "button.btn.htile.game:Play Phone stick (pad te [2334,648,2510,758]"
+   ],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.sheetitem.kfocus:Profile",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 26,
+   "remote": true,
+   "active": "body.remote:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Settings",
+   "w": 1280,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [36,648,212,758]",
+    "button.btn.htile.game:Play Sleepy Bear [227,648,403,758]",
+    "button.btn.htile.game:Play Leaf Pile [419,648,595,758]",
+    "button.btn.htile.game:Play Stack It High [610,648,786,758]",
+    "button.btn.htile.game:Play Sky Painter [802,648,978,758]",
+    "button.btn.htile.game:Play Animal Gym [993,648,1169,758]",
+    "button.btn.htile.game:Play Keep It Up! [1185,648,1361,758]",
+    "button.btn.htile.game:Play Pterry Flight [1376,648,1552,758]",
+    "button.btn.htile.game:Play Save the Harvest [1568,648,1744,758]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [1759,648,1935,758]",
+    "button.btn.htile.game:Play Peekaboo Garden [1951,648,2127,758]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [2142,648,2318,758]",
+    "button.btn.htile.game:Play Phone stick (pad te [2334,648,2510,758]",
+    "button.btn.setbtn.mode:Player [803,699,926,750]",
+    "button.btn.setbtn.mode:Creator [929,699,1062,750]",
+    "button.btn.setbtn.hands:Glow orb [605,787,750,838]",
+    "button.btn.setbtn.hands:Body outline [753,787,936,838]",
+    "button.btn.setbtn.hands:Glow [940,787,1062,838]"
+   ],
+   "clipped": [],
+   "overlaps": [
+    "button.btn.htile.game:Play Sky Painter x button.btn.setbtn.mode:Player 122x51",
+    "button.btn.htile.game:Play Sky Painter x button.btn.setbtn.mode:Creator 48x51",
+    "button.btn.htile.game:Play Animal Gym x button.btn.setbtn.mode:Creator 68x51"
+   ],
+   "focus": [
+    {
+     "el": "button.btn.htile.discover:Open Discover",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 31,
+   "remote": false,
+   "active": "body:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Settings > Testing (scrolled)",
+   "w": 1280,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [36,648,212,758]",
+    "button.btn.htile.game:Play Sleepy Bear [227,648,403,758]",
+    "button.btn.htile.game:Play Leaf Pile [419,648,595,758]",
+    "button.btn.htile.game:Play Stack It High [610,648,786,758]",
+    "button.btn.htile.game:Play Sky Painter [802,648,978,758]",
+    "button.btn.htile.game:Play Animal Gym [993,648,1169,758]",
+    "button.btn.htile.game:Play Keep It Up! [1185,648,1361,758]",
+    "button.btn.htile.game:Play Pterry Flight [1376,648,1552,758]",
+    "button.btn.htile.game:Play Save the Harvest [1568,648,1744,758]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [1759,648,1935,758]",
+    "button.btn.htile.game:Play Peekaboo Garden [1951,648,2127,758]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [2142,648,2318,758]",
+    "button.btn.htile.game:Play Phone stick (pad te [2334,648,2510,758]",
+    "button.btn.homebtn.close:Home [29,-171,200,-115]"
+   ],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.setbtn.hands:Glow",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 31,
+   "remote": true,
+   "active": "body.remote:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Settings > Back (Escape)",
+   "w": 1280,
+   "mode": "menu",
+   "tab": "Play",
+   "title": null
+  },
+  {
+   "screen": "Games on this TV",
+   "w": 1280,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [36,648,212,758]",
+    "button.btn.htile.game:Play Sleepy Bear [227,648,403,758]",
+    "button.btn.htile.game:Play Leaf Pile [419,648,595,758]",
+    "button.btn.htile.game:Play Stack It High [610,648,786,758]",
+    "button.btn.htile.game:Play Sky Painter [802,648,978,758]",
+    "button.btn.htile.game:Play Animal Gym [993,648,1169,758]",
+    "button.btn.htile.game:Play Keep It Up! [1185,648,1361,758]",
+    "button.btn.htile.game:Play Pterry Flight [1376,648,1552,758]",
+    "button.btn.htile.game:Play Save the Harvest [1568,648,1744,758]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [1759,648,1935,758]",
+    "button.btn.htile.game:Play Peekaboo Garden [1951,648,2127,758]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [2142,648,2318,758]",
+    "button.btn.htile.game:Play Phone stick (pad te [2334,648,2510,758]"
+   ],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.htile.discover:Open Discover",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 22,
+   "remote": false,
+   "active": "body:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "after Get (lineup)",
+   "w": 1280,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.setbtn.lubtn:Not here",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 2,
+   "remote": true,
+   "active": "body.remote:Who’s who?Deep - wave!De"
+  },
+  {
+   "screen": "Camera check (nobody)",
+   "w": 1920,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [],
+   "tiny": [],
+   "interactive": 1,
+   "remote": false,
+   "active": "body:Mouse modeMove the point"
+  },
+  {
+   "screen": "Camera check (4 people)",
+   "w": 1920,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [54,972,318,1137]",
+    "button.btn.htile.game:Play Sleepy Bear [341,972,605,1137]",
+    "button.btn.htile.game:Play Leaf Pile [629,972,892,1137]",
+    "button.btn.htile.game:Play Stack It High [916,972,1179,1137]",
+    "button.btn.htile.game:Play Sky Painter [1203,972,1467,1137]",
+    "button.btn.htile.game:Play Animal Gym [1490,972,1754,1137]",
+    "button.btn.htile.game:Play Keep It Up! [1778,972,2041,1137]",
+    "button.btn.htile.game:Play Pterry Flight [2065,972,2328,1137]",
+    "button.btn.htile.game:Play Save the Harvest [2352,972,2616,1137]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [2639,972,2903,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden [2927,972,3190,1137]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [3214,972,3477,1137]",
+    "button.btn.htile.game:Play Phone stick (pad te [3501,972,3765,1137]"
+   ],
+   "clipped": [
+    "text off the right edge: span.hname:Keep It Up!",
+    "text off the right edge: span.hname:Pterry Flight",
+    "text off the right edge: span.hname:Save the Harvest",
+    "text off the right edge: span.hname:Cubion’s Long Way Home",
+    "text off the right edge: span.hname:Peekaboo Garden",
+    "text off the right edge: span.hname:Peekaboo Garden (3D test",
+    "text off the right edge: span.hname:Phone stick (pad test)"
+   ],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.htile.get:Get Bubble Dash",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 21,
+   "remote": false,
+   "active": "body:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Line-up (Who is who, 4 in view)",
+   "w": 1920,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [],
+   "tiny": [],
+   "interactive": 2,
+   "remote": false,
+   "active": "body:Who’s who?Deep - wave!De"
+  },
+  {
+   "screen": "Pause (4 players)",
+   "w": 1920,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.whochip2.kfocus:?Guest",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 6,
+   "remote": true,
+   "active": "body.remote:PausedPop Party1:56 left"
+  },
+  {
+   "screen": "Everyone left (lost card)",
+   "w": 1920,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [],
+   "tiny": [],
+   "interactive": 0,
+   "remote": true,
+   "active": "body.remote:Step back into view - th"
+  },
+  {
+   "screen": "Camera check (nobody)",
+   "w": 1280,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [],
+   "tiny": [],
+   "interactive": 1,
+   "remote": false,
+   "active": "body:Mouse modeMove the point"
+  },
+  {
+   "screen": "Camera check (4 people)",
+   "w": 1280,
+   "offscreen": [
+    "button.btn.htile.game:Play Pop Party [36,648,212,758]",
+    "button.btn.htile.game:Play Sleepy Bear [227,648,403,758]",
+    "button.btn.htile.game:Play Leaf Pile [419,648,595,758]",
+    "button.btn.htile.game:Play Stack It High [610,648,786,758]",
+    "button.btn.htile.game:Play Sky Painter [802,648,978,758]",
+    "button.btn.htile.game:Play Animal Gym [993,648,1169,758]",
+    "button.btn.htile.game:Play Keep It Up! [1185,648,1361,758]",
+    "button.btn.htile.game:Play Pterry Flight [1376,648,1552,758]",
+    "button.btn.htile.game:Play Save the Harvest [1568,648,1744,758]",
+    "button.btn.htile.game:Play Cubion’s Long Way H [1759,648,1935,758]",
+    "button.btn.htile.game:Play Peekaboo Garden [1951,648,2127,758]",
+    "button.btn.htile.game:Play Peekaboo Garden (3D [2142,648,2318,758]",
+    "button.btn.htile.game:Play Phone stick (pad te [2334,648,2510,758]"
+   ],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.htile.get:Get Bubble Dash",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 21,
+   "remote": false,
+   "active": "body:Orlis PlayPlayCreate0 of"
+  },
+  {
+   "screen": "Line-up (Who is who, 4 in view)",
+   "w": 1280,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [],
+   "tiny": [],
+   "interactive": 2,
+   "remote": false,
+   "active": "body:Who’s who?Deep - wave!De"
+  },
+  {
+   "screen": "Pause (4 players)",
+   "w": 1280,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [
+    {
+     "el": "button.btn.whochip2.kfocus:?Guest",
+     "inView": true,
+     "ring": true
+    }
+   ],
+   "tiny": [],
+   "interactive": 6,
+   "remote": true,
+   "active": "body.remote:PausedPop Party1:54 left"
+  },
+  {
+   "screen": "Everyone left (lost card)",
+   "w": 1280,
+   "offscreen": [],
+   "clipped": [],
+   "overlaps": [],
+   "focus": [],
+   "tiny": [],
+   "interactive": 0,
+   "remote": true,
+   "active": "body.remote:Step back into view - th"
+  }
+ ],
+ "focus": [
+  {
+   "screen": "Who's playing (remote)",
+   "w": 1920,
+   "keys": 7,
+   "lost": 0,
+   "outOfView": 0,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowRight>button.btn.whoedit.title:Change the family’s name",
+    "ArrowRight>button.btn.whoedit.title:Change the family’s name",
+    "ArrowDown>button.btn.who.add:Add",
+    "ArrowDown>button.btn.link.famlink:Sign out",
+    "ArrowLeft>button.btn.link.famlink:Sign out",
+    "ArrowUp>button.btn.who.kfocus:Mia",
+    "ArrowUp>button.btn.whoedit.kfocus:Change Mia"
+   ]
+  },
+  {
+   "screen": "Home (remote)",
+   "w": 1920,
+   "keys": 36,
+   "lost": 0,
+   "outOfView": 0,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowRight>button.btn.htile.get:Get Comet Catch",
+    "ArrowRight>button.btn.htile.get:Get Puddle Jump",
+    "ArrowRight>button.btn.htile.discover:Open Discover",
+    "ArrowRight>button.btn.htile.discover:Open Discover",
+    "ArrowDown>button.btn.htile.game:Play Stack It High",
+    "ArrowRight>button.btn.htile.game:Play Sky Painter",
+    "ArrowRight>button.btn.htile.game:Play Animal Gym",
+    "ArrowRight>button.btn.htile.game:Play Leaf Pile",
+    "ArrowRight>button.btn.htile.game:Play Stack It High",
+    "ArrowRight>button.btn.htile.game:Play Sky Painter",
+    "ArrowRight>button.btn.htile.game:Play Animal Gym",
+    "ArrowRight>button.btn.htile.game:Play Keep It Up!",
+    "ArrowRight>button.btn.htile.game:Play Leaf Pile",
+    "ArrowRight>button.btn.htile.game:Play Stack It High",
+    "ArrowRight>button.btn.htile.game:Play Sky Painter",
+    "ArrowDown>button.btn.htile.game:Play Sky Painter",
+    "ArrowDown>button.btn.htile.game:Play Sky Painter",
+    "ArrowUp>button.btn.htile.discover:Open Discover",
+    "ArrowUp>button.btn.ptab.cur:Play",
+    "ArrowUp>button.btn.ptab.cur:Play",
+    "ArrowUp>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play"
+   ]
+  },
+  {
+   "screen": "Discover (remote)",
+   "w": 1920,
+   "keys": 7,
+   "lost": 0,
+   "outOfView": 0,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowRight>button.btn.htile.get:Get Comet Catch",
+    "ArrowRight>button.btn.htile.get:Get Puddle Jump",
+    "ArrowLeft>button.btn.htile.get:Get Comet Catch",
+    "ArrowDown>button.btn.htile.get:Get Comet Catch",
+    "ArrowUp>button.btn.htile.get:Get Comet Catch",
+    "ArrowUp>button.btn.htile.get:Get Comet Catch",
+    "ArrowLeft>button.btn.htile.get:Get Bubble Dash"
+   ]
+  },
+  {
+   "screen": "Create home (remote)",
+   "w": 1920,
+   "keys": 7,
+   "lost": 0,
+   "outOfView": 3,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowRight>button.btn.chero.focus:Make a game",
+    "ArrowRight>button.btn.chero.focus:Make a game",
+    "ArrowDown>button.btn.cslot.empty:Make a game",
+    "ArrowDown>button.btn.cslot.empty:Make a game",
+    "ArrowLeft>button.btn.cslot.empty:Make a game",
+    "ArrowUp>button.btn.chero.focus:Make a game",
+    "ArrowUp>button.btn.ptab.cur:Create"
+   ]
+  },
+  {
+   "screen": "Profile sheet (remote)",
+   "w": 1920,
+   "keys": 4,
+   "lost": 0,
+   "outOfView": 0,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowDown>button.btn.sheetitem.kfocus:Settings",
+    "ArrowDown>button.btn.sheetitem.kfocus:Games on this TV",
+    "ArrowDown>button.btn.sheetitem.kfocus:Sign out",
+    "ArrowUp>button.btn.sheetitem.kfocus:Games on this TV"
+   ]
+  },
+  {
+   "screen": "Settings (remote)",
+   "w": 1920,
+   "keys": 12,
+   "lost": 0,
+   "outOfView": 8,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowDown>button.btn.homebtn.close:Home",
+    "ArrowDown>button.btn.setbtn.spk:Mute",
+    "ArrowDown>button.btn.setbtn.kfocus:Full screen",
+    "ArrowDown>button.btn.setbtn.kfocus:See the list",
+    "ArrowDown>button.btn.setbtn.mode:Creator",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow"
+   ]
+  },
+  {
+   "screen": "Who's playing (remote)",
+   "w": 1280,
+   "keys": 7,
+   "lost": 0,
+   "outOfView": 0,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowRight>button.btn.whoedit.title:Change the family’s name",
+    "ArrowRight>button.btn.whoedit.title:Change the family’s name",
+    "ArrowDown>button.btn.who.add:Add",
+    "ArrowDown>button.btn.link.famlink:Sign out",
+    "ArrowLeft>button.btn.link.famlink:Sign out",
+    "ArrowUp>button.btn.who.kfocus:Mia",
+    "ArrowUp>button.btn.whoedit.kfocus:Change Mia"
+   ]
+  },
+  {
+   "screen": "Home (remote)",
+   "w": 1280,
+   "keys": 36,
+   "lost": 0,
+   "outOfView": 0,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowRight>button.btn.htile.get:Get Comet Catch",
+    "ArrowRight>button.btn.htile.get:Get Puddle Jump",
+    "ArrowRight>button.btn.htile.discover:Open Discover",
+    "ArrowRight>button.btn.htile.discover:Open Discover",
+    "ArrowDown>button.btn.htile.game:Play Stack It High",
+    "ArrowRight>button.btn.htile.game:Play Sky Painter",
+    "ArrowRight>button.btn.htile.game:Play Animal Gym",
+    "ArrowRight>button.btn.htile.game:Play Keep It Up!",
+    "ArrowRight>button.btn.htile.game:Play Stack It High",
+    "ArrowRight>button.btn.htile.game:Play Sky Painter",
+    "ArrowRight>button.btn.htile.game:Play Animal Gym",
+    "ArrowRight>button.btn.htile.game:Play Leaf Pile",
+    "ArrowRight>button.btn.htile.game:Play Stack It High",
+    "ArrowRight>button.btn.htile.game:Play Sky Painter",
+    "ArrowRight>button.btn.htile.game:Play Animal Gym",
+    "ArrowDown>button.btn.htile.game:Play Animal Gym",
+    "ArrowDown>button.btn.htile.game:Play Animal Gym",
+    "ArrowUp>button.btn.htile.discover:Open Discover",
+    "ArrowUp>button.btn.ptab.cur:Play",
+    "ArrowUp>button.btn.ptab.cur:Play",
+    "ArrowUp>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play",
+    "ArrowLeft>button.btn.ptab.cur:Play"
+   ]
+  },
+  {
+   "screen": "Discover (remote)",
+   "w": 1280,
+   "keys": 7,
+   "lost": 0,
+   "outOfView": 0,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowRight>button.btn.htile.get:Get Comet Catch",
+    "ArrowRight>button.btn.htile.get:Get Puddle Jump",
+    "ArrowLeft>button.btn.htile.get:Get Comet Catch",
+    "ArrowDown>button.btn.htile.get:Get Comet Catch",
+    "ArrowUp>button.btn.htile.get:Get Comet Catch",
+    "ArrowUp>button.btn.htile.get:Get Comet Catch",
+    "ArrowLeft>button.btn.htile.get:Get Bubble Dash"
+   ]
+  },
+  {
+   "screen": "Create home (remote)",
+   "w": 1280,
+   "keys": 7,
+   "lost": 0,
+   "outOfView": 3,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowRight>button.btn.chero.focus:Make a game",
+    "ArrowRight>button.btn.chero.focus:Make a game",
+    "ArrowDown>button.btn.cslot.empty:Make a game",
+    "ArrowDown>button.btn.cslot.empty:Make a game",
+    "ArrowLeft>button.btn.cslot.empty:Make a game",
+    "ArrowUp>button.btn.chero.focus:Make a game",
+    "ArrowUp>button.btn.ptab.cur:Create"
+   ]
+  },
+  {
+   "screen": "Profile sheet (remote)",
+   "w": 1280,
+   "keys": 4,
+   "lost": 0,
+   "outOfView": 0,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowDown>button.btn.sheetitem.kfocus:Settings",
+    "ArrowDown>button.btn.sheetitem.kfocus:Games on this TV",
+    "ArrowDown>button.btn.sheetitem.kfocus:Sign out",
+    "ArrowUp>button.btn.sheetitem.kfocus:Games on this TV"
+   ]
+  },
+  {
+   "screen": "Settings (remote)",
+   "w": 1280,
+   "keys": 12,
+   "lost": 0,
+   "outOfView": 8,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowDown>button.btn.homebtn.close:Home",
+    "ArrowDown>button.btn.setbtn.spk:Mute",
+    "ArrowDown>button.btn.setbtn.kfocus:Full screen",
+    "ArrowDown>button.btn.setbtn.kfocus:See the list",
+    "ArrowDown>button.btn.setbtn.mode:Creator",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow",
+    "ArrowDown>button.btn.setbtn.hands:Glow"
+   ]
+  },
+  {
+   "screen": "Pause (remote)",
+   "w": 1920,
+   "keys": 3,
+   "lost": 0,
+   "outOfView": 0,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowRight>button.btn.whochip2.hot:?Guest",
+    "ArrowLeft>button.btn.whochip2.kfocus:?Guest",
+    "ArrowDown>button.btn.cbtn.ringed:Keep playing"
+   ]
+  },
+  {
+   "screen": "Pause (remote)",
+   "w": 1280,
+   "keys": 3,
+   "lost": 0,
+   "outOfView": 0,
+   "noRing": 0,
+   "several": 0,
+   "trail": [
+    "ArrowRight>button.btn.whochip2.kfocus:?Guest",
+    "ArrowLeft>button.btn.whochip2.hot:?Guest",
+    "ArrowDown>button.btn.cbtn.ringed:Keep playing"
+   ]
+  }
+ ],
+ "issues": [],
+ "timings": [
+  {
+   "screen": "sign-in (first screen)",
+   "w": 1920,
+   "ms": 4504,
+   "ok": true
+  },
+  {
+   "screen": "sign-in asleep",
+   "w": 1920,
+   "ms": 4091,
+   "ok": true
+  },
+  {
+   "screen": "sign-in offline",
+   "w": 1920,
+   "ms": 4121,
+   "ok": true
+  },
+  {
+   "screen": "Who's playing",
+   "w": 1920,
+   "ms": 5062,
+   "ok": true
+  },
+  {
+   "screen": "Home (after Who)",
+   "w": 1920,
+   "ms": 218,
+   "ok": true
+  },
+  {
+   "screen": "Discover",
+   "w": 1920,
+   "ms": 676,
+   "ok": true
+  },
+  {
+   "screen": "Create home (remote Enter on the tab)",
+   "w": 1920,
+   "ms": 468,
+   "ok": true
+  },
+  {
+   "screen": "Profile sheet (face, remote Enter)",
+   "w": 1920,
+   "ms": 59,
+   "ok": true
+  },
+  {
+   "screen": "Settings",
+   "w": 1920,
+   "ms": 108,
+   "ok": true
+  },
+  {
+   "screen": "Get (OK on the tile) until the next screen",
+   "w": 1920,
+   "ms": 684
+  },
+  {
+   "screen": "sign-in (first screen)",
+   "w": 1280,
+   "ms": 4815,
+   "ok": true
+  },
+  {
+   "screen": "sign-in asleep",
+   "w": 1280,
+   "ms": 4390,
+   "ok": true
+  },
+  {
+   "screen": "sign-in offline",
+   "w": 1280,
+   "ms": 4589,
+   "ok": true
+  },
+  {
+   "screen": "Who's playing",
+   "w": 1280,
+   "ms": 5511,
+   "ok": true
+  },
+  {
+   "screen": "Home (after Who)",
+   "w": 1280,
+   "ms": 239,
+   "ok": true
+  },
+  {
+   "screen": "Discover",
+   "w": 1280,
+   "ms": 749,
+   "ok": true
+  },
+  {
+   "screen": "Create home (remote Enter on the tab)",
+   "w": 1280,
+   "ms": 251,
+   "ok": true
+  },
+  {
+   "screen": "Profile sheet (face, remote Enter)",
+   "w": 1280,
+   "ms": 67,
+   "ok": true
+  },
+  {
+   "screen": "Settings",
+   "w": 1280,
+   "ms": 289,
+   "ok": true
+  },
+  {
+   "screen": "Get (OK on the tile) until the next screen",
+   "w": 1280,
+   "ms": 642
+  },
+  {
+   "screen": "Camera check (nobody in view)",
+   "w": 1920,
+   "ms": 221,
+   "ok": true
+  },
+  {
+   "screen": "Pause (Escape)",
+   "w": 1920,
+   "ms": 1222,
+   "ok": true
+  },
+  {
+   "screen": "Camera check (nobody in view)",
+   "w": 1280,
+   "ms": 113,
+   "ok": true
+  },
+  {
+   "screen": "Pause (Escape)",
+   "w": 1280,
+   "ms": 158,
+   "ok": true
+  }
+ ],
+ "errors": [
+  "1920: 404 /wasm/vision_wasm_internal.js",
+  "1920: 404 /wasm/vision_wasm_internal.js",
+  "1920: 404 /wasm/vision_wasm_internal.js",
+  "1280: 404 /wasm/vision_wasm_internal.js",
+  "1280: 404 /wasm/vision_wasm_internal.js",
+  "1280: 404 /wasm/vision_wasm_internal.js",
+  "1920: 404 /wasm/vision_wasm_internal.js",
+  "1920: 404 /wasm/vision_wasm_internal.js",
+  "1920: 404 /wasm/vision_wasm_internal.js",
+  "1280: 404 /wasm/vision_wasm_internal.js",
+  "1280: 404 /wasm/vision_wasm_internal.js",
+  "1280: 404 /wasm/vision_wasm_internal.js"
+ ]
+}

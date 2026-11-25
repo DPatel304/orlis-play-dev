@@ -41,7 +41,10 @@ const poseMod = await import('../src/tracking/pose.js');
 const { pose, sizeOf, seated, CLOSE, STAY_CLOSE, WATCH_AFTER, headOf } = poseMod;
 const { L } = await import('../src/tracking/pose-shared.js');
 const { music } = await import('../src/audio/sound.js');
-const { byId } = await import('../src/games/index.js');
+const { byId: byIdReal } = await import('../src/games/index.js');
+const madeMod = await import('./playtest/made.mjs');
+/* made-collect, made-dodge, made-keepup, made-stack: games made in Cubo's Create (tools/playtest/made.mjs) */
+const byId = (id) => madeMod.MADE_IDS.includes(id) ? madeMod.makeMade(id) : byIdReal(id);
 const { underHud } = await import('../src/games/hud.js');
 const rig = await import('./playtest/rig.mjs');
 const jumpMod = await import('../src/tracking/jump.js');
@@ -53,7 +56,8 @@ music.hold = () => {};
 
 const DT = 1 / 30;
 const GAME_IDS = ['pop-party', 'sky-painter', 'sleepy-bear', 'leaf-pile', 'stack-it-high', 'animal-gym', 'keep-it-up', 'ptero-flight', 'save-the-harvest', 'cubions-long-way-home'];
-const games = String(opt('games', GAME_IDS.join(','))).split(',');
+const games = String(opt('games', GAME_IDS.join(','))).split(',');   /* (--games made adds the four made-* games) */
+if (games.includes('made')) games.splice(games.indexOf('made'), 1, ...madeMod.MADE_IDS);
 const lineups = String(opt('lineups', '1c,1a,4c,4m')).split(',');
 const seeds = String(opt('seeds', '1,2,3')).split(',').map(Number);
 const assist = !opt('real');
@@ -304,6 +308,52 @@ const PROBES = {
   }
 };
 
+
+/* games made in Create (the Orlis.play engine): how long a thing is on the screen, how much of that a body could reach it, and how much it spends under the shell's areas */
+const madeProbe = (ctx) => {
+  const seen = new Map(), done = [];
+  let spec = null;
+  return {
+    frame(dt, t, step){
+      const g = ctx.inst, live = new Set();
+      if (step % 30 === 0) try { spec = g.hud ? g.hud() : null; } catch (e){ spec = null; }
+      for (const th of g.things){
+        if (!g._touchable(th) || th.d.move === 'bounce') continue;
+        let rec = seen.get(th); if (!rec){ rec = { kind: th.d.name, life: 0, reach: ctx.world.persons.map(() => 0), hud: 0 }; seen.set(th, rec); }
+        live.add(th); rec.life += dt;
+        ctx.world.persons.forEach((p, i) => { if (p.inScene && th.y > 0.05 && th.y < 0.98 && p.reach(th.x, th.y).kind !== 'no') rec.reach[i] += dt; });
+        if (underHud(W, H, th.x * W, th.y * H, spec)) rec.hud += dt;
+      }
+      for (const [th, rec] of seen) if (!live.has(th)){ done.push(rec); seen.delete(th); }
+    },
+    finish(){
+      for (const rec of seen.values()) done.push(rec);
+      const recs = done.filter(r => r.life > 0.3), tot = Math.max(0.01, recs.reduce((s, r) => s + r.life, 0));
+      return { things: recs.length, underHudShare: r2(recs.reduce((s, r) => s + r.hud, 0) / tot),
+        reachableShareByPerson: ctx.world.persons.map((p, i) => ({ who: p.name, idx: i, share: r2(recs.reduce((s, r) => s + r.reach[i], 0) / tot) })),
+        neverReachableByAnyone: recs.filter(r => r.reach.every(x => x < 0.3)).length };
+    }
+  };
+};
+for (const id of ['made-collect', 'made-dodge', 'made-stack']) PROBES[id] = madeProbe;
+
+/* the hand orbs (decision 0062): where they are, are they apart, are they under the shell's areas, are bursts left at the end */
+const feelOf = (inst) => (inst.avatars && inst.avatars.feel) || inst.feel || null;
+function orbSample(o, inst){
+  const f = feelOf(inst); if (!f) return;
+  const list = f.list(); o.samples++; o.maxOrbs = Math.max(o.maxOrbs, list.length); o.burstsMax = Math.max(o.burstsMax, f.bursts.alive);
+  let spec = null; try { spec = inst.hud ? inst.hud() : null; } catch (e){ spec = null; }
+  let close = false;
+  for (const e of list){ o.orbFrames++; if (underHud(W, H, e.orb.x * W, e.orb.y * H, spec)) o.underHud++; }
+  for (let a = 0; a < list.length; a++) for (let b = a + 1; b < list.length; b++){
+    if (list[a].who === list[b].who) continue;
+    const d = Math.hypot((list[a].orb.x - list[b].orb.x) * W, (list[a].orb.y - list[b].orb.y) * H);
+    o.minGapPx = Math.min(o.minGapPx, d); if (d < 0.04 * H) close = true;
+    if (list[a].col && list[a].col === list[b].col) o.colourClash++;
+  }
+  if (close) o.tooClose++;
+}
+
 /* ---------------------------------------------------------------- one run */
 function runOne(gid, lineup, seed, o = {}){
   const game = byId(gid);
@@ -327,8 +377,9 @@ function runOne(gid, lineup, seed, o = {}){
   const limit = game.endless ? (gid === 'save-the-harvest' ? 340 : 420) : game.secs + 5;
   /* a second hop detector looking on (the games' own is HOP): a detection with no real hop in the second before is a false jump */
   const { JumpWatch: JW, HOP: HOPP } = jumpMod, obs = new JW(JP || HOPP), jstat = world.persons.map(() => ({ jumps: 0, false: 0, lastLift: -9 }));
-  let prev = inst.score ? inst.score.slice() : [], step = 0, t = 0, issues = [], scoreDown = 0, stuckFor = 0, longestStuck = 0, lastSum = 0, nonFin = null;
+  let prev = inst.score ? inst.score.slice() : [], step = 0, t = 0, issues = [], scoreDown = 0, scoreAbsent = 0, absentWhy = [], stuckFor = 0, longestStuck = 0, lastSum = 0, nonFin = null;
   let ended = 'time';
+  const orbs = { samples: 0, orbFrames: 0, underHud: 0, maxOrbs: 0, minGapPx: 1e9, tooClose: 0, colourClash: 0, burstsAtOver: null, burstsMax: 0 };
   for (;;){
     world.step(DT, brain, ctx);
     if (!passive) feeder.step(world, DT);
@@ -343,6 +394,8 @@ function runOne(gid, lineup, seed, o = {}){
     if (inst.score){
       for (let s = 0; s < inst.score.length; s++){
         if (inst.score[s] < before[s]) scoreDown++;
+        /* points for a place nobody stands in (an absent player, or a place that was never filled) */
+        if (inst.score[s] > before[s] && !world.persons.some(p => p.slot === s && p.present)){ scoreAbsent++; if (absentWhy.length < 4) absentWhy.push({ t: r2(t), slot: s, by: inst.score[s] - before[s], trackerSaysPresent: !!(pose.players[s] && pose.players[s].present), people: world.persons.map(p => `${p.name}:slot${p.slot}:${p.present ? 'in' : 'out'}`).join(' ') }); }
       }
       world.persons.forEach((p, i) => {
         const st = stat[i], s = p.slot;
@@ -359,8 +412,9 @@ function runOne(gid, lineup, seed, o = {}){
       longestStuck = Math.max(longestStuck, stuckFor);
     }
     probe.frame(DT, t, step);
+    if (step % 3 === 0) orbSample(orbs, inst, step % 30 === 0 ? inst : null);
     if (step % 90 === 0 && !nonFin){ nonFin = nonFinite(inst, gid); }
-    if (inst.over || (!game.endless && t >= game.secs)){ ended = inst.over ? 'over' : 'time'; break; }
+    if (inst.over || (!game.endless && t >= game.secs)){ ended = inst.over ? 'over' : 'time'; { const f = feelOf(inst); orbs.burstsAtOver = f ? f.bursts.alive : null; } break; }
     if (t >= limit){ ended = 'cap'; break; }
   }
   const roundSecs = t;
@@ -397,7 +451,8 @@ function runOne(gid, lineup, seed, o = {}){
     players, childMeanPerMin: r2(mean(kids.map(k => k.perMin))), adultMeanPerMin: r2(mean(adults.map(k => k.perMin))),
     childMeanScore: r2(mean(kids.map(k => k.score))), adultMeanScore: r2(mean(adults.map(k => k.score))),
     topTied: tieTop > 1 && top > 0, spread: Math.max(...scores) - Math.min(...scores),
-    issues: { nonFinite: nonFin, scoreWentDown: scoreDown, longestSecondsNoScoreAnywhere: r2(longestStuck), roundEndedEarly: ended === 'over' && !game.endless && roundSecs < game.secs - 1 ? r2(roundSecs) : null, neverEnded: ended === 'cap', anyoneNeverJoined: joinedAtStart.some(j => !j) && !passive },
+    issues: { nonFinite: nonFin, scoreWentDown: scoreDown, scoreWhileAbsent: scoreAbsent, scoreWhileAbsentWhy: absentWhy, longestSecondsNoScoreAnywhere: r2(longestStuck), roundEndedEarly: ended === 'over' && !game.endless && roundSecs < game.secs - 1 ? r2(roundSecs) : null, neverEnded: ended === 'cap', anyoneNeverJoined: joinedAtStart.some(j => !j) && !passive },
+    orbs: { ...orbs, minGapPx: orbs.minGapPx > 1e8 ? null : r2(orbs.minGapPx), underHudShare: r2(orbs.underHud / Math.max(1, orbs.orbFrames)), tooCloseShare: r2(orbs.tooClose / Math.max(1, orbs.samples)) },
     watchers: world.watchers.map(w => ({ role: w.role, frames: w.frames || 0, playerShare: r2((w.playerFrames || 0) / Math.max(1, w.frames || 0)) })),
     game_: ex
   };
