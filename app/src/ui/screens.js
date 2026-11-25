@@ -154,14 +154,13 @@ function card(cls){
    one, and Play again and Home. Each child's face, name and count sits in seat order along the bottom (never a ranking, no winner).
    back: where the other button goes ('Home', or 'Back to Create' for a game being tried).
    summary: { line, best } (the friendly line, for a game that says it its own way); extra: { total, kids: [{ i, name, look, value, color }] }. */
-/* a player's health bar on the results card: the bar as it ended (rose, like the one in the game), and a small grey star for each time it emptied */
+/* a player's health bar on the results card: the bar as it ended (rose, like the one in the game), and a small grey star and how many times it emptied */
 export function healthOf({ fill = 1, lost = 0 } = {}){
   const box = h('span', 'ghealth'), track = h('i', 'ghtrack'), bar = h('i', 'ghfill');
   bar.style.width = Math.round(Math.max(0, Math.min(1, fill)) * 100) + '%'; bar.style.background = color('ui.go');
   track.appendChild(bar); box.appendChild(track);
   const n = Math.max(0, Math.round(lost));
-  for (let i = 0; i < Math.min(3, n); i++) box.appendChild(propIcon('star', 64, { color: color('shade.mid') }, 'ghlost'));
-  if (n > 3){ const more = h('b', 'ghmore'); more.textContent = '+' + (n - 3); box.appendChild(more); }
+  if (n > 0){ box.appendChild(propIcon('star', 64, { color: color('shade.mid') }, 'ghlost')); const more = h('b', 'ghmore'); more.textContent = '\u00D7' + n; box.appendChild(more); }
   box.setAttribute('aria-label', n ? `Bar ran out ${n} ${n === 1 ? 'time' : 'times'}` : 'Bar never ran out');
   return box;
 }

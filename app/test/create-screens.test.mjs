@@ -83,7 +83,9 @@ test('the made game plays on the real engine, and tells the shell what it needs'
   /* each job, run by the scripted hand: things do get caught, dodged, batted and stacked */
   for (const job of ['collect', 'dodge', 'keepup', 'stack']){
     const r = headless({ ...defaultPicks(), ...one('apple', job) }, 25);
-    assert.ok(r.score > 0 && r.sounds.length > 0, job + ' scores by itself');
+    /* (Dodge has no score, decision 0063: the hand is hit now and then, with an ouch, and nothing is earned by standing there) */
+    if (job === 'dodge') assert.ok(r.score === 0 && r.sounds.includes('ouch'), 'dodge has no score and the hand gets an ouch now and then');
+    else assert.ok(r.score > 0 && r.sounds.length > 0, job + ' scores by itself');
   }
   const again = headless({ ...defaultPicks(), ...one('apple', 'dodge') }, 25);
   assert.equal(again.score, headless({ ...defaultPicks(), ...one('apple', 'dodge') }, 25).score, 'the scripted round is seeded: the same every run');
