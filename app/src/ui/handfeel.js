@@ -128,9 +128,16 @@ export class Orb {
   squashNow(){ this.sq = FEEL.squash; this.sqv = 0; }
 }
 
+/* The burst's own dice: never Math.random, so a hit's sparks can't disturb a game's own dice (the playtest rig seeds Math.random; a round
+   must come out the same with or without the orbs). */
+function dice(seed = 0x9e3779b9){
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
 /* ---------- the burst: sparks and a ring wave where something was hit ---------- */
 export class Bursts {
-  constructor(rand = Math.random, reduced = false){ this.sparks = []; this.rings = []; this.rand = rand; this.reduced = reduced; }
+  constructor(rand = dice(), reduced = false){ this.sparks = []; this.rings = []; this.rand = rand; this.reduced = reduced; }
   add(x, y, col){
     const r = this.rand, n = this.reduced ? FEEL.sparksReduced : FEEL.sparks, cols = [col, WHITE(), col, GOLD()];
     for (let i = 0; i < n; i++){
@@ -227,7 +234,7 @@ export function drawOrb(c, W, H, o, col, opts = {}){
 
 /* ---------- all of a screen's orbs together: what a game (or the engine) holds ---------- */
 export class HandFeel {
-  constructor({ rand = Math.random, reduced = false } = {}){
+  constructor({ rand = dice(), reduced = false } = {}){
     this.orbs = new Map();          /* key -> { orb, who, col, hx, hy } */
     this.bursts = new Bursts(rand, reduced);
     this.t = 0; this.aspect = 16 / 9; this.whooshAt = 0;

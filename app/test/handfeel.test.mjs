@@ -143,3 +143,15 @@ test('colours are made from a palette colour, not written here', () => {
   const src = readFileSync(new URL('../src/ui/handfeel.js', import.meta.url), 'utf8');
   assert.ok(!/#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(/i.test(src.replace(/\/\*[\s\S]*?\*\//g, '')), 'no raw colour codes');
 });
+
+test('a hit never uses Math.random: a game\'s own dice (seeded by the playtest rig) come out the same with or without the orbs', () => {
+  const real = Math.random; let used = 0;
+  Math.random = () => { used++; return 0.5; };
+  try {
+    const f = new HandFeel();
+    f.step(DT, [{ key: '0R', who: 0, x: 0.5, y: 0.5, col: '#3da9ff' }]);
+    f.hit(0.5, 0.5, 0, '#3da9ff');
+    for (let i = 0; i < 40; i++) f.step(DT, [{ key: '0R', who: 0, x: 0.5, y: 0.5, col: '#3da9ff' }]);
+  } finally { Math.random = real; }
+  assert.equal(used, 0);
+});
