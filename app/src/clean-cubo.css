@@ -12,6 +12,9 @@
 /* Cubo's words */
 .ccbubble{ position:absolute; left:calc(var(--u)*3); top:calc(var(--u)*12.4); display:none; align-items:center; gap:calc(var(--u)*1.4); max-width:calc(var(--u)*60); padding:calc(var(--u)*1.6) calc(var(--u)*1.8) calc(var(--u)*1.6) calc(var(--u)*3); border-radius:calc(var(--u)*3.4); background:rgba(255,255,255,.95); box-shadow:var(--soft); pointer-events:auto; }
 .ccbubble.on{ display:flex; }
+.cc[data-step=where] .ccbubble{ top:calc(var(--u)*15); }                 /* (under the world's name, whatever its length) */
+.cc[data-step=what] .ccbubble{ top:calc(var(--u)*14.4); }                /* (under the group bubbles) */
+.cc[data-step=game] .ccbubble{ max-width:calc(var(--u)*32); }            /* (left of the cards) */
 .cctext{ font:600 calc(var(--u)*3.9)/1.2 var(--painted); }
 .btn.ccagain{ flex:none; width:calc(var(--u)*6.4); height:calc(var(--u)*6.4); padding:0; border-radius:50%; background:var(--ink); color:#fff; }
 .btn.ccagain .lbl{ display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
@@ -80,7 +83,7 @@ body.remote .cc .btn.sel,body.remote .cc .ccslider.sel{ box-shadow:0 0 0 calc(va
 .btn.ccspot{ position:absolute; left:50%; top:calc(var(--u)*40); width:calc(var(--u)*22); height:calc(var(--u)*22); margin:calc(var(--u)*-11) 0 0 calc(var(--u)*-11); padding:0; border-radius:50%; background:radial-gradient(circle, rgba(255,242,170,.55) 0 55%, rgba(255,242,170,.15) 70%, rgba(255,242,170,0) 72%); border:calc(var(--u)*.7) dashed #fff; animation:ccglow 1.6s ease-in-out infinite; }
 .btn.ccspot.near{ background:radial-gradient(circle, rgba(255,230,120,.9) 0 55%, rgba(255,230,120,.3) 70%, rgba(255,230,120,0) 72%); }
 @keyframes ccglow{ 0%,100%{ box-shadow:0 0 calc(var(--u)*2) rgba(255,236,150,.6); } 50%{ box-shadow:0 0 calc(var(--u)*5) rgba(255,236,150,.95); } }
-.ccspottip{ left:50%; top:calc(var(--u)*25); transform:translateX(-50%); }
+.ccspottip{ left:50%; top:calc(var(--u)*21.5); transform:translateX(-50%); }
 .ccswipetip{ left:calc(var(--u)*124); top:calc(var(--u)*30); }
 .cctray{ position:absolute; right:calc(var(--u)*3.4); top:calc(var(--u)*15); width:calc(var(--u)*16); padding:calc(var(--u)*1.4); border-radius:calc(var(--u)*3); background:rgba(255,255,255,.92); box-shadow:var(--soft); display:flex; flex-direction:column; align-items:center; gap:calc(var(--u)*1.1); }
 .cctray small{ font:700 calc(var(--u)*2.8)/1 var(--painted); color:var(--ink-soft); }

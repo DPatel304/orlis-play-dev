@@ -26,7 +26,7 @@ import { PICTURES } from '../create/pictures.js';
 import { creations } from '../create/creations.js';
 import { currentMaker } from '../create/maker.js';
 import { BodyReader, Dwell, Grabber, worldAt, stopAt, jumped } from '../create/gestures.js';
-import { Wheel } from '../create/wheel.js';
+import { Wheel, AUTO } from '../create/wheel.js';
 import * as F from '../create/cubo-flow.js';
 
 const col = (n, tone) => assets.color(n, tone);
@@ -37,6 +37,8 @@ const GROUP_COLOUR = { food: 'touch.tangerine', animals: 'touch.mint', sky: 'tou
 const JOB_BLURB = { collect: 'Reach out and touch', dodge: 'Lean away from it', keepup: 'Bat it up, keep it up', stack: 'Build a tall tower' };
 const ARMS_TEXT = { where: 'Arms up to choose', what: 'Arms up when done', rules: 'Arms up to play', name: 'Arms up to keep it' };
 const CUBO_X = { where: 0.105, game: 0.105, what: 0.105, rules: 0.105, name: 0.105, play: 0.5 };
+const WALKED = 0.04;               /* screen widths the hips must move to count as walking (tracker jitter and swaying are far less) */
+const SLIDER_SETTLE = 0.3;         /* seconds a hand must be in a slider before it pushes it */
 const LOCK = 0.9;                  /* seconds after a step opens before a hand can touch anything (it is probably still where the last pick was) */
 
 /* the little picture on a game card: Cubo doing it */
@@ -58,7 +60,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
   let st = F.newFlow({ creation, full }), clock = 0, gone = false, lock = 0, busy = false;
   const reader = new BodyReader(), jumps = new JumpWatch(), dwell = new Dwell(), grabber = new Grabber();
   const wheel = new Wheel(1, still);
-  let touch = [], layer = null, ui = {}, pops = [], lastHip = null, moving = 0;
+  let touch = [], layer = null, ui = {}, pops = [], lastHip = null, moving = 0, spotArmed = false;
   let nameShow = 0, nameGoal = 0, nameIxSeen = 0, toldLine = '';
   /* Cubo: where he stands (a share of the box's width), and what he is doing */
   const cubo = { x: 0.1, tx: 0.1, act: null, until: 0 };
@@ -101,7 +103,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
     else if (f.full) onFull();
     else if (f.msg) say(f.msg);
     else if (f.wheel) wheel.nudge(f.wheel);
-    else if (f.grabTop){ const id = groupIds()[wheel.top()]; if (id) dispatch({ t: 'grab', id }); }
+    else if (f.grabTop){ const id = groupIds()[wheel.top()]; if (id) dispatch({ t: 'grab', id, explicit: true }); }
     else if (f.play) save(f.play);
     else if (f.exit) onExit();
   }
@@ -127,7 +129,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
 
   function opened(was){
     if (layer){ layer.remove(); layer = null; }
-    touch = []; ui = {}; dwell.reset(); dwell.block(); lock = LOCK;
+    touch = []; ui = {}; dwell.reset(); dwell.block(); lock = LOCK; lastHip = null; moving = 0; spotArmed = false; grabber.reset(); root.setAttribute('data-locked', '');
     root.setAttribute('data-step', st.step);
     onStep(st.step, was);
     root.classList.toggle('hide', st.step === 'start');
@@ -238,7 +240,8 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
       ui.chips.forEach((b, i) => { b.classList.toggle('on', F.GROUPS[i] === st.group); b.classList.toggle('sel', !st.group && i === st.groupIx); });
       if (!(st.group && ui.wheelFor === st.group)){
         ui.wheelFor = st.group;
-        if (st.group){ wheel.setSize(groupIds().length); wheel.pos = 0; }
+        spotArmed = false; grabber.reset();
+        if (st.group){ wheel.setSize(groupIds().length); wheel.pos = 0; wheel.vel = AUTO; wheel.manual = false; }
       }
       ui.spot.classList.toggle('hide', !st.group); ui.spotTip.classList.toggle('hide', !st.group); ui.swipeTip.classList.toggle('hide', !st.group);
       ui.spot.classList.toggle('sel', !!st.group && st.zone === 'wheel');
@@ -290,7 +293,10 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
     if (gone) return;
     clock += dt; lock = Math.max(0, lock - dt);
     if (st.step === 'start'){ readStart(dt); return; }
-    const body = reader.step(dt, pose.players);
+    /* (a mouse standing in for the camera is clicks only: hovering over a target must not touch it) */
+    const seen = pose.mouse.active ? [] : pose.players;
+    root.toggleAttribute('data-locked', lock > 0);
+    const body = reader.step(dt, seen);
     const px = body.hands.filter(p => p.active).map(p => ({ x: p.x * (typeof innerWidth === 'number' ? innerWidth : 1920), y: p.y * (typeof innerHeight === 'number' ? innerHeight : 1080) }));
 
     /* both arms up goes on from here (only for the steps that use it) */
@@ -317,9 +323,10 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
     if (st.step === 'where'){
       /* walk across the picture and the world follows (a body that has been still leaves the world where it is: the remote's choice stays) */
       if (body.hipX != null){
+        /* walking, not swaying: the hips have to travel WALKED across the picture from where they were (an anchor that follows slowly) */
         if (lastHip == null) lastHip = body.hipX;
-        if (Math.abs(body.hipX - lastHip) > 0.002){ moving = 1.2; } else moving = Math.max(0, moving - dt);
-        lastHip = body.hipX;
+        if (Math.abs(body.hipX - lastHip) > WALKED){ moving = 1.2; lastHip = body.hipX; }
+        else { moving = Math.max(0, moving - dt); lastHip += (body.hipX - lastHip) * Math.min(1, dt * 2); }
         if (moving > 0 && lock <= 0){ const ix = worldAt(body.hipX, F.WORLDS.length, st.worldIx); if (ix !== st.worldIx){ sfx.tick(); dispatch({ t: 'world', ix }); } }
       }
     }
@@ -328,8 +335,10 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
       const sw = lock <= 0 ? body.swipe : 0;
       if (sw){ wheel.kick(sw); sfx.whoosh?.(); }
       const s = spotAt(b), inSpot = lock <= 0 && px.some(p => Math.hypot(p.x - s.x, p.y - s.y) < s.r * 1.2);
-      ui.spot.classList.toggle('near', inSpot);
-      const got = grabber.step(dt, inSpot, groupIds()[wheel.top()] ?? null);
+      /* a hand still resting where the group bubble was (the middle of the screen) is not a grab: it has to leave the spot first */
+      if (!inSpot && lock <= 0) spotArmed = true;
+      ui.spot.classList.toggle('near', inSpot && spotArmed);
+      const got = grabber.step(dt, inSpot && spotArmed, groupIds()[wheel.top()] ?? null);
       if (got) dispatch({ t: 'grab', id: got });
     }
     if (st.step === 'rules'){
@@ -339,8 +348,9 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
         const left = first.left + first.width / 2, right = last.left + last.width / 2;
         /* (a hand pushes it once it has come into the slider: one that was resting there when the step opened is waited out) */
         const inside = px.filter(p => p.y >= rb.top - rb.height * 0.2 && p.y <= rb.bottom + rb.height * 0.1 && p.x >= left - first.width && p.x <= right + last.width);
-        if (!inside.length) s.armed = true;
-        if (lock <= 0 && s.armed) for (const p of inside){
+        /* (and it has to stay a moment: both arms rising to go on sweep through the sliders on the way up, and must not push them) */
+        if (!inside.length){ s.armed = true; s.inFor = 0; } else s.inFor = (s.inFor || 0) + dt;
+        if (lock <= 0 && s.armed && s.inFor >= SLIDER_SETTLE) for (const p of inside){
           const i = stopAt(p.x, left, right, s.r.steps, st.picks[k]);
           if (i !== st.picks[k]){ sfx.tick(); dispatch({ t: k, i }); }
         }
@@ -353,8 +363,8 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
         nameGoal += d; nameIxSeen = st.nameIx;
       }
       nameShow = still ? nameGoal : nameShow + (nameGoal - nameShow) * Math.min(1, dt * 4.5);
-      if (lock <= 0 && jumped(jumps.step(dt, pose.players, pose.players.length), body.index)){ sfx.whoosh?.(); dispatch({ t: 'spin', by: 1 + Math.floor(Math.random() * 4) }); }
-    } else jumps.step(dt, pose.players, pose.players.length);
+      if (lock <= 0 && jumped(jumps.step(dt, seen, seen.length), body.index)){ sfx.whoosh?.(); dispatch({ t: 'spin', by: 1 + Math.floor(Math.random() * 4) }); }
+    } else jumps.step(dt, seen, seen.length);
 
     /* the pops fade, Cubo walks */
     for (const p of pops) p.t += dt;
@@ -370,7 +380,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
   const startWatch = new BodyReader();
   let startHome = null;
   function readStart(dt){
-    const body = startWatch.step(dt, pose.players);
+    const body = startWatch.step(dt, pose.mouse.active ? [] : pose.players);
     if (startHome) startHome.arms(body.armsProgress);
     if (body.arms && lock <= 0){ if (startHome) startHome.arms(0); dispatch({ t: 'arms' }); }
   }
@@ -417,6 +427,13 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
       c.save(); c.globalAlpha = 0.55 + 0.45 * k;
       c.fillStyle = col('earth.snow'); c.globalAlpha *= 0.85; c.beginPath(); c.arc(x, y, size * 0.62, 0, 7); c.fill(); c.globalAlpha = 0.55 + 0.45 * k;
       assets.draw(c, ids[it.i], x, y, size * 0.95, { rotate: still ? 0 : Math.sin(clock * 1.6 + it.i) * 0.08 });
+      /* a thing already in the tray wears a tick (so it is clear why grabbing it again does nothing) */
+      if (st.tray.includes(ids[it.i])){
+        const tx = x + size * 0.42, ty = y - size * 0.42, tr = size * 0.2;
+        c.globalAlpha = 1; c.fillStyle = col('ui.go'); c.beginPath(); c.arc(tx, ty, tr, 0, 7); c.fill();
+        c.strokeStyle = '#fff'; c.lineWidth = tr * 0.34; c.lineCap = 'round'; c.lineJoin = 'round';
+        c.beginPath(); c.moveTo(tx - tr * 0.45, ty); c.lineTo(tx - tr * 0.1, ty + tr * 0.4); c.lineTo(tx + tr * 0.5, ty - tr * 0.35); c.stroke();
+      }
       c.restore();
     }
   }
@@ -460,11 +477,12 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
 
   /* ---------- the remote: arrows, OK, Back ---------- */
   function keys(e){
-    if (gone || !root.isConnected || st.step === 'start' || st.step === 'play') return;
+    if (gone || !root.isConnected || st.step === 'start') return;
     if (document.querySelector('.dim:not(.lost)')) return;
     const k = REMOTE_KEYS[e.key];
     if (!k && !OK_KEYS.has(e.key)) return;
     e.preventDefault && e.preventDefault(); e.stopImmediatePropagation && e.stopImmediatePropagation();
+    if (st.step === 'play') return;                 /* (saving: more presses must not reach the page behind - the tab bar, the profile) */
     document.body.classList.add('remote');
     if (k) dispatch({ t: 'key', key: k }); else { sfx.select(); dispatch({ t: 'ok' }); }
   }
@@ -476,7 +494,9 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
     /* the page gives the start screen it shows, so arms-up can fill its ring */
     useHome(home){ startHome = home; },
     /* the page starts the flow on the start screen (home); a game being changed opens straight at Where */
-    start(){ opened(null); if (st.say) speak(st.say); },
+    start({ quiet = false } = {}){ opened(null); if (st.say && !quiet) speak(st.say); },
+    /* the family's slots filled or freed while the start screen waits (a game removed from the row below) */
+    setFull(full){ dispatch({ t: 'full', full }); },
     dispose(){ gone = true; removeEventListener('keydown', keys, true); try { voice.hush(); } catch {} root.remove(); },
     wheel
   });
