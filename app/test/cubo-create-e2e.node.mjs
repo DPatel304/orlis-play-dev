@@ -58,6 +58,22 @@ async function layoutProblems(s){
   });
 }
 async function noOverlaps(s, label){ const p = await layoutProblems(s); assert.deepEqual(p, [], `${label}: things overlap or leave the screen at ${s.w}x${s.h}`); }
+/* the remote's focus is always on screen: with the remote in use, exactly one visible focused element, in the flow's zone and item, wearing a ring */
+async function focusIs(s, zone, item, shot = null){
+  const f = await s.page.evaluate(() => {
+    const els = [...document.querySelectorAll('.cc .sel')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 2 && r.height > 2 && !e.closest('.hide'); });
+    const e = els[0], cs = e && getComputedStyle(e);
+    return { n: els.length, remote: document.body.classList.contains('remote'), zone: e && e.dataset.zone, item: e && Number(e.dataset.item), ring: !!cs && /rgb/.test(cs.boxShadow) && cs.boxShadow.split(') ').length >= 3 };
+  });
+  assert.equal(f.remote, true, 'the remote is in use');
+  assert.equal(f.n, 1, `exactly one visible focused element on ${zone} (found ${f.n})`);
+  assert.equal(f.zone, zone); assert.equal(f.item, item);
+  assert.equal(f.ring, true, `the focused ${zone} wears the ring`);
+  const fl = await st(s);
+  const want = await s.page.evaluate(async (fl) => (await import('/src/create/cubo-flow.js')).focusOf(fl), fl);
+  assert.deepEqual({ zone: f.zone, item: f.item }, want, 'the screen shows what the flow says');
+  if (shot) await s.focusShot(shot);
+}
 const noErrors = (s) => assert.deepEqual(s.errors, [], 'no page or console errors');
 const wheelTop = (s) => s.page.evaluate(() => document.querySelector('.cc').wheel.top());
 const wheelPos = (s) => s.page.evaluate(() => document.querySelector('.cc').wheel.pos);
@@ -103,6 +119,7 @@ for (const [w, h] of SIZES){
     await s.shot('where'); await noOverlaps(s, 'where');
     /* Where: the arrows walk through the worlds; the name and the dots follow */
     await s.keys('ArrowRight', 'ArrowRight');
+    await focusIs(s, 'world', 2, 'where');
     assert.equal((await st(s)).worldIx, 2);
     assert.equal(await s.text('.ccworld'), await s.page.evaluate(async () => (await import('/src/create/recipe.js')).choices.where[2].label));
     assert.equal(await s.page.evaluate(() => [...document.querySelectorAll('.ccdot')].findIndex(d => d.classList.contains('on'))), 2);
@@ -120,6 +137,7 @@ for (const [w, h] of SIZES){
     /* the game: arrows move over the four cards (a 2 by 2), OK picks */
     await s.keys('ArrowRight');
     assert.equal(await s.page.evaluate(() => [...document.querySelectorAll('.cccard')].findIndex(c => c.classList.contains('sel'))), 1);
+    await focusIs(s, 'card', 1, 'game');
     await s.keys('ArrowDown'); assert.equal((await st(s)).gameIx, 3);
     await s.keys('ArrowLeft'); assert.equal((await st(s)).gameIx, 2);
     await s.keys('ArrowUp'); assert.equal((await st(s)).gameIx, 0);
@@ -127,12 +145,18 @@ for (const [w, h] of SIZES){
     await s.keys('Enter'); await s.stepIs('what');
     assert.equal(await s.bubble(), 'What shall we stack? Pick a group, then grab!');
     await s.shot('what-groups'); await noOverlaps(s, 'what, groups');
+    await s.keys('ArrowRight'); await focusIs(s, 'groups', 1, 'what-groups'); await s.keys('ArrowLeft');
+    await s.keys('ArrowDown');     /* (nothing picked, nothing below: the focus stays where it is) */
+    await focusIs(s, 'groups', 0);
     /* What: a group (Back out of it first, one step), then grab from the wheel with OK */
     await s.keys('ArrowRight', 'Enter');
     assert.equal((await st(s)).group, 'animals');
     await s.keys('Escape'); assert.equal((await st(s)).group, null, 'Back leaves the group first'); assert.equal(await s.step(), 'what');
+    await focusIs(s, 'groups', 1);
     await s.keys('Enter');                                         /* the same group again (the lit one) */
     assert.equal((await st(s)).group, 'animals');
+    await focusIs(s, 'wheel', 0, 'what-wheel-focus');
+    await s.keys('ArrowDown'); assert.equal((await st(s)).zone, 'wheel', 'with nothing picked there is no tray or Done to go down to'); await focusIs(s, 'wheel', 0);
     const ids = await groupIds(s, 'animals');
     /* the wheel does not drift under the remote: one press is one thing, and OK takes what is at the top */
     await s.keys('ArrowRight');
@@ -147,19 +171,23 @@ for (const [w, h] of SIZES){
     await s.shot('what-wheel'); await noOverlaps(s, 'what, wheel and tray');
     /* the tray: down into it, OK puts one back, up and grab another, down to Done */
     await s.keys('ArrowDown'); assert.equal((await st(s)).zone, 'tray');
+    await focusIs(s, 'tray', 0, 'what-tray');
     await s.keys('Enter'); assert.deepEqual((await st(s)).tray, [top2], 'OK in the tray takes one back');
     await s.keys('ArrowUp'); assert.equal((await st(s)).zone, 'wheel');
     await s.keys('ArrowLeft'); const top3 = ids[await wheelTop(s)]; await s.keys('Enter');
     assert.equal((await st(s)).tray.length, 2); assert.ok((await st(s)).tray.includes(top3));
     await s.keys('ArrowDown', 'ArrowDown'); assert.equal((await st(s)).zone, 'done');
-    await s.shot('what-done');
+    await s.shot('what-done'); await focusIs(s, 'done', 0, 'what-done');
     const things = (await st(s)).tray.slice();
     await s.keys('Enter'); await s.stepIs('rules');
     assert.deepEqual((await st(s)).picks.things.map(t => t.id), things);
     assert.equal(await s.bubble(), LINES.rules);
     /* Rules: arrows push the sliders and move between them; Back and forward again keeps them */
     await s.keys('ArrowRight', 'ArrowRight'); assert.equal((await st(s)).picks.speed, 5);
+    await focusIs(s, 'slider', 0, 'rules-speed');
     await s.keys('ArrowDown', 'ArrowRight'); assert.equal((await st(s)).picks.many, 4);
+    await focusIs(s, 'slider', 1, 'rules-many');
+    await s.keys('ArrowDown'); await focusIs(s, 'done', 0, 'rules-done'); await s.keys('ArrowUp'); await focusIs(s, 'slider', 1);
     await s.shot('rules'); await noOverlaps(s, 'rules');
     await s.keys('Escape'); await s.stepIs('what'); assert.equal((await st(s)).group, null);
     await s.keys('Enter'); assert.equal((await st(s)).group, 'animals');
@@ -170,6 +198,7 @@ for (const [w, h] of SIZES){
     await s.stepIs('name');
     assert.equal(await s.bubble(), LINES.name);
     await s.shot('name'); await noOverlaps(s, 'name');
+    await focusIs(s, 'keep', 0, 'name');
     /* Name: arrows turn the wheel of names; OK keeps the one in the middle and saves */
     const names = (await st(s)).names;
     assert.ok(names.length >= 6, 'a wheel of names');

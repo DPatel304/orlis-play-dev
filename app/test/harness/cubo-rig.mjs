@@ -259,6 +259,13 @@ function helpers(s){
       const file = path.join(SHOTS, `cubo-create-e2e-${name}${s.w === 1920 ? '' : '-720'}.png`);
       await page.screenshot({ path: file }); s.shots.push(file);
     },
+    /* the remote's focus picture (docs/calm/cubo-create-focus-<name>.png) */
+    async focusShot(name){
+      if (!SHOTS) return;
+      fs.mkdirSync(SHOTS, { recursive: true });
+      const file = path.join(SHOTS, `cubo-create-focus-${name}${s.w === 1920 ? '' : '-720'}.png`);
+      await page.screenshot({ path: file }); s.shots.push(file);
+    },
     /* the page's own words: the bubble, and any toast */
     bubble: () => page.evaluate(() => (document.querySelector('.ccbubble .cctext') || {}).textContent || ''),
     /* a record of what Cubo has said (the page's voice calls), so a line said twice or at the wrong time shows */

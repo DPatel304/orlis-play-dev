@@ -147,7 +147,16 @@ export class Yard {
         const v = SLIDE * Math.min(1, 0.25 + b.spin);
         b.X += b.dir * v * dt;
         const edge = b.w / 2 + 0.02;
-        if (b.X < edge || b.X > this.A - edge){ b.X = Math.min(this.A - edge, Math.max(edge, b.X)); b.state = 'rest'; b.dir = 0; events.push({ type: 'land', b, speed: 0, stable: true }); continue; }
+        if (b.X < edge || b.X > this.A - edge){
+          b.X = Math.min(this.A - edge, Math.max(edge, b.X));
+          /* at the side of the picture: a block that would stand higher than the ceiling does not stay there - it turns and tips off the other way (and if that
+             is no way off either, it fades: nothing ever stands up in the clock) */
+          if (this.tooHigh(b)){
+            if (b.edged){ this.fadeOut(b); continue; }
+            b.edged = true; b.dir = -b.dir; b.spin = 0; continue;
+          }
+          b.state = 'rest'; b.dir = 0; events.push({ type: 'land', b, speed: 0, stable: true }); continue;
+        }
         const l = this.land(b), bottom = b.Y + b.h / 2;
         if (l.bottom > bottom + 0.02){ b.state = 'fall'; b.vy = 0.12; b.supports = []; }      /* clear of it: down it goes */
         else { b.Y = l.bottom - b.h / 2; b.supports = l.ids.filter(id => id !== 0); }
@@ -159,11 +168,15 @@ export class Yard {
     return events;
   }
 
+  /* a block whose top would be higher than the ceiling (it does not stand there: it tips off or is carried no higher) */
+  tooHigh(b){ return b.Y - b.h / 2 < CEILING - 1e-6; }
+
   /* stop a block that is held from going down into what it hangs over (it rides on top, easing up, not jumping) */
   rideOn(b, dt){
     const l = this.land(b), bottom = b.Y + b.h / 2;
     if (bottom > l.bottom) b.Y += (l.bottom - bottom) * Math.min(1, dt * 12);
     if (b.Y + b.h / 2 > GROUND) b.Y = GROUND - b.h / 2;
+    if (b.Y - b.h / 2 < CEILING) b.Y = CEILING + b.h / 2;       /* (a carried block is never held up in the score chips, the words or the clock) */
   }
 
   /* start a block fading (it stops being a thing to stand on at once) */

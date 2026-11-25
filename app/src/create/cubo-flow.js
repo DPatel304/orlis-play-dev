@@ -192,6 +192,23 @@ export function reduce(state, ev){
   return done();
 }
 
+/* where the remote is, as the screen must show it: { zone, item } (the one thing OK would act on, or the arrows move).
+   where: the world's name (item = world) | game: a card | what: 'groups' (before a group is open), then 'wheel', 'tray' (item = slot), 'done'
+   rules: 'slider' (item = 0 speed, 1 many) or 'done' | name: 'keep'. Other steps: null. */
+export function focusOf(s){
+  switch (s.step){
+    case 'where': return { zone: 'world', item: s.worldIx };
+    case 'game': return { zone: 'card', item: s.gameIx };
+    case 'what':
+      if (!s.group) return { zone: 'groups', item: s.groupIx };
+      if (s.zone === 'tray') return { zone: 'tray', item: s.trayIx };
+      return { zone: s.zone, item: 0 };
+    case 'rules': return s.row < 2 ? { zone: 'slider', item: s.row } : { zone: 'done', item: 0 };
+    case 'name': return { zone: 'keep', item: 0 };
+  }
+  return null;
+}
+
 /* the remote's arrows, per step */
 function keyed(s, key, fx){
   const dx = key === 'left' ? -1 : key === 'right' ? 1 : 0, dy = key === 'up' ? -1 : key === 'down' ? 1 : 0;
@@ -208,7 +225,7 @@ function keyed(s, key, fx){
       if (s.zone === 'wheel'){
         if (dx) fx.push({ wheel: dx });
         else if (dy < 0) s = { ...s, group: null };
-        else if (dy > 0) s = { ...s, zone: s.tray.length ? 'tray' : 'done' };
+        else if (dy > 0 && s.tray.length) s = { ...s, zone: 'tray' };      /* (nothing picked: nothing below, and no Done to land on) */
       } else if (s.zone === 'tray'){
         if (dx) s = { ...s, trayIx: clampi(s.trayIx + dx, 0, s.tray.length - 1) };
         else if (dy < 0) s = { ...s, zone: 'wheel' };

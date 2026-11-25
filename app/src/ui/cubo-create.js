@@ -228,23 +228,20 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
   function paint(){
     arms.classList.toggle('hide', !ARMS_TEXT[st.step] || (st.step === 'what' && !st.tray.length) || (st.step === 'what' && !st.group));
     armsText.textContent = ARMS_TEXT[st.step] || '';
-    arms.classList.toggle('sel', st.step === 'what' && st.zone === 'done');
     back.classList.toggle('hide', st.step === 'play');
     if (st.step === 'where'){
       ui.world.textContent = choices.where[st.worldIx].label;
       [...ui.dots.children].forEach((d, i) => d.classList.toggle('on', i === st.worldIx));
     }
-    if (st.step === 'game') ui.cards.forEach((c, i) => c.b.classList.toggle('sel', i === st.gameIx));
     if (st.step === 'what'){
       ui.groups.classList.toggle('big', !st.group);
-      ui.chips.forEach((b, i) => { b.classList.toggle('on', F.GROUPS[i] === st.group); b.classList.toggle('sel', !st.group && i === st.groupIx); });
+      ui.chips.forEach((b, i) => { b.classList.toggle('on', F.GROUPS[i] === st.group); });
       if (!(st.group && ui.wheelFor === st.group)){
         ui.wheelFor = st.group;
         spotArmed = false; grabber.reset();
         if (st.group){ wheel.setSize(groupIds().length); wheel.pos = 0; wheel.vel = AUTO; wheel.manual = false; }
       }
       ui.spot.classList.toggle('hide', !st.group); ui.spotTip.classList.toggle('hide', !st.group); ui.swipeTip.classList.toggle('hide', !st.group);
-      ui.spot.classList.toggle('sel', !!st.group && st.zone === 'wheel');
       drawTray();
     }
     if (st.step === 'rules'){
@@ -253,10 +250,27 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
         s.fill.style.width = `${v * 100 / (n - 1)}%`;
         s.word.textContent = s.r.labels[v];
         s.stops.forEach((b, i) => { b.classList.toggle('lit', i <= v); b.classList.toggle('on', i === v); });
-        s.box.classList.toggle('sel', (k === 'speed' && st.row === 0) || (k === 'many' && st.row === 1));
       }
-      arms.classList.toggle('sel', st.row === 2);
     }
+    paintFocus();
+  }
+  /* the remote's focus: exactly one element wears .sel (shown under body.remote), and says which zone and item it is (data-zone, data-item) */
+  let lit = null;
+  function paintFocus(){
+    const f = F.focusOf(st);
+    if (lit) lit.classList.remove('sel');
+    lit = null;
+    if (!f) return;
+    let el = null;
+    if (f.zone === 'world') el = ui.world;
+    else if (f.zone === 'card') el = ui.cards[f.item].b;
+    else if (f.zone === 'groups') el = ui.chips[f.item];
+    else if (f.zone === 'wheel') el = ui.spot;
+    else if (f.zone === 'tray') el = ui.tray.querySelector(`[data-i="${f.item}"]`);
+    else if (f.zone === 'slider') el = ui.sliders[f.item ? 'many' : 'speed'].box;
+    else el = arms;                                        /* done, keep */
+    if (!el) return;
+    lit = el; el.classList.add('sel'); el.setAttribute('data-zone', f.zone); el.setAttribute('data-item', String(f.item));
   }
   /* the tray: what has been picked so far (touch one to take it back) */
   function drawTray(){
@@ -276,7 +290,6 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
         ui.tray.appendChild(b); touch.push({ el: b, fn: () => dispatch({ t: 'take', id }), ring: true, tray: true });
       }
     }
-    [...ui.tray.children].filter(e => e.getAttribute && e.getAttribute('data-i') != null).forEach((e) => e.classList.toggle('sel', st.zone === 'tray' && Number(e.getAttribute('data-i')) === st.trayIx));
   }
 
   /* ---------- the box this lives in, in screen pixels ---------- */
