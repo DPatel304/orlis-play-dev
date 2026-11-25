@@ -13,7 +13,7 @@ import { Scene } from '../games/pop-party-scene.js';
 import { bearHead } from '../games/sleepy-bear.js';
 import { whale, background, hotAir } from '../games/sky-painter.js';
 import { leaf, AUTUMN } from '../games/leaf-pile.js';
-import { block } from '../games/stack-it-high.js';
+import { drawBlock } from '../games/stack-it-high.js';
 
 const hash = (i, k = 1) => (((i + 1) * 2654435761 * k) % 4294967296) / 4294967296;
 /* a seeded random sequence (for scatters that shouldn't line up) */
@@ -135,13 +135,15 @@ const ART = {
   'stack-it-high': (c, W, H) => {
     const s = new Scene(); s.step(1 / 60, { t: 2, p: 0.5, storm: false, wind: 0, joy: 1, look: 0.5, rainbow: true });
     s.drawBack(c, W, H); s.drawFront(c, W, H);
-    /* a tower nearly too tall, the top one wobbling */
-    const cols = ['#ff7aa8', '#ffd25a', '#79b3aa', '#a98bff', '#f2a65a', '#4aa8ff', '#53e59a', '#ff7aa8'], marks = ['star', 'heart', 'dot'];
-    const bs = H * 0.16, x0 = W * 0.74;
-    for (let i = 0; i < 5; i++) block(c, x0 + Math.sin(i * 1.3) * bs * 0.12, H * 0.98 - bs * 0.55 - i * bs * 0.96, bs, (hash(i, 3) - 0.5) * 0.12, cols[i], marks[i % 3]);
-    block(c, x0 + bs * 0.35, H * 0.98 - bs * 0.55 - 5 * bs * 0.96 - bs * 0.12, bs, 0.35, cols[6], 'star');
-    /* and the next one coming, held up high */
-    block(c, W * 0.5, H * 0.56, bs * 0.9, -0.2, cols[5], 'heart');
+    /* a little building of big painted blocks: two cubes, a plank across them, an arch beside, a roof on top, and a dome */
+    const u = H * 0.17, ground = H * 0.97, x0 = W * 0.72;
+    const at = (kind, dx, bottom, w, h, col, mark, rot = 0) => drawBlock(c, x0 + dx * u, ground - (bottom + h / 2) * u, kind, w * u, h * u, rot, col, mark);
+    at('cube', -0.5, 0, 1, 1, 'touch.lagoon', 'star'); at('cube', 0.55, 0, 1, 1, 'touch.mint', 'heart');
+    at('plank', 0.02, 1, 2.8, 0.45, 'touch.sunflower', 'dot');
+    at('roof', 0.02, 1.45, 1.8, 0.9, 'touch.cherry', 'dot');
+    at('arch', -2.3, 0, 1.8, 1.0, 'touch.grape', 'dot'); at('dome', 2.4, 0, 1.55, 0.78, 'touch.tangerine', 'dot');
+    /* and the next one coming down, big and slow */
+    drawBlock(c, W * 0.38, H * 0.4, 'pillar', u * 0.5, u * 1.3, -0.12, 'touch.bubblegum', 'dot');
     c.fillStyle = '#fff6c8';
     for (const [x, y, r] of [[0.75, 0.12, 0.03], [0.46, 0.2, 0.02], [0.8, 0.32, 0.018]]){
       c.beginPath(); for (let k = 0; k < 8; k++){ const a = k * Math.PI / 4, q = k % 2 ? r * 0.35 : r; c.lineTo(W * x + Math.cos(a) * q * H, H * y + Math.sin(a) * q * H); } c.closePath(); c.fill();

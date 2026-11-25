@@ -15,7 +15,7 @@ import { music } from '../src/audio/sound.js';
 import popParty from '../src/games/pop-party.js';
 import sleepyBear from '../src/games/sleepy-bear.js';
 import leafPile, { PILE, SWEEP_END } from '../src/games/leaf-pile.js';
-import stackItHigh, { TOWER_FULL } from '../src/games/stack-it-high.js';
+import stackItHigh from '../src/games/stack-it-high.js';
 import skyPainter from '../src/games/sky-painter.js';
 
 const W = 1920, H = 1080, DT = 1 / 30;
@@ -88,14 +88,18 @@ const PLAY = {
     k.hands.r.x = x; k.hands.r.y = y + Math.sin(t * 3) * 0.03; k.hands.l.x = x - side * 0.04; k.hands.l.y = y - 0.04;
   },
   'stack-it-high'(g, k, t, dt){
-    /* (each child has their own blocks and tower) */
-    const key = k.i + 'r', mine = g.blocks.find(b => b.held && b.held.key === key);
-    if (mine) toward(k.hands.r, g.towerX(k.i), g._top(k.i) + 0.09, 1.2, dt);
-    else {
-      const free = g.blocks.filter(b => !b.held && b.owner === k.i).sort((a, b) => b.y - a.y)[0];
-      if (free) toward(k.hands.r, free.x, free.y, 1.2, dt); else toward(k.hands.r, k.x, 0.4, 0.8, dt);
+    /* two hands on a block, carry it to somewhere in the middle, then spread the hands to let go */
+    const A = W / H, mine = g.blocks.find(b => b.held === k.i), hand = (X, Y, sp) => { toward(k.hands.l, X.l / A, Y, sp, dt); toward(k.hands.r, X.r / A, Y, sp, dt); };
+    if (mine){
+      k.carrying = true; const tx = 0.45 + ((k.n || 0) % 3) * 0.45 + k.i * 0.25, ty = 0.5, d = mine.Y < ty ? Math.abs(mine.X - tx) : Math.hypot(mine.X - tx, mine.Y - ty);      /* (held up by the tower it is over: that is as low as it goes) */
+      if (d < 0.05) k.still = (k.still || 0) + dt; else k.still = 0;
+      if (k.still > 0.6) hand({ l: mine.X - mine.w / 2 - 0.18, r: mine.X + mine.w / 2 + 0.18 }, ty, 1.2);
+      else hand({ l: tx - mine.w / 2, r: tx + mine.w / 2 }, ty, 1.2);
+    } else {
+      k.still = 0;
+      if (k.carrying){ k.carrying = false; k.n = (k.n || 0) + 1; } const tx0 = 0.45 + ((k.n || 0) % 3) * 0.45 + k.i * 0.25, free = g.blocks.filter(b => g.yard.liftable(b) && Math.abs(b.X - tx0) > 0.15).sort((a, b) => Math.abs(a.X - k.x * A) - Math.abs(b.X - k.x * A))[0];
+      if (free) hand({ l: free.X - free.w / 2 + 0.02, r: free.X + free.w / 2 - 0.02 }, free.Y, 1.4); else hand({ l: k.x * A - 0.1, r: k.x * A + 0.1 }, 0.9, 0.8);
     }
-    toward(k.hands.l, k.x - 0.15, 0.7, 0.5, dt);   /* the other hand out of the way */
   },
   'sky-painter'(g, k, t, dt){
     const x = k.x + Math.sin(t * 1.4 + k.i * 1.7) * 0.28, y = 0.47 + Math.sin(t * 0.33 + k.i) * 0.45;
@@ -136,7 +140,7 @@ function play(g, game, kids, secs, script = () => {}, opts = {}){
 const fresh = (n, game) => { const kids = [kid(0, 0.3), kid(1, 0.7)]; kids.forEach((k, i) => { k.here = i < n; }); apply(kids, DT); return [game.create(2), kids]; };
 /* (a pushed leaf, a carried block or a thrown balloon can land after its
    kid has gone - credit for their own sweep, a moment later) */
-const LATE = { 'leaf-pile': true, 'pop-party': false, 'stack-it-high': false, 'sleepy-bear': false, 'sky-painter': false };
+const LATE = { 'leaf-pile': true, 'pop-party': false, 'stack-it-high': true, 'sleepy-bear': false, 'sky-painter': false };
 
 for (const game of GAMES){
   test(`${game.id}: one player, a whole round - they get somewhere, alone`, () => {
@@ -262,14 +266,14 @@ test('sleepy-bear: a child away for a whole freeze gets no star for it; one who 
 test('stack-it-high: a child who walks off carrying a block drops it, and the other can pick it up', () => {
   const [g, kids] = fresh(2, stackItHigh);
   let carried = null;
-  for (let n = 0; n < 900 && !carried; n++){ play(g, stackItHigh, kids, DT); carried = g.blocks.find(b => b.held && b.held.who === 1); }
+  for (let n = 0; n < 1800 && !carried; n++){ play(g, stackItHigh, kids, DT); carried = g.blocks.find(b => b.held === 1); }
   assert.ok(carried, 'player 2 picked one up');
   kids[1].here = false;
   play(g, stackItHigh, kids, DT * 2);
   assert.equal(carried.held, null, 'dropped');
   play(g, stackItHigh, kids, 30);
-  assert.ok(g.lanes.every(l => l.tower.length <= TOWER_FULL));
-  assert.ok(g.towers >= 0 && g.blocks.length < 20, 'no pile-up of blocks');
+  assert.ok(g.blocks.length < 20, 'no pile-up of blocks');
+  assert.ok(g.blocks.every(b => b.state !== 'held' || b.held === 0), 'nobody holds anything but the one who is there');
 });
 
 test('leaf-pile: at the end it bursts even with nobody left to jump, and one child alone only has to jump once', () => {
@@ -320,7 +324,7 @@ const ENOUGH = {
   'pop-party': (g) => g.score[0] >= 150,
   'sleepy-bear': (g) => g.score[0] >= 6,
   'leaf-pile': (g) => g.piles >= 1 && g.peak >= 40,
-  'stack-it-high': (g) => g.towers >= 3,
+  'stack-it-high': (g) => g.stacked >= 8 && g.peak >= 2,
   'sky-painter': (g) => g.done >= 1          /* (a cover takes about a minute alone: one picture, and well into the next) */
 };
 for (const game of GAMES){
@@ -329,7 +333,7 @@ for (const game of GAMES){
     play(g, game, kids, game.secs - 60);
     const late = g.score[0];
     play(g, game, kids, 58);
-    assert.ok(ENOUGH[game.id](g), `${game.id}: score ${g.score[0]}, piles ${g.piles}, towers ${g.towers}, pictures ${g.done}`);
+    assert.ok(ENOUGH[game.id](g), `${game.id}: score ${g.score[0]}, piles ${g.piles}, stacked ${g.stacked}, pictures ${g.done}`);
     assert.ok(g.score[0] > late, `stalled: nothing in the last minute (${late} -> ${g.score[0]})`);
   });
 }

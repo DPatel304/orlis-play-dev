@@ -1,276 +1,359 @@
-/* Stack It High: soft blocks float down from the sky; catch one, carry it
-   over to your tower, and it hops on top. Build it higher and higher - and
-   when it's tall enough the tower turns into a rocket and blasts off, and
-   you start a new one.
+/* Stack It High: a building sandbox. Big, heavy painted blocks - a cube, a long plank, a pillar, a roof, an arch, a dome - drop in
+   from the sky, one every so often, slowly and with a soft thud and a puff of dust, and rest on the ground or on whatever they
+   land on. Nobody wins and nothing is "finished": build whatever you like, together, on one shared ground.
 
-   Everyone builds their own: your blocks come in your own colour, fall into
-   your part of the picture, and hang in the air where you can reach them, so
-   a grown-up can't take a child's block and a child never has to reach for
-   the top of the screen. Only you can pick up your colour, and it only goes
-   on your tower. Each tower is as tall as its builder can reach (a child's a
-   few blocks shorter than a grown-up's), so the last block is always within
-   reach without a hop. A hand that touches a block holds it and carries it
-   until it's over the tower, where it snaps on - generously, so a toddler's
-   aim is plenty. The tower sways a little more the taller it grows, but never
-   falls: nothing in this game goes wrong. Each player's count is the blocks
-   they put on. First person: the players are their hands. */
+   A block is too big for one hand. Put both hands on it - one each side - and hold for a moment: it glows in your colour, and
+   then it follows the middle of your hands, heavy and smooth, with a little lag and sway. Tilt your hands (one higher than the
+   other) and a plank or a cube turns a quarter turn. Let go by moving your hands apart, dropping them, or pressing down once it
+   sits on something. One hand only wobbles a block and nudges it a little, so you can tell it needs two; a block somebody has
+   hold of can't be taken, and one with something on it stays put, so a building never falls down. With a mouse, a click picks a
+   block up and a click puts it down.
+
+   The ground rules are in stack-blocks.js (a block lands straight down on the highest thing under it, and tips gently off an
+   edge if its middle is over thin air). Each player's number is the blocks they have set down somewhere new; at the end the
+   camera pans across what everyone built and the results say how many blocks tall the tallest thing was.
+   First person: the players are their hands. */
 import { color, alpha } from './assets/palette.js';
 import { Juice } from './common.js';
-import { clearOf } from './hud.js';
 import { reaches } from './reach.js';
 import { pose, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
 import { Scene } from './pop-party-scene.js';
 import { Avatars } from '../ui/avatars.js';
+import { Yard, SHAPES, SHAPE_NAMES, PAINTS, GROUND, topH, liftAt, FADE_SECS } from './stack-blocks.js';
 
 export const ROUND = 180;
-/* blocks in a finished tower at most (it blasts off) and at least, a block's size (screen heights), and where the ground is
-   (a tower's place across the picture is its builder's: `x` here is where one stands when nobody has said) */
-export const TOWER_FULL = 8, MIN_TOWER = 4, BLOCK = 0.085, TOWER = { x: 0.5, base: 0.93 };
-/* a hand this near a block (screen heights) holds it; a carried block this
-   near the tower's middle (screen heights, sideways) goes on */
-export const GRAB = 0.075, SNAP = 0.13;
-/* a carried block rides this far (in blocks) above the hand, and goes on once it is within this many blocks of the tower's top,
-   so the hand has to get no higher than HAND_OVER above the top of what's built */
-const CARRY = 0.9, FIT = 0.6;
-export const HAND_OVER = BLOCK * (CARRY + FIT);
-/* how long (seconds) a block takes to float down to where it waits (the same for everyone, whether they wait high or low), how fast one a hand dropped falls (screen heights a second), how many hang
-   waiting for each player, how far from the tower they come down (sideways), and the least room between two towers */
-const FALL_SECS = [2.8, 4.2], DROPPED = 0.1, WAITING = 2, SIDE = [0.04, 0.1], GAP = 0.12;
-/* a player who's gone for this long (seconds) takes their waiting blocks with them */
-const GONE = 8;
+/* both hands must stay on a block this long (seconds) before it is yours; a hand counts as on it within NEAR (picture heights) of its edge */
+export const GRAB_SECS = 0.3, NEAR = 0.05;
+/* hands further apart than the block's width plus this let it go; a hand this far below the block's bottom has dropped it; hands
+   pressing down this far below the middle of a block that already sits on something set it down */
+export const LET_GO = 0.14, DROPPED = 0.02, PRESS = 0.05;
+/* how stiffly a held block follows the middle of the hands (the higher, the quicker; it is a heavy block, so not very) */
+const FOLLOW = 9;
+/* the hands tilted this much (radians) for this long (seconds) turn a plain block a quarter turn */
+const TILT = 0.5, TILT_SECS = 0.35;
+/* how many blocks there can be at most (more people, a bit more), how many that nobody has touched yet may lie about, and how long
+   (seconds) between new ones (the first few come quicker) */
+export const capFor = (n) => 10 + 2 * Math.max(1, n);
+const UNUSED = (n) => 2 + Math.max(1, n);
+const EVERY = [4.5, 6.5], FIRST = 1.6, STARTERS = 3;
+/* a held block may not go quicker than this (picture heights a second): it is heavy */
+const HEAVY = 1.6;
 
 export default {
   id: 'stack-it-high', unit: 'blocks', name: 'Stack It High', stars: 1, accent: color('touch.lagoon'), secs: ROUND,
-  moves: ['reach'],
+  moves: ['lift'],
   create(n){ return new StackItHigh(n); }
 };
-const MARKS = ['star', 'heart', 'dot'];
-
-/* How many blocks a tower of someone with this reach is: the last block goes on when the hand is within HAND_OVER of the top of the
-   blocks under it, and that must be a place the hand can get to (a little under the reach, for a wobble). */
-export function towerHeight(reach, margin = 0.01){
-  const under = Math.floor((TOWER.base + HAND_OVER - margin - reach.top) / BLOCK);
-  return Math.max(MIN_TOWER, Math.min(TOWER_FULL, under + 1));
-}
 
 class StackItHigh {
   constructor(players){
     this.players = players;
-    this.score = Array.from({ length: MAX_PLAYERS }, () => 0);
-    this.blocks = [];          /* loose ones: floating down, hanging waiting, or held */
-    /* each player's own tower: { x, tower: [placed: { col, mark, dx, rot, pop }], full, rocket, spawnT, gone, away } */
-    this.lanes = Array.from({ length: MAX_PLAYERS }, () => ({ x: null, tower: [], full: TOWER_FULL, rocket: null, spawnT: 1, gone: 0, away: 0 }));
+    this.score = Array.from({ length: MAX_PLAYERS }, () => 0);          /* blocks each player has put down somewhere new */
+    this.yard = new Yard();
+    this.A = 16 / 9;
     this.reach = reaches(MAX_PLAYERS);
-    this.towers = 0;           /* rockets launched, all together */
+    this.hold = Array.from({ length: MAX_PLAYERS }, () => null);        /* what each player carries: { id, tilt, armed, dropT, pressT, mouse } */
+    this.pend = Array.from({ length: MAX_PLAYERS }, () => null);        /* what each is about to pick up: { id, t } */
+    this.cool = Array.from({ length: MAX_PLAYERS }, () => 0);           /* a moment after letting go before the next grab */
+    this.last = Array.from({ length: MAX_PLAYERS }, () => null);        /* each one's hands a frame ago, for how fast they move */
+    this.clicks = 0;
+    this.stacked = 0;          /* blocks put down, all together */
+    this.peak = 0;             /* the most blocks high anything has stood */
+    this.spawnT = FIRST; this.spawned = 0; this.bag = [];
     this.t = 0; this.over = false;
     this.j = new Juice();
     this.scene = new Scene();
     this.avatars = new Avatars();
     this.fx = [];
-    this.say = { icon: 'block', text: 'Stack the blocks!', t: 0 };
+    this.cam = null; this.out = null;
+    this.first = false;
+    this.say = { icon: 'block', text: 'Lift with both hands!', t: 0 };
   }
 
-  /* a new block for player `who`: it comes down beside their tower and waits at a height they can reach (and never behind the
-     clock, the words or the scores) */
-  _spawn(who = 0, W = 1920, H = 1080){
-    const lane = this.lanes[who], r = this.reach[who];
-    const side = Math.random() < 0.5 ? -1 : 1, off = SIDE[0] + Math.random() * (SIDE[1] - SIDE[0]);
-    const x0 = lane.x ?? r.x, x = Math.min(0.92, Math.max(0.08, x0 + side * off));
-    const settle = Math.max(clearOf(W, H, x), r.at(0.15 + Math.random() * 0.5));
-    const b = {
-      x, y: -BLOCK, vy: (settle + BLOCK) / (FALL_SECS[0] + Math.random() * (FALL_SECS[1] - FALL_SECS[0])),
-      rot: (Math.random() - 0.5) * 0.6, spin: (Math.random() - 0.5) * 0.8,
-      owner: who, col: PLAYER_COLORS[who], mark: MARKS[(Math.random() * MARKS.length) | 0],
-      held: null, settle, age: 0, ph: Math.random() * 6.28
-    };
-    this.blocks.push(b);
-    return b;
-  }
+  get blocks(){ return this.yard.blocks; }
+  _present(){ let n = 0; for (let i = 0; i < this.players; i++) if (pose.players[i] && pose.players[i].present) n++; return n; }
 
-  /* every hand: [player, which, hand] */
-  _hands(){
-    const out = [];
+  /* each present player's hands, in picture heights across (X) and down (Y), the left one first: [{ i, lo, hi, mouse, spread }].
+     Each hand also has v, how quick it is going (picture heights a second). */
+  _hands(dt){
+    const out = [], A = this.A;
     for (let i = 0; i < this.players; i++){
       const p = pose.players[i];
-      if (!p || !p.present) continue;
-      if (pose.mouse.active) out.push([i, 'r', p.hands.right]);
-      else out.push([i, 'l', p.hands.left], [i, 'r', p.hands.right]);
+      if (!p || !p.present){ this.last[i] = null; continue; }
+      const mouse = !!pose.mouse.active;
+      const a = mouse ? { X: pose.mouse.x * A, Y: pose.mouse.y } : { X: p.hands.left.x * A, Y: p.hands.left.y };
+      const b = mouse ? a : { X: p.hands.right.x * A, Y: p.hands.right.y };
+      const was = this.last[i];
+      a.v = was && dt > 0 ? Math.hypot(a.X - was[0].X, a.Y - was[0].Y) / dt : 0;
+      b.v = b === a ? a.v : was && dt > 0 ? Math.hypot(b.X - was[1].X, b.Y - was[1].Y) / dt : 0;
+      this.last[i] = [{ X: a.X, Y: a.Y }, { X: b.X, Y: b.Y }];
+      const [lo, hi] = a.X <= b.X ? [a, b] : [b, a];
+      out.push({ i, lo, hi, mouse, spread: hi.X - lo.X });
     }
     return out;
   }
-  /* where the top of player i's tower is (a screen height down from the top) */
-  _top(i = 0){ return TOWER.base - this.lanes[i].tower.length * BLOCK; }
-  towerX(i = 0){ return this.lanes[i].x ?? TOWER.x; }
 
-  /* each player's tower stands where they first were, and stays: other towers keep their distance. It moves only when its builder
-     has been somewhere else for a while with nothing in their hands. */
-  _lane(i, dt, carrying){
-    const lane = this.lanes[i], r = this.reach[i];
-    const others = this.lanes.filter((l, k) => k !== i && l.x != null);
-    if (lane.x == null){
-      let x = Math.min(0.9, Math.max(0.1, r.x));
-      for (let n = 0; n < 8; n++){
-        const near = others.find(o => Math.abs(o.x - x) < GAP);
-        if (!near) break;
-        x = near.x + (x >= near.x ? GAP : -GAP);
-      }
-      lane.x = Math.min(0.9, Math.max(0.1, x));
-      return;
-    }
-    if (carrying || Math.abs(r.x - lane.x) < 0.25){ lane.away = 0; return; }
-    lane.away += dt;
-    if (lane.away < 4) return;
-    let x = lane.x + Math.sign(r.x - lane.x) * Math.min(Math.abs(r.x - lane.x), 0.2 * dt);
-    for (const o of others) if (Math.abs(o.x - x) < GAP && Math.abs(o.x - x) < Math.abs(o.x - lane.x)) x = lane.x;
-    lane.x = Math.min(0.9, Math.max(0.1, x));
-  }
+  /* is this hand on (or just beside) the block? */
+  _near(h, b, m = NEAR){ return Math.abs(h.X - b.X) <= b.w / 2 + m && Math.abs(h.Y - b.Y) <= b.h / 2 + m; }
+  /* both hands on it, one each side of its middle */
+  _both(hd, b){ return !hd.mouse && this._near(hd.lo, b) && this._near(hd.hi, b) && hd.lo.X <= b.X && hd.hi.X >= b.X; }
 
   step(dt, W, H){
+    if (this.out) return;
     this.t += dt; this.say.t += dt;
     this.j.step(dt);
     if (this.t >= ROUND) this.over = true;
-    const aspect = W / H;
-    const hands = this._hands();
-    const holding = new Set(this.blocks.filter(b => b.held).map(b => b.held.key));
+    this.A = W / H; this.yard.A = this.A;
+    const hands = this._hands(dt);
+    for (const hd of hands) this.reach[hd.i].step(dt, pose.players[hd.i], pose.mouse.active);
+    for (let i = 0; i < MAX_PLAYERS; i++) this.cool[i] = Math.max(0, this.cool[i] - dt);
 
-    for (let i = 0; i < this.players; i++){
-      const p = pose.players[i], lane = this.lanes[i];
-      if (!p || !p.present){ lane.gone += dt; continue; }
-      lane.gone = 0;
-      this.reach[i].step(dt, p, pose.mouse.active);
-      this._lane(i, dt, holding.has(i + 'l') || holding.has(i + 'r'));
-      /* a tower is as tall as its builder reaches; it can't change once it has started */
-      if (!lane.tower.length) lane.full = towerHeight(this.reach[i]);
-      /* new blocks float down, a couple at a time for each */
-      lane.spawnT -= dt;
-      const loose = this.blocks.filter(b => b.owner === i && !b.held).length;
-      if (lane.spawnT <= 0 && loose < WAITING && !lane.rocket){ lane.spawnT = 1.6 + Math.random() * 1.6; this._spawn(i, W, H); }
-    }
-
-    for (const b of this.blocks){
-      b.age += dt;
-      const lane = this.lanes[b.owner];
-      if (b.held){
-        /* carried: it sits on the hand; a hand that's gone lets it fall (and wait again where it's reachable) */
-        const h = hands.find(([i, k]) => i + k === b.held.key);
-        if (!h){ b.held = null; b.vy = DROPPED; b.settle = Math.max(b.y, clearOf(W, H, b.x), this.reach[b.owner].at(0.5)); continue; }
-        b.x += (h[2].x - b.x) * Math.min(1, dt * 18); b.y += (h[2].y - BLOCK * CARRY - b.y) * Math.min(1, dt * 18);
-        b.rot *= Math.pow(0.1, dt);
-        /* over its own tower: on it goes */
-        if (!lane.rocket && Math.abs(b.x - this.towerX(b.owner)) * aspect < SNAP && b.y < this._top(b.owner) + BLOCK * FIT) this._place(b);
-        continue;
-      }
-      if (b.y < b.settle){
-        b.y += b.vy * dt; b.rot += b.spin * dt;
-        b.x += Math.sin(this.t * 0.9 + b.age) * 0.01 * dt;
-        if (b.y >= b.settle){ b.y = b.settle; sfx.pat?.(); }
-      } else {
-        /* it hangs there, bobbing a little, and turns to sit straight */
-        b.y = b.settle + Math.sin(this.t * 2 + b.ph) * 0.006; b.rot *= Math.pow(0.3, dt);
-      }
-      /* a free hand of its own player touching it picks it up */
-      for (const [i, k, h] of hands){
-        const key = i + k;
-        if (i !== b.owner || holding.has(key)) continue;
-        if (Math.hypot((h.x - b.x) * aspect, h.y - b.y) < GRAB + BLOCK * 0.5){ b.held = { key, who: i }; holding.add(key); sfx.pick?.(); break; }
-      }
-    }
-    /* a player who's been gone a while takes their blocks with them */
-    this.blocks = this.blocks.filter(b => !b.placed && (b.held || this.lanes[b.owner].gone < GONE));
-
-    /* the rockets: off they go, then a new tower */
-    this.lanes.forEach((lane, i) => {
-      const r = lane.rocket;
-      if (!r) return;
-      r.t += dt; if (r.t > 1) r.v += dt * 0.9; r.y += r.v * dt;
-      if (r.t > 1 && Math.random() < dt * 30) this.fx.push({ x: r.x + (Math.random() - 0.5) * 0.04, y: TOWER.base - r.y, vx: (Math.random() - 0.5) * 0.1, vy: 0.2, life: 0.9, age: 0, col: [color('touch.sunflower'), color('touch.tangerine'), color('earth.snow')][(Math.random() * 3) | 0] });
-      if (r.y > 1.4){ lane.rocket = null; if (this._present() < 2) this.say = { text: 'Build another one!', t: 0 }; }
-    });
-    for (const f of this.fx){ f.age += dt; f.x += f.vx * dt; f.y += f.vy * dt; }
-    this.fx = this.fx.filter(f => f.age < f.life);
-    for (const lane of this.lanes) for (const k of lane.tower) k.pop = Math.max(0, k.pop - dt * 3);
-
-    const joy = Math.max(0, ...this.lanes.map(l => l.tower.length / l.full));
-    this.scene.step(dt, { t: this.t, p: Math.min(1, this.t / ROUND) * 0.6, storm: false, wind: 0.004, joy, look: 0.5, rainbow: this.lanes.some(l => l.rocket) });
+    this._carry(dt, hands);
+    this._grab(dt, hands);
+    this._touch(dt, hands);
+    this._spawn(dt);
+    this._after(this.yard.step(dt));
+    this._tidy(dt);
+    this.scene.step(dt, { t: this.t, p: Math.min(1, this.t / ROUND) * 0.6, storm: false, wind: 0.004, joy: Math.min(1, this.peak / 6), look: 0.5, rainbow: false });
     this.avatars.step(dt, this.players);
   }
 
-  _present(){ let n = 0; for (let i = 0; i < this.players; i++) if (pose.players[i] && pose.players[i].present) n++; return n; }
-
-  _place(b){
-    const lane = this.lanes[b.owner];
-    b.placed = true;
-    lane.tower.push({ col: b.col, mark: b.mark, dx: (Math.random() - 0.5) * 0.012, rot: (Math.random() - 0.5) * 0.08, pop: 1 });
-    this.score[b.owner]++;
-    sfx.pop?.(0.8 + lane.tower.length * 0.12);
-    /* one builder is told the count; with more, the towers speak for themselves */
-    if (this._present() < 2) this.say = { text: `${lane.tower.length} block${lane.tower.length > 1 ? 's' : ''} high!`, t: 0 };
-    if (lane.tower.length >= lane.full) this._launch(b.owner);
+  /* ---------- picking up ---------- */
+  _grab(dt, hands){
+    for (const b of this.blocks) b.pend = null;
+    const click = pose.mouse.active ? (pose.mouse.clicks || 0) : 0, clicked = click !== this.clicks; this.clicks = click;
+    for (const hd of hands){
+      const i = hd.i;
+      if (this.hold[i] || this.cool[i] > 0){ this.pend[i] = null; continue; }
+      if (hd.mouse){
+        /* a click on a block picks it up (the mouse is the testing and no-camera way) */
+        if (!clicked) continue;
+        const b = this._pickable().filter(c => this._near(hd.lo, c, 0.03)).sort((p, q) => Math.hypot(p.X - hd.lo.X, p.Y - hd.lo.Y) - Math.hypot(q.X - hd.lo.X, q.Y - hd.lo.Y))[0];
+        if (b) this._take(b, i, true);
+        continue;
+      }
+      /* the nearest block both hands are on, that is free to lift */
+      const b = this._pickable().filter(c => this._both(hd, c)).sort((p, q) => Math.hypot(p.X - (hd.lo.X + hd.hi.X) / 2, p.Y - (hd.lo.Y + hd.hi.Y) / 2) - Math.hypot(q.X - (hd.lo.X + hd.hi.X) / 2, q.Y - (hd.lo.Y + hd.hi.Y) / 2))[0];
+      const pend = this.pend[i];
+      if (!b){ this.pend[i] = null; continue; }
+      if (!pend || pend.id !== b.id) this.pend[i] = { id: b.id, t: 0 };
+      this.pend[i].t += dt;
+      b.pend = { who: i, p: Math.min(1, this.pend[i].t / GRAB_SECS) };
+      if (this.pend[i].t >= GRAB_SECS){ this.pend[i] = null; this._take(b, i, false); }
+    }
   }
-  /* the tower's done: it's a rocket now */
-  _launch(i){
-    const lane = this.lanes[i];
-    this.towers++;
-    lane.rocket = { blocks: lane.tower, y: 0, v: 0, t: 0, x: lane.x };
-    lane.tower = [];
-    this.say = { text: '3… 2… 1… Blast off!', t: 0 };
-    sfx.liftoff?.(); sfx.hooray?.();
-    this.j.kick(8);
+  /* the blocks anyone may lift: standing still, free on top, not fading */
+  _pickable(){ return this.blocks.filter(b => this.yard.liftable(b)); }
+  _take(b, i, mouse){
+    this.yard.lift(b, i); b.used = true;
+    this.hold[i] = { id: b.id, tilt: 0, tiltT: 0, armed: true, dropT: 0, pressT: 0, mouse, vx: 0, vy: 0 };
+    this.pend[i] = null; b.pend = null;
+    b.wob = Math.max(b.wob, 0.06);
+    sfx.pick?.();
+    if (!this.first){ this.first = true; this.say = { icon: 'block', text: 'Hands apart to drop!', t: 0 }; }
   }
 
+  /* ---------- carrying ---------- */
+  _carry(dt, hands){
+    const A = this.A, byI = new Map(hands.map(h => [h.i, h]));
+    for (let i = 0; i < MAX_PLAYERS; i++){
+      const hold = this.hold[i];
+      if (!hold) continue;
+      const b = this.yard.byId(hold.id), hd = byI.get(i);
+      if (!b || b.held !== i){ this.hold[i] = null; continue; }
+      if (!hd){ this._let(i, b); continue; }        /* the player has gone: it falls */
+      if (hd.mouse){
+        if ((pose.mouse.clicks || 0) !== this.clicks){ this._let(i, b); this.clicks = pose.mouse.clicks || 0; continue; }
+      } else {
+        /* let go: hands apart, dropped, or pressed down on something */
+        const mid = (hd.lo.Y + hd.hi.Y) / 2, high = Math.min(hd.lo.Y, hd.hi.Y);       /* (the higher of the two: a tilt has one hand low) */
+        const resting = b.Y + b.h / 2 >= this.yard.land(b).bottom - 0.004;
+        hold.dropT = high > b.Y + b.h / 2 + DROPPED ? hold.dropT + dt : 0;
+        hold.pressT = resting && mid > b.Y + PRESS ? hold.pressT + dt : 0;
+        if (hd.spread > b.w + LET_GO || hold.dropT > 0.15 || hold.pressT > 0.2){ this._let(i, b); continue; }
+        /* tilted hands turn it */
+        const tilt = Math.atan2(hd.hi.Y - hd.lo.Y, Math.max(0.05, hd.spread));
+        if (Math.abs(tilt) < TILT * 0.4){ hold.armed = true; hold.tiltT = 0; }
+        else if (hold.armed && Math.abs(tilt) > TILT){
+          hold.tiltT += dt;
+          if (hold.tiltT > TILT_SECS){ hold.armed = false; hold.tiltT = 0; if (this.yard.turn(b, tilt)){ b.spinAng = tilt > 0 ? -Math.PI / 2 : Math.PI / 2; sfx.pat?.(); } }
+        } else hold.tiltT = 0;
+      }
+      /* it follows the middle of the hands, heavy: a spring with no bounce, and not faster than something this big can go */
+      const tx = hd.mouse ? hd.lo.X : (hd.lo.X + hd.hi.X) / 2, ty = hd.mouse ? hd.lo.Y : (hd.lo.Y + hd.hi.Y) / 2;
+      hold.vx += (FOLLOW * FOLLOW * (tx - b.X) - 2 * FOLLOW * hold.vx) * dt; hold.vy += (FOLLOW * FOLLOW * (ty - b.Y) - 2 * FOLLOW * hold.vy) * dt;
+      const sp = Math.hypot(hold.vx, hold.vy);
+      if (sp > HEAVY){ hold.vx *= HEAVY / sp; hold.vy *= HEAVY / sp; }
+      b.X += hold.vx * dt; b.Y += hold.vy * dt;
+      b.X = Math.min(A - b.w / 2, Math.max(b.w / 2, b.X)); b.Y = Math.max(b.h / 2 - 0.02, b.Y);
+      this.yard.rideOn(b, dt);
+      /* a little sway, the way a heavy thing swings when it is carried */
+      b.ang += ((Math.max(-0.16, Math.min(0.16, hold.vx * 0.25)) + Math.sin(this.t * 2.3 + b.ph) * 0.02) - b.ang) * Math.min(1, dt * 6);
+    }
+  }
+  _let(i, b){
+    this.yard.drop(b); this.hold[i] = null; this.cool[i] = 0.8;
+    b.ang *= 0.5;
+    sfx.whoosh?.();
+  }
+
+  /* ---------- one hand only: a block just wobbles and shuffles a little, then settles back where it was ---------- */
+  _touch(dt, hands){
+    for (const b of this.blocks){
+      b.wobV += -b.wob * 90 * dt - b.wobV * 4 * dt; b.wob += b.wobV * dt;
+      if (Math.abs(b.wob) < 1e-4 && Math.abs(b.wobV) < 1e-3){ b.wob = 0; b.wobV = 0; }
+      b.nx -= b.nx * Math.min(1, dt * 5);
+      if (b.spinAng){ b.spinAng -= b.spinAng * Math.min(1, dt * 9); if (Math.abs(b.spinAng) < 0.002) b.spinAng = 0; }
+      if (b.state === 'rest' || b.state === 'held'){ if (b.state === 'rest') b.ang -= b.ang * Math.min(1, dt * 5); }
+    }
+    for (const hd of hands){
+      if (hd.mouse) continue;
+      for (const b of this.blocks){
+        if (b.state !== 'rest' && b.state !== 'held' || b.held === hd.i) continue;
+        const lo = this._near(hd.lo, b, 0.02), hi = this._near(hd.hi, b, 0.02);
+        if (!lo && !hi) continue;
+        const h = lo && hi ? (hd.lo.v > hd.hi.v ? hd.lo : hd.hi) : lo ? hd.lo : hd.hi;
+        if (h.v < 0.12) continue;
+        b.wobV += Math.min(1.2, h.v * 0.5) * dt * 14 * (h.X < b.X ? 1 : -1); b.wob = Math.max(-0.12, Math.min(0.12, b.wob));
+        b.nx = Math.max(-0.02, Math.min(0.02, b.nx + (h.X < b.X ? 1 : -1) * Math.min(0.01, h.v * dt * 0.12)));
+        if (!b.tapped || this.t - b.tapped > 0.4){ b.tapped = this.t; sfx.pat?.(); }
+      }
+    }
+  }
+
+  /* ---------- the sky ---------- */
+  _spawn(dt){
+    this.spawnT -= dt;
+    if (this.spawnT > 0) return;
+    const y = this.yard, n = this._present();
+    if (!n){ this.spawnT = 0.5; return; }
+    /* too many: an old one nobody is using fades away to make room (one that has something on it never does) */
+    if (y.count() >= capFor(n)){ const old = y.idle(); if (old) y.fadeOut(old); this.spawnT = old ? 0.4 : 1; return; }
+    const sky = this.blocks.filter(b => b.sky && b.state === 'fall' && !b.fade);
+    const unused = this.blocks.filter(b => !b.used && !b.fade).length;
+    if (sky.length >= 2 || unused >= UNUSED(n)){ this.spawnT = 0.6; return; }
+    if (!this.bag.length) this.bag = shuffled(SHAPE_NAMES, Math.random);
+    const kind = this.bag.pop(), s = SHAPES[kind], A = this.A;
+    /* where it can come down: somewhere a child can still get both hands on it, and where it will stay put */
+    let low = 0.2; for (let i = 0; i < this.players; i++) if (pose.players[i] && pose.players[i].present) low = Math.max(low, this.reach[i].top);
+    const anchors = []; for (let i = 0; i < this.players; i++) if (pose.players[i] && pose.players[i].present) anchors.push(pose.mouse.active ? A * 0.5 : this.reach[i].x * A);
+    let best = null;
+    for (let k = 0; k < 14; k++){
+      const a = anchors[(Math.random() * anchors.length) | 0] ?? A / 2;
+      const X = Math.min(A - s.w / 2 - 0.06, Math.max(s.w / 2 + 0.06, a + (Math.random() - 0.5) * 0.9));
+      const l = y.land({ kind, w: s.w, h: s.h, X }, X);
+      if (!l.stable || l.bottom - s.h < low + 0.02) continue;
+      if (sky.some(o => Math.abs(o.X - X) < (o.w + s.w) / 2 + 0.1)) continue;
+      const score = (l.bottom < GROUND - 0.01 ? 0.5 : 0) + Math.random() * 0.4 + (this.blocks.some(o => !o.used && Math.abs(o.X - X) < 0.3) ? 0.3 : 0);
+      if (!best || score < best.score) best = { X, score };
+    }
+    if (!best){ this.bag.push(kind); this.spawnT = 0.7; const old = y.idle(); if (old) y.fadeOut(old); return; }      /* (no room: the ground is full) */
+    const prev = this.lastCol, col = Math.random() < 0.7 ? s.col : PAINTS[(Math.random() * PAINTS.length) | 0];
+    const b = y.add(kind, best.X, null, { col: col === prev ? s.col : col, mark: ['star', 'heart', 'dot'][(Math.random() * 3) | 0], extra: { sky: true, used: false } });
+    b.vy = 0.05; this.lastCol = b.col;
+    this.spawned++;
+    this.spawnT = this.spawned < STARTERS ? FIRST : (EVERY[0] + Math.random() * (EVERY[1] - EVERY[0])) / (1 + 0.2 * (n - 1));
+  }
+
+  /* a block came to rest */
+  _after(events){
+    for (const e of events){
+      const b = e.b;
+      if (e.speed > 0.2){
+        sfx.thud?.(); this.j.kick(1.2 + e.speed * 2);
+        const bottom = (b.Y + b.h / 2) * 1;
+        for (let k = 0; k < 7; k++) this.fx.push({ X: b.X + (Math.random() - 0.5) * b.w, Y: bottom - 0.004, vx: (k % 2 ? 1 : -1) * (0.04 + Math.random() * 0.1), vy: -0.02 - Math.random() * 0.05, life: 0.7 + Math.random() * 0.4, age: 0, r: 0.012 + Math.random() * 0.012 });
+        b.wob = Math.max(b.wob, 0.05 + e.speed * 0.1);
+      }
+      if (!e.stable) continue;
+      /* put down by somebody, somewhere new: that is a block placed */
+      if (b.from && b.by >= 0){
+        if (Math.hypot(b.X - b.from.X, b.Y - b.from.Y) >= 0.1){ this.score[b.by]++; this.stacked++; }
+        b.from = null; b.by = -1;
+      }
+      b.sky = false;
+      const tall = this.yard.tallest();
+      if (tall > this.peak){
+        this.peak = tall;
+        if (tall >= 3 && this._present() < 2) this.say = { icon: 'block', text: `${tall} blocks tall!`, t: 0 };
+        if (tall >= 3) sfx.pop?.(0.6 + tall * 0.1);
+      }
+    }
+  }
+  _tidy(dt){
+    for (const f of this.fx){ f.age += dt; f.X += f.vx * dt; f.Y += f.vy * dt; f.vx *= Math.pow(0.2, dt); }
+    this.fx = this.fx.filter(f => f.age < f.life);
+    /* a block that is held by a player who is gone, or any that has strayed out of the world, falls back in */
+    for (const b of this.blocks) if (b.Y > 2 || b.X < -1 || b.X > this.A + 1) b.fade = Math.max(b.fade, 0.999);
+  }
+
+  /* ---------- the end: the camera pans across what was built ---------- */
+  outro(dt, W, H){
+    this.A = W / H; this.yard.A = this.A;
+    if (!this.out){
+      for (let i = 0; i < MAX_PLAYERS; i++){ const b = this.hold[i] && this.yard.byId(this.hold[i].id); if (b) this.yard.drop(b); this.hold[i] = null; this.pend[i] = null; }
+      const built = this.blocks.filter(b => !b.fade);
+      const lo = Math.min(...built.map(b => b.X - b.w / 2)), hi = Math.max(...built.map(b => b.X + b.w / 2));
+      const Z = 1.5, vh = this.A / (2 * Z), mid = built.length ? (lo + hi) / 2 : this.A / 2;
+      const c0 = Math.min(this.A - vh, Math.max(vh, lo + 0.15)), c1 = Math.min(this.A - vh, Math.max(vh, hi - 0.15));
+      const pan = built.length && c1 - c0 > 0.15;
+      const still = Math.min(this.A - vh, Math.max(vh, mid));
+      this.out = { t: 0, Z, c0: pan ? c0 : still, c1: pan ? c1 : still, pan, built: built.length > 0 };
+      this.say = { icon: 'block', text: built.length ? 'Look what you built!' : 'Nice try!', t: 0 };
+    }
+    const o = this.out; o.t += dt; this.t += dt;
+    const IN = 0.9, PAN = o.pan ? 4.2 : 1.8, BACK = 0.9, end = o.built ? IN + PAN + BACK + 0.2 : 1.5;
+    const ease = (k) => k * k * (3 - 2 * k), k = (v) => Math.min(1, Math.max(0, v));
+    const zin = ease(k(o.t / IN)), zout = ease(k((o.t - IN - PAN) / BACK));
+    const z = 1 + (o.Z - 1) * zin * (1 - zout);
+    const cx = o.c0 + (o.c1 - o.c0) * ease(k((o.t - IN) / PAN));
+    const centre = this.A / 2;
+    this.cam = o.built ? { z, cx: centre + (cx - centre) * (1 - zout) } : null;
+    this.yard.step(dt); this._tidy(dt);
+    this.j.step(dt);
+    this.scene.step(dt, { t: this.t, p: 0.65, storm: false, wind: 0.004, joy: 1, look: 0.5, rainbow: true });
+    this.avatars.step(dt, this.players);
+    for (const b of this.blocks) { b.wobV += -b.wob * 90 * dt - b.wobV * 4 * dt; b.wob += b.wobV * dt; }
+    return o.t >= end;
+  }
+
+  /* ---------- drawing ---------- */
   draw(c, W, H){
     this.scene.drawBack(c, W, H);
     const shook = this.j.applyShake ? this.j.applyShake(c) : false;
-    const s = BLOCK * H;
-    this.lanes.forEach((lane, i) => {
-      if (lane.x == null || (lane.gone > GONE && !lane.tower.length && !lane.rocket)) return;
-      const x0 = lane.x;
-      /* the tower, swaying a little more the taller it is */
-      const sway = Math.sin(this.t * 1.6 + i) * 0.0008 * lane.tower.length;
-      c.fillStyle = alpha('shade.shadow', 0.18); c.beginPath(); c.ellipse(x0 * W + s * 0.3, TOWER.base * H, s * 1.1, s * 0.18, 0, 0, 6.2832); c.fill();
-      lane.tower.forEach((k, n) => {
-        const x = (x0 + k.dx + sway * n) * W, y = (TOWER.base - (n + 0.5) * BLOCK) * H;
-        block(c, x, y, s * (1 + k.pop * 0.12), k.rot + sway * n * 2, k.col, k.mark);
-      });
-      /* where the next block goes: a soft outline on top, in the builder's colour, glowing while they carry one */
-      if (!lane.rocket){
-        const carrying = this.blocks.some(b => b.held && b.owner === i);
-        const y = (this._top(i) - BLOCK * 0.5) * H;
-        c.save(); c.globalAlpha = carrying ? 0.55 + 0.25 * Math.sin(this.t * 5) : 0.3;
-        c.strokeStyle = carrying ? color('earth.snow') : PLAYER_COLORS[i]; c.lineWidth = Math.max(3, H * 0.004); c.setLineDash([H * 0.012, H * 0.01]);
-        c.beginPath(); c.roundRect(x0 * W - s / 2, y - s / 2, s, s, s * 0.2); c.stroke(); c.restore();
-      }
-      if (lane.rocket) this._rocket(c, W, H, s, lane, i);
-    });
+    c.save();
+    if (this.cam){ const gy = GROUND * H; c.translate(W / 2, gy); c.scale(this.cam.z, this.cam.z); c.translate(-this.cam.cx * H, -gy); }
+    this._world(c, W, H);
+    c.restore();
     this.scene.drawFront(c, W, H);
-    for (const b of this.blocks) if (!b.held) block(c, b.x * W, b.y * H, s, b.rot, b.col, b.mark);
     if (shook) c.restore();
-    for (const f of this.fx){ c.globalAlpha = 1 - f.age / f.life; c.fillStyle = f.col; c.beginPath(); c.arc(f.x * W, f.y * H, H * 0.012 * (1 + f.age), 0, 6.2832); c.fill(); }
     c.globalAlpha = 1;
+    /* carried blocks go under the hand markers, so both hands stay in sight on either side */
+    for (const b of this.blocks) if (b.held != null && !this.cam) drawPiece(c, b, H, this.t, b.held);
     this.avatars.drawMitts(c, W, H, this.players);
-    /* carried blocks ride on top of the hands */
-    for (const b of this.blocks) if (b.held) block(c, b.x * W, b.y * H, s, b.rot, b.col, b.mark);
   }
-
-  /* a finished tower, as a rocket: a nose cone on top, fins, flames - in its builder's colour */
-  _rocket(c, W, H, s, lane, i){
-    const r = lane.rocket, x = r.x * W, base = (TOWER.base - r.y) * H, n = r.blocks.length, own = PLAYER_COLORS[i];
-    const shake = r.t < 1 ? Math.sin(r.t * 60) * H * 0.003 : 0;
-    if (r.t > 0.6){
-      const fl = s * (0.8 + Math.random() * 0.4);
-      c.fillStyle = color('touch.sunflower'); c.beginPath(); c.moveTo(x - s * 0.35, base); c.lineTo(x, base + fl * 1.6); c.lineTo(x + s * 0.35, base); c.fill();
-      c.fillStyle = color('touch.tangerine'); c.beginPath(); c.moveTo(x - s * 0.2, base); c.lineTo(x, base + fl); c.lineTo(x + s * 0.2, base); c.fill();
+  _world(c, W, H){
+    const y = this.yard;
+    /* where a block that is falling or carried would land: a faint shadow on what is under it */
+    for (const b of this.blocks){
+      if (b.fade || (b.state !== 'fall' && b.state !== 'held')) continue;
+      const l = y.land(b), gap = l.bottom - (b.Y + b.h / 2), near = Math.max(0, 1 - gap / 0.7);
+      c.fillStyle = alpha('shade.shadow', 0.1 + 0.12 * near);
+      c.beginPath(); c.ellipse(b.X * H, l.bottom * H, b.w * H * 0.5 * (0.8 + 0.2 * near), H * 0.01 * (0.6 + near * 0.6), 0, 0, 6.2832); c.fill();
     }
-    for (const d of [-1, 1]){ c.fillStyle = own; c.beginPath(); c.moveTo(x + d * s * 0.5, base - s * 1.4); c.lineTo(x + d * s * 0.95, base); c.lineTo(x + d * s * 0.5, base); c.fill(); }
-    r.blocks.forEach((k, j) => block(c, x + shake, base - (j + 0.5) * s, s, 0, k.col, k.mark));
-    c.fillStyle = own; c.beginPath(); c.moveTo(x - s * 0.5 + shake, base - n * s); c.quadraticCurveTo(x + shake, base - n * s - s * 1.5, x + s * 0.5 + shake, base - n * s); c.fill();
+    for (const b of this.blocks) if (b.held == null || this.cam) drawPiece(c, b, H, this.t, b.held);
+    for (const f of this.fx){
+      c.globalAlpha = 0.5 * (1 - f.age / f.life); c.fillStyle = color('earth.sand');
+      c.beginPath(); c.arc(f.X * H, f.Y * H, H * f.r * (1 + f.age * 2.2), 0, 6.2832); c.fill();
+    }
+    c.globalAlpha = 1;
   }
 
-  /* the move card: which move the card in the corner shows right now, or null for none (show it for the first few seconds) */
-  card(){ return this.t < 8 ? 'reach' : null; }
+  /* the move card: both arms lifting, for the first few seconds */
+  card(){ return this.t < 8 ? 'lift' : null; }
   hud(){ return { score: this.score, showLives: false, words: this.say }; }
-  /* reaching up high is how you catch the blocks; Back on the remote pauses */
+  /* lifting a block with both arms is how you play; Back on the remote pauses */
   pausable(){ return false; }
   tally(){
     const rows = [];
@@ -280,28 +363,90 @@ class StackItHigh {
     }
     return rows;
   }
+  /* nobody wins a sandbox: with company it is a tie (everyone built it together) */
   winner(){
-    const played = this.score.slice(0, this.players).map((s, i) => i).filter(i => this.score[i] > 0 || pose.players[i].present);
-    if (played.length < 2) return null;
-    const top = Math.max(...played.map(i => this.score[i]));
-    const best = played.filter(i => this.score[i] === top);
-    return best.length > 1 ? -1 : best[0];
+    let played = 0;
+    for (let i = 0; i < this.players; i++) if (this.score[i] > 0 || pose.players[i].present) played++;
+    return played < 2 ? null : -1;
   }
-  value(){ return Math.max(0, ...this.score.slice(0, this.players)); }
+  /* what you made, in a line or two */
+  summary(){
+    const tall = Math.max(this.peak, this.yard.tallest()), n = this.stacked;
+    const a = tall >= 2 ? `You built something ${tall} blocks tall!` : '', b = n > 0 ? `You stacked ${n} block${n === 1 ? '' : 's'}!` : '';
+    return [a, b].filter(Boolean).join(' ') || null;
+  }
+  value(){ return this.stacked; }
 }
 
-/* a soft block: rounded, cel-shaded (shadow on the right and underneath),
-   a white star, heart or dot on its face */
-export function block(c, x, y, s, rot, col, mark){
-  c.save(); c.translate(x, y); c.rotate(rot);
-  const half = s / 2, r = s * 0.2;
-  c.fillStyle = col; c.beginPath(); c.roundRect(-half, -half, s, s, r); c.fill();
-  c.save(); c.beginPath(); c.roundRect(-half, -half, s, s, r); c.clip();
-  c.fillStyle = alpha('shade.shadow', 0.18); c.fillRect(half * 0.36, -half, half, s); c.fillRect(-half, half * 0.4, s, half);
+/* a shuffled copy (the same kinds of block come round, in a new order each time) */
+function shuffled(list, rnd){
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--){ const j = (rnd() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+/* ---------- the painting of a block ---------- */
+/* the outline of a shape, in pixels, middle at (0, 0): wp wide and hp high; the arch's doorway is a second path (even-odd) */
+function shapePath(c, kind, wp, hp, hole){
+  const w = wp / 2, h = hp / 2, r = Math.min(wp, hp) * 0.14;
+  c.beginPath();
+  if (kind === 'roof'){
+    const ridge = wp * 0.07;
+    c.moveTo(-w, h); c.lineTo(-ridge, -h); c.lineTo(ridge, -h); c.lineTo(w, h); c.closePath();
+  } else if (kind === 'dome'){
+    c.moveTo(-w, h); c.arc(0, h, w, Math.PI, 2 * Math.PI); c.closePath();
+  } else {
+    c.roundRect(-w, -h, wp, hp, kind === 'arch' ? [r, r, 0, 0] : r);
+    if (kind === 'arch'){ const q = hole * (wp / SHAPES.arch.w); c.moveTo(-q, h); c.arc(0, h, q, Math.PI, 2 * Math.PI); c.closePath(); }
+  }
+}
+/* a painted block: flat colour, a shaded underside and side, a light edge on top, and a little mark. Used by the game and the cover. */
+export function drawBlock(c, x, y, kind, wp, hp, rot, col, mark = 'dot', { glow = null, alphaK = 1 } = {}){
+  const s = SHAPES[kind];
+  c.save(); c.translate(x, y); c.rotate(rot); c.globalAlpha *= alphaK;
+  const base = color(col), shade = color(col, 'shade'), light = color(col, 'light');
+  const path = () => { shapePath(c, kind, wp, hp, s.hole); };
+  if (glow){ c.save(); c.shadowColor = glow; c.shadowBlur = hp * 0.35 + 18; path(); c.fillStyle = glow; c.fill('evenodd'); c.restore(); }
+  path(); c.fillStyle = base; c.fill('evenodd');
+  c.save(); path(); c.clip('evenodd');
+  c.fillStyle = shade; c.globalAlpha *= 0.55; c.fillRect(wp * 0.22, -hp, wp, hp * 2); c.fillRect(-wp, hp * 0.3, wp * 2, hp);
+  c.globalAlpha = (c.globalAlpha / 0.55) * 0.6; c.fillStyle = light; c.fillRect(-wp * 0.5, -hp * 0.5, wp, Math.max(2, hp * 0.07));
   c.restore();
+  /* a mark on its face */
   c.fillStyle = alpha('earth.snow', 0.85);
-  if (mark === 'star'){ c.beginPath(); for (let k = 0; k < 10; k++){ const a = -Math.PI / 2 + k * Math.PI / 5, q = k % 2 ? s * 0.1 : s * 0.24; c.lineTo(Math.cos(a) * q, Math.sin(a) * q); } c.closePath(); c.fill(); }
-  else if (mark === 'heart'){ c.beginPath(); c.moveTo(0, s * 0.16); c.bezierCurveTo(-s * 0.31, -s * 0.05, -s * 0.15, -s * 0.29, 0, -s * 0.13); c.bezierCurveTo(s * 0.15, -s * 0.29, s * 0.31, -s * 0.05, 0, s * 0.16); c.fill(); }
-  else { c.beginPath(); c.arc(0, 0, s * 0.18, 0, 6.2832); c.fill(); }
+  const m = Math.min(wp, hp);
+  if (kind === 'cube'){
+    if (mark === 'star'){ c.beginPath(); for (let k = 0; k < 10; k++){ const a = -Math.PI / 2 + k * Math.PI / 5, q = k % 2 ? m * 0.1 : m * 0.24; c.lineTo(Math.cos(a) * q, Math.sin(a) * q); } c.closePath(); c.fill(); }
+    else if (mark === 'heart'){ const q = m; c.beginPath(); c.moveTo(0, q * 0.16); c.bezierCurveTo(-q * 0.31, -q * 0.05, -q * 0.15, -q * 0.29, 0, -q * 0.13); c.bezierCurveTo(q * 0.15, -q * 0.29, q * 0.31, -q * 0.05, 0, q * 0.16); c.fill(); }
+    else { c.beginPath(); c.arc(0, 0, m * 0.17, 0, 6.2832); c.fill(); }
+  } else if (kind === 'plank'){
+    const n = wp > hp ? 3 : 1; for (let k = 0; k < n; k++){ c.beginPath(); c.arc((k - (n - 1) / 2) * wp * 0.28, 0, hp * 0.16, 0, 6.2832); c.fill(); }
+  } else if (kind === 'pillar'){
+    for (const f of [-0.3, 0.3]) c.fillRect(-wp * 0.36, hp * f - hp * 0.02, wp * 0.72, hp * 0.04);
+  } else if (kind === 'roof'){
+    c.beginPath(); c.arc(0, hp * 0.18, hp * 0.12, 0, 6.2832); c.fill();
+  } else if (kind === 'dome'){
+    c.beginPath(); c.arc(0, hp * 0.05, hp * 0.12, 0, 6.2832); c.fill();
+  } else if (kind === 'arch'){
+    c.beginPath(); c.arc(0, -hp * 0.3, hp * 0.08, 0, 6.2832); c.fill();
+  }
   c.restore();
 }
+/* one block of the yard, with the sway, the wobble and the glow of whoever is carrying it or is about to */
+function drawPiece(c, b, H, t, holder){
+  const x = (b.X + b.nx) * H, y = b.Y * H, a = b.fade ? Math.max(0, 1 - b.fade) : 1;
+  const rot = b.ang + b.wob * 0.9 + (b.spinAng || 0) + (b.state === 'slide' ? b.dir * Math.min(0.3, b.spin * 0.4) : 0);
+  /* the corner it turns about is its bottom: tilt there, not at the middle */
+  const bx = x, by = y + b.h * H / 2;
+  c.save(); c.translate(bx, by); c.rotate(rot); c.translate(-bx, -by);
+  let glow = null;
+  if (holder != null) glow = PLAYER_COLORS[holder];
+  if (b.pend){
+    const col = PLAYER_COLORS[b.pend.who], p = b.pend.p;
+    c.save(); c.globalAlpha = 0.25 + 0.5 * p; c.strokeStyle = col; c.lineWidth = Math.max(3, H * 0.006);
+    c.beginPath(); c.roundRect(x - b.w * H / 2 - H * 0.012, y - b.h * H / 2 - H * 0.012, b.w * H + H * 0.024, b.h * H + H * 0.024, H * 0.02); c.stroke(); c.restore();
+  }
+  drawBlock(c, x, y, b.kind, b.w * H, b.h * H, 0, b.col, b.mark, { glow, alphaK: a });
+  c.restore();
+}
+export { topH, liftAt, FADE_SECS };

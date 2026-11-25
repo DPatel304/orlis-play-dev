@@ -9,9 +9,9 @@ const fakeCanvas = () => {
 };
 
 test('the move card has the poses the games ask for', () => {
-  for (const n of ['reach', 'flap', 'wave', 'clap', 'hug', 'jump', 'squat', 'march', 'lean', 'duck', 'run', 'dance', 'freeze', 'side'])
+  for (const n of ['reach', 'flap', 'wave', 'clap', 'hug', 'jump', 'squat', 'march', 'lean', 'duck', 'run', 'dance', 'freeze', 'side', 'lift'])
     assert.ok(POSE_NAMES.includes(n), `has ${n}`);
-  assert.equal(POSE_NAMES.length, 14);
+  assert.equal(POSE_NAMES.length, 15);
 });
 
 test('every pose draws a card, with two arms and two legs, at any moment', () => {
