@@ -70,6 +70,14 @@ test('loading is the two squares hopping with the game\'s name card', () => {
 const GAME = { id: 'pop-party', name: 'Pop Party', accent: '#ff5d8f', unit: 'points' };
 const kids = [{ i: 0, name: 'Mia', look: {}, color: '#3da9ff', value: 12 }, { i: 1, name: 'Leo', look: {}, color: '#ff8a3d', value: 9 }, { i: 2, name: 'Ava', look: {}, color: '#22c55e', value: 17 }];
 
+test('results: a long count steps down a size (and wraps its words if need be) so "balloons popped" never runs to the card\'s edge', () => {
+  const digits = (n) => { const ui2 = resetDom(); El.prototype.getContext = () => null; results(GAME, () => {}, () => {}, 'Home', { line: '' }, { total: n, kids }); return ui2.querySelector('.gbig').getAttribute('data-digits'); };
+  assert.deepEqual([digits(9), digits(38), digits(757), digits(4210), digits(123456)], ['1', '2', '3', '4', '4']);
+  const css = read('clean-screens.css');
+  assert.match(css, /\.gbig\[data-digits="3"\] b\{ font-size:calc\(var\(--u\)\*16\)/);
+  assert.match(css, /\.gbig\{ flex-wrap:wrap/);
+});
+
 test('results: the count big with the game\'s icon, "New best!", each child\'s face and count, then Play again and Home', () => {
   const ui2 = resetDom(); El.prototype.getContext = () => null;
   let again = 0, home = 0;

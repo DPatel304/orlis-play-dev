@@ -13,7 +13,12 @@
 .gbig b{ font:700 calc(var(--u)*19)/.9 var(--ui); color:var(--ink); font-variant-numeric:tabular-nums; }
 .gbig .gico{ width:calc(var(--u)*17); height:calc(var(--u)*17); display:block; flex:none; }
 .gbig .sicon.gico{ border-radius:28%; }
-.gbig span{ font:400 calc(var(--u)*4.8)/1.1 var(--ui); color:var(--ink-soft); }
+.gbig span{ font:400 calc(var(--u)*4.8)/1.1 var(--ui); color:var(--ink-soft); min-width:0; overflow-wrap:break-word; }
+/* a big count (757) left no room beside it for "balloons popped", which ran to within 10 px of the card's edge: the count steps down a size
+   for three digits and again for four, and if its words still do not fit they go under it, inside the card's padding */
+.gbig[data-digits="3"] b{ font-size:calc(var(--u)*16); }
+.gbig[data-digits="4"] b{ font-size:calc(var(--u)*13); }
+.gbig{ flex-wrap:wrap; row-gap:calc(var(--u)*.4); }
 .gline{ margin:calc(var(--u)*-2) 0 calc(var(--u)*3); font-size:calc(var(--u)*3.4); color:var(--ink-soft); }
 .gline.big{ margin:calc(var(--u)*1.6) 0 calc(var(--u)*3.6); font-size:calc(var(--u)*5); color:var(--ink); font-weight:700; line-height:1.15; }
 .btnrow{ display:flex; gap:calc(var(--u)*3); flex-wrap:wrap; }

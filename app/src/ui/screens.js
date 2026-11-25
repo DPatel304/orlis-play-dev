@@ -184,6 +184,7 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null, ex
     const [prop, opts] = game.prop || GAME_PROP[game.id] || [];
     big.appendChild(prop ? propIcon(prop, 240, opts || {}, 'gico') : looks({ id: game.id, icon: game.store && game.store.icon }).icon('gico sicon'));
     const num = h('b'); num.textContent = String(total);
+    big.setAttribute('data-digits', String(Math.min(4, String(total).length)));      /* (the count's size steps down for a long one, so its words keep room: clean-screens.css) */
     const words = h('span'); resultWords(game, total).forEach((w, i) => { if (i) words.appendChild(document.createElement('br')); words.append(w); });
     big.append(num, words); c.appendChild(big);
     if (summary && summary.line && summary.line.length > 0 && !/^(You|Together you) got /.test(summary.line)){ const l = h('p', 'gline'); l.textContent = summary.line; c.appendChild(l); }
