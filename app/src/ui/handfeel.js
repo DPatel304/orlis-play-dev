@@ -30,7 +30,9 @@ export const FEEL = {
   /* the squash on impact (a spring), and the burst: sparks, and a ring wave */
   squash: 0.34, sparks: 18, sparksReduced: 10, sparkLife: 0.55, ringLife: 0.45, maxSparks: 140,
   /* the whoosh on a fast move: faster than whooshAt (heights/s), at most once in whooshEvery seconds */
-  whooshAt: 1.04, whooshSpan: 1.25, whooshEvery: 0.4
+  whooshAt: 1.04, whooshSpan: 1.25, whooshEvery: 0.4,
+  /* two players' orbs are drawn apart when nearer than this many orb diameters (eased over apartEase seconds); drawing only */
+  apartAt: 1.05, apartEase: 0.09
 };
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -260,6 +262,7 @@ export class HandFeel {
     }
     for (const k of [...this.orbs.keys()]) if (!seen.has(k)) this.orbs.delete(k);
     this.bursts.step(dt, this.aspect);
+    this._spread(dt);
     if (onWhoosh && fastest > FEEL.whooshAt && this.t >= this.whooshAt){
       this.whooshAt = this.t + FEEL.whooshEvery;
       onWhoosh(clamp((fastest - FEEL.whooshAt) / FEEL.whooshSpan, 0, 1));
@@ -276,15 +279,43 @@ export class HandFeel {
     if (best) best.orb.squashNow();
     this.bursts.add(x, y, col || (best && best.col) || WHITE());
   }
+  /* Two players' orbs that come within about one orb diameter are DRAWN apart (e.nx, e.ny: shares of the picture, eased), so they never
+     sit on top of each other. Only the drawing: orb.x / orb.y, hit() and every game's own hit tests keep the real positions.
+     An orb is never moved away from another orb of the same player (two hands of one child may meet). */
+  _spread(dt){
+    const list = [...this.orbs.values()], A = this.aspect, D = FEEL.radius * 2 * FEEL.apartAt;
+    for (const e of list){ e.tx = 0; e.ty = 0; }
+    for (let pass = 0; pass < 2; pass++){
+      for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++){
+        const a = list[i], b = list[j];
+        if (a.who === b.who || a.orb.x == null || b.orb.x == null) continue;
+        let dx = ((b.orb.x + b.tx) - (a.orb.x + a.tx)) * A, dy = (b.orb.y + b.ty) - (a.orb.y + a.ty);
+        let d = Math.hypot(dx, dy);
+        if (d >= D) continue;
+        if (d < 1e-4){ dx = (a.who < b.who) ? 1 : -1; dy = 0; d = 1; }     /* exactly on top: the lower player goes left, steadily */
+        const push = (D - d) / 2, ux = dx / d, uy = dy / d;
+        a.tx -= ux * push / A; a.ty -= uy * push; b.tx += ux * push / A; b.ty += uy * push;
+      }
+    }
+    const k = 1 - Math.exp(-dt / FEEL.apartEase);
+    for (const e of list){ e.nx = (e.nx || 0) + (e.tx - (e.nx || 0)) * k; e.ny = (e.ny || 0) + (e.ty - (e.ny || 0)) * k; }
+  }
   near(x, y, r){ return nearness(x, y, r, this._hands, this.aspect); }
-  /* the orbs now: [{ key, who, col, orb }] */
-  list(){ return [...this.orbs.entries()].map(([key, e]) => ({ key, who: e.who, col: e.col, orb: e.orb })); }
+  /* the orbs now: [{ key, who, col, orb, shown }]; orb is where the hand is, shown is the same orb as drawn (nudged clear of other players') */
+  list(){ return [...this.orbs.entries()].map(([key, e]) => ({ key, who: e.who, col: e.col, orb: e.orb, shown: this._shown(e) })); }
+  /* the orb as drawn: itself, or (when nudged apart from another player's) a copy moved by the eased offset, trail and all */
+  _shown(e){
+    const nx = e.nx || 0, ny = e.ny || 0;
+    if (Math.abs(nx) < 1e-4 && Math.abs(ny) < 1e-4) return e.orb;
+    const o = e.orb;
+    return { ...o, x: o.x + nx, y: o.y + ny, trail: o.trail.map(p => ({ ...p, x: p.x + nx, y: p.y + ny })) };
+  }
   /* trails, bursts, then the orbs; look(who) gives the extras for a player's orbs ({ boost, flash }) */
   draw(c, W, H, look = null){
     this.aspect = W / H;
     const list = [...this.orbs.values()];
-    for (const e of list) drawTrail(c, W, H, e.orb, e.col);
+    for (const e of list) drawTrail(c, W, H, this._shown(e), e.col);
     this.bursts.draw(c, W, H);
-    list.forEach((e, i) => drawOrb(c, W, H, e.orb, e.col, { ...(look ? look(e.who) : null), phase: i * 1.7 }));
+    list.forEach((e, i) => drawOrb(c, W, H, this._shown(e), e.col, { ...(look ? look(e.who) : null), phase: i * 1.7 }));
   }
 }

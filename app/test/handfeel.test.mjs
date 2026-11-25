@@ -165,3 +165,19 @@ test('bursts are not drawn while the pause card is up', async () => {
   assert.ok(b.alive > 0, 'state kept');
   b.draw(c, 1920, 1080); assert.ok(calls.length > 0);
 });
+
+test('two players\' orbs that meet are drawn apart, but never moved where they count', () => {
+  const f = new HandFeel(), hands = () => [{ key: '0R', who: 0, x: 0.50, y: 0.5, col: '#3da9ff' }, { key: '1R', who: 1, x: 0.502, y: 0.5, col: '#ff8a3d' }];
+  for (let i = 0; i < 90; i++) f.step(DT, hands());
+  const l = f.list(), [a, b] = l;
+  assert.ok(Math.abs(a.orb.x - 0.5) < 1e-3 && Math.abs(b.orb.x - 0.502) < 1e-3, 'hit positions are the hands');
+  const d = Math.hypot((a.shown.x - b.shown.x) * f.aspect, a.shown.y - b.shown.y);
+  assert.ok(d >= FEEL.radius * 2 * 0.95, `drawn ${d.toFixed(3)} heights apart`);
+  assert.ok(a.shown.x < b.shown.x, 'the lower player stays on the left');
+});
+
+test('orbs of one player, and orbs far apart, are not nudged', () => {
+  const f = new HandFeel();
+  for (let i = 0; i < 60; i++) f.step(DT, [{ key: '0L', who: 0, x: 0.5, y: 0.5, col: '#3da9ff' }, { key: '0R', who: 0, x: 0.5, y: 0.5, col: '#3da9ff' }, { key: '1R', who: 1, x: 0.8, y: 0.5, col: '#ff8a3d' }]);
+  for (const e of f.list()) assert.equal(e.shown, e.orb);
+});

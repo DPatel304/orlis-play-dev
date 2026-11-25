@@ -523,7 +523,7 @@ class PlayRound {
     if (this.spec.goal) this.env.ui.goal(c, W, H, clamp(this.total / this.spec.goal.score, 0, 1));
     /* the players' hands, last, on top of everything */
     const glow = this.feel.list();
-    if (orbs && glow.length) for (const e of glow) A.draw(c, 'hand', e.orb.x * W, e.orb.y * H, H * 0.12, { color: e.col, orb: e.orb, W, H });
+    if (orbs && glow.length) for (const e of glow) A.draw(c, 'hand', e.shown.x * W, e.shown.y * H, H * 0.12, { color: e.col, orb: e.shown, W, H });
     else for (const { i, h } of this._hands()) A.draw(c, 'hand', h.x * W, h.y * H, H * 0.12, { color: this._colorOf(i) });
     /* everyone is out: the picture dims over the short beat before the round ends */
     if (this.allOut){ c.save(); c.globalAlpha = 0.35 * clamp(1 - this.endIn / END_BEAT, 0, 1); c.fillStyle = A.color ? A.color('shade.shadow') : 'black'; c.fillRect(0, 0, W, H); c.restore(); }
