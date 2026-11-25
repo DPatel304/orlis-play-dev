@@ -384,7 +384,8 @@ function showResults(){
   /* each child's face, name and count (in seat order; the counts only when the game's tally lines up with who played) */
   const seats = [...joined].filter(i => i < players).sort((x, y) => x - y);
   let rows = []; try { rows = inst.tally(); } catch {}
-  const kids = seats.map((i, k) => ({ i, name: crew.nameOf(i) || `Player ${i + 1}`, look: crew.lookOf(i), color: crew.colorOf(i, PLAYER_COLORS[i]), value: rows.length === seats.length ? Number(rows[k].value) || 0 : null }));
+  const kids = seats.map((i, k) => ({ i, name: crew.nameOf(i) || `Player ${i + 1}`, look: crew.lookOf(i), color: crew.colorOf(i, PLAYER_COLORS[i]), value: rows.length === seats.length ? Number(rows[k].value) || 0 : null,
+    health: rows.length === seats.length && rows[k].health ? rows[k].health : null }));
   go('results', () => results(game, () => toGame(game), game.back || toMenu, game.back ? 'Back to Create' : 'Home', summary, { total, kids: game.passive ? [] : kids,
     /* a game the family made: its results have a third button, Change it (the builder again, on this game's picks, saving into the same slot) */
     change: game.made ? () => toCreate({ edit: game.made.id }) : null }));

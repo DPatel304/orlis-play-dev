@@ -443,6 +443,12 @@ export const sfx = {
     [0, 1, 2, 3, 4, 5].forEach(i => bell(ch[i % 3] + 12 * (1 + Math.floor(i / 3)), t + i * 0.05, 0.09, 0.35, master));
     hiss({ dur: 0.5, gain: 0.05, hp: 7000 });
   },
+  /* A short, soft "ouch": a little down-slide, not scary (n 2: the bar ran out - a longer wobble down). */
+  ouch(n = 1){
+    blip({ freq: 520, to: 300, dur: 0.16, type: 'triangle', gain: 0.3 });
+    blip({ freq: 390, to: 220, dur: 0.14, type: 'sine', gain: 0.18, delay: 0.03 });
+    if (n > 1) blip({ freq: 300, to: 140, dur: 0.5, type: 'sine', gain: 0.22, delay: 0.16 });
+  },
   /* A slap on the giant: a rubbery boing, a little higher each time. */
   boing(n = 1){
     const f = 150 * Math.pow(2, n / 6);

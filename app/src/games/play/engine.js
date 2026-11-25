@@ -28,6 +28,15 @@ const RESERVE = 1.4;
    and a quick hand could otherwise rattle it three times a second). */
 const LANE_MOST = 0.2, LANE_LEAST = 0.07, RALLY = 0.45, LIFT_MIN = 0.25, REHIT = 0.45, GONE = 5, BAT = 0.7;
 const ease = (k) => 1 - Math.pow(1 - clamp(k, 0, 1), 3);
+/* a result of a rule: its word, and whether it is a loss (a thing with one is something to dodge, never something to reach for) */
+const keyOf = (x) => typeof x === 'string' ? x : Object.keys(x)[0];
+const isLoss = (x) => keyOf(x) === 'hurt' || (typeof x === 'object' && keyOf(x) === 'score' && x.score < 0);
+/* A Dodge game's health (decision 0063; "health: true"): a hit takes CHUNK of a bar (full is 1), and the player is safe for SAFE seconds after it, so one thing
+   cannot take several; an empty bar means DIZZY seconds in which nothing hurts, then a refill to REFILL (and SAFE_AFTER seconds' grace). Things steer toward the
+   players (SEEK_TURN radians a second at most, and straight on once within SEEK_COMMIT of them, so a player who moves is missed) and give up after SEEK_LIFE seconds.
+   These are starting values, tuned with the playtest rig so a child in a family and a grown-up empty their bars about as often. */
+const CHUNK = 0.25, SAFE = 1.2, DIZZY = 3, REFILL = 0.5, SAFE_AFTER = 1;
+const SEEK_TURN = 1.1, SEEK_COMMIT = 0.17, SEEK_LIFE = 14;
 /* the tower a "stack" builds (as in Stack It High): one block's size (screen heights), where its ground is, where across the picture it stands,
    how long a block flies to it, how many blocks make a full one by default, and the bonus a full one is worth as it blasts off */
 const BLOCK = 0.075, GROUND = 0.93, TOWER_X = 0.5, FLY = 0.5, FULL = 6, BONUS = 5;
@@ -44,7 +53,7 @@ class PlayRound {
     this.defs = spec.things.map((t, i) => {
       const move = t.moves || 'stay';
       /* (fair: something to touch that falls or floats - a Dodge thing is not made bigger or slower for a short player, who is smaller to hit already) */
-      const fair = (move === 'fall' || move === 'rise') && (t.rules || []).some(r => (r.when === 'touched' || r.when === 'swiped') && !r.then.some(x => typeof x === 'object' && Object.keys(x)[0] === 'score' && x.score < 0));
+      const fair = (move === 'fall' || move === 'rise') && (t.rules || []).some(r => (r.when === 'touched' || r.when === 'swiped') && !r.then.some(isLoss));
       return { ...t, id: i, move, sz: t.size ?? 0.09, sp: t.speed ?? MOVES[move].speed, timer: 0.4, fair, each: t.each === true && move === 'bounce' };
     });
     this.score = Array.from({ length: env.max }, () => 0); this.total = 0;
@@ -53,7 +62,11 @@ class PlayRound {
     this.counts = {};                 /* how many times each named thing scored (a catch, a dodge, a bat, a block stacked), for the results */
     this.tower = []; this.fliers = []; this.rockets = []; this.towers = 0; this.wob = 0;
     this.reach = reaches(env.max); this.here = []; this.low = null; this.laneTurns = {};
-    this.eachT = {}; this.eachHad = {}; this.eachGone = {};
+    this.eachT = {}; this.eachHad = {}; this.eachGone = {}; this.aimTurns = {}; this.seen = {};
+    /* health (a Dodge game): each player's bar (1 full), the seconds they are safe or dizzy, the flash of a hit, how many times it emptied, and how many hits */
+    this.health = spec.health === true;
+    const z = () => Array.from({ length: env.max }, () => 0);
+    this.hp = Array.from({ length: env.max }, () => 1); this.safe = z(); this.dizzy = z(); this.flash = z(); this.lost = z(); this.hits = z();
     this.aspect = 16 / 9; this.zones = []; this._zoneKey = ''; this.t = 0;
     this._refreshZones(1920, 1080);
     this.over = false; this.hint = spec.hint || null; this.hintIcon = spec.hintIcon || ''; this.hintT = 0; this.goalDone = false; this.endIn = -1; this.cheering = 0;
@@ -67,6 +80,7 @@ class PlayRound {
     const pose = this.env.pose, mouse = !!(pose.mouse && pose.mouse.active), here = [];
     for (let i = 0; i < this.n; i++){
       const p = pose.players[i]; if (!p || !p.present) continue;
+      this.seen[i] = true;
       const r = this.reach[i].step(dt, p, mouse);
       if (r.ready) here.push({ i, x: r.x, top: r.top, bottom: r.bottom, arm: r.arm });
     }
@@ -89,6 +103,49 @@ class PlayRound {
     this.laneTurns[pick.i] = (this.laneTurns[pick.i] || 0) + 1;
     this.laneOwner = pick.i;
     return clamp(pick.x + (this.rnd() - 0.5) * 2 * LANE_SPREAD, 0.06, 0.94);
+  }
+
+  /* ---------- steering toward the players, and health ---------- */
+  _present(i){ const p = this.env.pose.players[i]; return !!(p && p.present); }
+  /* which player the next thing heads for: a turn each, the one who has had the fewest first (null: nobody is here) */
+  _nextTarget(){
+    let pick = null;
+    for (let i = 0; i < this.n; i++){ if (!this._present(i)) continue; if (pick == null || (this.aimTurns[i] || 0) < (this.aimTurns[pick] || 0)) pick = i; }
+    if (pick != null) this.aimTurns[pick] = (this.aimTurns[pick] || 0) + 1;
+    return pick;
+  }
+  /* where a thing is heading: the middle of its player's hands (where they are, and where they put them), else the middle of their reach */
+  _seekTarget(th){
+    if (th.target == null || !this._present(th.target)) th.target = this._nextTarget();
+    const i = th.target; if (i == null) return null;
+    const hs = this._hands().filter(o => o.i === i);
+    if (hs.length) return { x: hs.reduce((a, o) => a + o.h.x, 0) / hs.length, y: clamp(hs.reduce((a, o) => a + o.h.y, 0) / hs.length, 0.08, 0.95) };
+    const r = this.reach[i]; return r.ready ? { x: r.x, y: r.at(0.5) } : { x: 0.5, y: 0.6 };
+  }
+  /* a player is touched by something to dodge: with a health bar, a chunk comes off (n chunks), with a flash, a wobble and an ouch, and they are safe for a moment;
+     an empty bar means a few dizzy seconds. Without one, it costs them a point. */
+  _hurt(who, n, th){
+    const sfx = this.env.sfx;
+    if (!this.health){
+      if (who >= 0) this._points(-n, who, th.x, th.y - th.sz * 0.6, this.env.colors[who]);
+      this.wob = 0.5; sfx.ouch && sfx.ouch(); return;
+    }
+    if (who < 0 || this.safe[who] > 0 || this.dizzy[who] > 0) return;
+    this.hits[who]++; this.hp[who] = Math.max(0, this.hp[who] - CHUNK * n); this.safe[who] = SAFE; this.flash[who] = 1; this.wob = 0.5;
+    if (this.hp[who] <= 1e-6){
+      this.hp[who] = 0; this.dizzy[who] = DIZZY; this.lost[who]++;
+      sfx.ouch && sfx.ouch(2);
+    } else sfx.ouch && sfx.ouch();
+  }
+  _healthStep(dt){
+    for (let i = 0; i < this.env.max; i++){
+      this.flash[i] = Math.max(0, this.flash[i] - dt * 2);
+      this.safe[i] = Math.max(0, this.safe[i] - dt);
+      if (this.dizzy[i] > 0){
+        this.dizzy[i] -= dt;
+        if (this.dizzy[i] <= 0){ this.dizzy[i] = 0; this.hp[i] = REFILL; this.safe[i] = SAFE_AFTER; this.env.sfx.chime && this.env.sfx.chime(); }
+      }
+    }
   }
 
   /* ---------- a ball each ---------- */
@@ -167,7 +224,7 @@ class PlayRound {
 
   _make(d, at){
     if (this.things.length >= 80) return null;
-    const r = this.rnd, from = (d.appears && d.appears.from) || (d.move === 'fall' ? 'top' : d.move === 'rise' ? 'bottom' : d.move === 'drift' ? (r() < 0.5 ? 'left' : 'right') : 'anywhere');
+    const r = this.rnd, from = (d.appears && d.appears.from) || (d.move === 'seek' ? ['left', 'right', 'top'][(r() * 3) | 0] : d.move === 'fall' ? 'top' : d.move === 'rise' ? 'bottom' : d.move === 'drift' ? (r() < 0.5 ? 'left' : 'right') : 'anywhere');
     /* (a bit bigger for a short arm, and never faster than the one who reaches least can follow: only for what falls or floats to be touched) */
     const fair = d.fair, big = fair && this.low ? clamp(ARM_REF / Math.max(0.05, this.low.arm), 1, BIG_MAX) : 1, sz = clamp(d.sz * big, LIMITS.size[0], LIMITS.size[1]), rad = sz / 2;
     let x = 0.5, y = 0.5, dir = r() < 0.5 ? -1 : 1, pop = false;
@@ -184,6 +241,11 @@ class PlayRound {
     const pieces = Array.isArray(d.piece) ? d.piece : [d.piece], cols = d.color === undefined ? [null] : Array.isArray(d.color) ? d.color : [d.color];
     const th = { d, x, y, vx: 0, vy: 0, rot: 0, spin: d.spins ? (r() - 0.5) * 3 : 0, sz, owner: fair && (from === 'top' || from === 'bottom') && !at ? this.laneOwner : null, resv: RESERVE, piece: pieces[(r() * pieces.length) | 0], color: cols[(r() * cols.length) | 0],
       age: 0, ph: r() * 6.28, dir, cool: 0, base: y, dead: false, fired: {}, tx: x, ty: y, tt: 0, sp: Math.min(d.sp * (0.8 + r() * 0.4), fair && this.low ? Math.max(0.05, (this.low.bottom - this.low.top) / BAND_SECS) : 9), flip: false, pop, leaving: 0 };
+    if (d.move === 'seek'){
+      /* it heads for a player, a turn each (the one who has had the fewest first) */
+      th.target = this._nextTarget(); const tg = this._seekTarget(th);
+      th.ang = tg ? Math.atan2(tg.y - th.y, (tg.x - th.x) * this.aspect) : (from === 'right' ? Math.PI : from === 'top' ? Math.PI / 2 : 0);
+    }
     this.things.push(th);
     return th;
   }
@@ -202,7 +264,7 @@ class PlayRound {
   step(dt, W, H){
     this.t += dt; this.hintT += dt; this.cheering = Math.max(0, this.cheering - dt); this.wob = Math.max(0, this.wob - dt);
     const aspect = W / H, secs = this.spec.endless ? 600 : (this.spec.secs ?? 90);
-    this._refreshZones(W, H); this._reaches(dt);
+    this._refreshZones(W, H); this._reaches(dt); if (this.health) this._healthStep(dt);
     if (this.endIn >= 0){ this.endIn -= dt; if (this.endIn <= 0) this.over = true; }
     else if (!this.spec.endless && this.t >= secs) this.over = true;
     /* more keep coming */
@@ -236,7 +298,8 @@ class PlayRound {
           if (th.cool > 0 || th.leaving > 0 || this._under(th.x, th.y) || !this._live(th)) continue;   /* (under the clock, the goal bar, the scores, or not yet in reach of the smallest player: not there to touch) */
           for (const { i, h } of hands){
             if (th.resv > 0 && th.owner != null && th.owner !== i && this._here(th.owner)) continue;   /* (reserved for the player whose lane it came down) */
-            if (th.d.each && (th.owner !== i || th.up)) continue;                                     /* (a ball each: only its player, and not again until it has come down) */
+            if (th.d.each && (th.owner !== i || th.up)) continue;
+            if (this.health && (this.safe[i] > 0 || this.dizzy[i] > 0) && rule.then.some(x => keyOf(x) === 'hurt')) continue;   /* (just hurt, or dizzy: a thing goes through them) */                                     /* (a ball each: only its player, and not again until it has come down) */
             const dx = (th.x - h.x) * aspect, dy = th.y - h.y;
             if (Math.hypot(dx, dy) > th.sz / 2 + HAND_REACH) continue;
             if (rule.when === 'swiped' && !(h.speed > SWIPE)) continue;
@@ -272,7 +335,7 @@ class PlayRound {
 
   /* a thing a hand is meant to touch: one with a touched or swiped rule that is not a loss (a thing to dodge is not a target) */
   _touchable(th){
-    return (th.d.rules || []).some(r => (r.when === 'touched' || r.when === 'swiped') && !r.then.some(x => typeof x === 'object' && Object.keys(x)[0] === 'score' && x.score < 0));
+    return (th.d.rules || []).some(r => (r.when === 'touched' || r.when === 'swiped') && !r.then.some(isLoss));
   }
 
   _move(th, dt){
@@ -282,6 +345,17 @@ class PlayRound {
       case 'fall': th.y += sp * dt; th.x += Math.sin(t * 1.5 + th.ph) * sway * dt * 4; if (th.y >= FLOOR && !th.landed && !d.appears){ th.y = FLOOR; th.landed = true; } break;
       case 'rise': th.y -= sp * dt; th.x += Math.sin(t * 1.5 + th.ph) * sway * dt * 4 + Math.sin(t * 0.8 + th.ph) * 0.01 * dt * 4; break;
       case 'drift': th.x += th.dir * sp * dt; th.y += Math.sin(t * 1.2 + th.ph) * 0.02 * dt; th.flip = th.dir < 0 === !!d.flips; break;
+      case 'seek': {
+        const tg = this._seekTarget(th);
+        if (tg){
+          const dx = (tg.x - th.x) * this.aspect, dy = tg.y - th.y;
+          if (Math.hypot(dx, dy) > SEEK_COMMIT){ const diff = Math.atan2(dy, dx) - th.ang; th.ang += clamp(Math.atan2(Math.sin(diff), Math.cos(diff)), -SEEK_TURN * dt, SEEK_TURN * dt); }
+        }
+        th.x += Math.cos(th.ang) * sp * dt / this.aspect; th.y += Math.sin(th.ang) * sp * dt;
+        th.flip = (Math.cos(th.ang) < 0) === !!d.flips;
+        if (th.age > SEEK_LIFE && !th.leaving) th.leaving = 1e-6;
+        break;
+      }
       case 'bob': th.y = th.base + Math.sin(t * 2 + th.ph) * 0.012; break;
       case 'wander':
         th.tt -= dt;
@@ -319,7 +393,7 @@ class PlayRound {
       const nm = th.d.name || ''; this.counts[nm] = (this.counts[nm] || 0) + 1;
     }
     /* a hand caught, popped, batted or grabbed something good: the orb squashes and a burst plays where it was */
-    if (who >= 0 && hand && this._touchable(th) && (rule.when === 'touched' || rule.when === 'swiped') && !rule.then.some(x => typeof x === 'object' && Object.keys(x)[0] === 'score' && x.score < 0)){
+    if (who >= 0 && hand && this._touchable(th) && (rule.when === 'touched' || rule.when === 'swiped') && !rule.then.some(isLoss)){
       this.feel.hit(th.x, th.y, who, this.env.colors[who]);
       this.fx.push({ kind: 'hitburst', x: th.x, y: th.y, size: 0.32, color: this.env.colors[who], age: 0 });
     }
@@ -348,6 +422,7 @@ class PlayRound {
             th.vx = clamp(th.vx * 0.3 + ((hand && hand.vx) || 0) * 0.3, -0.25, 0.25); th.spin = th.vx * 8 + (this.rnd() - 0.5) * 4; break;
           }
           th.vy = -(0.62 + clamp(-((hand && hand.vy) || 0) * 0.15, 0, 0.2)); th.vx = clamp(th.vx * 0.3 + ((hand && hand.vx) || 0) * 0.5, -0.45, 0.45); th.spin = th.vx * 8 + (this.rnd() - 0.5) * 4; break;
+        case 'hurt': this._hurt(who, v ?? 1, th); break;
         case 'celebrate': this._celebrate(); break;
         case 'wobble': this.wob = 0.5; break;
         case 'stack': this.fliers.push({ piece: th.piece, color: th.color, x0: th.x, y0: th.y, s0: th.sz, t: 0, who, colour, full: clamp(Math.round(v ?? FULL), LIMITS.tower[0], LIMITS.tower[1]) }); break;
@@ -434,6 +509,13 @@ class PlayRound {
     const hf = this.spec.hintFor ?? 8;
     if (this.hint) this.env.ui.say(c, W, H, { icon: this.hintIcon, text: this.hint, t: this.hintT, until: hf });
     if (this.spec.goal) this.env.ui.goal(c, W, H, clamp(this.total / this.spec.goal.score, 0, 1));
+    /* a dizzy player: little stars going round their hands */
+    if (this.health) for (let i = 0; i < this.n; i++){
+      if (!(this.dizzy[i] > 0)) continue;
+      const hs = this._hands().filter(o => o.i === i); if (!hs.length) continue;
+      const cx = hs.reduce((a, o) => a + o.h.x, 0) / hs.length, cy = hs.reduce((a, o) => a + o.h.y, 0) / hs.length;
+      for (let k = 0; k < 4; k++){ const a = this.t * 3.2 + k * 1.5708; A.draw(c, 'star', (cx + Math.cos(a) * 0.05 / this.aspect * 1.78) * W, (cy - 0.08 + Math.sin(a) * 0.02) * H, H * 0.04, { color: COLORS.yellow, rotate: this.t * 4 }); }
+    }
     /* the players' hands, last, on top of everything */
     const glow = this.feel.list();
     if (orbs && glow.length) for (const e of glow) A.draw(c, 'hand', e.orb.x * W, e.orb.y * H, H * 0.12, { color: e.col, orb: e.orb, W, H });
@@ -443,7 +525,13 @@ class PlayRound {
   /* the move card, bottom left, for the first cardFor seconds (or all round) */
   card(){ const s = this.spec; return s.card && (s.cardFor == null || this.t < s.cardFor) ? s.card : null; }
   /* (unused: the areas this game gives back to its world - it has no badge, and the move card is only there for a while - so nothing keeps out of them) */
-  hud(){ return { score: this.score, showLives: false, hideScore: !!this.spec.team, unused: this.card() ? ['badge'] : ['badge', 'card'] }; }
-  value(){ return this.spec.team ? this.total : Math.max(0, ...this.score.slice(0, this.n)); }
+  hud(){
+    const h = { score: this.score, showLives: false, hideScore: !!this.spec.team || this.health, unused: this.card() ? ['badge'] : ['badge', 'card'] };
+    /* a Dodge game: a health bar each, where the score pill would be (fill 1 is full; lost: how many times it emptied; hit: the flash of a hit, 1 to 0; dizzy) */
+    if (this.health) h.health = Array.from({ length: this.env.max }, (_, i) => ({ fill: this.hp[i], lost: this.lost[i], hit: this.flash[i], dizzy: this.dizzy[i] > 0 }));
+    return h;
+  }
+  /* what the round was worth (a Dodge game has no score: 0) */
+  value(){ return this.health ? 0 : this.spec.team ? this.total : Math.max(0, ...this.score.slice(0, this.n)); }
   get mood(){ return clamp(0.2 + this.cheering * 0.5 + Math.min(0.4, this.total / 100), 0, 1); }
 }

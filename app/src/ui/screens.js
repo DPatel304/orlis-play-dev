@@ -7,6 +7,7 @@ import { faceOf } from './avatar-maker.js';
 import { looks } from './menu.js';
 import { resultWords } from './units.js';
 import { showNews } from './chnews.js';
+import { color } from '../games/assets/palette.js';
 
 const ui = () => document.getElementById('ui');
 
@@ -153,6 +154,17 @@ function card(cls){
    one, and Play again and Home. Each child's face, name and count sits in seat order along the bottom (never a ranking, no winner).
    back: where the other button goes ('Home', or 'Back to Create' for a game being tried).
    summary: { line, best } (the friendly line, for a game that says it its own way); extra: { total, kids: [{ i, name, look, value, color }] }. */
+/* a player's health bar on the results card: the bar as it ended (rose, like the one in the game), and a small grey star for each time it emptied */
+export function healthOf({ fill = 1, lost = 0 } = {}){
+  const box = h('span', 'ghealth'), track = h('i', 'ghtrack'), bar = h('i', 'ghfill');
+  bar.style.width = Math.round(Math.max(0, Math.min(1, fill)) * 100) + '%'; bar.style.background = color('ui.go');
+  track.appendChild(bar); box.appendChild(track);
+  const n = Math.max(0, Math.round(lost));
+  for (let i = 0; i < Math.min(3, n); i++) box.appendChild(propIcon('star', 64, { color: color('shade.mid') }, 'ghlost'));
+  if (n > 3){ const more = h('b', 'ghmore'); more.textContent = '+' + (n - 3); box.appendChild(more); }
+  box.setAttribute('aria-label', n ? `Bar ran out ${n} ${n === 1 ? 'time' : 'times'}` : 'Bar never ran out');
+  return box;
+}
 export function results(game, onAgain, onMenu, back = 'Home', summary = null, extra = null){
   const { s, c } = card('end');
   s.style.setProperty('--accent', game.accent);
@@ -187,7 +199,8 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null, ex
       const face = h('span', 'gkface'); face.appendChild(faceOf({ look: k.look }, 96));
       const nm = h('span', 'gkname'); nm.textContent = k.name;
       const txt = h('span', 'gktext'); txt.appendChild(nm);
-      if (k.value != null){ const n = h('b'); n.textContent = String(Math.round(k.value)); txt.appendChild(n); }
+      if (k.health) txt.appendChild(healthOf(k.health));      /* (a Dodge game has no score: their bar as it ended, and a grey star for each time it ran out) */
+      else if (k.value != null){ const n = h('b'); n.textContent = String(Math.round(k.value)); txt.appendChild(n); }
       pill.append(face, txt);
       crewEl.appendChild(pill);
     }

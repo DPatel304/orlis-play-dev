@@ -31,6 +31,7 @@ export function validate(spec, env){
   if (spec.hint !== undefined){ if (typeof spec.hint !== 'string' || !spec.hint.trim()) bad('the game: "hint" is a few words, like "Catch the stars!" (with "hintIcon": "glowstar" for the picture).'); else if (words(spec.hint) > 4) bad(`the game: the hint "${spec.hint}" is more than four words - up to four words, and a painted icon from the library in "hintIcon".`); }
   if (spec.hintIcon !== undefined && (typeof spec.hintIcon !== 'string' || !env.has(spec.hintIcon))) unknown('icon in the library', spec.hintIcon, env.pieceNames || [], 'the game: "hintIcon"');
   if (spec.hintFor !== undefined) num(spec.hintFor, 'hintFor', 'the game');
+  if (spec.health !== undefined && spec.health !== true && spec.health !== false) bad('the game: "health" is true or false.');
   if (spec.card !== undefined && !env.poses.includes(spec.card)) unknown('move', spec.card, env.poses, 'the game: "card"');
   if (spec.cardFor !== undefined) num(spec.cardFor, 'cardFor', 'the game');
   if (spec.goal !== undefined){ if (!spec.goal || !isNum(spec.goal.score) || spec.goal.score < 1) bad('the game: "goal" is { "score": a number }.'); }
@@ -79,12 +80,13 @@ export function validate(spec, env){
           const key = typeof res === 'string' ? res : res && typeof res === 'object' ? Object.keys(res)[0] : null;
           if (!(key in RESULTS)) return unknown('result', key, Object.keys(RESULTS), rw + ': "then"');
           const v = typeof res === 'object' ? res[key] : undefined;
-          if (typeof res === 'string' && RESULTS[key].value && !['score', 'grow', 'stack'].includes(key)) bad(`${rw}: "${key}" needs a value, like { "${key}": ... }.`);
+          if (typeof res === 'string' && RESULTS[key].value && !['score', 'grow', 'stack', 'hurt'].includes(key)) bad(`${rw}: "${key}" needs a value, like { "${key}": ... }.`);
           if (key === 'become' && !env.has(v)) unknown('piece in the library', v, env.pieceNames || [], rw + ': "become"');
           if (key === 'sound' && !SOUNDS.includes(v)) unknown('sound', v, SOUNDS, rw + ': "sound"');
           if (key === 'say'){ const t = v && typeof v === 'object' ? v.text : v; if (typeof t !== 'string' || words(t) > 4) bad(rw + ': "say" is up to four words ({ "say": "Well done!" }).'); else if (v && typeof v === 'object' && v.icon !== undefined && (typeof v.icon !== 'string' || !env.has(v.icon))) unknown('icon in the library', v.icon, env.pieceNames || [], rw + ': "say" icon'); }
           if (key === 'spawn' && !names.includes(v)) unknown('thing (give it a "name")', v, names, rw + ': "spawn"');
           if ((key === 'score' || key === 'grow') && typeof res === 'object' && !isNum(v)) bad(rw + `: "${key}" is a number.`);
+          if (key === 'hurt' && typeof res === 'object' && !(isNum(v) && v > 0 && v <= 4)) bad(rw + ': "hurt" is a number from 1 to 4 (how many chunks).');
           if (key === 'stack' && typeof res === 'object') num(v, 'tower', rw + ': "stack"');
           if (key === 'kickUp' && moves !== 'bounce') bad(rw + ': "kickUp" is for a ball (moves: "bounce").');
         });

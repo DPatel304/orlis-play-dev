@@ -38,6 +38,9 @@ export function summaryOf(picks, counts){
   return LINE.filter(([j]) => top.includes(j)).map(([j, say]) => say(by[j])).join(', ') || null;
 }
 
+/* the line under a Dodge game's bars: how many times a bar emptied between everyone (nobody is ever out, so it is always kind) */
+export const healthLine = (emptied) => emptied > 0 ? 'Everybody kept going!' : 'Nobody got dizzy!';
+
 export const isMade = (g) => !!(g && g.made);
 
 /* each world's colour for the tile, the loading cover and the badge */
@@ -59,12 +62,19 @@ export function madeGame(c){
       /* what the shell asks every game for, at the end of a round */
       round.tally = () => {
         const rows = [];
-        for (let i = 0; i < n; i++){ if (!round.score[i] && !(pose.players[i] && pose.players[i].present)) continue; rows.push({ label: `Player ${i + 1}`, value: round.score[i], color: PLAYER_COLORS[i] }); }
+        for (let i = 0; i < n; i++){
+          const here = pose.players[i] && pose.players[i].present;
+          /* a Dodge game has no score: each player's bar as it ended and how many times it emptied (not a number) */
+          if (round.health){ if (!here && !round.seen[i]) continue; rows.push({ label: `Player ${i + 1}`, value: 0, color: PLAYER_COLORS[i], health: { fill: round.hp[i], lost: round.lost[i], dizzy: round.dizzy[i] > 0 } }); continue; }
+          if (!round.score[i] && !here) continue;
+          rows.push({ label: `Player ${i + 1}`, value: round.score[i], color: PLAYER_COLORS[i] });
+        }
         return rows;
       };
-      /* a mix says what was done, in a line under the count */
-      round.summary = () => summaryOf(picks, round.counts);
+      /* a mix says what was done, in a line under the count; a Dodge game says how it went in a few words (nobody is ever out) */
+      round.summary = () => round.health ? healthLine(round.lost.slice(0, n).reduce((a, v) => a + v, 0)) : summaryOf(picks, round.counts);
       round.winner = () => {
+        if (round.health) return null;
         const there = round.score.slice(0, n).map((_s, i) => i).filter(i => round.score[i] > 0 || (pose.players[i] && pose.players[i].present));
         if (there.length < 2) return null;
         const top = Math.max(...there.map(i => round.score[i])), best = there.filter(i => round.score[i] === top);

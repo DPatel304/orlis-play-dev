@@ -204,7 +204,7 @@ export function sentence(picks){
 /* what each step means for each job (all inside the vocabulary's LIMITS) */
 /* speed: the usual speed of each way of moving (screen heights a second) times 0.3x to 3x over the 7 stops; how many: about how many things are on the
    screen at once, from one at a time to a storm (shared by the things in the game: each comes as often as it takes to keep that many about) */
-const BASE = { fall: 0.11, rise: 0.11, drift: 0.12 };
+const BASE = { fall: 0.11, rise: 0.11, drift: 0.12, seek: 0.12 };
 export const SPEED_X = [0.3, 0.45, 0.7, 1, 1.45, 2.1, 3];
 export const ON_SCREEN = [1, 2, 4, 7, 12, 18, 25];
 const CROSS = 1.15;                        /* screens to cross, so a thing is about CROSS / speed seconds on it */
@@ -215,15 +215,17 @@ export const FLOAT_BACK = 1;               /* keep up: seconds before a popped b
 export const TOWER = 6;                    /* stack: blocks in a full tower */
 const HINT = { collect: 'Catch the', dodge: 'Dodge the', stack: 'Stack the' };
 const FROM = { fall: 'top', rise: 'bottom', drift: undefined };
-const MOVE_OF = (t) => t.job === 'dodge' ? 'drift' : t.job === 'keepup' ? 'bounce' : t.job === 'stack' ? 'fall' : FLOATERS.has(t.id) ? 'rise' : 'fall';
+const MOVE_OF = (t) => t.job === 'dodge' ? 'seek' : t.job === 'keepup' ? 'bounce' : t.job === 'stack' ? 'fall' : FLOATERS.has(t.id) ? 'rise' : 'fall';
 
 export function build(picks){
   const p = clean(picks), size = SIZE[p.size], n = p.things.length, first = p.things[0], firstPiece = piece(first.id);
   const names = suggestNames(p);
   /* the things share the screen: each comes as often as keeps its share about, and no more than its share at once */
   const share = ON_SCREEN[p.many] / n, most = Math.max(1, Math.ceil(share)), rate = (move) => lim('every', round3(CROSS / (BASE[move] * SPEED_X[p.speed]) / share));
+  /* a game of Dodge things only has no score: each player has a health bar (decision 0063); with other jobs mixed in, a Dodge thing costs a point */
+  const health = p.things.every(t => t.job === 'dodge');
   const game = {
-    title: p.name || names[0], secs: lim('secs', p.minutes * 60), scene: p.where,
+    title: p.name || names[0], secs: lim('secs', p.minutes * 60), scene: p.where, ...(health ? { health: true } : {}),
     hint: first.job === 'keepup' ? 'Keep it up!' : `${HINT[first.job]} ${firstPiece.plural}!`, hintIcon: first.id, hintFor: 6, card: moveOf(p), cardFor: 8,
     ...(p.mode === 'together' ? { team: true } : {}), things: []
   };
@@ -248,8 +250,9 @@ export function build(picks){
     const e = rate(move), m = most;
     const rules = {
       collect: [{ when: 'touched', then: ['sparkle', 'score', { sound: 'twinkle' }, 'vanish'] }],
-      /* dodge: a thing you let go by is a point (there is no "time survived" word), one that touches you costs one, with a bump and a wobble */
-      dodge: [{ when: 'touched', then: ['pop', { score: -1 }, { sound: 'boing' }, 'wobble', 'vanish'] }, { when: 'leftScreen', then: ['score'] }],
+      /* dodge: things steer toward the players; one that touches you takes a chunk off your health bar, with a flash, a wobble and an ouch (and a thing
+         you let go by is nothing: standing still must not win). With other jobs in the game there are points, and it costs one. */
+      dodge: [{ when: 'touched', then: health ? ['pop', { hurt: 1 }, 'vanish'] : ['pop', { score: -1 }, { sound: 'ouch' }, 'wobble', 'vanish'] }],
       stack: [{ when: 'touched', then: [{ stack: TOWER }, 'score', { sound: 'whoosh' }, 'vanish'] }]
     }[t.job];
     game.things.push(moving(move, { name, piece: t.id, appears: appears(e, m, FROM[move]), rules }));
@@ -264,7 +267,7 @@ export function build(picks){
   if (p.bomb && bombOn(p)){
     const e = rate('fall') * 2.5, m = most;
     game.things.push(moving('fall', { name: 'bomb', piece: 'bomb', appears: appears(e, Math.max(1, Math.round(m / 3)), 'top'),
-      rules: [{ when: 'touched', then: ['pop', { score: -3 }, { sound: 'plop' }, 'wobble', 'vanish'] }] }));
+      rules: [{ when: 'touched', then: health ? ['pop', { hurt: 2 }, 'vanish'] : ['pop', { score: -3 }, { sound: 'plop' }, 'wobble', 'vanish'] }] }));
   }
   return game;
 }

@@ -13,6 +13,7 @@ export const MOVES = {
   bob:    { doc: 'stays where it is, bobbing gently', speed: 0 },
   wander: { doc: 'ambles about slowly', speed: 0.05 },
   bounce: { doc: 'a ball: gravity pulls it down and it bounces off the floor and the sides', speed: 0 },
+  seek:   { doc: 'glides in from the edge of the screen and steers toward where the players are (not fast, and it stops steering when it is close: a player who moves out of its way is missed). For a thing to dodge', speed: 0.12 },
   stay:   { doc: 'stays exactly where it is', speed: 0 }
 };
 
@@ -39,10 +40,11 @@ export const RESULTS = {
   kickUp:    { doc: 'a ball is hit upward, a little the way the hand was going' },
   celebrate: { doc: 'confetti and a cheer' },
   wobble:    { doc: 'the whole picture gives a quick wobble, like a bump' },
+  hurt:      { doc: 'for a thing to dodge: a chunk off the health bar of the player it touched, with a flash, a wobble and a short ouch ({ "hurt": 2 } for a bigger chunk). A player just hurt, or dizzy, is not hurt again (the thing goes through them). In a game with no health bar it costs that player a point instead', value: 'number' },
   stack:     { doc: 'it flies onto a tower at the bottom of the screen, one more block on it ({ "stack": 6 } is how many make a full tower, 3 to 10, 6 if not said); a full tower blasts off like a rocket for 5 bonus points and a new one starts', value: 'number' }
 };
 
-export const SOUNDS = ['pop', 'gold', 'hooray', 'whoosh', 'tada', 'chime', 'boing', 'chirp', 'plop', 'splash', 'spring', 'rustle', 'twinkle', 'bloom', 'tick'];
+export const SOUNDS = ['pop', 'gold', 'hooray', 'whoosh', 'tada', 'chime', 'boing', 'chirp', 'plop', 'splash', 'spring', 'rustle', 'twinkle', 'bloom', 'tick', 'ouch'];
 export const FROM = ['top', 'bottom', 'left', 'right', 'anywhere'];
 /* colour names a game can use for a piece that takes a colour (or a #rrggbb) */
 export const COLORS = { red: '#ff5d6c', orange: '#ffb84d', yellow: '#ffe36e', green: '#4cc9a0', blue: '#4da3ff', purple: '#a98bff', pink: '#ff7eb3', gold: '#ffb02e' };
@@ -52,6 +54,7 @@ export const GAME_KEYS = {
   secs: 'seconds in a round (20 to 600)', endless: 'true: no clock, it runs until the goal', scene: 'the background (a name from the library)',
   hint: 'the hint words: up to four words', hintIcon: 'a painted icon from the library shown beside the hint ("glowstar", "balloon"...)', hintFor: 'seconds the hint stays (then it fades)', card: 'the move card shown bottom left',
   cardFor: 'seconds the move card stays', team: 'true: everyone scores together (no score pills)', goal: '{ "score": 30, "ends": true } fills the goal bar; ends: true finishes the round at the goal',
+  health: 'true: a Dodge game with no score - each player has a health bar, full at the start, shown where the score would be. A "hurt" takes a chunk off it. An empty bar means a few dizzy seconds (nothing hurts), then it refills to half and the player carries on: nobody is ever out. The round ends on time, and the results show each bar and how many times it emptied',
   things: 'the things in the game (a list)', title: 'a name for the game (optional)'
 };
 export const THING_KEYS = {

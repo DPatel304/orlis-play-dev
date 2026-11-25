@@ -138,10 +138,17 @@ test('each job maps onto the vocabulary', () => {
   assert.equal(by['collect-apple'].moves, 'fall'); assert.equal(by['collect-apple'].appears.from, 'top');
   assert.equal(build(picksOf(['balloon', 'collect'])).things[0].moves, 'rise'); assert.equal(build(picksOf(['balloon', 'collect'])).things[0].appears.from, 'bottom');
   assert.deepEqual(by['collect-apple'].rules[0].then, ['sparkle', 'score', { sound: 'twinkle' }, 'vanish']);
-  /* Dodge: it drifts through; a touch costs one with a bump and a wobble; one let go by is a point */
-  assert.equal(by['dodge-bee'].moves, 'drift');
-  assert.ok(by['dodge-bee'].rules[0].then.some(x => x.score === -1) && by['dodge-bee'].rules[0].then.includes('wobble') && by['dodge-bee'].rules[0].then.some(x => x.sound === 'boing'));
-  assert.ok(by['dodge-bee'].rules.some(r => r.when === 'leftScreen'));
+  /* Dodge (decision 0063), with other jobs in the game: it steers toward the players and a touch costs a point, with a wobble and an ouch; a thing let go by is
+     nothing (standing still must not win) */
+  assert.equal(by['dodge-bee'].moves, 'seek');
+  assert.ok(by['dodge-bee'].rules[0].then.some(x => x.score === -1) && by['dodge-bee'].rules[0].then.includes('wobble') && by['dodge-bee'].rules[0].then.some(x => x.sound === 'ouch'));
+  assert.ok(!by['dodge-bee'].rules.some(r => r.when === 'leftScreen'), 'no point for a thing that goes past'); assert.equal(g.health, undefined, 'with other jobs there are points, not a health bar');
+  /* a game of Dodge things only has no score: a health bar each, and a touch takes a chunk off it (a bomb a bigger one) */
+  const dg = build({ ...picksOf(['bee', 'dodge'], ['rock', 'dodge']), bomb: true }), dby = Object.fromEntries(dg.things.map(t => [t.name, t]));
+  assert.equal(dg.health, true); assert.deepEqual(validate(dg, env0), []);
+  assert.deepEqual(dby['dodge-bee'].rules, [{ when: 'touched', then: ['pop', { hurt: 1 }, 'vanish'] }]); assert.equal(dby['dodge-bee'].moves, 'seek');
+  assert.deepEqual(dby.bomb.rules[0].then, ['pop', { hurt: 2 }, 'vanish']);
+  assert.ok(!JSON.stringify(dg).includes('"score"') && !JSON.stringify(dg).includes('leftScreen'), 'nothing scores in a Dodge game');
   /* Keep up: a bouncing ball, a bat scores, a drop pops it and one floats back in a second later */
   assert.equal(by['keepup-beachball'].moves, 'bounce'); assert.ok(by['keepup-beachball'].rules[0].then.includes('kickUp'));
   assert.deepEqual(by['keepup-beachball'].rules[1], { when: 'lands', then: ['pop', { sound: 'plop' }, 'vanish'] });
@@ -247,7 +254,7 @@ test('picks from before 0059 (one thing, a "how") still load: each old recipe is
   assert.deepEqual([0, 1, 2, 3, 4].map(v => clean({ how: 'catch', speed: v, many: v }).speed), [0, 2, 3, 5, 6], 'the old stops land on the new ones, the middle on the middle');
   assert.equal(clean({ how: 'catch', speed: 2 }).speed, defaultPicks().speed);
   assert.equal(build({ how: 'dodge', what: 'bee', move: 'squat' }).card, 'lean', 'an old dodge game is played by leaning');
-  assert.equal(build({ how: 'dodge', what: 'bee' }).things[0].moves, 'drift');
+  assert.equal(build({ how: 'dodge', what: 'bee' }).things[0].moves, 'seek');
   assert.equal(build({ how: 'keepup', what: 'beachball' }).things[0].moves, 'bounce');
 });
 
