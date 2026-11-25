@@ -40,7 +40,9 @@ export const remote = {
   buttons(layer){
     /* (and the boxes and tick of a sign-in form, so the remote can go up and down them) */
     const boxes = [...layer.querySelectorAll('.acctform input')].filter(i => i.type !== 'hidden');
-    return [...layer.querySelectorAll('.btn'), ...boxes].filter(b => !b.disabled && !b.closest('.hide, .away') && b.getBoundingClientRect().width > 0);
+    /* (and a slider, which Left and Right move: Settings' Volume) */
+    const sliders = [...layer.querySelectorAll('input')].filter(isSlider);
+    return [...layer.querySelectorAll('.btn'), ...boxes, ...sliders].filter(b => !b.disabled && !b.closest('.hide, .away') && b.getBoundingClientRect().width > 0);
   },
   /* Where to start from in this layer. */
   start(layer, bs){
@@ -82,7 +84,9 @@ export const remote = {
       document.body.classList.add('remote');
       /* (from the box being typed in, if that's where you are) */
       const cur = e.target && bs.includes(e.target) ? e.target : this.start(layer, bs);
-      if (OK.has(e.key)){ const b = cur || bs[0]; this.mark(b); b.click(); return true; }
+      if (OK.has(e.key)){ const b = cur || bs[0]; this.mark(b); if (!isSlider(b)) b.click(); return true; }
+      /* a slider: Left and Right move it a step; at its end the key moves on to the next button that way, as it does anywhere else */
+      if (cur && isSlider(cur) && dir[0] && stepSlider(cur, dir[0])){ this.mark(cur); sfx.nav?.(); return true; }
       const next = cur ? this.nearest(cur, bs, dir) : bs[0];
       if (!next) return true;
       this.mark(next);
@@ -124,6 +128,19 @@ export const remote = {
     addEventListener('pointermove', () => document.body.classList.remove('remote'));
   }
 };
+
+/* a slider (input type=range) is moved by the remote in this many steps from end to end */
+export const SLIDER_STEPS = 10;
+const isSlider = (el) => !!el && el.tagName === 'INPUT' && String(el.type).toLowerCase() === 'range';
+/* move a slider one remote step (dir -1 or 1) and tell the page it changed; false when it is already at that end */
+function stepSlider(el, dir){
+  const min = Number(el.min) || 0, max = el.max === '' || el.max == null ? 100 : Number(el.max), v = Number(el.value), step = (max - min) / SLIDER_STEPS;
+  const next = Math.max(min, Math.min(max, Math.round((v + dir * step) / step) * step));
+  if (Math.abs(next - v) < 1e-9) return false;
+  el.value = String(Math.round(next * 1000) / 1000);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  return true;
+}
 
 /* Whether a key went to a text box being typed in. */
 export function typing(e){

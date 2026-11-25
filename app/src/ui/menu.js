@@ -200,18 +200,23 @@ function settings(onRecalibrate){
   /* sound */
   const sl = document.createElement('input');
   sl.type = 'range'; sl.min = 0; sl.max = 1; sl.step = 0.05; sl.value = audio.volume; sl.className = 'setslider';
-  sl.addEventListener('input', () => audio.setVolume(+sl.value));
+  /* what it is set to, in words beside it (for the remote, which moves it in steps: remote.js) */
+  const val = h('span', 'setval');
+  const shown = () => { val.textContent = audio.muted ? 'Off' : Math.round(audio.volume * 100) + '%'; };
+  sl.addEventListener('input', () => { audio.setVolume(+sl.value); shown(); });
+  sl.setAttribute('aria-label', 'Volume');
   /* the speaker beside the bar is the mute: crossed out when it's off */
   const SPEAKER = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/>';
   const speakerIcon = (muted) => SPEAKER + (muted ? '<path d="M17 9l5 6M22 9l-5 6"/>' : '<path d="M16.5 9a4 4 0 0 1 0 6"/><path d="M19 6.5a8 8 0 0 1 0 11"/>') + '</svg>';
   const mute = small(speakerIcon(audio.muted), () => {
     const m = audio.toggleMute();
     mute.querySelector('.lbl').innerHTML = speakerIcon(m);
-    mute.setAttribute('aria-label', m ? 'Unmute' : 'Mute'); sl.classList.toggle('off', m);
+    mute.setAttribute('aria-label', m ? 'Unmute' : 'Mute'); sl.classList.toggle('off', m); shown();
   }, 'spk');
   mute.title = 'Mute'; mute.setAttribute('aria-label', audio.muted ? 'Unmute' : 'Mute'); sl.classList.toggle('off', audio.muted);
   group('Sound');
-  row('Volume', mute, sl);
+  shown();
+  row('Volume', mute, sl, val);
 
   group('Screen');
   /* the screen: in the Windows app, a window or Big Picture (full screen,

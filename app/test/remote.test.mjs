@@ -113,3 +113,41 @@ test('the boot books its one intro sound at the start (none at the wink), and ha
   delete sfx.boot;
   assert.equal(boot().camReady, true, 'nothing to wait for now: the camera starts with a game');
 });
+
+/* Settings' Volume: a slider the remote can reach, and move with Left and Right in steps */
+function volumeRow(){
+  const ui = resetDom(), s = screen(ui, 'dim setscreen');
+  const mute = btn(s, 'mute', 100, 300, 120, 60);
+  const sl = new FakeEl('input'); sl.type = 'range'; sl.min = 0; sl.max = 1; sl.step = 0.05; sl.value = 0.5; sl.className = 'setslider';
+  sl.rect = { left: 300, top: 300, width: 600, height: 60 }; sl.focus = () => {}; sl.blur = () => {};
+  s.appendChild(sl);
+  const other = btn(s, 'display', 100, 500, 300, 120);
+  const heard = []; sl.addEventListener('input', () => heard.push(+sl.value));
+  remote.cur = null;
+  return { sl, mute, other, heard };
+}
+test('the remote reaches the Volume slider and Left and Right move it in steps, telling the page each time', () => {
+  const { sl, mute, heard } = volumeRow();
+  remote.mark(mute);
+  press('ArrowRight');
+  assert.equal(remote.cur, sl, 'Right from Mute lands on the slider');
+  press('ArrowRight'); press('ArrowRight');
+  assert.equal(+sl.value, 0.7);
+  press('ArrowLeft');
+  assert.equal(+sl.value, 0.6);
+  assert.deepEqual(heard, [0.6, 0.7, 0.6], 'one input event per step');
+  assert.equal(remote.cur, sl, 'it keeps the highlight while it is moved');
+});
+test('a slider stops at its ends, and Left at the bottom moves on to the button beside it; Up and Down leave it', () => {
+  const { sl, mute, other } = volumeRow();
+  remote.mark(sl);
+  for (let i = 0; i < 12; i++) press('ArrowRight');
+  assert.equal(+sl.value, 1);
+  assert.equal(remote.cur, sl, 'nothing further right');
+  for (let i = 0; i < 12; i++) press('ArrowLeft');
+  assert.equal(+sl.value, 0);
+  assert.equal(remote.cur, mute, 'Left past the bottom goes on to Mute');
+  remote.mark(sl);
+  press('ArrowDown');
+  assert.equal(remote.cur, other);
+});

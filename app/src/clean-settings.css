@@ -11,6 +11,8 @@
 .setname{ font:700 calc(var(--u)*4) var(--ui); color:var(--ink); }
 .setctl{ gap:calc(var(--u)*1.4); }
 .setslider{ width:min(34vw, calc(var(--u)*40)); accent-color:var(--blue); height:calc(var(--u)*3); }
+.setval{ min-width:calc(var(--u)*9); font:700 calc(var(--u)*3.6) var(--ui); color:var(--ink); text-align:right; font-variant-numeric:tabular-nums; }
+body.remote .setslider.kfocus{ outline:calc(var(--u)*.6) solid var(--blue); outline-offset:calc(var(--u)*.8); border-radius:calc(var(--u)*2); }
 .btn.setbtn{ font-family:var(--ui); padding:calc(var(--u)*1.3) calc(var(--u)*3); font-size:calc(var(--u)*3.4); font-weight:700; border:0; border-radius:var(--pill); background:var(--paper); color:var(--ink); box-shadow:none; }
 .btn.setbtn .fill{ background:var(--grad); opacity:.18; }
 .btn.setbtn.hot,.btn.setbtn:hover,body.remote .btn.setbtn.kfocus{ background:var(--surface); box-shadow:0 0 0 calc(var(--u)*.5) var(--who,var(--blue)); transform:none; border-color:transparent; }
