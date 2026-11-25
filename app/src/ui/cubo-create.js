@@ -170,6 +170,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
     if (st.step === 'start' && onStart && !ev.force && (ev.t === 'arms' || ev.t === 'ok')){ onStart(); return; }
     const was = st.step, wasWorld = st.worldIx, r = F.reduce(st, ev);
     if (r.state === st && !r.fx.length) return;                 /* (nothing changed: the clock ticking in Rules) */
+    if (r.state.step !== st.step) cubo.later = null;
     st = r.state;
     for (const f of r.fx) run(f);
     if (st.step !== was) opened(was);
@@ -228,7 +229,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
   function opened(was){
     if (layer){ layer.remove(); layer = null; }
     touch = []; ui = {}; dwell.reset(); dwell.block(); meterDwell.reset(); meterDwell.block(); lock = LOCK; lastHip = null; moving = 0; flying = []; holding = null;
-    namedCards = new Set(); meterY = null; lastMeterStop = null; cubo.later = null; par.goal = null; par.ph = 0; par.page = 0; par.pageT = 0;
+    namedCards = new Set(); meterY = null; lastMeterStop = null; par.goal = null; par.ph = 0; par.page = 0; par.pageT = 0;
     root.setAttribute('data-locked', '');
     root.setAttribute('data-step', st.step);
     onStep(st.step, was);
@@ -406,11 +407,11 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
     if (!st.group) return;
     groupIds().forEach((id, i) => {
       const info = pieceInfo(id);
-      const b = onPick(button('', 'ccfloat'), () => dispatch({ t: 'grab', id }));
+      const b = onPick(button('', 'ccfloat'), () => dispatch({ t: 'grab', id, explicit: true }));
       b.querySelector('.lbl').className = 'lbl ccfloatin'; b.querySelector('.lbl').innerHTML = iconHTML(id, 160);
       b.setAttribute('aria-label', info.label); b.setAttribute('data-t', 'item-' + id); b.setAttribute('data-i', String(i));
       layer.appendChild(b); ui.parade.push({ el: b, id }); ui.items.set(id, b);
-      touch.push({ el: b, fn: () => dispatch({ t: 'grab', id }), item: true });
+      touch.push({ el: b, fn: () => dispatch({ t: 'grab', id, explicit: true }), item: true });
     });
     par.ph = 0; par.goal = null;
   }
@@ -872,7 +873,8 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
   }
   addEventListener('keydown', keys, true);
 
-  Object.defineProperties(root, { state: { get: () => st }, step: { get: () => st.step }, active: { get: () => st.step !== 'start' }, zone: { get: () => ({ ...zone }) }, clock: { get: () => clock } });
+  Object.defineProperties(root, { state: { get: () => st }, step: { get: () => st.step }, active: { get: () => st.step !== 'start' }, zone: { get: () => ({ ...zone }) }, clock: { get: () => clock },
+    holding: { get: () => (holding ? { ...holding } : null) }, carousel: { get: () => ({ pos: car.pos, goal: car.goal, t: car.t }) } });
   return Object.assign(root, {
     tick: tickAll, draw, event: dispatch,
     /* the page gives the start screen it shows, so arms-up can fill its ring */

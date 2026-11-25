@@ -90,7 +90,7 @@ export function cardsBand(z, kind = 'cards'){
 /* the height a raised hand runs along on the meter: from the hips (the lowest stop) up to the top of the zone. (Hands go above the head: the top is
    as high as the wrist gets with the arm up, never lower than the zone's top.) */
 export function meterBand(z){
-  const top = Math.max(0.12, Math.min(z.top, z.floor - 0.3));
+  const top = Math.max(0.21, Math.min(z.top, z.floor - 0.3));       /* (below the corner targets) */
   const bottom = Math.max(top + 0.3, z.floor);
   return { top, bottom };
 }

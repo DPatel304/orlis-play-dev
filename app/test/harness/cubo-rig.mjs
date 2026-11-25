@@ -233,6 +233,9 @@ export async function startCuboRig(){
     await page.evaluate(async () => {
       const { voice } = await import('/src/audio/voice.js');
       window.__said = []; const say = voice.say.bind(voice);
+      const { sfx } = await import('/src/audio/sound.js');
+      window.__sfx = { rise: [], pop: 0, whoosh: 0 };
+      for (const k of ['rise', 'pop', 'whoosh']){ const o = sfx[k].bind(sfx); sfx[k] = (...a) => { if (k === 'rise') window.__sfx.rise.push(a[0]); else window.__sfx[k]++; return o(...a); }; }
       voice.say = (line, ...r) => { window.__said.push({ t: Math.round(performance.now()), line, step: (document.querySelector('.cc') || {}).dataset ? document.querySelector('.cc').dataset.step : null }); return say(line, ...r); };
     });
     if (!opts.stayHome) await s.toCreate();
@@ -286,6 +289,9 @@ function helpers(s){
     bubble: () => page.evaluate(() => (document.querySelector('.ccbubble .cctext') || {}).textContent || ''),
     /* a record of what Cubo has said (the page's voice calls), so a line said twice or at the wrong time shows */
     async hearLog(){ return page.evaluate(() => window.__said || []); },
+    sfx: () => page.evaluate(() => window.__sfx),
+    holding: () => page.evaluate(() => { const c = document.querySelector('.cc'); return c ? c.holding : null; }),
+    carousel: () => page.evaluate(() => document.querySelector('.cc').carousel),
     state: () => page.evaluate(() => { const c = document.querySelector('.cc'); return c ? JSON.parse(JSON.stringify(c.state)) : null; }),
     body: {
       add: (i, o) => page.evaluate(([i, o]) => window.__body.add(i, o), [i, o]),
@@ -303,7 +309,7 @@ function helpers(s){
       legs: (i, on) => page.evaluate(([i, on]) => { window.__body.get(i).legs = on; }, [i, on]),
       /* a hand held in a thing until it has done what it does (pred, run in node), then taken away */
       async hold(sel, nth, pred, ms = 9000, o = {}){
-        await h.body.reachEl(sel, nth, o);
+        await h.body.reachNear(sel, nth, o);
         try { await until(pred, ms, `holding ${sel}[${nth}]`); } finally { await h.body.release(o.i || 0); }
       }
     }
