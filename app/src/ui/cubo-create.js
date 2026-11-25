@@ -25,7 +25,7 @@ import { magnet } from './magnet.js';
 import { assets } from '../games/assets/index.js';
 import { alpha as paletteAlpha } from '../games/assets/palette.js';
 import { pose } from '../tracking/pose.js';
-import { JumpWatch } from '../tracking/jump.js';
+import { JumpWatch, HOP } from '../tracking/jump.js';
 import { choices, pieceInfo } from '../create/recipe.js';
 import { PICTURES } from '../create/pictures.js';
 import { creations } from '../create/creations.js';
@@ -119,7 +119,7 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
   const root = h('div', 'cc');
   const still = reduced();
   let st = F.newFlow({ creation, full, demoed: SESSION }), clock = 0, gone = false, lock = 0, busy = false;
-  const reader = new BodyReader(), jumps = new JumpWatch(), dwell = new Dwell(HOLD), meterDwell = new Dwell(METER_HOLD), comfort = new Comfort();
+  const reader = new BodyReader(), jumps = new JumpWatch(HOP), dwell = new Dwell(HOLD), meterDwell = new Dwell(METER_HOLD), comfort = new Comfort();
   let touch = [], layer = null, ui = {}, pops = [], lastHip = null, moving = 0, flying = [];
   let nameShow = 0, nameGoal = 0, nameIxSeen = 0, toldLine = '', zone = comfort.z, holding = null, riseAt = 0, count = null, namedCards = new Set();
   let handsNow = [], meterY = null, lastMeterStop = null;
