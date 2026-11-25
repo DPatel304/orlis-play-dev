@@ -124,7 +124,7 @@ test('Dodge (decision 0063): no score - a touch takes a chunk off the health bar
   assert.equal(g.things[0].moves, 'seek'); assert.equal(g.health, true);
   const { round, pose, sounds } = game(g); run(round, 30);
   assert.equal(round.score[0], 0, 'standing still earns nothing'); assert.equal(round.total, 0);
-  const t = round.things[0]; round.things = [t]; round.safe[0] = 0; round.dizzy[0] = 0; round.hp[0] = 1; touch(pose, t.x, t.y); round.step(DT, W, H); away(pose);
+  const t = round.things[0]; round.things = [t]; round.safe[0] = 0; round.hp[0] = 1; touch(pose, t.x, t.y); round.step(DT, W, H); away(pose);
   assert.ok(round.hp[0] < 1, 'a chunk off'); assert.ok(sounds.includes('ouch')); assert.ok(round.wob > 0, 'a wobble'); assert.ok(round.flash[0] > 0, 'a flash');
   assert.equal(round.score[0], 0, 'still no score');
 });

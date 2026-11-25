@@ -154,14 +154,19 @@ function card(cls){
    one, and Play again and Home. Each child's face, name and count sits in seat order along the bottom (never a ranking, no winner).
    back: where the other button goes ('Home', or 'Back to Create' for a game being tried).
    summary: { line, best } (the friendly line, for a game that says it its own way); extra: { total, kids: [{ i, name, look, value, color }] }. */
-/* a player's health bar on the results card: the bar as it ended (rose, like the one in the game), and a small grey star and how many times it emptied */
-export function healthOf({ fill = 1, lost = 0 } = {}){
-  const box = h('span', 'ghealth'), track = h('i', 'ghtrack'), bar = h('i', 'ghfill');
+/* a player's health bar on the results card (decision 0064): the bar as it ended (rose, like the one in the game), or "Out at 1:12" when it ran out (at: seconds into the round) */
+export const lastedText = (at) => { const t = Math.max(0, Math.round(at || 0)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+export function healthOf({ fill = 1, out = false, at = null } = {}){
+  const box = h('span', out ? 'ghealth out' : 'ghealth');
+  if (out){
+    const w = h('b', 'ghout'); w.textContent = at == null ? 'Out' : `Out at ${lastedText(at)}`; box.appendChild(w);
+    box.setAttribute('aria-label', at == null ? 'Out' : `Out after ${lastedText(at)}`);
+    return box;
+  }
+  const track = h('i', 'ghtrack'), bar = h('i', 'ghfill');
   bar.style.width = Math.round(Math.max(0, Math.min(1, fill)) * 100) + '%'; bar.style.background = color('ui.go');
   track.appendChild(bar); box.appendChild(track);
-  const n = Math.max(0, Math.round(lost));
-  if (n > 0){ box.appendChild(propIcon('star', 64, { color: color('shade.mid') }, 'ghlost')); const more = h('b', 'ghmore'); more.textContent = '\u00D7' + n; box.appendChild(more); }
-  box.setAttribute('aria-label', n ? `Bar ran out ${n} ${n === 1 ? 'time' : 'times'}` : 'Bar never ran out');
+  box.setAttribute('aria-label', fill >= 0.999 ? 'Bar still full' : `Bar ${Math.round(fill * 100)} percent full`);
   return box;
 }
 export function results(game, onAgain, onMenu, back = 'Home', summary = null, extra = null){
@@ -198,7 +203,7 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null, ex
       const face = h('span', 'gkface'); face.appendChild(faceOf({ look: k.look }, 96));
       const nm = h('span', 'gkname'); nm.textContent = k.name;
       const txt = h('span', 'gktext'); txt.appendChild(nm);
-      if (k.health) txt.appendChild(healthOf(k.health));      /* (a Dodge game has no score: their bar as it ended, and a grey star for each time it ran out) */
+      if (k.health) txt.appendChild(healthOf(k.health));      /* (a Dodge game has no score: their bar as it ended, or Out and when) */
       else if (k.value != null){ const n = h('b'); n.textContent = String(Math.round(k.value)); txt.appendChild(n); }
       pill.append(face, txt);
       crewEl.appendChild(pill);

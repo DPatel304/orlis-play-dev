@@ -38,8 +38,17 @@ export function summaryOf(picks, counts){
   return LINE.filter(([j]) => top.includes(j)).map(([j, say]) => say(by[j])).join(', ') || null;
 }
 
-/* the line under a Dodge game's bars: how many times a bar emptied between everyone (nobody is ever out, so it is always kind) */
-export const healthLine = (emptied) => emptied > 0 ? 'Everybody kept going!' : 'Nobody got dizzy!';
+/* the headline of a Dodge game's results (decision 0064): who was never out ("Mia lasted longest!"), or "Everybody made it!" when nobody was out. players: [{ i, out, at }]
+   (at: seconds into the round when they went out); nameOf(i): their name. The last ones standing are named; three or more are a plain group line. */
+export function healthLine(players, nameOf = (i) => `Player ${i + 1}`){
+  if (!players.length || players.every(p => !p.out)) return 'Everybody made it!';
+  const left = players.filter(p => !p.out);
+  if (left.length >= 3) return 'Most of you made it!';
+  if (left.length) return left.length === 1 ? `${nameOf(left[0].i)} lasted longest!` : `${nameOf(left[0].i)} and ${nameOf(left[1].i)} lasted longest!`;
+  if (players.length === 1) return 'Good try!';
+  const last = Math.max(...players.map(p => p.at || 0)), best = players.filter(p => (p.at || 0) >= last - 1e-6);
+  return best.length === 1 ? `${nameOf(best[0].i)} lasted longest!` : best.length === 2 ? `${nameOf(best[0].i)} and ${nameOf(best[1].i)} lasted longest!` : 'You all lasted a long time!';
+}
 
 export const isMade = (g) => !!(g && g.made);
 
@@ -64,15 +73,17 @@ export function madeGame(c){
         const rows = [];
         for (let i = 0; i < n; i++){
           const here = pose.players[i] && pose.players[i].present;
-          /* a Dodge game has no score: each player's bar as it ended and how many times it emptied (not a number) */
-          if (round.health){ if (!here && !round.seen[i]) continue; rows.push({ label: `Player ${i + 1}`, value: 0, color: PLAYER_COLORS[i], health: { fill: round.hp[i], lost: round.lost[i], dizzy: round.dizzy[i] > 0 } }); continue; }
+          /* a Dodge game has no score: each player's bar as it ended, or "out" and how long they lasted (not a number) */
+          if (round.health){ if (!here && !round.seen[i]) continue; rows.push({ label: `Player ${i + 1}`, value: 0, color: PLAYER_COLORS[i], health: { fill: round.hp[i], out: round.out[i], at: round.outAt[i] } }); continue; }
           if (!round.score[i] && !here) continue;
           rows.push({ label: `Player ${i + 1}`, value: round.score[i], color: PLAYER_COLORS[i] });
         }
         return rows;
       };
-      /* a mix says what was done, in a line under the count; a Dodge game says how it went in a few words (nobody is ever out) */
-      round.summary = () => round.health ? healthLine(round.lost.slice(0, n).reduce((a, v) => a + v, 0)) : summaryOf(picks, round.counts);
+      /* a mix says what was done, in a line under the count; a Dodge game names the last ones standing (nameOf: the shell's names) */
+      round.summary = (_n, nameOf) => round.health
+        ? healthLine(Array.from({ length: n }, (_x, i) => i).filter(i => round.seen[i] || round.out[i]).map(i => ({ i, out: round.out[i], at: round.outAt[i] })), nameOf || undefined)
+        : summaryOf(picks, round.counts);
       round.winner = () => {
         if (round.health) return null;
         const there = round.score.slice(0, n).map((_s, i) => i).filter(i => round.score[i] > 0 || (pose.players[i] && pose.players[i].present));

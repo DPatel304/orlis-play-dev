@@ -204,10 +204,11 @@ export function sentence(picks){
 /* what each step means for each job (all inside the vocabulary's LIMITS) */
 /* speed: the usual speed of each way of moving (screen heights a second) times 0.3x to 3x over the 7 stops; how many: about how many things are on the
    screen at once, from one at a time to a storm (shared by the things in the game: each comes as often as it takes to keep that many about) */
-const BASE = { fall: 0.11, rise: 0.11, drift: 0.12, seek: 0.12 };
+const BASE = { fall: 0.11, rise: 0.11, drift: 0.12, seek: 0.09 };
 export const SPEED_X = [0.3, 0.45, 0.7, 1, 1.45, 2.1, 3];
 export const ON_SCREEN = [1, 2, 4, 7, 12, 18, 25];
 const CROSS = 1.15;                        /* screens to cross, so a thing is about CROSS / speed seconds on it */
+export const HEALTH_EVERY = 3;           /* dodge with a health bar (0064): things come this much less often, so ten hits last about a round (tuned with the playtest rig) */
 const SIZE = [0.06, 0.075, 0.095, 0.12, 0.15];
 const BALLS = [1, 1, 1, 1, 2, 3, 3];       /* keep up: how many balls each player has (how many) */
 const BALL_SIZE = [1.3, 1.2, 1.1, 1, 0.9, 0.8, 0.7]; /* keep up: a faster game is a smaller ball (speed) */
@@ -222,7 +223,7 @@ export function build(picks){
   const names = suggestNames(p);
   /* the things share the screen: each comes as often as keeps its share about, and no more than its share at once */
   const share = ON_SCREEN[p.many] / n, most = Math.max(1, Math.ceil(share)), rate = (move) => lim('every', round3(CROSS / (BASE[move] * SPEED_X[p.speed]) / share));
-  /* a game of Dodge things only has no score: each player has a health bar (decision 0063); with other jobs mixed in, a Dodge thing costs a point */
+  /* a game of Dodge things only has no score: each player has a health bar (decisions 0063 and 0064: an empty bar puts that player out); with other jobs mixed in, a Dodge thing costs a point */
   const health = p.things.every(t => t.job === 'dodge');
   const game = {
     title: p.name || names[0], secs: lim('secs', p.minutes * 60), scene: p.where, ...(health ? { health: true } : {}),
@@ -247,7 +248,7 @@ export function build(picks){
       });
       continue;
     }
-    const e = rate(move), m = most;
+    const e = rate(move) * (health && t.job === 'dodge' ? HEALTH_EVERY : 1), m = most;
     const rules = {
       collect: [{ when: 'touched', then: ['sparkle', 'score', { sound: 'twinkle' }, 'vanish'] }],
       /* dodge: things steer toward the players; one that touches you takes a chunk off your health bar, with a flash, a wobble and an ouch (and a thing

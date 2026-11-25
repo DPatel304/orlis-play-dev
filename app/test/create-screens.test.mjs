@@ -82,13 +82,19 @@ test('the made game plays on the real engine, and tells the shell what it needs'
   assert.equal(round.card(), 'lean', 'Dodge is played by leaning away');
   /* each job, run by the scripted hand: things do get caught, dodged, batted and stacked */
   for (const job of ['collect', 'dodge', 'keepup', 'stack']){
-    const r = headless({ ...defaultPicks(), ...one('apple', job) }, 25);
-    /* (Dodge has no score, decision 0063: the hand is hit now and then, with an ouch, and nothing is earned by standing there) */
+    const r = headless({ ...defaultPicks(), ...one('apple', job) }, job === 'dodge' ? 60 : 25);
+    /* (Dodge has no score, decisions 0063 and 0064: things come less often than points games' (one chunk is a tenth of a bar), so the hand is hit within a minute, with an ouch, and nothing is earned by standing there) */
     if (job === 'dodge') assert.ok(r.score === 0 && r.sounds.includes('ouch'), 'dodge has no score and the hand gets an ouch now and then');
     else assert.ok(r.score > 0 && r.sounds.length > 0, job + ' scores by itself');
   }
   const again = headless({ ...defaultPicks(), ...one('apple', 'dodge') }, 25);
   assert.equal(again.score, headless({ ...defaultPicks(), ...one('apple', 'dodge') }, 25).score, 'the scripted round is seeded: the same every run');
+  /* (and Dodge's results say the same thing for a player who is out: their bar's end, or "Out" and when, never a number) */
+  round.seen[0] = round.seen[1] = true; round.hp[0] = 0; round.out[0] = true; round.outAt[0] = 72; round.hp[1] = 0.6;
+  const rows = round.tally();
+  assert.ok(rows[0].value === 0 && rows[0].health.out && rows[0].health.at === 72, 'a Dodge row carries "out" and when');
+  assert.ok(!rows[1].health.out && rows[1].health.fill === 0.6 && rows[1].value === 0, 'or the bar as it ended');
+  assert.equal(round.summary(2, (i) => ['Mia', 'Leo'][i]), 'Leo lasted longest!');
   /* a mix of all four jobs */
   let mix = { ...defaultPicks(), bomb: true };
   for (const [id, j] of [['bee', 'dodge'], ['banana', 'stack'], ['beachball', 'keepup']]) mix = setJob(addThing(mix, id), id, j);

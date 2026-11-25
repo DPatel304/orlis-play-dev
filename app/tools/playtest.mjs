@@ -345,12 +345,12 @@ const madeProbe = (ctx, balls = false) => {
   };
 };
 for (const id of ['made-collect', 'made-stack']) PROBES[id] = madeProbe;
-/* a Dodge game has a health bar each and no score: how many hits each player took, how many times their bar emptied, and where it stood at the end */
+/* a Dodge game has a health bar each and no score (decision 0064): how many hits each player took, whether and when (seconds into the round) they went out, and where their bar stood at the end */
 const dodgeProbe = (ctx) => {
   const base = madeProbe(ctx);
   return { frame: base.frame, finish(t){
     const r = base.finish(t), g = ctx.inst;
-    r.health = { perPerson: ctx.world.persons.map((p, i) => ({ who: p.name, idx: i, hits: g.hits[p.slot] || 0, emptied: g.lost[p.slot] || 0, finalFill: r2(g.hp[p.slot] ?? 1) })) };
+    r.health = { perPerson: ctx.world.persons.map((p, i) => ({ who: p.name, idx: i, hits: g.hits[p.slot] || 0, out: !!g.out[p.slot], outAt: g.outAt[p.slot] == null ? null : r2(g.outAt[p.slot]), finalFill: r2(g.hp[p.slot] ?? 1) })) };
     return r;
   } };
 };

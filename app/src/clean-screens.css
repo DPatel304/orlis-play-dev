@@ -45,12 +45,13 @@
 .gkid .gktext{ flex:1 1 auto; min-width:0; display:flex; align-items:baseline; justify-content:space-between; gap:calc(var(--u)*1); }
 .gkid .gkname{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .gkid b{ font-weight:700; flex:none; }
-/* a Dodge game's results: each player's bar as it ended, and a grey star for each time it ran out (no number) */
+/* a Dodge game's results: each player's bar as it ended, or Out and when (no number) */
 .gkid .ghealth{ display:flex; align-items:center; gap:calc(var(--u)*.7); flex:none; }
 .gkid .ghtrack{ position:relative; display:block; flex:none; width:calc(var(--u)*10); height:calc(var(--u)*2.6); border-radius:var(--pill); background:var(--line); overflow:hidden; }
 .gkid .ghfill{ position:absolute; left:0; top:0; bottom:0; display:block; border-radius:var(--pill); }
-.gkid .ghlost{ width:calc(var(--u)*2.6); height:calc(var(--u)*2.6); flex:none; display:block; }
-.gkids .gkid .ghealth b.ghmore{ font-size:calc(var(--u)*2.8); line-height:1; }
+.gkid .ghealth b.ghout{ font-size:calc(var(--u)*2.8); line-height:1; white-space:nowrap; }
+.gkids[data-n="3"] .gkid .ghealth b.ghout,.gkids[data-n="4"] .gkid .ghealth b.ghout{ font-size:calc(var(--u)*1.9); }
+.gkid:has(.ghealth.out) .gkface{ filter:grayscale(1); opacity:.7; }
 .gkids[data-n="3"] .gkid .ghtrack,.gkids[data-n="4"] .gkid .ghtrack{ width:calc(var(--u)*5.2); }
 .gkids[data-n="3"] .gkid,.gkids[data-n="4"] .gkid{ padding-right:calc(var(--u)*1.4); }
 .gkids[data-n="3"] .gktext,.gkids[data-n="4"] .gktext{ flex-direction:column; align-items:flex-start; justify-content:center; gap:0; line-height:1.05; }

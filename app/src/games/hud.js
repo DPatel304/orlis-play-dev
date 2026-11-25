@@ -213,27 +213,24 @@ export function scorePill(c, x, y, h, color, n, bump = 0, mark = null, { style =
   return w;
 }
 
-/* A player's health bar (a Dodge game, decision 0063): where the score pill would be - their face (their colour as a ring) and a thick bar, full at the start, that
-   loses a chunk with each hit (the pill shakes and flushes red for a moment); small grey stars after it for each time it has run out; while they are dizzy the bar
-   is empty and stars go round it. o: { fill: 0..1, lost: how many times it emptied, hit: 1 to 0 (a hit just now), dizzy }. w: the pill's width. Returns it. */
+/* A player's health bar (a Dodge game, decisions 0063 and 0064): where the score pill would be - their face (their colour as a ring) and a thick bar, full at the start,
+   that loses a chunk with each hit (the pill shakes and flushes red for a moment). An empty bar means they are out: the face greys and the bar says "Out" in big letters.
+   o: { fill: 0..1, hit: 1 to 0 (a hit just now), out }. w: the pill's width. Returns it. */
 export function healthPill(c, x, y, h, w, color, o = {}, mark = null, { present = true, bw = null } = {}){
-  const bwid = bw || Math.max(2, h * 0.06), look = mark && mark.look ? mark.look : null, s = h * 0.62, hit = Math.min(1, Math.max(0, o.hit || 0));
-  const lost = Math.max(0, Math.round(o.lost || 0)), shown = Math.min(3, lost), sw = h * 0.36, starsW = lost ? shown * sw + (lost > 3 ? h * 0.62 : 0) + h * 0.12 : 0;
+  const bwid = bw || Math.max(2, h * 0.06), look = mark && mark.look ? mark.look : null, s = h * 0.62, hit = Math.min(1, Math.max(0, o.hit || 0)), out = !!o.out;
   c.save();
   c.translate(x + Math.sin(hit * 38) * h * 0.1 * hit, y);
   paper(c, 0, 0, w, h, h / 2, bwid);
-  face(c, h * 0.62, h / 2, s, color, look, present);
-  const th = h * 0.44, tx = h * 1.28, tw = Math.max(h, w - tx - h * 0.34 - starsW), ty = (h - th) / 2, f = Math.min(1, Math.max(0, o.fill == null ? 1 : o.fill));
+  face(c, h * 0.62, h / 2, s, color, look, present && !out);
+  const th = h * 0.44, tx = h * 1.28, tw = Math.max(h, w - tx - h * 0.34), ty = (h - th) / 2, f = Math.min(1, Math.max(0, o.fill == null ? 1 : o.fill));
   c.fillStyle = TRACK(); c.beginPath(); c.roundRect(tx, ty, tw, th, th / 2); c.fill();
-  if (f > 0.001 && !o.dizzy){
+  if (f > 0.001 && !out){
     c.save(); c.beginPath(); c.roundRect(tx, ty, tw, th, th / 2); c.clip();
     c.fillStyle = barColor('rose'); c.beginPath(); c.roundRect(tx, ty, Math.max(th, tw * f), th, th / 2); c.fill();
     c.fillStyle = palAlpha('earth.snow', 0.28); c.fillRect(tx, ty, Math.max(th, tw * f), th * 0.34);
     c.restore();
   }
-  if (o.dizzy){ const t = (typeof performance !== 'undefined' ? performance.now() : 0) / 1000; for (let k = 0; k < 3; k++) iconAt(c, 'star', tx + tw * (0.2 + 0.3 * k), ty + th / 2 + Math.sin(t * 6 + k * 2.1) * th * 0.2, th * 0.95, { color: pal('ui.gold') }); }
-  for (let k = 0; k < shown; k++) iconAt(c, 'star', tx + tw + h * 0.12 + sw * (k + 0.5), h / 2, sw * 1.05, { color: pal('shade.mid') });
-  if (lost > 3){ c.font = `700 ${Math.round(h * 0.34)}px ${FONT}`; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillStyle = INK(); c.fillText('+' + (lost - 3), tx + tw + h * 0.12 + sw * 3 + h * 0.04, h / 2 + h * 0.03); }
+  if (out){ c.font = `800 ${Math.round(h * 0.56)}px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = INK(); c.fillText('Out', tx + tw / 2, h / 2 + h * 0.03); }
   if (hit > 0.01){ c.globalAlpha = 0.38 * hit; c.fillStyle = pal('touch.cherry'); c.beginPath(); c.roundRect(0, 0, w, h, h / 2); c.fill(); }
   c.restore();
   return w;
@@ -335,7 +332,7 @@ export function layoutDocks(W, H, spec, env = {}){
   if (s.health && ids.length){
     const per = ids.length <= 2 ? 1 : 2, cw = per === 1 ? 5 : 3;
     ids.forEach((id, k) => { const row = Math.floor(k / per); scoreRows = Math.max(scoreRows, row + 1);
-      out.push({ key: 'h' + id, kind: 'health', player: id, ...(s.health[id] || { fill: 1, lost: 0 }), rect: at(W, H, 'corner', (k % per) * cw, row, cw, 1) }); });
+      out.push({ key: 'h' + id, kind: 'health', player: id, ...(s.health[id] || { fill: 1, out: false }), rect: at(W, H, 'corner', (k % per) * cw, row, cw, 1) }); });
   }
   const rows = (s.corner || s.panel || []); let row = scoreRows, k = 0;
   for (const r of rows){
@@ -378,7 +375,7 @@ export function drawShellHud(c, W, H, spec, env = {}){
   for (const p of pieces){
     if (p.kind === 'clock'){ clockPill(c, W, H, env.clock ? env.clock.left : 0, env.clock ? env.clock.total : 0); continue; }
     if (p.kind === 'words'){ sayBubble(c, W, H, { icon: p.icon, text: p.text, t: p.t, until: p.until, row: p.row }); continue; }
-    const sig = p.kind === 'score' ? p.value : p.kind === 'health' ? Math.round((p.fill || 0) * 50) + ':' + (p.lost || 0) + ':' + (p.dizzy ? 1 : 0) : p.kind === 'bar' || p.kind === 'meter' || p.kind === 'goal' ? Math.round((p.fill || 0) * 50) : p.kind === 'chip' || p.kind === 'badge' ? p.value : p.kind === 'portrait' || p.kind === 'notice' ? (p.notice || p.text || '') : '';
+    const sig = p.kind === 'score' ? p.value : p.kind === 'health' ? Math.round((p.fill || 0) * 50) + ':' + (p.out ? 1 : 0) : p.kind === 'bar' || p.kind === 'meter' || p.kind === 'goal' ? Math.round((p.fill || 0) * 50) : p.kind === 'chip' || p.kind === 'badge' ? p.value : p.kind === 'portrait' || p.kind === 'notice' ? (p.notice || p.text || '') : '';
     const st = pieceState(p.key, sig, now, typeof p.value === 'number' ? p.value : null), bump = p.bump != null ? Math.max(p.bump, st.bump) : st.bump, r = p.rect;
     c.save(); c.globalAlpha *= p.kind === 'portrait' || p.kind === 'notice' || p.kind === 'health' ? 1 : st.alpha;   /* (the health bars never dim: they are what the game is about) */
     switch (p.kind){

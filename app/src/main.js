@@ -368,7 +368,7 @@ function showResults(){
   hud.quiet = true;
   /* one friendly line: what everyone got together */
   const total = (() => { try { return inst.tally().reduce((a, r) => a + (Number(r.value) || 0), 0); } catch { return 0; } })();
-  const own = inst.summary ? inst.summary(n) : null;      /* (a game can say it its own way) */
+  const own = inst.summary ? inst.summary(n, (i) => crew.nameOf(i) || `Player ${i + 1}`) : null;      /* (a game can say it its own way) */
   let summary = own ? { line: own, best: isBest } : total > 0 ? { line: `${n > 1 ? 'Together you got' : 'You got'} ${countText(total, game.unit)}`, best: isBest } : null;
   lastReport = makeReport();
   /* the owner also sees how smoothly it ran, to compare games and machines without any tools */

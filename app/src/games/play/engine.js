@@ -31,12 +31,13 @@ const ease = (k) => 1 - Math.pow(1 - clamp(k, 0, 1), 3);
 /* a result of a rule: its word, and whether it is a loss (a thing with one is something to dodge, never something to reach for) */
 const keyOf = (x) => typeof x === 'string' ? x : Object.keys(x)[0];
 const isLoss = (x) => keyOf(x) === 'hurt' || (typeof x === 'object' && keyOf(x) === 'score' && x.score < 0);
-/* A Dodge game's health (decision 0063; "health: true"): a hit takes CHUNK of a bar (full is 1), and the player is safe for SAFE seconds after it, so one thing
-   cannot take several; an empty bar means DIZZY seconds in which nothing hurts, then a refill to REFILL (and SAFE_AFTER seconds' grace). Things steer toward the
+/* A Dodge game's health (decisions 0063 and 0064; "health: true"): a hit takes CHUNK of a bar (full is 1; ten hits to empty), and the player is safe for SAFE seconds
+   after it, so one thing cannot take several. An empty bar puts that player OUT for the rest of the round (no dizzy spell, no refill): their hands grey and stop
+   counting and nothing steers toward them. The round ends when time runs out or everyone playing is out, after a beat of END_BEAT seconds. Things steer toward the
    players (SEEK_TURN radians a second at most, and straight on once within SEEK_COMMIT of them, so a player who moves is missed) and give up after SEEK_LIFE seconds.
-   These are starting values, tuned with the playtest rig so a child in a family and a grown-up empty their bars about as often. */
-const CHUNK = 0.2, SAFE = 2, DIZZY = 3, REFILL = 0.5, SAFE_AFTER = 1;
-const SEEK_TURN = 0.5, SEEK_COMMIT = 0.3, SEEK_LIFE = 14;
+   Tuned with the playtest rig so a child in a family and a grown-up last about as long, and standing still runs out sooner than moving. */
+const CHUNK = 0.1, SAFE = 2, END_BEAT = 1.6;
+const SEEK_TURN = 0.35, SEEK_COMMIT = 0.3, SEEK_LIFE = 14;
 /* the tower a "stack" builds (as in Stack It High): one block's size (screen heights), where its ground is, where across the picture it stands,
    how long a block flies to it, how many blocks make a full one by default, and the bonus a full one is worth as it blasts off */
 const BLOCK = 0.075, GROUND = 0.93, TOWER_X = 0.5, FLY = 0.5, FULL = 6, BONUS = 5;
@@ -63,10 +64,10 @@ class PlayRound {
     this.tower = []; this.fliers = []; this.rockets = []; this.towers = 0; this.wob = 0;
     this.reach = reaches(env.max); this.here = []; this.low = null; this.laneTurns = {};
     this.eachT = {}; this.eachHad = {}; this.eachGone = {}; this.aimTurns = {}; this.seen = {};
-    /* health (a Dodge game): each player's bar (1 full), the seconds they are safe or dizzy, the flash of a hit, how many times it emptied, and how many hits */
+    /* health (a Dodge game): each player's bar (1 full), the seconds they are safe, the flash of a hit, whether they are out (and when: seconds into the round), and how many hits */
     this.health = spec.health === true;
     const z = () => Array.from({ length: env.max }, () => 0);
-    this.hp = Array.from({ length: env.max }, () => 1); this.safe = z(); this.dizzy = z(); this.flash = z(); this.lost = z(); this.hits = z();
+    this.hp = Array.from({ length: env.max }, () => 1); this.safe = z(); this.flash = z(); this.out = Array.from({ length: env.max }, () => false); this.outAt = Array.from({ length: env.max }, () => null); this.hits = z(); this.allOut = false;
     this.aspect = 16 / 9; this.zones = []; this._zoneKey = ''; this.t = 0;
     this._refreshZones(1920, 1080);
     this.over = false; this.hint = spec.hint || null; this.hintIcon = spec.hintIcon || ''; this.hintT = 0; this.goalDone = false; this.endIn = -1; this.cheering = 0;
@@ -110,43 +111,53 @@ class PlayRound {
   /* which player the next thing heads for: a turn each, the one who has had the fewest first (null: nobody is here) */
   _nextTarget(){
     let pick = null;
-    for (let i = 0; i < this.n; i++){ if (!this._present(i)) continue; if (pick == null || (this.aimTurns[i] || 0) < (this.aimTurns[pick] || 0)) pick = i; }
+    for (let i = 0; i < this.n; i++){ if (!this._present(i) || this.out[i]) continue; if (pick == null || (this.aimTurns[i] || 0) < (this.aimTurns[pick] || 0)) pick = i; }
     if (pick != null) this.aimTurns[pick] = (this.aimTurns[pick] || 0) + 1;
     return pick;
   }
   /* where a thing is heading: the middle of its player's hands (where they are, and where they put them), else the middle of their reach */
   _seekTarget(th){
-    if (th.target == null || !this._present(th.target)) th.target = this._nextTarget();
+    if (th.target == null || !this._present(th.target) || this.out[th.target]) th.target = this._nextTarget();
     const i = th.target; if (i == null) return null;
     const hs = this._hands().filter(o => o.i === i);
     if (hs.length) return { x: hs.reduce((a, o) => a + o.h.x, 0) / hs.length, y: clamp(hs.reduce((a, o) => a + o.h.y, 0) / hs.length, 0.08, 0.95) };
     const r = this.reach[i]; return r.ready ? { x: r.x, y: r.at(0.5) } : { x: 0.5, y: 0.6 };
   }
   /* a player is touched by something to dodge: with a health bar, a chunk comes off (n chunks), with a flash, a wobble and an ouch, and they are safe for a moment;
-     an empty bar means a few dizzy seconds. Without one, it costs them a point. */
+     an empty bar puts them out for the rest of the round. Without a bar, it costs them a point. */
   _hurt(who, n, th){
     const sfx = this.env.sfx;
     if (!this.health){
       if (who >= 0) this._points(-n, who, th.x, th.y - th.sz * 0.6, this.env.colors[who]);
       this.wob = 0.5; sfx.ouch && sfx.ouch(); return;
     }
-    if (who < 0 || this.safe[who] > 0 || this.dizzy[who] > 0) return;
+    if (who < 0 || this.safe[who] > 0 || this.out[who]) return;
     this.hits[who]++; this.hp[who] = Math.max(0, this.hp[who] - CHUNK * n); this.safe[who] = SAFE; this.flash[who] = 1; this.wob = 0.5;
     if (this.hp[who] <= 1e-6){
-      this.hp[who] = 0; this.dizzy[who] = DIZZY; this.lost[who]++;
+      this.hp[who] = 0; this.out[who] = true; this.outAt[who] = this.t;
       sfx.ouch && sfx.ouch(2);
     } else sfx.ouch && sfx.ouch();
   }
   _healthStep(dt){
-    for (let i = 0; i < this.env.max; i++){
-      this.flash[i] = Math.max(0, this.flash[i] - dt * 2);
-      this.safe[i] = Math.max(0, this.safe[i] - dt);
-      if (this.dizzy[i] > 0){
-        this.dizzy[i] -= dt;
-        if (this.dizzy[i] <= 0){ this.dizzy[i] = 0; this.hp[i] = REFILL; this.safe[i] = SAFE_AFTER; this.env.sfx.chime && this.env.sfx.chime(); }
-      }
+    for (let i = 0; i < this.env.max; i++){ this.flash[i] = Math.max(0, this.flash[i] - dt * 2); this.safe[i] = Math.max(0, this.safe[i] - dt); }
+    /* everyone playing (here now, or out) is out: a short beat, a sound, then the round is over (a player who left and is not out is not counted; one who comes back
+       stays out, and one who joins later starts full) */
+    if (this.endIn < 0 && !this.over){
+      let any = false, all = true;
+      for (let i = 0; i < this.n; i++){ if (!this.seen[i]) continue; if (this.out[i]) any = true; else if (this._present(i)){ all = false; break; } }
+      if (any && all){ this.allOut = true; this.endIn = END_BEAT; const sfx = this.env.sfx; sfx.slowmo && sfx.slowmo(); }
     }
   }
+  /* how fast things come in a Dodge game: with more players still in, a bit faster (the square root of how many), so each of them is troubled about as much
+     whether they play alone or four together */
+  _pace(){
+    if (!this.health) return 1;
+    let k = 0; for (let i = 0; i < this.n; i++) if (this._present(i) && !this.out[i]) k++;
+    return Math.sqrt(Math.max(1, k));
+  }
+  /* a player who is out: grey hands, and nothing counts for them */
+  _grey(){ const a = this.env.assets; return a && a.color ? a.color('shade.mid') : 'gray'; }
+  _colorOf(i){ return this.health && this.out[i] ? this._grey() : this.env.colors[i]; }
 
   /* ---------- a ball each ---------- */
   /* where player i's ball floats: the middle of their lane and how far it goes either side (never into the next player's) */
@@ -271,7 +282,7 @@ class PlayRound {
     this._balls(dt);
     for (const d of this.defs){
       if (!d.appears || d.each) continue;
-      d.timer -= dt;
+      d.timer -= dt * this._pace();
       if (d.timer > 0) continue;
       const a = d.appears, e0 = a.every, e1 = a.everyEnd ?? a.every;
       d.timer = e0 + (e1 - e0) * clamp(this.t / secs, 0, 1);
@@ -281,7 +292,7 @@ class PlayRound {
     /* the orbs follow the hands; what a hand can touch (a good thing, never a thing to dodge) draws it a little toward that thing */
     this.feel.aspect = aspect;
     this.feel.targets(this.things.filter(th => !th.dead && !th.leaving && !this._under(th.x, th.y) && this._live(th) && this._touchable(th) && th.x > -0.05 && th.x < 1.05 && th.y > -0.05 && th.y < 1.05).map(th => ({ x: th.x, y: th.y, r: th.sz / 2 })));
-    this.feel.step(dt, hands.map(({ i, h }, k) => ({ key: i + (h === this.env.pose.players[i].hands.left ? 'L' : 'R'), who: i, x: h.x, y: h.y, col: this.env.colors[i] })),
+    this.feel.step(dt, hands.map(({ i, h }, k) => ({ key: i + (h === this.env.pose.players[i].hands.left ? 'L' : 'R'), who: i, x: h.x, y: h.y, col: this._colorOf(i) })),
       (k) => { const f = this.env.sfx.handWhoosh; if (f) f.call(this.env.sfx, k); });
     for (const th of this.things){
       if (th.dead) continue;
@@ -299,7 +310,7 @@ class PlayRound {
           for (const { i, h } of hands){
             if (th.resv > 0 && th.owner != null && th.owner !== i && this._here(th.owner)) continue;   /* (reserved for the player whose lane it came down) */
             if (th.d.each && (th.owner !== i || th.up)) continue;
-            if (this.health && (this.safe[i] > 0 || this.dizzy[i] > 0) && rule.then.some(x => keyOf(x) === 'hurt')) continue;   /* (just hurt, or dizzy: a thing goes through them) */                                     /* (a ball each: only its player, and not again until it has come down) */
+            if (this.health && (this.out[i] || (this.safe[i] > 0 && rule.then.some(x => keyOf(x) === 'hurt')))) continue;   /* (out: their hands do not count; just hurt: a thing goes through them) */                                     /* (a ball each: only its player, and not again until it has come down) */
             const dx = (th.x - h.x) * aspect, dy = th.y - h.y;
             if (Math.hypot(dx, dy) > th.sz / 2 + HAND_REACH) continue;
             if (rule.when === 'swiped' && !(h.speed > SWIPE)) continue;
@@ -509,17 +520,12 @@ class PlayRound {
     const hf = this.spec.hintFor ?? 8;
     if (this.hint) this.env.ui.say(c, W, H, { icon: this.hintIcon, text: this.hint, t: this.hintT, until: hf });
     if (this.spec.goal) this.env.ui.goal(c, W, H, clamp(this.total / this.spec.goal.score, 0, 1));
-    /* a dizzy player: little stars going round their hands */
-    if (this.health) for (let i = 0; i < this.n; i++){
-      if (!(this.dizzy[i] > 0)) continue;
-      const hs = this._hands().filter(o => o.i === i); if (!hs.length) continue;
-      const cx = hs.reduce((a, o) => a + o.h.x, 0) / hs.length, cy = hs.reduce((a, o) => a + o.h.y, 0) / hs.length;
-      for (let k = 0; k < 4; k++){ const a = this.t * 3.2 + k * 1.5708; A.draw(c, 'star', (cx + Math.cos(a) * 0.05 / this.aspect * 1.78) * W, (cy - 0.08 + Math.sin(a) * 0.02) * H, H * 0.04, { color: COLORS.yellow, rotate: this.t * 4 }); }
-    }
     /* the players' hands, last, on top of everything */
     const glow = this.feel.list();
     if (orbs && glow.length) for (const e of glow) A.draw(c, 'hand', e.orb.x * W, e.orb.y * H, H * 0.12, { color: e.col, orb: e.orb, W, H });
-    else for (const { i, h } of this._hands()) A.draw(c, 'hand', h.x * W, h.y * H, H * 0.12, { color: this.env.colors[i] });
+    else for (const { i, h } of this._hands()) A.draw(c, 'hand', h.x * W, h.y * H, H * 0.12, { color: this._colorOf(i) });
+    /* everyone is out: the picture dims over the short beat before the round ends */
+    if (this.allOut){ c.save(); c.globalAlpha = 0.35 * clamp(1 - this.endIn / END_BEAT, 0, 1); c.fillStyle = A.color ? A.color('shade.shadow') : 'black'; c.fillRect(0, 0, W, H); c.restore(); }
   }
 
   /* the move card, bottom left, for the first cardFor seconds (or all round) */
@@ -527,8 +533,8 @@ class PlayRound {
   /* (unused: the areas this game gives back to its world - it has no badge, and the move card is only there for a while - so nothing keeps out of them) */
   hud(){
     const h = { score: this.score, showLives: false, hideScore: !!this.spec.team || this.health, unused: this.card() ? ['badge'] : ['badge', 'card'] };
-    /* a Dodge game: a health bar each, where the score pill would be (fill 1 is full; lost: how many times it emptied; hit: the flash of a hit, 1 to 0; dizzy) */
-    if (this.health) h.health = Array.from({ length: this.env.max }, (_, i) => ({ fill: this.hp[i], lost: this.lost[i], hit: this.flash[i], dizzy: this.dizzy[i] > 0 }));
+    /* a Dodge game: a health bar each, where the score pill would be (fill 1 is full; hit: the flash of a hit, 1 to 0; out: the bar ran out) */
+    if (this.health) h.health = Array.from({ length: this.env.max }, (_, i) => ({ fill: this.hp[i], hit: this.flash[i], out: this.out[i] }));
     return h;
   }
   /* what the round was worth (a Dodge game has no score: 0) */

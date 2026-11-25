@@ -40,7 +40,7 @@ export const RESULTS = {
   kickUp:    { doc: 'a ball is hit upward, a little the way the hand was going' },
   celebrate: { doc: 'confetti and a cheer' },
   wobble:    { doc: 'the whole picture gives a quick wobble, like a bump' },
-  hurt:      { doc: 'for a thing to dodge: a chunk off the health bar of the player it touched, with a flash, a wobble and a short ouch ({ "hurt": 2 } for a bigger chunk). A player just hurt, or dizzy, is not hurt again (the thing goes through them). In a game with no health bar it costs that player a point instead', value: 'number' },
+  hurt:      { doc: 'for a thing to dodge: a chunk off the health bar of the player it touched, with a flash, a wobble and a short ouch ({ "hurt": 2 } for a bigger chunk). A player just hurt is not hurt again for a moment (the thing goes through them), and a player who is out is not hurt at all. In a game with no health bar it costs that player a point instead', value: 'number' },
   stack:     { doc: 'it flies onto a tower at the bottom of the screen, one more block on it ({ "stack": 6 } is how many make a full tower, 3 to 10, 6 if not said); a full tower blasts off like a rocket for 5 bonus points and a new one starts', value: 'number' }
 };
 
@@ -54,7 +54,7 @@ export const GAME_KEYS = {
   secs: 'seconds in a round (20 to 600)', endless: 'true: no clock, it runs until the goal', scene: 'the background (a name from the library)',
   hint: 'the hint words: up to four words', hintIcon: 'a painted icon from the library shown beside the hint ("glowstar", "balloon"...)', hintFor: 'seconds the hint stays (then it fades)', card: 'the move card shown bottom left',
   cardFor: 'seconds the move card stays', team: 'true: everyone scores together (no score pills)', goal: '{ "score": 30, "ends": true } fills the goal bar; ends: true finishes the round at the goal',
-  health: 'true: a Dodge game with no score - each player has a health bar, full at the start, shown where the score would be. A "hurt" takes a chunk off it. An empty bar means a few dizzy seconds (nothing hurts), then it refills to half and the player carries on: nobody is ever out. The round ends on time, and the results show each bar and how many times it emptied',
+  health: 'true: a Dodge game with no score - each player has a health bar, full at the start, shown where the score would be. A "hurt" takes a chunk off it. An empty bar puts that player out for the rest of the round (their hands grey and stop counting, and nothing heads for them). The round ends on time, or when everybody playing is out, and the results show each bar as it ended, or Out and how long they lasted',
   things: 'the things in the game (a list)', title: 'a name for the game (optional)'
 };
 export const THING_KEYS = {
