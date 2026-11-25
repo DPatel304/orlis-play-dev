@@ -22,6 +22,10 @@
 .chtext b{ display:block; font:700 calc(var(--u)*9)/1 var(--ui); }
 .chtext span{ display:block; margin-top:calc(var(--u)*1.4); max-width:44ch; font:500 calc(var(--u)*3.6)/1.3 var(--ui); opacity:.94; }
 .btn.chero.full{ background:linear-gradient(135deg,#4b4580,var(--ink)); }
+/* The banner fills the screen's width, so the remote's focus must not grow it like a small button (style.css: scale(1.07), which put it 9 px past
+   both edges and cut its ring): the same gentle 1.5% as a hover, and its own white and blue ring. */
+body.remote .btn.chero.kfocus:not(.tvtile):not(.play){ transform:scale(1.015); border-color:transparent;
+  box-shadow:0 0 0 calc(var(--u)*.7) #fff, 0 0 0 calc(var(--u)*1.4) var(--blue), 0 calc(var(--u)*1) calc(var(--u)*3) rgba(29,27,46,.25); }
 .btn.chero:hover,.btn.chero.hot,body.remote .btn.chero.kfocus{ transform:scale(1.015); }
 .btn.chero.shake{ animation:cshake .45s var(--ease); }
 @keyframes cshake{ 0%,100%{ transform:translateX(0); } 20%{ transform:translateX(calc(var(--u)*-1.2)); } 40%{ transform:translateX(calc(var(--u)*1.2)); } 60%{ transform:translateX(calc(var(--u)*-.7)); } 80%{ transform:translateX(calc(var(--u)*.7)); } }
