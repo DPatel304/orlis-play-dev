@@ -11,8 +11,8 @@ import { sfx } from '../audio/sound.js';
    - bodies: a soft silhouette of each player in their colour, built from the
      pose landmarks, so a child can see themselves standing in the scene. It
      uses the same coordinates as the hands, so the silhouette's arms end
-     exactly where the mitts are.
-   - mitts: a glow orb for each hand (ui/handfeel.js, decision 0062): smoothed,
+     exactly where the orbs are.
+   - orbs (drawMitts): a glow orb for each hand (ui/handfeel.js, decision 0062): smoothed,
      a comet and a trail when it moves fast, a halo that burns bigger on a
      streak - the thing a child actually aims with. A game also tells it
      where things were hit (hit), where its targets are (targets) and asks

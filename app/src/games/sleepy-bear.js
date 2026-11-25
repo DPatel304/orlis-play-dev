@@ -184,7 +184,7 @@ class SleepyBear {
     this._cave(c, W, H);
     this._notes(c, W, H);
     this.scene.drawFront(c, W, H);
-    /* the hands: glowing mitts, with frost round them when frozen */
+    /* the hands: glow orbs, with frost round them when frozen */
     this.avatars.drawMitts(c, W, H, this.players);
     for (let i = 0; i < this.players; i++){
       const p = pose.players[i];

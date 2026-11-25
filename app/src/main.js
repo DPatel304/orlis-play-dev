@@ -634,7 +634,7 @@ addEventListener('keydown', (e) => {
       toast(text.replace(/\n/g, ' · ') + ' (copied)', { ms: 15000 });
     }, () => toast('The 3D check could not run.', { ms: 4000 }));
   }
-  /* H cycles how hands are shown on screen (rings, body outline, glow), for trying - the owner's */
+  /* H cycles how hands are shown on screen (glow orb, body outline, glow), for trying - the owner's */
   if ((e.key === 'h' || e.key === 'H') && account.role === 'owner' && !e.ctrlKey && !e.metaKey && !e.altKey){ cycleHands(); toast(`Hands on screen: ${handsName()}`, { ms: 1800 }); }
   /* R copies a performance report for the last round (or the one being played) to paste to the assistant - for the owner */
   if ((e.key === 'r' || e.key === 'R') && account.role === 'owner'){

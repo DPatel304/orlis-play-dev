@@ -1,6 +1,6 @@
 /* How the players' hands are shown on screen (an owner's choice, for trying; Settings > Testing, and H while playing).
    Only the drawing changes: what a hand points at, a wave, and picking work the same in every way.
-   - rings: the glowing mitts in games and the ring cursor on menus (the way it has been)
+   - orb: a glow orb for each hand in games and the ring cursor on menus (the way it is)
    - body: a faint, see-through outline of each player, with a soft glow at each hand; no ring cursor
    - glow: no ring and no body, just a soft glow at each hand, and a short sparkle trail when it moves fast
    The choice itself lives in handsmode.js (which games in the sandbox carry too); this is the app's side, which remembers it. */

@@ -1,4 +1,4 @@
-/* Places a hand's ring or mitt is never drawn over: any element marked data-nocursor (the big count on the results card). Rectangles as
+/* Places a hand's ring or orb is never drawn over: any element marked data-nocursor (the big count on the results card). Rectangles as
    shares of the window, a little padded. Only what is drawn: the hand still points at buttons wherever it is. (Its own file: a packaged
    game carries avatars.js but not the cursor.) */
 export function keepOut(x, y){

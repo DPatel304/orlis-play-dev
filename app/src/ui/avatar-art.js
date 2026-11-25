@@ -274,7 +274,7 @@ const MOVES = {
   },
   /* a run, in four stills (each ~0.2 s): in the air with the front knee up and out and the foot under it, the back leg pushing off
      diagonally; then landing low on the front foot with the other leg trailing; then the same on the other side. The torso and head stay fully
-     upright (no lean at all; the speed is in the legs, the arms and the bob), the arms are bent at the elbow seam and pump close to the body
+     upright (no lean at all; the speed is in the legs, the arms and the bob), the arms are bent at the elbow and pump close to the body
      against the legs, and the body bobs up and down between the stills. */
   run: (i) => {
     const k = i % 4, air = k % 2 === 0, f = k < 2 ? 1 : -1;
@@ -303,7 +303,7 @@ const MOVES = {
   /* a hug: the arms come in and cross over the body, one over the other */
   hug: (i) => { const p = P('hug', i); return rig({ sho: { x: Lp(0.265, 0.1, p), y: Lp(0.055, 0.11, p) }, armsFront: true, arms: [AR(Lp(-50, 72, p)), AR(Lp(50, -72, p))] }); },
   /* a duck: the legs get shorter (as in the squat) so he drops low, the head sinks between the shoulders, both hands go up on his head (the arms
-     bend at the elbow seam; his arms are short, so they reach the sides of his head), and a small arrow points down over him */
+     bend at the elbow; his arms are short, so they reach the sides of his head), and a small arrow points down over him */
   duck: (i) => { const p = 0.3 + 0.7 * P('duck', i); return rig({ k: Lp(1, 0.55, p), headDrop: Lp(0, 0.16, p), armsOver: true, mark: 'down', arms: [AR(Lp(0, -150, p), Lp(0, 150, p)), AR(Lp(0, 150, p), Lp(0, -150, p))] }); },
   /* a step sideways: one leg straight down, the other straight out at an angle, the arms out, and an arrow beside the leg that goes out */
   side: (i) => { const p = P('side', i); return rig({ rot: Lp(0, 0.05, p), mark: 'step', legs: [LG(0), LG(Lp(0, 30, p))], arms: [AR(-Lp(10, 74, p)), AR(Lp(10, 74, p))] }); },

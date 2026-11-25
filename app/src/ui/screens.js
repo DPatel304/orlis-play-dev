@@ -164,7 +164,7 @@ export function results(game, onAgain, onMenu, back = 'Home', summary = null, ex
   c.appendChild(kick);
   const total = extra && Number.isFinite(extra.total) && extra.total > 0 ? Math.round(extra.total) : 0;
   if (total && !game.passive){
-    const big = h('div', 'gbig'); big.setAttribute('data-nocursor', '');       /* (a hand's ring or mitt is never drawn over the count) */
+    const big = h('div', 'gbig'); big.setAttribute('data-nocursor', '');       /* (a hand's ring or orb is never drawn over the count) */
     const [prop, opts] = game.prop || GAME_PROP[game.id] || [];
     big.appendChild(prop ? propIcon(prop, 240, opts || {}, 'gico') : looks({ id: game.id, icon: game.store && game.store.icon }).icon('gico sicon'));
     const num = h('b'); num.textContent = String(total);

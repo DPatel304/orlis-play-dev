@@ -669,7 +669,7 @@ class PopParty {
   draw(c, W, H){
     this.scene.drawBack(c, W, H);
     /* First person: the players aren't drawn - the screen is what they
-       see, and their hands are the glowing mitts, on top of everything. */
+       see, and their hands are the glow orbs, on top of everything. */
     const shook = this.j.applyShake(c);
 
     /* The meadow's grass and flowers go down first, and the balloons, their strings and the animal go on top of them: a balloon is
