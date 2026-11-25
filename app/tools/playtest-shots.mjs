@@ -68,8 +68,41 @@ async function shootStory(game){
     await ctx.close();
   }
 }
+/* Sky Painter's five covers (and a finished picture): each cover from its start (the top layer), part-way through (two layers showing and a bit of
+   the picture), and the picture uncovered. Files: sky-<cover>-fresh.png, sky-<cover>-mid.png, sky-finished.png. Asked for as the game name "sky-covers". */
+async function shootSky(lineup){
+  const COVERS = ['clouds', 'frost', 'snow', 'foam', 'sand'];
+  const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => console.log('PAGE ERROR sky', e.message));
+  try {
+    await page.goto(`${BASE}/?game=sky-painter&fx=0&splash=0`);
+    await page.waitForFunction(() => window.__pose && window.__go, null, { timeout: 60000 });
+    await page.waitForFunction(() => window.__mode && ['play', 'starting', 'lineup'].includes(window.__mode()), null, { timeout: 60000 });
+    await page.evaluate(async () => { window.__ptm = await import('/tools/playtest/page.mjs'); });
+    console.log('sky started', JSON.stringify(await page.evaluate((lineup) => window.__ptm.start({ lineup, seed: 1, id: 'sky-painter' }), lineup)));
+    await page.waitForFunction(() => window.__round() && window.__round().t > 2, null, { timeout: 60000 }).catch(() => {});
+    for (let i = 0; i < COVERS.length; i++){
+      const id = COVERS[i];
+      await page.evaluate(({ id, i }) => window.__ptm.skyFresh(id, i % 3), { id, i });
+      await page.waitForTimeout(900);
+      await page.screenshot({ path: join(OUT, `sky-${id}-fresh.png`) });
+      const mid = await page.evaluate(() => window.__ptm.skyMid());
+      await page.waitForTimeout(600);
+      await page.screenshot({ path: join(OUT, `sky-${id}-mid.png`) });
+      console.log('sky', id, 'mid', JSON.stringify(mid));
+    }
+    await page.evaluate(() => window.__ptm.skyFresh('clouds', 0));
+    const done = await page.evaluate(() => window.__ptm.skyDone());
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: join(OUT, 'sky-finished.png') });
+    console.log('sky finished', JSON.stringify(done));
+  } catch (e){ console.log('FAILED sky', e.message); }
+  await ctx.close();
+}
 for (const g of GAMES){
-  if (g === 'cubions-long-way-home') await shootStory(g);
+  if (g === 'sky-covers') for (const l of LINEUPS) await shootSky(l);
+  else if (g === 'cubions-long-way-home') await shootStory(g);
   else for (const l of LINEUPS) await shoot(g, l);
 }
 await browser.close();

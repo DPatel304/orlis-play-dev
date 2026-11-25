@@ -206,17 +206,18 @@ const PROBES = {
     return {
       frame(dt, t, step){
         const g = ctx.inst;
-        /* a stall: nobody (and no watercolour) has added a bit of paper for this long; a finished picture starts it afresh */
-        if (g.painted > s.lastPainted || g.alive || g.done > s.lastDone) s.grew = t;
-        s.lastPainted = g.painted;
-        /* (hands only: the watercolour doesn't count) */
-        const hand = g.score.reduce((a, b) => a + b, 0);
-        if (hand > s.lastHand || g.alive) s.handGrew = t;
-        s.lastHand = hand; s.longestHandStall = Math.max(s.longestHandStall, t - s.handGrew);
+        /* a stall: nobody (and no spreading) has worn a layer through anywhere for this long (the covers have three layers: a cell counts at each);
+           a finished picture starts it afresh */
+        const worn = g.handNew + g.spreadN;
+        if (g.alive || g.done > s.lastDone || worn > s.lastPainted) s.grew = t;
+        s.lastPainted = g.alive ? 0 : worn;
+        /* (hands only: the spreading doesn't count) */
+        if (g.handNew > s.lastHand || g.alive) s.handGrew = t;
+        s.lastHand = g.alive ? 0 : g.handNew; s.longestHandStall = Math.max(s.longestHandStall, t - s.handGrew);
         const stall = t - s.grew; s.longestStall = Math.max(s.longestStall, stall);
         if (stall > 10 && !s.inStall){ s.stallsOver10++; s.inStall = true; } else if (stall < 1) s.inStall = false;
         if (g.done > s.lastDone){ s.doneAt.push(r2(t)); s.lastDone = g.done; }
-        if (step % 150 === 0) s.cov.push([Math.round(t), r2(g.covered)]);
+        if (step % 150 === 0) s.cov.push([Math.round(t), r2(g.covered), Math.round(g.wear.reduce((a, b, i) => a + (g.out[i] ? 0 : b), 0)), g.live, g.painted, g.wear.reduce((a, b, i) => a + (!g.out[i] && b >= g.cum[2] ? 1 : 0), 0), g.cells.reduce((a, b, i) => a + (!g.out[i] && b ? 1 : 0), 0)]);
         for (let c = 0; c < g.cells.length; c += 1){ if (g.cells[c]){ const row = (c / 48) | 0; if (row < s.topRow) s.topRow = row; break; } }
       },
       finish(){
