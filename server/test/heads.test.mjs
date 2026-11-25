@@ -7,6 +7,8 @@ import { start } from '../src/app.js';
 
 const grownUp = (email, extra = {}) => ({ email, password: 'correct horse', name: 'Sam', adult: true, device: 'Laptop', ...extra });
 const wait = () => new Promise(r => setTimeout(r, 30));
+/* until: wait for something that happens in the background (a note, an email), up to a few seconds - a busy machine can be slow */
+const until = async (ok, ms = 5000) => { const end = Date.now() + ms; while (!ok() && Date.now() < end) await wait(); };
 
 /* a server with the notes by the clock kept, and a stand-in for email */
 async function fresh({ ready = true, fail = false, ...opts } = {}){
@@ -36,7 +38,7 @@ test('joined note: from the beta and by invite - but not for the owner', async (
     assert.equal((await call('POST', '/api/signup', grownUp('ben@example.com', { name: 'Ben', invite: inv.code }))).status, 201);
     assert.deepEqual(joined(said).at(-1), ['Ben joined Orlis', "ben@example.com made their account - they're in."]);
     assert.equal(joined(said).length, 2);
-    await wait();
+    await until(() => sent.filter(m => / joined Orlis$/.test(m.subject)).length >= 2);
     /* and each was emailed to the owner, with the sign-off */
     const mails = sent.filter(m => / joined Orlis$/.test(m.subject));
     assert.equal(mails.length, 2);
@@ -77,7 +79,7 @@ test('first game: once per family, never the owner\'s, with the game and players
     await call('POST', '/api/plays', { gameId: 'pop-party', value: 5, secs: 60, players: 3 }, sam.token);
     await call('POST', '/api/plays', { gameId: 'pop-party', value: 9, secs: 60, players: 3 }, sam.token);
     await call('POST', '/api/plays', { gameId: 'other-game', value: 9, secs: 60 }, sam.token);
-    await wait();
+    await until(() => firsts().length >= 1); await wait();
     assert.equal(firsts().length, 1, 'exactly once');
     assert.deepEqual(firsts()[0], ['The Bs played their first game', 'pop-party with 3 players'], 'the id, when the Store has no such game');
   } finally { await s.close(); }
@@ -89,7 +91,7 @@ test('first game: one player says no count', async () => {
     await call('POST', '/api/signup', grownUp('owner@example.com', { name: 'Owner' }));
     const sam = await call('POST', '/api/signup', grownUp('sam@example.com', { name: 'Sam' }));
     await call('POST', '/api/plays', { gameId: 'pop-party', value: 1, secs: 10 }, sam.token);
-    await wait();
+    await until(() => said.some(([t]) => / played their first game$/.test(t)));
     assert.deepEqual(said.at(-1), ['Sam\'s family played their first game', 'pop-party']);
   } finally { await s.close(); }
 });
@@ -100,7 +102,7 @@ test('email: sent when mail is ready, not when it is not, and a failure never br
     await on.call('POST', '/api/signup', grownUp('owner@example.com', { name: 'Owner' }));
     const sam = await on.call('POST', '/api/signup', grownUp('sam@example.com', { name: 'Sam' }));
     await on.call('POST', '/api/plays', { gameId: 'pop-party', secs: 10, players: 2 }, sam.token);
-    await wait();
+    await until(() => on.sent.length >= 2);
     assert.deepEqual(on.sent.map(m => m.subject), ['Sam joined Orlis', 'Sam\'s family played their first game']);
     assert.equal(on.sent[1].text, 'pop-party with 2 players\n\n- Orlis Server');
   } finally { await on.s.close(); }
@@ -108,7 +110,7 @@ test('email: sent when mail is ready, not when it is not, and a failure never br
   try {
     await off.call('POST', '/api/signup', grownUp('owner@example.com', { name: 'Owner' }));
     await off.call('POST', '/api/signup', grownUp('sam@example.com', { name: 'Sam' }));
-    await wait();
+    await until(() => off.said.length >= 1); await wait();
     assert.equal(off.said.length, 1, 'the note by the clock still shows');
     assert.deepEqual(off.sent, [], 'no email: it is not set up');
   } finally { await off.s.close(); }
@@ -117,7 +119,7 @@ test('email: sent when mail is ready, not when it is not, and a failure never br
     await bad.call('POST', '/api/signup', grownUp('owner@example.com', { name: 'Owner' }));
     const r = await bad.call('POST', '/api/signup', grownUp('sam@example.com', { name: 'Sam' }));
     assert.equal(r.status, 201, 'mail failing does not stop joining');
-    await wait();
+    await until(() => bad.sent.length >= 1);
     assert.equal(bad.sent.length, 1);
   } finally { await bad.s.close(); }
 });
@@ -127,7 +129,7 @@ test('email: "wants to join" goes by email too', async () => {
   try {
     await call('POST', '/api/signup', grownUp('owner@example.com', { name: 'Owner' }));
     await call('POST', '/api/signup', grownUp('sam@example.com', { name: 'Sam' }));
-    await wait();
+    await until(() => sent.length >= 1);
     assert.deepEqual(sent.map(m => [m.to, m.subject]), [['owner@example.com', 'Sam wants to join']]);
   } finally { await s.close(); }
 });
