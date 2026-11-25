@@ -32,7 +32,7 @@ test('three ways, the glow orb the first, remembered, and H goes round them', ()
   assert.deepEqual(HANDS.map(h => h[0]), ['orb', 'body', 'glow']);
   assert.equal(handsMode(), 'orb');
   assert.equal(cycleHands(), 'Body outline'); assert.equal(handsMode(), 'body');
-  assert.equal(cycleHands(), 'Glow'); assert.equal(handsName(), 'Soft glow');
+  assert.equal(cycleHands(), 'Soft glow'); assert.equal(handsName(), 'Soft glow');
   assert.equal(cycleHands(), 'Glow orb');
   setHandsMode('glow');
   assert.equal(localStorage.getItem('orlis_handsmode'), 'glow', 'kept for next time');

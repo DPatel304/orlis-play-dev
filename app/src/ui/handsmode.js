@@ -1,6 +1,6 @@
 /* Which way hands are shown on screen (see handshow.js), kept in memory - with no storage of its own, so a game running
    in the sandbox can carry it: the app tells it the choice in its messages. The app's handshow.js adds the remembering. */
-export const HANDS = [['orb', 'Glow orb'], ['body', 'Body outline'], ['glow', 'Glow']];
+export const HANDS = [['orb', 'Glow orb'], ['body', 'Body outline'], ['glow', 'Soft glow']];
 let now = null, store = null;
 
 /* the app plugs in where the choice is kept: { read(), write(v) } */

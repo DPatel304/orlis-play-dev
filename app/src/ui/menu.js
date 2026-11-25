@@ -275,7 +275,7 @@ function settings(onRecalibrate){
   /* the mode, for testing (a build that was told its mode has no switch) */
   if (appMode.canSwitch()){
     const seg = h('div', 'seg');
-    const modes = [['player', 'Player'], ['creator', 'Creator']];
+    const modes = [['player', 'Family'], ['creator', 'Creator']];      /* (Family: the app that plays on the TV) */
     const mark = () => modes.forEach(([m], i) => seg.children[i].classList.toggle('chosen', appMode.get() === m));
     for (const [m, name] of modes){
       seg.appendChild(small(name, () => {
@@ -284,6 +284,7 @@ function settings(onRecalibrate){
       }, 'mode'));
     }
     mark();
+    hint = 'Family plays games on the TV. Creator is for making them.';
     row('Mode', seg);
   }
 
@@ -293,6 +294,7 @@ function settings(onRecalibrate){
     const mark = () => HANDS.forEach(([m], i) => seg.children[i].classList.toggle('chosen', handsMode() === m));
     for (const [m, name] of HANDS) seg.appendChild(small(name, () => { sfx.select?.(); setHandsMode(m); mark(); }, 'hands'));
     mark();
+    hint = 'How each player\'s hands look in games (the H key does it too).';
     row('Hands on screen', seg);
     /* the test games (Peekaboo Garden's 3D test, the phone stick's pad test) stay out of My library unless this is on */
     const tseg = h('div', 'seg'), TG = [[false, 'Hidden'], [true, 'Shown']];

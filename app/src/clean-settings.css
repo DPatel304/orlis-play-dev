@@ -23,7 +23,7 @@ body.remote .setslider.kfocus{ outline:calc(var(--u)*.6) solid var(--blue); outl
 .btn.setbtn.flink{ background:transparent; color:var(--ink-soft); }
 .setctl .btn.setbtn{ min-width:calc(var(--u)*17); } .setctl .btn.setbtn.spk{ min-width:0; width:calc(var(--u)*7); height:calc(var(--u)*7); background:var(--paper); }
 .btn.setbtn.spk svg{ width:calc(var(--u)*4); height:calc(var(--u)*4); }
-.seg{ background:var(--paper); padding:calc(var(--u)*.5); gap:calc(var(--u)*.5); } .seg .btn.setbtn{ background:transparent; min-width:calc(var(--u)*17); }
+.seg{ background:var(--paper); padding:calc(var(--u)*.5); gap:calc(var(--u)*.5); } .seg .btn.setbtn{ background:transparent; min-width:calc(var(--u)*17); white-space:nowrap; }
 .seg .btn.setbtn.chosen{ background:var(--ink); color:#fff; box-shadow:none; }
 .btn.mode.chosen{ border-color:transparent; box-shadow:none; }
 .keyhint{ font-size:calc(var(--u)*3); color:var(--ink-soft); font-weight:700; opacity:1; }
