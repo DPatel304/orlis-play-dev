@@ -210,3 +210,16 @@ test('the boss shows itself before its fight, and the ending names the crew', ()
   assert.equal(inst.out.scene.kind, 'won');
   story.on = false;
 });
+
+/* playtest 2, finding 7: the health bar in the visor appears as it starts to fill - no empty dark bar waiting in the corner first */
+test('the visor health bar is not drawn empty: nothing before it starts to fill, then a filling bar', () => {
+  story.on = true; crew(1);
+  const inst = game.create(1), intro = inst.scene;
+  const calls = [];
+  const rec = new Proxy({}, { get: (_, k) => k === 'fillRect' ? (...a) => calls.push(a) : k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop(){} }) : k === 'measureText' ? () => ({ width: 10 }) : () => {}, set: () => true });
+  intro._vitals(rec, W, H, 0.3);
+  assert.equal(calls.length, 0, 'before it fills there is nothing to see');
+  intro._vitals(rec, W, H, 1.4);
+  assert.ok(calls.length >= 2, 'a bar, with its fill');
+  story.on = false;
+});

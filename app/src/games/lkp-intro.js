@@ -111,7 +111,7 @@ const GRASS = 0;   /* (on the path itself: the camera comes out over their shoul
 const TURN = 2.9, OUT = 3.4, TO_PATH = -(0.5 - POV.cx) * POV.s * 0.82;
 /* A moment after it's done. */
 const AFTER = 0.5;
-/* The health bar: popping up, then filling to START
+/* The health bar: popping up (at FILL_AT, as it starts to fill), then filling to START
    over FILL seconds; her line once they've stopped. */
 const POP = 0.35, STAGGER = 0.22, FILL_AT = 0.7, FILL = 1.4, HURT_AT = 2.9;
 /* Getting up, cartoon style: each one GAP after the one before - looking
@@ -373,7 +373,8 @@ export class Intro {
      and filling to START, then a shudder as it stops short. */
   _vitals(c, W, H, vt){
     if (!this.g.here.length) return;
-    const pop = backOut(vt / POP);
+    /* (it appears as it starts to fill: no empty dark bar waiting there first) */
+    const pop = backOut((vt - FILL_AT) / POP);
     if (pop <= 0.01) return;
     const w = H * 0.34, h = H * 0.04, stopT = vt - FILL_AT - FILL;
     const shake = stopT > 0 && stopT < 0.4 ? Math.sin(stopT * 60) * (0.4 - stopT) * H * 0.012 : 0;
@@ -681,7 +682,7 @@ const STEP = {
     this.cued = this.cued || {};
     this.g.here.slice(0, 1).forEach((i, k) => {
       const t = vt - k * STAGGER;
-      if (t >= 0 && !this.cued['pop' + i]){ this.cued['pop' + i] = true; sfx.pop?.(0.4, k); }
+      if (t >= FILL_AT && !this.cued['pop' + i]){ this.cued['pop' + i] = true; sfx.pop?.(0.4, k); }
       if (t > FILL_AT && t < FILL_AT + FILL){ this.tickT = (this.tickT || 0) - dt; if (this.tickT <= 0){ this.tickT = 0.07; sfx.tick?.(); } }
     });
     if (vt >= FILL_AT + FILL + (n - 1) * STAGGER && !this.cued.uhoh){ this.cued.uhoh = true; sfx.uhoh?.(); }

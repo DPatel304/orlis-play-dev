@@ -304,3 +304,22 @@ test('nearly out of health: a heartbeat, and the edges glow red; a hit flashes t
     assert.equal(inst.redFlash, 1);
   } finally { sfx.heartbeat = was; }
 });
+
+/* Nova's window always has the top left, so the shell's corner is not used: the level and any level-ups waiting are badges top right,
+   the XP a meter down the left edge (playtest 2, finding 7) */
+test("the level and XP sit clear of Nova's window: top right and the left edge, never the corner", async () => {
+  const { layoutDocks } = await import('../src/games/hud.js');
+  const { novaBox } = await import('../src/games/lkp-captain.js');
+  const inst = quiet();
+  inst.pending = 2;
+  const spec = inst.hud();
+  assert.equal(spec.corner, undefined); assert.equal(spec.panel, undefined);
+  assert.equal(spec.top.badges.length, 2, 'the level, and the level-ups waiting');
+  assert.ok(spec.left && spec.left.fill >= 0 && spec.left.fill <= 1);
+  const nova = novaBox(W, H), frame = nova.h * 0.045, hit = (r) => r.x < nova.x + nova.w + frame && r.x + r.w > nova.x - frame && r.y < nova.y + nova.h + frame + H * 0.1 && r.y + r.h > nova.y - frame;
+  for (const p of layoutDocks(W, H, spec, { players: [0] })) if (p.rect) assert.ok(!hit(p.rect), `${p.key} is behind Nova's window`);
+  inst.pending = 0; assert.equal(inst.hud().top.badges.length, 1);
+  inst.noHud = true; assert.equal(inst.hud().top, undefined, 'nothing while a scene has the screen');
+  const at = inst._xpAt(W, H), left = layoutDocks(W, H, spec).find(p => p.key === 'left').rect;
+  assert.ok(at.x > left.x && at.x < left.x + left.w && at.y > left.y && at.y < left.y + left.h, "crystals fly to the XP meter's picture");
+});

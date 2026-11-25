@@ -1,5 +1,5 @@
 import { worldOverlook } from './lkp-world.js';
-import { cell } from './grid.js';
+import { layoutDocks } from './hud.js';
 import { clamp, scores } from './common.js';
 import { pose, L, PLAYER_COLORS } from '../tracking/pose.js';
 import { sfx } from '../audio/sound.js';
@@ -2062,8 +2062,8 @@ class LastKnownPosition {
 
   /* Where the XP bar's crystal sits, top right: where picked-up crystals
      fly to. */
-  /* where the crystals fly to: the XP bar's picture, in the game's corner (its second row, after the level) */
-  _xpAt(W, H){ const b = cell(W, H, 1, 1, 5, 1); return { x: b.x + b.h * 0.5, y: b.y + b.h / 2 }; }
+  /* where the crystals fly to: the XP meter's picture, on the left edge (hud().left; Nova's window has the top left) */
+  _xpAt(W, H){ const m = layoutDocks(W, H, { left: { icon: '', fill: 0 } }).find(p => p.key === 'left').rect; return { x: m.x + m.w / 2, y: m.y + m.w * 0.62 }; }
 
   _drawHud(c, W, H){
     if (this.demo) return;
@@ -2159,15 +2159,17 @@ class LastKnownPosition {
   /* No pausing by gesture: hands up is how you grab the zip line, and
      reach for the treasure. */
   pausable(){ return false; }
-  /* The team's level and XP in the game's corner (top left): the level, the bar filling with XP, and a chip for each level up
-     waiting to be picked. (Nothing while the intro or a demo plays.) */
+  /* The team's level and XP, clear of Nova's window (which always has the top left): the level (and a badge for each level up
+     waiting to be picked) top right, the XP filling a meter down the left edge. (Nothing while the intro or a demo plays.) */
   hud(){
-    const show = !this.demo && !this.inIntro && !this.noHud, panel = [];
+    const show = !this.demo && !this.inIntro && !this.noHud, out = { score: pose.players.map(() => this.crystals), showLives: false, hideScore: true, hideClock: true };
     if (show){
-      panel.push({ icon: '\u2B50', value: this.lvl }, { icon: '\u{1F48E}', fill: Math.min(1, this.xp / needFor(this.lvl)), color: 'gold' });
-      if (this.pending > 0) panel.push({ icon: '\u2728', value: this.pending });
+      const badges = [{ icon: '\u2B50', value: this.lvl }];
+      if (this.pending > 0) badges.push({ icon: '\u2728', value: this.pending });
+      out.top = { badges };
+      out.left = { icon: '\u{1F48E}', fill: Math.min(1, this.xp / needFor(this.lvl)), color: 'gold' };
     }
-    return { score: pose.players.map(() => this.crystals), showLives: false, hideScore: true, hideClock: true, panel };
+    return out;
   }
   /* The tally: what the score's made of - each [picture, count, worth]. */
   tallyLines(){
