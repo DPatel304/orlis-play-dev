@@ -181,15 +181,12 @@ function playWhoosh(k) {
 
 /* ---------- hand drawings ---------- */
 function drawStar(c, x, y) {
-  c.save(); c.translate(x, y);
-  c.beginPath();
-  for (let i = 0; i < 10; i++) {
-    const r = i % 2 ? 17 : 37.5, a = -Math.PI / 2 + i * Math.PI / 5;
-    c[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r);
-  }
-  c.closePath(); c.lineJoin = 'round';
-  c.fillStyle = PLAYER; c.fill();
-  c.lineWidth = 5; c.strokeStyle = '#fff'; c.stroke();
+  /* today's marker, as app/src/ui/cursor.js draws it: a ring in the player colour with a faint dot */
+  const rad = 26;
+  c.save(); c.lineWidth = 6;
+  c.strokeStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.arc(x, y, rad, 0, 6.2832); c.stroke();
+  c.strokeStyle = PLAYER; c.beginPath(); c.arc(x, y, rad, 0, 6.2832); c.stroke();
+  c.fillStyle = PLAYER; c.globalAlpha = .35; c.beginPath(); c.arc(x, y, rad * 0.4, 0, 6.2832); c.fill();
   c.restore();
 }
 function drawMitt(c, x, y, tilt, sx, sy, shadowK) {
@@ -347,11 +344,8 @@ class Scene {
     /* pull radius, faint */
     if (o.pull) {
       c.save(); c.setLineDash([7, 9]); c.lineWidth = 2;
-      for (const g of this.targets) {
-        const on = this.pullNear === g;
-        c.strokeStyle = rgba(g.col, on ? 0.55 : 0.22);
-        c.beginPath(); c.arc(g.x, g.y, params.pullR, 0, 6.2832); c.stroke();
-      }
+      const g = this.pullNear;
+      if (g) { c.strokeStyle = rgba(g.col, 0.45); c.beginPath(); c.arc(g.x, g.y, params.pullR, 0, 6.2832); c.stroke(); }
       c.restore();
     }
     /* targets */
@@ -522,7 +516,7 @@ function frame(ms) {
 /* ---------- controls ---------- */
 const IDEAS = [
   { k: 'smooth', name: 'Smoothing', line: 'A One Euro filter: steady when your hand rests, quick when it moves fast.', cost: 'free', cap: 'A few sums per frame, shared by every game.' },
-  { k: 'mitt', name: 'Mitt', line: 'A big friendly mitten in your colour, with a soft shadow, that leans into its motion.', cost: 'free', cap: 'One shared drawing routine replaces the star.' },
+  { k: 'mitt', name: 'Mitt', line: 'A big friendly mitten in your colour, with a soft shadow, that leans into its motion.', cost: 'free', cap: 'One shared drawing routine replaces the ring.' },
   { k: 'trail', name: 'Trail', line: 'A short fading ribbon behind fast movement only.', cost: 'free', cap: 'Only needs how fast the hand moves.' },
   { k: 'impact', name: 'Impact', line: 'On a pop: squash and stretch, sparks, a ring wave and a tiny freeze.', cost: 'work', cap: 'Each game must say when and where something pops.' },
   { k: 'pull', name: 'Pull', line: 'Near a target, the drawn hand eases toward it. The real hit stays honest.', cost: 'work', cap: 'Each game must list where its targets are.' },
