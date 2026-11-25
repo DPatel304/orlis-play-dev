@@ -268,6 +268,8 @@ export class HandFeel {
     this.bursts.add(x, y, col || (best && best.col) || WHITE());
   }
   near(x, y, r){ return nearness(x, y, r, this._hands, this.aspect); }
+  /* the orbs now: [{ key, who, col, orb }] */
+  list(){ return [...this.orbs.entries()].map(([key, e]) => ({ key, who: e.who, col: e.col, orb: e.orb })); }
   /* trails, bursts, then the orbs; look(who) gives the extras for a player's orbs ({ boost, flash }) */
   draw(c, W, H, look = null){
     this.aspect = W / H;

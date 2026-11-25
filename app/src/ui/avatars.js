@@ -2,6 +2,8 @@ import { pose, L, PLAYER_COLORS, MAX_PLAYERS } from '../tracking/pose.js';
 import { figure } from './avatar-art.js';
 import { handsMode } from './handsmode.js';
 import { keepOut } from './keepout.js';
+import { HandFeel } from './handfeel.js';
+import { sfx } from '../audio/sound.js';
 
 /* The players, in the picture. Two layers, drawn by the game at different
    depths:
@@ -10,12 +12,16 @@ import { keepOut } from './keepout.js';
      pose landmarks, so a child can see themselves standing in the scene. It
      uses the same coordinates as the hands, so the silhouette's arms end
      exactly where the mitts are.
-   - mitts: a glowing hand for each hand, which throws sparkles when it moves
-     fast and burns brighter on a streak - the thing a child actually aims
-     with.
+   - mitts: a glow orb for each hand (ui/handfeel.js, decision 0062): smoothed,
+     a comet and a trail when it moves fast, a halo that burns bigger on a
+     streak - the thing a child actually aims with. A game also tells it
+     where things were hit (hit), where its targets are (targets) and asks
+     how near a hand is to one (near), for the squash and burst on impact,
+     the gentle pull and the hover glow.
 
    Nothing here decides anything about the game; it only shows where people
-   are. */
+   are. The pull, the hover and the smoothing change only what is drawn:
+   hits are always worked out by the game from the hand itself. */
 
 const SWIFT = 0.9;   /* screen-widths per second: fast enough for a trail */
 
@@ -26,7 +32,17 @@ export class Avatars {
     this.flash = Array(MAX_PLAYERS).fill(0);    /* a combo burst, decaying */
     this.t = 0;
     this.layer = null;       /* an offscreen canvas for the bodies, if there is one */
+    this.feel = new HandFeel({ reduced: typeof matchMedia === 'function' && !!matchMedia('(prefers-reduced-motion: reduce)').matches });
   }
+
+  /* A game's calls (all drawing only; see the top of this file) ------------------------------------------------------ */
+  /* Something was hit (popped, caught, grabbed) at (x, y), shares of the picture, by player i: the orb squashes, a burst plays. */
+  hit(x, y, i = -1){ this.feel.hit(x, y, i, PLAYER_COLORS[i]); }
+  /* The things a hand can touch this frame, once a frame: [{ x, y, r }] (x, y shares of the picture, r in screen heights).
+     A hand near one is drawn a little toward it. */
+  targets(list){ this.feel.targets(list); }
+  /* 0..1: how near a hand is to a target at (x, y) with radius r (screen heights), so the game can grow it by up to 8% and glow it. */
+  near(x, y, r){ return this.feel.near(x, y, r); }
 
   /* level: each player's streak level, 0 none, 1 for x2, 2 for x3. */
   step(dt, players, levels = []){
@@ -35,6 +51,13 @@ export class Avatars {
       this.glow[i] += ((levels[i] || 0) / 2 - this.glow[i]) * Math.min(1, dt * 4);
       this.flash[i] = Math.max(0, this.flash[i] - dt * 1.6);
     }
+    /* the orbs follow the hands (smoothed), and a quick hand is heard */
+    const list = [];
+    for (const [i, h, side] of this._hands(players)){
+      if (keepOut(h.x, h.y)) continue;
+      list.push({ key: i + side, who: i, x: h.x, y: h.y, col: PLAYER_COLORS[i] });
+    }
+    this.feel.step(dt, list, (k) => { try { sfx.handWhoosh(k); } catch (e){ /* (no sound) */ } });
     for (const [i, hand] of this._hands(players)){
       if (hand.speed > SWIFT && Math.random() < dt * 40){
         this.sparks.push({ x: hand.x + (Math.random() - 0.5) * 0.01, y: hand.y + (Math.random() - 0.5) * 0.01,
@@ -68,8 +91,8 @@ export class Avatars {
       const p = pose.players[i];
       if (!p || !p.present) continue;
       /* The mouse drives both hands at once; show it as one. */
-      const hands = pose.mouse.active ? [p.hands.right] : [p.hands.left, p.hands.right];
-      for (const h of hands) if (h && h.x >= -0.2 && h.x <= 1.2) out.push([i, h]);
+      const hands = pose.mouse.active ? [['R', p.hands.right]] : [['L', p.hands.left], ['R', p.hands.right]];
+      for (const [side, h] of hands) if (h && h.x >= -0.2 && h.x <= 1.2) out.push([i, h, side]);
     }
     return out;
   }
@@ -137,28 +160,15 @@ export class Avatars {
   drawMitts(c, W, H, players){
     /* (Settings > Testing > Hands on screen: only what is drawn changes) */
     const way = handsMode();
-    if (way !== 'rings') return this._drawOtherWay(c, W, H, players, way);
-    this._drawSparks(c, W, H, 1);
-
-    for (const [i, h] of this._hands(players)){
-      if (keepOut(h.x, h.y)) continue;
-      const x = h.x * W, y = h.y * H, col = PLAYER_COLORS[i];
-      const g = this.glow[i], f = this.flash[i];
-      const r = H * 0.03 * (1 + g * 0.25 + f * 0.3);
-      /* The halo grows with the streak and flares on each new level. */
-      const halo = c.createRadialGradient(x, y, r * 0.4, x, y, r * (2.2 + g * 1.2 + f));
-      halo.addColorStop(0, hexA(col, 0.55 + g * 0.3));
-      halo.addColorStop(1, hexA(col, 0));
-      c.fillStyle = halo;
-      c.beginPath(); c.arc(x, y, r * (2.2 + g * 1.2 + f), 0, 6.2832); c.fill();
-      c.fillStyle = '#fff';
-      c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.fill();
-      c.lineWidth = Math.max(3, r * 0.28); c.strokeStyle = col;
-      c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.stroke();
-      /* A slow twinkle inside, so it reads as magic rather than a dot. */
-      c.fillStyle = hexA(col, 0.9);
-      star(c, x, y, r * (0.55 + Math.sin(this.t * 6 + i) * 0.12));
+    if (way !== 'orb') return this._drawOtherWay(c, W, H, players, way);
+    this._drawSparks(c, W, H, 0.7);
+    /* (a game that never stepped them: the orbs start where the hands are) */
+    const here = this._hands(players).filter(([, h]) => !keepOut(h.x, h.y));
+    if (here.some(([i, , side]) => !this.feel.orbs.has(i + side)) && here.length){
+      this.feel.step(1 / 60, here.map(([i, h, side]) => ({ key: i + side, who: i, x: h.x, y: h.y, col: PLAYER_COLORS[i] })));
     }
+    /* The halo grows with the streak and flares on each new level. */
+    this.feel.draw(c, W, H, (who) => ({ boost: this.glow[who] || 0, flash: this.flash[who] || 0 }));
   }
 }
 

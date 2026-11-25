@@ -53,7 +53,7 @@ test('the shell tells a sandboxed round how hands are shown: at the start and wi
     rig.say(live, { t: 'key', key: 'g' });
     assert.equal(rig.keys.length, 1, 'only H is passed on');
     round.close();
-  } finally { rig.undo(); setHandsMode('rings'); }
+  } finally { rig.undo(); setHandsMode('orb'); }
 });
 
 test('inside the sandbox the runtime takes the app\'s choice and passes H up', async () => {
@@ -62,7 +62,7 @@ test('inside the sandbox the runtime takes the app\'s choice and passes H up', a
   globalThis.parent = { postMessage: (m) => posted.push(m) };
   globalThis.OffscreenCanvas = class { constructor(w, h){ this.width = w; this.height = h; } getContext(){ return new Proxy({}, { get: () => () => {}, set: () => true }); } transferToImageBitmap(){ return {}; } };
   try {
-    setHandsMode('rings');
+    setHandsMode('orb');
     const { run } = await import('../kit/runtime/main.js');
     let seen = null;
     run({ id: 'g', create: () => ({ step(){}, draw(){ seen = handsMode(); } }) });
@@ -76,7 +76,7 @@ test('inside the sandbox the runtime takes the app\'s choice and passes H up', a
     listeners.keydown.forEach(fn => fn({ key: 'H' }));
     listeners.keydown.forEach(fn => fn({ key: 'h', ctrlKey: true }));
     assert.deepEqual(posted.filter(m => m.t === 'key'), [{ t: 'key', key: 'H' }]);
-  } finally { globalThis.addEventListener = () => {}; delete globalThis.parent; delete globalThis.OffscreenCanvas; setHandsMode('rings'); }
+  } finally { globalThis.addEventListener = () => {}; delete globalThis.parent; delete globalThis.OffscreenCanvas; setHandsMode('orb'); }
 });
 
 test('a packaged game carries its own hands drawing, which only the messages steer', async () => {
