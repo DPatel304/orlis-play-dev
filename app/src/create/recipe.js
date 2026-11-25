@@ -45,7 +45,7 @@ const OLD_HOW = { catch: 'collect', pop: 'collect', collect: 'collect', dodge: '
 const P = (id, one, many) => ({ id, label: one || id[0].toUpperCase() + id.slice(1), plural: many || (one || id).toLowerCase() + 's' });
 const WHAT = [
   { id: 'food', label: 'Food', pieces: [P('apple'), P('pear'), P('strawberry', 'Strawberry', 'strawberries'), P('banana'), P('orange'), P('cherry', 'Cherry', 'cherries'), P('cupcake'), P('cookie'), P('lollipop'), P('icecream', 'Ice cream', 'ice creams')] },
-  { id: 'animals', label: 'Animals', pieces: [P('bee'), P('bumblebee', 'Bumblebee'), P('butterfly', 'Butterfly', 'butterflies'), P('bird'), P('ladybug'), P('fish', 'Fish', 'fish'), P('frog'), P('duck'), P('bunny', 'Bunny', 'bunnies')] },
+  { id: 'animals', label: 'Animals', pieces: [P('bee'), P('butterfly', 'Butterfly', 'butterflies'), P('bird'), P('ladybug'), P('fish', 'Fish', 'fish'), P('frog'), P('duck'), P('bunny', 'Bunny', 'bunnies')] },
   { id: 'sky', label: 'Sky', pieces: [P('star'), P('glowstar', 'Glow star', 'glow stars'), P('moon'), P('sun'), P('cloud'), P('snowflake'), P('raindrop'), P('feather'), P('kite')] },
   { id: 'toys', label: 'Toys', pieces: [P('balloon'), P('beachball', 'Beach ball', 'beach balls'), P('soccerball', 'Soccer ball', 'soccer balls'), P('basketball', 'Basketball'), P('volleyball', 'Volleyball'), P('teddy', 'Teddy', 'teddies'), P('block'), P('dice', 'Dice', 'dice'), P('gift'), P('heart')] },
   { id: 'nature', label: 'Nature', pieces: [P('mapleleaf', 'Maple leaf', 'maple leaves'), P('leaf', 'Leaf', 'leaves'), P('flower'), P('sunflower'), P('tulip'), P('mushroom'), P('shell'), P('egg'), P('seedling')] }
@@ -90,13 +90,15 @@ const step = (v, d, key) => { const n = Math.round(Number(v)); return Number.isF
 /* (a game from before 0059 had 5 stops of speed and how many; they land on the same places on the 7) */
 const fromOld = (v) => Number.isFinite(Number(v)) ? Math.round(clamp(Number(v), 0, 4) * 6 / 4) : v;
 /* the things of any picks: from a list, or from before 0059 (one `what` with a `how`); never empty, never more than five, each piece once */
+/* pieces taken out of the picker, and what an old saved game's pick becomes (owner, 2026-11-25: Bumblebee drawn the same as Bee) */
+const RETIRED = { bumblebee: 'bee' };
 function thingsOf(p){
   let list = [];
   if (Array.isArray(p.things)) list = p.things;
   else if (p.what !== undefined || p.how !== undefined) list = [{ id: p.what, job: OLD_HOW[p.how] || 'collect' }];
   const out = [];
   for (const t of list){
-    const id = t && typeof t === 'object' ? t.id : t;
+    const raw = t && typeof t === 'object' ? t.id : t, id = RETIRED[raw] || raw;
     if (!piece(id) || out.some(o => o.id === id) || out.length >= MAX_THINGS) continue;
     out.push({ id, job: t && job(t.job) ? t.job : 'collect' });
   }
