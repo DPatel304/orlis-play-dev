@@ -23,7 +23,7 @@ import { installTitlebar, titlebarPlaying } from './ui/titlebar.js';
 import { library } from './ui/library.js';
 import { createPage } from './ui/create.js';
 import { boot as bootShow } from './ui/boot.js';
-import { calibration, results, pauseOverlay, lostOverlay,
+import { calibration, results, pauseOverlay, stillOverlay, lostOverlay,
          clearUI, drawSkeletons } from './ui/screens.js';
 import { audio, music, sfx, ambience } from './audio/sound.js';
 import { voice } from './audio/voice.js';
@@ -38,6 +38,7 @@ import { usesPads, createPads, padHub, peopleFrom, skipJoinCard } from './sessio
 import { joinCard } from './ui/join-card.js';
 import { framingCheck } from './ui/framing-check.js';
 import { padWaitPill } from './ui/pause-pill.js';
+import { IdleWatch } from './session/idle.js';
 import { normalizeLook } from './ui/look.js';
 
 const stage = document.getElementById('stage');
@@ -61,6 +62,8 @@ addEventListener('resize', resize); resize();
 let scene = null, mode = 'boot';
 let game = null, inst = null, players = 1, roundLeft = 0, played = 0;
 let paused = null, lost = null, handsUp = 0, empty = 0, joined = new Set();
+let stillUp = false;      /* the "Still there?" card is what `lost` holds (it goes when someone moves, not just when someone is seen) */
+const idle = new IdleWatch();
 /* Phones (S1): the session for a game that uses them, this round's handle on it for the game, and the "Waiting for <name>'s phone" pill */
 let padsRt = null, roundPads = null, padWait = null;
 const DEV = !!(import.meta.env && import.meta.env.DEV);
@@ -325,6 +328,7 @@ function makeReport(){
 function startRound(){
   frameMs.length = 0;
   joined = new Set();
+  stillUp = false; idle.reset();
   hud.quiet = false;
   veilIntro = !!launch.el && launch.el.classList.contains('hascard') && !game.passive;
   introLeft = 0; introN = 0;      /* (no countdown: the cover goes and the game's on) */ moveCard.reset(); hud.resetPieces(); hud.introText = null; hud.spoken = false;
@@ -433,15 +437,31 @@ remote.install(() => {
 /* The game waits only when the room is empty - everybody gone for a couple
    of seconds - and carries on the moment anyone is back. */
 function checkLost(dt){
-  if (mode !== 'play' || game.passive){ empty = 0; if (lost){ lost.remove(); lost = null; } return; }
+  if (mode !== 'play' || game.passive){ empty = 0; stillUp = false; idle.reset(); if (lost){ lost.remove(); lost = null; } return; }
   pose.players.forEach((p, i) => { if (p.present) joined.add(i); });
   const anyone = pose.mouse.active || pose.players.some(p => p.present);
   empty = anyone ? 0 : empty + dt;
+  checkStill(dt);
   if (empty > EMPTY_AFTER && !lost){ lost = lostOverlay(); healed = false; }
   /* nobody seen for a long while in a game: the camera is started over once, in case it's what's wrong */
   if (lost && !healed && empty > EMPTY_HEAL){ healed = true; pose.heal(); }
-  else if (anyone && lost){ lost.remove(); lost = null; }
+  else if (anyone && lost && !stillUp){ lost.remove(); lost = null; }
 }
+/* "Still there?": a game that never ends on its own (it says idleAfter, in seconds) waits behind a calm card once nobody has been in view
+   and moving for that long. Nothing is lost - the game just stops stepping - and the card goes when someone moves or steps back in.
+   Not during a cutscene (the game says so with cutscene()), a countdown, the pause card or a waiting phone. */
+function checkStill(dt){
+  if (!game.idleAfter || paused || padWait || introLeft > 0 || (inst && inst.cutscene && inst.cutscene())){ if (!stillUp) idle.reset(); return; }
+  idle.after = game.idleAfter;
+  const moved = idle.step(dt, pose.players, players, pose.mouse);
+  if (stillUp){ if (moved){ closeStill(); } return; }
+  if (!idle.idle) return;
+  if (lost){ lost.remove(); lost = null; }
+  stillUp = true;
+  lost = stillOverlay(game, closeStill, () => { closeStill(); roundDone(); (game.back || toMenu)(); }, game.back ? 'Back to Create' : 'Home');
+  sfx.whoosh();
+}
+function closeStill(){ if (lost){ lost.remove(); lost = null; } stillUp = false; idle.reset(); cursor.reset(); }
 const EMPTY_AFTER = 2, EMPTY_HEAL = 20;
 let healed = false;
 

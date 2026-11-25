@@ -236,6 +236,21 @@ export function pauseOverlay(game, left, onResume, onQuit, back = 'Home'){
   return s;
 }
 
+/* "Still there?": the pause card's look, for a game that nobody has moved in for a minute. The game waits (main.js); the card goes
+   by itself when someone steps in or moves, and Keep playing / Home are there for a hand or the remote. */
+export function stillOverlay(game, onResume, onQuit, back = 'Home'){
+  const { s, c } = card('dim pause still');
+  s.style.setProperty('--accent', game.accent);
+  c.append(h('div', 'gk', 'Paused'));
+  const title = h('h3'); title.textContent = 'Still there?'; c.appendChild(title);
+  const p = h('p', 'gleft'); p.textContent = 'Wave or step back in to carry on.'; c.appendChild(p);
+  const row = h('div', 'btnrow');
+  row.append(bigButton('play', 'Keep playing', 'go', onResume), bigButton('house', back, 'ghost', onQuit));
+  c.appendChild(row);
+  const hero = h('div', 'gbcubo'); s.appendChild(hero); cubo(hero, { pose: 'freeze' });
+  return s;
+}
+
 /* ---------- lost player ---------- */
 /* A picture first - a child stepping into the camera's frame - for the
    ones who can't read, and one short line for the ones who can. */

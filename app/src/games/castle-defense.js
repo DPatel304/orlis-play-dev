@@ -265,6 +265,8 @@ export default {
   moves: ['run', 'point', 'march', 'jump', 'arms', 'squat', 'clap', 'hug'],
   /* Arms go up now and then; a pause is a longer hold. */
   pauseHold: 3,
+  /* "Still there?" after a quiet minute with nobody in view or moving (main.js) */
+  idleAfter: 60,
   /* Squatting is a move here: a player who crouches stays in. */
   keepSitters: true,
   create(n){ return new CastleDefense(n); }

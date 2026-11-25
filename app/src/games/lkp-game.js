@@ -266,6 +266,8 @@ const def = {
   moves: ['lean', 'jump', 'duck', 'clap', 'hug'],
   /* Arms go up in every hop; holding them up a while is still a pause. */
   pauseHold: 2.5,
+  /* "Still there?" after a quiet minute with nobody in view or moving (main.js; never in a cutscene, see cutscene()) */
+  idleAfter: 60,
   /* Its own music, tense and driving (audio/action.js). */
   music: 'action',
   create(n){ return new LastKnownPosition(n); }
@@ -2159,6 +2161,8 @@ class LastKnownPosition {
   /* No pausing by gesture: hands up is how you grab the zip line, and
      reach for the treasure. */
   pausable(){ return false; }
+  /* The opening, the ending and the other scenes, and the demo: people watch there, so a quiet minute is not "gone". */
+  cutscene(){ return !!(this.scene || (this.out && this.out.scene) || this.inIntro || this.demo); }
   /* The team's level and XP, clear of Nova's window (which always has the top left): the level (and a badge for each level up
      waiting to be picked) top right, the XP filling a meter down the left edge. (Nothing while the intro or a demo plays.) */
   hud(){
