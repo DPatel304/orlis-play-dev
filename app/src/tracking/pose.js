@@ -211,7 +211,7 @@ export const pose = {
   /* Mouse stands in for a body when there is no camera: the whole interface is
      hover-driven, so a pointer can reach everything a hand can. Without it the
      app is untestable on any machine that cannot see a person. */
-  mouse:{ active:false, x:.5, y:.5 },
+  mouse:{ active:false, x:.5, y:.5, clicks:0 },     /* clicks: how many presses so far (a game that wants a click for "pick up, put down" compares it with what it saw) */
 
   /* The camera is on only while it's wanted - in a game, or the camera
      check - and off everywhere else (the home screen is the mouse's), so
@@ -389,6 +389,7 @@ export const pose = {
       this.mouse.x = e.clientX / innerWidth;
       this.mouse.y = e.clientY / innerHeight;
     });
+    addEventListener('pointerdown', () => { this.mouse.clicks++; });
   },
 
   /* Called once per animation frame. Detection runs only when the video has a

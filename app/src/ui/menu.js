@@ -20,7 +20,7 @@ export const BLURB = {
   'castle-defense': 'Build towers together and keep the castle safe',
   'sleepy-bear': 'Dance to the music - then freeze before the bear peeks!',
   'leaf-pile': 'Sweep the autumn leaves into a big pile - then jump in!',
-  'stack-it-high': 'Catch the falling blocks and build a tower to the sky',
+  'stack-it-high': 'Lift big blocks with both hands and build anything you like',
   'sky-painter': 'Paint the sky with your arms - what’s hiding there?',
   'animal-gym': 'Move like the animals: stretch, hop, flap, squat and stomp',
   'keep-it-up': 'Keep the big beach ball floating up together',

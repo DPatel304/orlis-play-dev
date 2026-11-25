@@ -24,6 +24,8 @@ export const DRAWINGS = 4;
 export const POSES = {
   reach:  (p) => ({ arms: [[[L(-0.3, -0.85, p), L(0.15, -1.25, p)]], [[L(0.3, 0.85, p), L(0.15, -1.25, p)]]] }),
   flap:   (p) => ({ arms: [[[-0.9, L(0.05, -0.85, p)]], [[0.9, L(0.05, -0.85, p)]]] }),
+  /* both arms lifting something big: out at the sides and low, then up and in under it (the elbows stay out) */
+  lift:   (p) => ({ yOff: -p * 0.04, arms: [[[L(-0.85, -0.7, p), L(0.1, -0.45, p)], [L(-0.95, -0.3, p), L(0.35, -1.05, p)]], [[L(0.85, 0.7, p), L(0.1, -0.45, p)], [L(0.95, 0.3, p), L(0.35, -1.05, p)]]] }),
   wave:   (p) => ({ arms: [[[-0.3, 0.2]], [[0.5, -0.5], [L(0.25, 0.8, p), -1.0]]] }),
   clap:   (p) => ({ arms: [[[-0.5, -0.2], [L(-0.6, -0.05, p), -0.38]], [[0.5, -0.2], [L(0.6, 0.05, p), -0.38]]] }),
   hug:    (p) => ({ arms: [[[-0.55, -0.3], [L(0.2, 0.3, p), -0.5]], [[0.55, -0.3], [L(-0.2, -0.3, p), -0.42]]] }),
@@ -52,6 +54,7 @@ export const POSE_NAMES = Object.keys(POSES);
 export const FRAMES = {
   reach:  [[0, 'smile'], [0.5, 'grin'], [1, 'wow'], [1, 'wow']],
   flap:   [[0, 'smile'], [0.5, 'grin'], [1, 'joy'], [0.5, 'grin']],
+  lift:   [[0, 'smile'], [0.5, 'grin'], [1, 'wow'], [1, 'grin']],
   wave:   [[0, 'grin'], [1, 'smile'], [0, 'grin'], [1, 'wink']],
   clap:   [[0, 'smile'], [0.5, 'grin'], [1, 'joy'], [0.5, 'grin']],
   hug:    [[0, 'smile'], [0.5, 'joy'], [1, 'joy'], [1, 'joy']],
