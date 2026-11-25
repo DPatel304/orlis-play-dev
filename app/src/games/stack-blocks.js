@@ -17,9 +17,11 @@ export const GROUND = 0.93;
 export const GRAVITY = 0.55, FALL_MAX = 0.5;
 /* how fast a block slides off an edge, how far over an edge its middle may hang and still stay (a hand's width), the gap between
    the points along a block's bottom, and how close to the lowest of them still counts as touching */
-export const SLIDE = 0.14, HANG = 0.02, STEP = 0.015, TOUCH = 0.004;
+export const SLIDE = 0.24, HANG = 0.02, STEP = 0.015, TOUCH = 0.004;
 /* how long a block takes to fade away (seconds) */
 export const FADE_SECS = 1.4;
+/* the top of the picture is the top of the world: a block that would stand with its top higher than this (picture heights from the top: below the score chips, the words and the clock) tips off instead */
+export const CEILING = 0.24;
 
 /* The shapes. w, h: the size in picture heights (a cube is about a sixth of the screen); rect: a plain box (it can be turned on its
    side); hole: the radius of an arch's doorway; col: its paint (palette names, never raw colours). */
@@ -90,8 +92,9 @@ export class Yard {
     for (const f of at) if (f.y < bottom) bottom = f.y;
     const touch = at.filter(f => f.y <= bottom + TOUCH);
     const minDx = Math.min(...touch.map(f => f.dx)), maxDx = Math.max(...touch.map(f => f.dx));
-    const stable = minDx <= HANG && maxDx >= -HANG;
-    return { bottom, minDx, maxDx, ids: [...new Set(touch.map(f => f.id))], stable, dir: stable ? 0 : (minDx > HANG ? -1 : 1) };
+    let stable = minDx <= HANG && maxDx >= -HANG, dir = stable ? 0 : (minDx > HANG ? -1 : 1);
+    if (stable && bottom - b.h < CEILING){ stable = false; const c = (minDx + maxDx) / 2; dir = Math.abs(c) > 0.01 ? (c > 0 ? -1 : 1) : (X < this.A / 2 ? 1 : -1); }
+    return { bottom, minDx, maxDx, ids: [...new Set(touch.map(f => f.id))], stable, dir };
   }
 
   /* which blocks stand on this one, how many blocks high it is (a block on the ground is 1), and whether it can be lifted */
@@ -140,7 +143,7 @@ export class Yard {
           events.push({ type: 'land', b, speed, stable: l.stable });
         } else b.Y = next - b.h / 2;
       } else if (b.state === 'slide'){
-        b.spin = Math.min(1, b.spin + dt * 1.2);
+        b.spin = Math.min(1, b.spin + dt * 2);
         const v = SLIDE * Math.min(1, 0.25 + b.spin);
         b.X += b.dir * v * dt;
         const edge = b.w / 2 + 0.02;

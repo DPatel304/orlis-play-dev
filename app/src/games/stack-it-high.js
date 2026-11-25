@@ -68,7 +68,7 @@ class StackItHigh {
     this.fx = [];
     this.cam = null; this.out = null;
     this.first = false;
-    this.say = { icon: 'block', text: 'Use both hands to lift a block!', t: 0 };
+    this.say = { icon: 'block', text: 'Lift with both hands!', t: 0 };
   }
 
   get blocks(){ return this.yard.blocks; }
@@ -151,7 +151,7 @@ class StackItHigh {
     this.pend[i] = null; b.pend = null;
     b.wob = Math.max(b.wob, 0.06);
     sfx.pick?.();
-    if (!this.first){ this.first = true; this.say = { icon: 'block', text: 'Hands apart to let go!', t: 0 }; }
+    if (!this.first){ this.first = true; this.say = { icon: 'block', text: 'Hands apart to drop!', t: 0 }; }
   }
 
   /* ---------- carrying ---------- */
@@ -363,8 +363,12 @@ class StackItHigh {
     }
     return rows;
   }
-  /* nobody wins a sandbox */
-  winner(){ return null; }
+  /* nobody wins a sandbox: with company it is a tie (everyone built it together) */
+  winner(){
+    let played = 0;
+    for (let i = 0; i < this.players; i++) if (this.score[i] > 0 || pose.players[i].present) played++;
+    return played < 2 ? null : -1;
+  }
   /* what you made, in a line or two */
   summary(){
     const tall = Math.max(this.peak, this.yard.tallest()), n = this.stacked;

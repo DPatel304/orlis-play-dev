@@ -173,31 +173,23 @@ const PROBES = {
     };
   },
   'stack-it-high'(ctx){
-    const seen = new Map(), done = []; let prevT = 0;
-    const reachT = ctx.world.persons.map(() => ({ t: 0, n: 0, ok: 0, full: 0 }));
+    /* sandbox: blocks placed, the tallest thing, and whether anything gets stuck (held far too long, in the air, never taken) */
+    const holdT = new Map(), airT = new Map(); let longestHold = 0, longKind = '', tooLong = 0, airLong = 0, maxHeld = 0;
     return {
-      frame(dt, t){
-        const g = ctx.inst, live = new Set();
+      frame(dt){
+        const g = ctx.inst;
         for (const b of g.blocks){
-          let rec = seen.get(b); if (!rec){ rec = { b, born: t, grabbedAt: null, placed: false }; seen.set(b, rec); }
-          live.add(b); if (b.held && rec.grabbedAt == null) rec.grabbedAt = t;
+          if (b.held != null){ const t = (holdT.get(b) || 0) + dt; holdT.set(b, t); if (t > longestHold){ longestHold = t; longKind = b.kind; } if (t > 25 && t - dt <= 25) tooLong++; } else holdT.delete(b);
+          const air = b.held == null && b.state !== 'rest' && !b.fade;
+          if (air){ const t = (airT.get(b) || 0) + dt; airT.set(b, t); if (t > 20 && t - dt <= 20) airLong++; } else airT.delete(b);
         }
-        for (const [b, rec] of seen) if (!live.has(b)){ rec.placed = !!b.placed; rec.end = t; done.push(rec); seen.delete(b); }
-        prevT = g.towers;
-        ctx.world.persons.forEach((p, i) => {
-          if (p.slot < 0) return;
-          const r = g.reach[p.slot], lane = g.lanes[p.slot];
-          reachT[i].t += dt; reachT[i].full = lane.full;
-          for (const b of g.blocks) if (b.owner === p.slot && !b.held && b.y >= b.settle - 0.01){ const k = p.reach(b.x, b.y).kind; reachT[i].n += dt; if (k !== 'no') reachT[i].ok += dt; }
-        });
+        maxHeld = Math.max(maxHeld, g.blocks.filter(b => b.held != null).length);
       },
       finish(){
-        const g = ctx.inst, recs = done;
-        const grabbed = recs.filter(r => r.grabbedAt != null);
-        return { blocksSpawned: recs.length + seen.size, placed: recs.filter(r => r.placed).length, towersBlastedOff: g.towers, towerHeightAtEnd: g.lanes.map(l => l.tower.length).join('/'),
-          towerFull: reachT.map(r => r.full).join('/'), blockReachableShare: reachT.map(r => r.n ? r2(r.ok / r.n) : "-").join('/'),
-          wastedInGrass: recs.filter(r => !r.placed && r.grabbedAt == null).length, grabbedNotPlaced: grabbed.filter(r => !r.placed).length,
-          meanSecondsToGrab: r2(mean(grabbed.map(r => r.grabbedAt - r.born))), meanSecondsToPlace: r2(mean(recs.filter(r => r.placed).map(r => r.end - r.grabbedAt))) };
+        const g = ctx.inst, y = g.yard;
+        return { blocksPlaced: g.stacked, placedPerPlayer: g.score.slice(0, ctx.world.persons.length).join('/'), tallestBlocks: g.peak, tallestAtEnd: y.tallest(),
+          blocksOnGroundAtEnd: y.blocks.length, neverTaken: y.blocks.filter(b => !b.used && !b.fade).length, carriedAtOnce: maxHeld,
+          longestHoldSecs: r2(longestHold), longestHoldKind: longKind, heldOver25s: tooLong, inAirOver20s: airLong, stuckHeldAtEnd: g.blocks.filter(b => b.held != null).length, summary: g.summary() };
       }
     };
   },

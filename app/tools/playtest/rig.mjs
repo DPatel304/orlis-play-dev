@@ -681,38 +681,80 @@ export const BRAINS = {
     }
   },
 
-  /* ------------------------------------------------------------ Stack It High: catch a block, carry it to the tower */
+  /* ------------------------------------------------------------ Stack It High: both hands on a big block, carry it, set it down */
   'stack-it-high': {
     act(ctx, p, now){
-      const g = ctx.inst; p.mem.now = now;
-      const slot = p.slot;
+      const g = ctx.inst, slot = p.slot, m = p.mem; m.now = now;
       if (slot < 0){ p.state = 'idle'; p.releaseHands(now); return; }
-      /* (each player has their own blocks and tower: only those count) */
-      const mine = g.blocks.find(b => b.held && b.owner === slot && b.held.who === slot);
-      if (mine){
+      const gs = (X) => X / A, K = p.kind;
+      /* how far each hand can be from the middle of a block: a shoulder's width and most of an arm */
+      const maxHalf = K.shw * p.h * p.k + 0.8 * p.armLen * p.k;
+      const both = (cx, cy, half) => { p.approach(gs(cx - half), cy, now, { hand: 'l' }); p.approach(gs(cx + half), cy, now, { hand: 'r' }); };
+      const okAt = (cx, cy, half) => p.reach(gs(cx - half), cy).kind !== 'no' && p.reach(gs(cx + half), cy).kind !== 'no';
+      const held = g.blocks.find(b => b.held === slot);
+      if (held){
         p.state = 'on';
-        const side = String(mine.held.key).endsWith('l') ? 'l' : 'r', Hd = side === 'l' ? p.L : p.R;
-        /* the hand only has to get to the top of the tower and a little over (HAND_OVER); no further */
-        const tx = g.towerX(slot), ty = g._top(slot) + 0.09;
-        p.walkTo(tx + (p.sx < tx ? -1 : 1) * 0.045);
-        Hd.goal(tx, ty, now); p.other(side).release(now);
-        const r = p.reach(tx, ty); if (r.kind === 'hop' && Math.abs(p.sx - tx) < 0.12) p.hop(p.kind.hopM);
+        const half = Math.min(held.w / 2 + 0.01, maxHalf);
+        if (m.heldId !== held.id){ m.heldId = held.id; m.site = null; m.rel = null; m.still = 0; m.since = now; m.alt = false; }
+        /* where to put it: the tallest steady place its hands can get to, near here (looked at again each second until it is there) */
+        /* (a place stays chosen while it still works, so the block is not chasing a new one every second) */
+        if (m.site && !m.site.any && now > m.site.until && !m.rel){
+          const l = g.yard.land(held, m.site.X);
+          if (l.stable && okAt(m.site.X, l.bottom - held.h / 2 - 0.04, half)){ m.site.ty = l.bottom - held.h / 2 - 0.04; m.site.until = now + 1; } else m.site = null;
+        }
+        if (!m.site || (now > m.site.until && !m.rel)){
+          let best = null;
+          for (const off of [0, 0.22, -0.22, 0.45, -0.45, 0.7, -0.7]){
+            const X = Math.min(g.A - held.w / 2 - 0.05, Math.max(held.w / 2 + 0.05, p.sx * g.A + off)), l = g.yard.land(held, X);
+            if (!l.stable) continue;
+            const ty = l.bottom - held.h / 2 - 0.04;
+            if (!okAt(X, ty, half)) continue;
+            const score = -l.bottom + Math.abs(off) * 0.15 + p.rng() * 0.05;      /* higher is better */
+            if (!best || score > best.score) best = { X, ty, score };
+          }
+          m.site = best ? { ...best, until: now + 1 } : { X: held.X, ty: held.Y, until: now + 1, any: true };
+        }
+        const s = m.site;
+        p.walkTo(gs(s.X));
+        const near = Math.hypot(held.X - s.X, held.Y - s.ty) < 0.07;
+        m.still = near ? m.still + 1 / 30 : 0;
+        if (!m.rel && (m.still > 0.4 || s.any || now - m.since > 8)) m.rel = now;
+        if (!m.rel){ both(s.X, s.ty, half); return; }
+        /* let go: hands apart if they can get that far, else down below it (the places are fixed when it starts: the block follows the hands) */
+        if (m.relAt !== m.rel){
+          m.relAt = m.rel; m.relX = held.X; m.relY = held.Y;
+          m.wide = Math.min(maxHalf, held.w / 2 + 0.12);
+          m.drop = [0.2, 0.14, 0.1, 0.06].map(d => held.Y + held.h / 2 + d).find(v => okAt(held.X, v, half)) || null;
+          m.apartOk = 2 * m.wide > held.w + 0.16;
+        }
+        const t = now - m.rel, first = (m.apartOk && !m.alt) || !m.drop ? 'apart' : 'drop';
+        const apart = () => both(m.relX, m.relY, m.wide), down = () => (m.drop ? both(m.relX, m.drop, half) : p.releaseHands(now));
+        if (t < 2) (first === 'apart' ? apart : down)();
+        else if (t < 4) (first === 'apart' ? down : apart)();
+        else { m.rel = null; m.site = { X: held.X, ty: held.Y, until: now + 1, any: true }; m.alt = !m.alt; m.since = now; }
         return;
       }
-      let best = null, bc = 1e9;
+      /* (what I just put down is left alone for a while: no taking it up again to put it back) */
+      if (m.heldId != null){ m.skip = m.skip || {}; m.skip[m.heldId] = now + 30; }
+      m.heldId = null; m.site = null; m.rel = null;
+      /* a block to take: untouched ones first, then the ones standing alone; not one that would not let me */
+      m.skip = m.skip || {};
+      let best = null;
       for (const b of g.blocks){
-        if (b.held || b.y < 0.0 || b.owner !== slot) continue;
-        const r = p.reach(b.x, b.y);
-        const walk = Math.max(0, Math.abs(b.x - p.sx) * A - p.armLen * p.k * 0.8);
-        let cost = walk * 2.0 + (r.kind === 'hop' ? 0.5 : r.kind === 'bend' ? 0.3 : 0);
-        if (r.kind === 'no' || walk > 0.6) continue;
-        if (cost < bc){ bc = cost; best = { b, r }; }
+        if (!g.yard.liftable(b) || (m.skip[b.id] || 0) > now) continue;
+        const half = Math.min(b.w / 2 + 0.01, maxHalf);
+        if (!okAt(b.X, b.Y, half)) continue;
+        const walk = Math.max(0, Math.abs(b.X - p.sx * g.A) - p.armLen * p.k * 0.8);
+        if (walk > 1.2) continue;
+        const cost = walk * 2 + (b.used ? 3 : 0) + (b.supports.length ? 2 : 0) + p.rng() * 0.1;
+        if (!best || cost < best.cost) best = { b, cost, half };
       }
-      if (!best){ p.tgt = null; p.state = 'idle'; idleStance(p, now, g.towerX(slot)); return; }
+      if (!best){ p.tgt = null; p.state = 'idle'; m.tgtId = null; idleStance(p, now, 0.5); return; }
+      if (m.tgtId !== best.b.id){ m.tgtId = best.b.id; m.tryAt = now; }
+      if (now - m.tryAt > 8){ m.skip[best.b.id] = now + 20; m.tgtId = null; }
       p.tgt = best.b; p.state = 'on';
-      const l = lead(p, 'bk', best.b, p.delay);
-      p.approach(l.x, l.y, now, { hand: best.r.side });
-      p.other(best.r.side).release(now);
+      p.walkTo(gs(best.b.X));
+      both(best.b.X, best.b.Y, best.half);
     }
   },
 

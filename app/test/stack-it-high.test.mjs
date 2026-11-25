@@ -36,7 +36,7 @@ test('the game has no rocket, no towers and no goal: a sandbox with a three minu
   const g = start(1);
   assert.equal(g.towers, undefined); assert.equal(g.lanes, undefined);
   assert.equal(g.hud().goal, undefined, 'no goal bar');
-  assert.deepEqual(g.hud().words.text, 'Use both hands to lift a block!');
+  assert.deepEqual(g.hud().words.text, 'Lift with both hands!');
   assert.equal(g.card(), 'lift'); assert.ok(POSE_NAMES.includes('lift'), 'Cubo has a lifting move');
   assert.ok(!g.over);
   g.t = ROUND - 0.1; g.step(DT, W, H); g.step(DT, W, H); g.step(DT, W, H);
@@ -274,15 +274,17 @@ test('tilting the hands turns a plain block a quarter turn (a plank stands up); 
   grip(g, 0, p, 0.2); run(g, 0.5);
   assert.equal(p.held, 0);
   const w = p.w, h = p.h;
+  hands(0, 1.1, 0.4, 1.3, 0.4); run(g, 1.5);               /* lifted well clear of the ground */
   /* the right hand lower than the left */
-  hands(0, p.X - 0.2, p.Y - 0.12, p.X + 0.2, p.Y + 0.12); run(g, 0.7);
+  hands(0, 1.1, 0.28, 1.3, 0.52); run(g, 0.7);
   assert.equal(p.q, 1); assert.equal(p.w, h); assert.equal(p.h, w);
+  assert.equal(p.held, 0, 'still held');
   /* it does not keep turning while they hold the tilt; level the hands and tilt the other way */
   run(g, 1); assert.equal(p.q, 1);
-  hands(0, p.X - 0.1, p.Y, p.X + 0.1, p.Y); run(g, 0.3);
-  hands(0, p.X - 0.1, p.Y + 0.1, p.X + 0.1, p.Y - 0.1); run(g, 0.7);
+  hands(0, 1.1, 0.4, 1.3, 0.4); run(g, 0.3);
+  hands(0, 1.1, 0.5, 1.3, 0.3); run(g, 0.7);
   assert.equal(p.q, 0); assert.equal(p.w, w);
-  away(0); run(g, 0.5);
+  away(0); run(g, 1.5);
   const r = stand(g, 'roof', 2.5);
   grip(g, 0, r, 0.15); run(g, 0.5); assert.equal(r.held, 0);
   hands(0, r.X - 0.15, r.Y - 0.12, r.X + 0.15, r.Y + 0.12); run(g, 1);
@@ -324,7 +326,7 @@ test('the results say what was built: how tall, how many placed, one row for eac
   assert.equal(g.summary(), 'You built something 7 blocks tall! You stacked 23 blocks!');
   assert.deepEqual(g.tally().map(r => r.value), [14, 9]); assert.equal(g.tally().length, 2);
   assert.equal(g.tally()[0].color, PLAYER_COLORS[0]);
-  assert.equal(g.value(), 23); assert.equal(g.winner(), null, 'nobody wins a sandbox');
+  assert.equal(g.value(), 23); assert.equal(g.winner(), -1, 'nobody wins a sandbox');
   g.peak = 1; g.stacked = 1; assert.equal(g.summary(), 'You stacked 1 block!');
   g.peak = 0; g.stacked = 0; assert.equal(g.summary(), null);
   /* really built: a tower of four put up by hand counts four placed and four tall */
