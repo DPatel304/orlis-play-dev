@@ -73,7 +73,8 @@ const canvas = (w, h) => {
 const wantsCalm = () => { try { return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 
 /* How high up the picture this player can paint (0 is the top of the screen), from their shoulders and torso, or null when there's
-   nothing to go on (no camera landmarks: the mouse, a test). TODO: switch to games/reach.js (the shared reach band) once it lands. */
+   nothing to go on (no camera landmarks: the mouse, a test). This is its own measure on purpose, not games/reach.js (the shared reach band, for placing
+   things: arm-based and smoothed): the paper's fit and its tests are tuned to this torso-based top, and switching moves where the paper starts. */
 export function reachTop(p){
   if (!p || !p.present || !p.lm) return null;
   const a = p.lm[L.L_SHOULDER], b = p.lm[L.R_SHOULDER], c = p.lm[L.L_HIP], d = p.lm[L.R_HIP];
