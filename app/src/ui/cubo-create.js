@@ -808,12 +808,32 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
       c.restore();
     }
   }
+  /* where the screen's own controls sit (the Back and Arms-up pills, the step dots, the question card, the meter, the name wheel, Cubo's bubble), as
+     rects in the same pixels the canvas draws in: the floating things keep out of them */
+  function uiRects(){
+    const out = [];
+    for (const el of [back, arms, steps, bubble, ui.q, ui.mpill, ui.wheel]){
+      if (!el || !el.getBoundingClientRect || el.hidden) continue;
+      const r = el.getBoundingClientRect();
+      if (r && r.width > 0 && r.height > 0) out.push(r);
+    }
+    return out;
+  }
+  /* 0 on a rect, rising to 1 a margin away (so a thing that drifts toward the UI fades out before it gets there, and back in as it leaves) */
+  function clearOf(rects, x, y, rad, margin){
+    let k = 1;
+    for (const r of rects){
+      const dx = Math.max(r.left - x, 0, x - r.right), dy = Math.max(r.top - y, 0, y - r.bottom);
+      k = Math.min(k, (Math.hypot(dx, dy) - rad) / margin);
+    }
+    return clamp(k, 0, 1);
+  }
   /* what the Rules question looks like, live: things moving at the speed the hand is at, or piling up as many as it is at */
   function drawRulesBackdrop(c, b, u){
     const ids = (st.picks.things || []).map(t => t.id), mult = SPEED_MULT[st.picks.speed] ?? 1, T = still ? 0 : clock;
     if (!ids.length) return;
     const many = st.q === 'many' ? MANY_SHOWN[st.picks.many] ?? 4 : 6;
-    const size = u * 9, left = b.x + b.w * 0.2, right = b.x + b.w * 0.97;
+    const size = u * 9, left = b.x + b.w * 0.2, right = b.x + b.w * 0.97, rects = uiRects();
     for (let i = 0; i < many; i++){
       const lane = i % 5, a = (i * 0.618) % 1, id = ids[i % ids.length];
       const run = st.q === 'many' ? 0.03 + a * 0.01 : 0.05;
@@ -822,7 +842,11 @@ export function cuboCreate({ creation = null, full = false, onPlay = () => {}, o
       /* many: they pile up from the ground, row on row; speed: they sail across at their rows */
       const y = st.q === 'many' ? b.y + b.h * 0.88 - Math.floor(i / 5) * size * 0.62 - (lane % 2) * size * 0.1 : b.y + b.h * (0.27 + lane * 0.11) + Math.sin(T * 2 + i) * u * 0.7;
       const px = st.q === 'many' ? left + (right - left) * (0.05 + ((i * 0.37 + lane * 0.19) % 0.9)) + Math.sin(T * 1.5 + i) * u * 0.8 : x;
+      const clear = clearOf(rects, px, y, size * 0.5, size * 1.5);
+      if (clear <= 0.02) continue;
+      c.save(); c.globalAlpha = clear;
       assets.draw(c, id, px, y, size, { rotate: still ? 0 : Math.sin(T * 1.6 + i) * 0.12 });
+      c.restore();
     }
   }
   function drawPop(c, b, u, p){
