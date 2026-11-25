@@ -72,6 +72,7 @@ class StackItHigh {
   }
 
   get blocks(){ return this.yard.blocks; }
+  _here(i){ return i >= 0 && i < this.players && !!(pose.players[i] && pose.players[i].present); }
   _present(){ let n = 0; for (let i = 0; i < this.players; i++) if (pose.players[i] && pose.players[i].present) n++; return n; }
 
   /* each present player's hands, in picture heights across (X) and down (Y), the left one first: [{ i, lo, hi, mouse, spread }].
@@ -272,7 +273,11 @@ class StackItHigh {
       if (!e.stable) continue;
       /* put down by somebody, somewhere new: that is a block placed */
       if (b.from && b.by >= 0){
-        if (Math.hypot(b.X - b.from.X, b.Y - b.from.Y) >= 0.1){ this.score[b.by]++; this.stacked++; this.avatars.hit(b.X / this.A, b.Y, b.by); }
+        if (Math.hypot(b.X - b.from.X, b.Y - b.from.Y) >= 0.1){
+          this.stacked++;
+          /* the point goes to whoever put it down, if they are still here: a player who has left has no place to credit (it is dropped) */
+          if (this._here(b.by)){ this.score[b.by]++; this.avatars.hit(b.X / this.A, b.Y, b.by); }
+        }
         b.from = null; b.by = -1;
       }
       b.sky = false;

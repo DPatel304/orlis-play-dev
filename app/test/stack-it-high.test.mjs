@@ -407,3 +407,18 @@ test('no path leaves a block standing above the ceiling: drops over buildings th
     }
   }
 });
+
+test('a block put down by a player who has since left is not credited to their empty place; one put down by a player still here is', () => {
+  const g = start(2);
+  const put = (who) => {
+    const b = stand(g, 'cube', 0.9 + who * 0.2);
+    b.from = { X: b.X - 0.5, Y: b.Y }; b.by = who;       /* carried half a screen, then let go */
+    g._after([{ b, speed: 0, stable: true }]);
+  };
+  pose.players[1].present = false;
+  put(1);
+  assert.equal(g.score[1], 0, 'nothing for an empty place');
+  put(0);
+  assert.equal(g.score[0], 1, 'player 1 is here: credited');
+  assert.equal(g.stacked, 2, 'both blocks still count as stacked');
+});

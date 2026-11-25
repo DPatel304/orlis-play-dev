@@ -88,6 +88,8 @@ export function bandOf(p){
 }
 
 class LeafPile {
+  /* is that player standing in their place now (a player who has left has no place to credit) */
+  _here(i){ return i >= 0 && i < this.players && !!(pose.players[i] && pose.players[i].present); }
   constructor(players){
     this.players = players;
     this.score = Array.from({ length: MAX_PLAYERS }, () => 0);
@@ -227,7 +229,8 @@ class LeafPile {
       /* in! */
       if (!this.ready && !this.piles && d < this._pileR()){
         L.inPile = true; this.pile++;
-        if (L.who >= 0){ this.score[L.who]++; this.avatars.hit(L.x, L.y, L.who); }
+        /* the point goes to whoever swept it in, if they are still here: a player who has left has no place to credit (it is dropped) */
+        if (L.who >= 0 && this._here(L.who)){ this.score[L.who]++; this.avatars.hit(L.x, L.y, L.who); }
         sfx.pop?.(0.5 + this._k() * 0.7);
         this._milestone();
       }

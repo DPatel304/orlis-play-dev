@@ -189,3 +189,16 @@ test('leaves land and settle in the reach band of the player they are for', () =
   const L0 = g.leaves.find(L => L.own === 0);
   assert.ok(L0 && L0.y <= A.bottom + 0.01, 'it settled up to ' + (L0 && L0.y));
 });
+
+test('a leaf swept in by a player who has since left is not credited to their empty place (the point is dropped); one from a player still here is', () => {
+  players(2);
+  const g = leafPile.create(2);
+  g.fallT = 99;
+  const drop = (who) => { g.leaves = []; g._leaf(true); Object.assign(g.leaves[0], { x: PILE.x, y: PILE.y, who }); g.step(DT, W, H); };
+  pose.players[1].present = false;                       /* player 2 walked away with a leaf of theirs still sliding in */
+  drop(1);
+  assert.equal(g.score[1], 0, 'nothing for an empty place'); assert.equal(g.pile, 1, 'the leaf still joins the pile');
+  drop(0);
+  assert.equal(g.score[0], 1, 'player 1 is here: credited');
+  assert.equal(g.score.reduce((a, b) => a + b, 0), 1);
+});
