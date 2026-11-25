@@ -86,4 +86,6 @@ Date: YYYY-MM-DD
 | 0060 | Create is "Cubo's Create": motion steps guided by Cubo (Where, the game: collect/dodge/keep up/stack, What on a turning wheel, wide Rules sliders, Name wheel, play); one kind per game; no move step; first player builds; remote as backup | Accepted |
 | 0061 | Cubo's Create controls: reach-and-hold and arms-up only, targets in the chest-to-head comfort zone around the player, Where carousel with peeks, a row of game cards, a touch-any parade for things, "higher hand = more" for rules, countdown (replaces 0060's wheel, sliders and 2x2 cards) | Accepted |
 | 0062 | Players' hands are glow orbs everywhere, smoothed, with a trail on fast moves, impact bursts, pull toward targets (drawing only), hover glow and a whoosh | Accepted |
-| 0063 | Dodge games made in Create: no points; each player has a health bar that goes down on a hit, empties to a short dizzy spell (never out), things drift toward people (replaces 0059's Dodge rule) | Accepted |
+| 0063 | Dodge games made in Create: no points; each player has a health bar that goes down on a hit, empties to a short dizzy spell (never out), things drift toward people (replaces 0059's Dodge rule) | Superseded by 0064 |
+| 0064 | Dodge (made in Create): a hit takes a tenth of the health bar; an empty bar puts that player out for the round; the round ends on time or when everyone is out; no score (replaces 0063) | Accepted |
+| 0065 | Weekly challenges: no "minutes moving together" challenge (three about games played); games made in Create never count | Accepted |

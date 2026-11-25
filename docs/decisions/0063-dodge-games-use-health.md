@@ -1,5 +1,5 @@
 # 0063: Dodge games made in Create use a health bar, not points
-Status: Accepted (2026-11-25)
+Status: Superseded by 0064
 Date: 2026-11-25
 
 ## Context

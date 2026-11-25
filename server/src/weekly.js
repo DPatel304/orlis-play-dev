@@ -34,25 +34,22 @@ export function featuredIds(ids, pins = [], now = new Date(), n = 3){
 /* The games every Orlis Play has, for challenges about one game. */
 export const BUILT_IN = [['pop-party', 'Pop Party'], ['sky-painter', 'Sky Painter'], ['leaf-pile', 'Leaf Pile'], ['sleepy-bear', 'Sleepy Bear'], ['stack-it-high', 'Stack It High']];
 
-/* This week's three: a game to play a few rounds of, some different games,
-   and - every other week - minutes moving together, else a second game. */
+/* This week's three: a game to play a few rounds of, some different games, and a few rounds of a second game.
+   (No "minutes moving together" challenge: owner, 2026-11-25, decision 0065.) */
 export function challenges(now = new Date()){
   const w = weekIndex(now), pool = BUILT_IN;
   const [a, an] = pool[w % pool.length], [b, bn] = pool[(w + 2) % pool.length];
   return [
     { id: `rounds-${a}`, kind: 'rounds', game: a, need: 5, title: `Play 5 rounds of ${an}` },
     { id: 'different', kind: 'different', need: 4, title: 'Play 4 different games' },
-    w % 2
-      ? { id: 'minutes', kind: 'minutes', need: 30, title: 'Move together for 30 minutes' }
-      : { id: `rounds-${b}`, kind: 'rounds', game: b, need: 3, title: `Play 3 rounds of ${bn}` }
+    { id: `rounds-${b}`, kind: 'rounds', game: b, need: 3, title: `Play 3 rounds of ${bn}` }
   ];
 }
 /* How far the family's got, from this week's rounds. */
 export function progress(list, plays){
   return list.map(c => {
     const have = c.kind === 'rounds' ? plays.filter(p => p.game_id === c.game).length
-      : c.kind === 'different' ? new Set(plays.map(p => p.game_id)).size
-      : Math.floor(plays.reduce((s, p) => s + p.secs, 0) / 60);
+      : new Set(plays.map(p => p.game_id)).size;
     return { ...c, have: Math.min(have, c.need), done: have >= c.need };
   });
 }

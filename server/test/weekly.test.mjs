@@ -64,3 +64,12 @@ test('a round with no score (a Dodge game: a health bar, no points) counts as pl
   assert.ok(got.find(c => c.id === rounds.id).done, 'rounds with value 0 still count');
   assert.equal(got.find(c => c.kind === 'different').have, 2, 'and a different game');
 });
+
+test('no "minutes moving together" challenge, any week (decision 0065)', async () => {
+  const { challenges } = await import('../src/weekly.js');
+  for (let w = 0; w < 12; w++){
+    const list = challenges(new Date(Date.UTC(2027, 0, 4 + w * 7)));
+    assert.equal(list.length, 3);
+    assert.ok(list.every(c => c.kind !== 'minutes'), `week ${w}`);
+  }
+});

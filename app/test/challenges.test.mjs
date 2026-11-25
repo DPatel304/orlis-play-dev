@@ -141,12 +141,12 @@ test('a finished challenge stamps its star and plays the sparkles; a moved one d
   const calls = []; const was = sfx.sparkles; sfx.sparkles = () => calls.push('sparkles');
   try {
     const host = document.createElement('div');
-    const stop = showNews(host, [{ id: 'x', kind: 'minutes', title: 'Move', need: 30, before: 12, after: 15, finished: false, slot: 2 }]);
+    const stop = showNews(host, [{ id: 'x', kind: 'rounds', title: 'Play 5 rounds', need: 5, before: 2, after: 3, finished: false, slot: 2 }]);
     await new Promise(r => setTimeout(r, 1500));
     assert.deepEqual(calls, []);
     stop();
     const host2 = document.createElement('div');
-    const stop2 = showNews(host2, [{ id: 'y', kind: 'minutes', title: 'Move', need: 30, before: 29, after: 30, finished: true, slot: 2 }]);
+    const stop2 = showNews(host2, [{ id: 'y', kind: 'rounds', title: 'Play 5 rounds', need: 5, before: 4, after: 5, finished: true, slot: 2 }]);
     await new Promise(r => setTimeout(r, 1500));
     assert.deepEqual(calls, ['sparkles']);
     assert.ok(host2.querySelector('.chstamp').classList.contains('on'));
