@@ -493,16 +493,16 @@ export const pose = {
      into a handful of colour counts straight away and dropped - never shown, sent or kept (decisions 0007, 0011). Never throws;
      gives null when it can't (and after three failures in a row, stops trying). */
   _grab(){
-    const src = this.video;
+    const video = this.video;
     if (this._got && this._gotAt === this._lastT) return this._got;
-    if ((this._grabFails || 0) >= 3 || !src || !src.videoWidth) return null;
+    if ((this._grabFails || 0) >= 3 || !video || !video.videoWidth) return null;
     try {
-      const W = 80, H = Math.max(1, Math.round(W * src.videoHeight / src.videoWidth));
+      const W = 80, H = Math.max(1, Math.round(W * video.videoHeight / video.videoWidth));
       if (!this._small || this._small.width !== W || this._small.height !== H){
         const cv = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(W, H) : Object.assign(document.createElement('canvas'), { width: W, height: H });
         this._small = cv; this._smallCx = cv.getContext('2d', { willReadFrequently: true });
       }
-      this._smallCx.drawImage(src, 0, 0, W, H);
+      this._smallCx.drawImage(video, 0, 0, W, H);
       this._got = this._smallCx.getImageData(0, 0, W, H); this._gotAt = this._lastT; this._grabFails = 0;
       return this._got;
     } catch (e){ this._grabFails = (this._grabFails || 0) + 1; return null; }
@@ -564,7 +564,7 @@ export const pose = {
         let lm2; try { lm2 = await withTimeout(make('GPU'), 40000); } catch (e){ lm2 = await withTimeout(make('CPU'), 40000); }
         const S = 256, cv = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(S, S) : Object.assign(document.createElement('canvas'), { width: S, height: S });
         const cx = cv.getContext('2d');
-        this.zoomer = { lm: lm2, detect(src, r){ cx.drawImage(src, r.px.x, r.px.y, r.px.size, r.px.size, 0, 0, S, S); return lm2.detect(cv); } };
+        this.zoomer = { lm: lm2, detect(video, r){ cx.drawImage(video, r.px.x, r.px.y, r.px.size, r.px.size, 0, 0, S, S); return lm2.detect(cv); } };
       } catch (e){ this._zoomDead = true; }
       this._zoomMaking = false;
     })();
