@@ -403,7 +403,7 @@ export function makeWorld(lineup, seed, opts = {}){
 export function resetPose(pose){
   pose.mouse.active = false;
   pose.players.forEach((p, i) => {
-    Object.assign(p, { present: false, lostFor: 99, watching: 0, at: null, lm: null, raw: null, filt: null, seg: null, head: null,
+    Object.assign(p, { present: false, lostFor: 99, watching: 0, at: null, lm: null, raw: null, filt: null, seg: null, head: null, app: null, goneAt: null, zoomAt: 0,
       hands: { left: { x: 0.5, y: 0.5, vx: 0, vy: 0, speed: 0 }, right: { x: 0.5, y: 0.5, vx: 0, vy: 0, speed: 0 } }, centre: { x: 0.5, y: 0.5 }, scale: 0.3 });
   });
   pose._cands = []; pose.personCount = 0; pose.seenCount = 0;
@@ -413,8 +413,9 @@ export function resetPose(pose){
    assist: anyone the tracker would not let in (or drops) is let in anyway, so a game can still be judged; the time they
    would have been out is counted in person.notClose. */
 export class Feeder {
-  constructor(pose, lib, { assist = true, cap = 4, clock = null } = {}){
-    this.pose = pose; this.lib = lib; this.assist = assist; this.t = 0;
+  /* frames: (dets) => a picture ({ data, width, height }) for the tracker to read clothes from (the clothes switch; see crossing.mjs), or none (the default) */
+  constructor(pose, lib, { assist = true, cap = 4, clock = null, frames = null } = {}){
+    this.pose = pose; this.lib = lib; this.assist = assist; this.t = 0; this.frames = frames;
     pose.cap = cap;
     pose.clock = () => this.t * 1000;
     this.ejectedWhileAssist = 0;
@@ -437,7 +438,7 @@ export class Feeder {
       const inFrame = d.lm[L.NOSE].v > 0.5;
       if (!inFrame || d.lm[L.L_WRIST].v < 0.3 || d.lm[L.R_WRIST].v < 0.3) p.stats.offFrame++;
     });
-    pose._assign(dets.map(d => d.lm), dt);
+    pose._assign(dets.map(d => d.lm), dt, this.frames ? this.frames(dets) : undefined);
     /* a watcher the tracker lets in is the thing to catch: count the frames someone in the picture beside it is a player */
     for (const d of dets){
       const p = d.person; if (!p.role) continue;

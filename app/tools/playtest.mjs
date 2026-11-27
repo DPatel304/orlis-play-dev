@@ -12,6 +12,7 @@
      node tools/playtest.mjs --calibrate                       # how big a hop / squat / lean / knee lift must be to count (game detectors)
      node tools/playtest.mjs --sensitivity                     # Sleepy Bear: stars against reaction time and camera jitter
      node tools/playtest.mjs --falsejumps                      # moves that must NOT count as a hop (squat, bend, tiptoe, reach, lean, march, flap), 3 min each; --blind hides the ankles
+     node tools/playtest.mjs --crossing                        # two children in different shirts trade places: slot changes with the clothes feature off and on (synthetic frames drawn from the rig's bodies)
      --jp rise,speed                                           # try other hop thresholds in --calibrate / --falsejumps / game runs (default: jump.js HOP); --oldjump the old 0.08 / 0.5
      (every game run also reports, per player, jumpsDetected / falseJumps / falseJumpsPer3min: a second hop detector looking on)
      other flags: --cap N (places that can fill; 4 default, the app ships 2), --react X (scale reaction times), --seeds 1,2,3, --force, --fresh
@@ -540,6 +541,16 @@ if (opt('admission')){
   prior.meta.admissionNote = 'The tracker\'s own rules, nothing assisted: 40 s standing in view. cap 2 is what ships today (PLAYING = 2); cap 4 is what the games are built for.';
   writeFileSync(OUT, JSON.stringify(prior, null, 1));
   console.log('admission written', OUT);
+  process.exit(0);
+}
+if (opt('crossing')){
+  /* two children of one size trade places, in different shirts (frames drawn from the rig's own bodies): slot changes with the clothes switch off and on */
+  const { crossing } = await import('./playtest/crossing.mjs');
+  const rows = crossing({ pose, rig, lib, seeds, jitter, cap: CAP });
+  console.log('crossing: two children trade places 4 times in 60 s (times a child was in the other child\'s slot once the crossing was over; fewer is better)');
+  for (const r of rows) console.log(' ', 'seed', r.seed, 'clothes off:', r.off.join(' + '), ' on:', r.on.join(' + '), ' same shirts off:', r.sameOff.join(' + '), ' on:', r.sameOn.join(' + '));
+  const sum = (k) => rows.reduce((t, r) => t + r[k].reduce((a, b) => a + b, 0), 0);
+  console.log('total wrong slots: off', sum('off'), 'on', sum('on'), '| same shirt off', sum('sameOff'), 'on', sum('sameOn'));
   process.exit(0);
 }
 if (opt('watchers')){
