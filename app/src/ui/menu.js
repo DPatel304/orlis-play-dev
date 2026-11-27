@@ -8,7 +8,7 @@ import { faceOf } from './avatar-maker.js';
 import { openTrustedPhones } from './trusted-phones.js';
 import { createTrust } from '../session/trust.js';
 import { HANDS, handsMode, setHandsMode } from './handshow.js';
-import { testGamesOn, setTestGames } from './testing.js';
+import { testGamesOn, setTestGames, trackingSwitchOn, setTrackingSwitch } from './testing.js';
 import { mayManageGames, openGames } from './mygames.js';
 
 /* What the home page (home.js) and the other pages share: a line about each game, each game's icon and look, what was played lately,
@@ -303,6 +303,19 @@ function settings(onRecalibrate){
     tmark();
     hint = 'Adds the 3D and phone-stick test games to My library.';
     row('Test games', tseg);
+    /* the camera's two trial features, and the small tracking readout (docs/tracking-trial.md): each off unless turned on, kept on this PC */
+    for (const [key, name, tip] of [
+      ['appearance', 'Recognise players by clothes', 'Helps the camera keep players apart when they cross or stand close.'],
+      ['zoom', 'Look closer at small players', 'Takes a second look at children who are small or far away. Costs a little speed.'],
+      ['info', 'Show tracking details', 'A small box in the corner for each player: size, zoom, clothes match.']
+    ]){
+      const seg = h('div', 'seg'), OO = [[false, 'Off'], [true, 'On']];
+      const mark = () => OO.forEach(([v], i) => seg.children[i].classList.toggle('chosen', trackingSwitchOn(key) === v));
+      for (const [v, label] of OO) seg.appendChild(small(label, () => { if (trackingSwitchOn(key) === v) return; sfx.select?.(); setTrackingSwitch(key, v); mark(); }, 'hands'));
+      mark();
+      hint = tip;
+      row(name, seg);
+    }
   }
 
   s.appendChild(card);

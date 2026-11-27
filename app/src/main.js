@@ -606,6 +606,7 @@ function tick(now){
   oc.clearRect(0, 0, W, H);
   if ((mode !== 'play' && mode !== 'outro') || paused || lost || padWait) cursor.draw(oc, W, H);
   drawPerf(dt);
+  drawTrackInfo();
 
   requestAnimationFrame(tick);
 }
@@ -641,6 +642,24 @@ function drawPerf(dt){
     c.fillStyle = slow ? '#ff8a3d' : '#9bffd0';
     c.fillText(r, pad, H - pad / 2 - lh * (rows.length - i) - pad / 4);
   });
+  c.restore();
+}
+/* Settings > Testing > Show tracking details (owner): a small box in the top-right corner, a line per player in the game - slot, body
+   size (share of the picture's height), Z when the closer look has been at them lately (Z+ if it found them), and how well their clothes
+   match what was learned (1.00 is the same) - for trying the camera at home (docs/tracking-trial.md). Nothing is drawn when it is off. */
+function drawTrackInfo(){
+  if (account.role !== 'owner' || !pose.infoOn()) return;
+  let info; try { info = pose.trackInfo(); } catch (e){ return; }
+  const pad = Math.max(8, H * 0.015), lh = Math.max(13, H * 0.022);
+  const rows = ['zoom ' + info.zoom + (info.cropMs ? ' ' + info.cropMs.toFixed(0) + 'ms' : ''), 'clothes ' + (info.clothes ? 'on' : 'off')];
+  for (const r of info.rows) rows.push(`P${r.slot} body ${r.body == null ? '-' : Math.round(r.body * 100) + '%'} ${r.zoom ? (r.found ? 'Z+' : 'Z ') : '  '} ${r.match == null ? ' - ' : r.match.toFixed(2)}`);
+  c.save();
+  c.font = `700 ${Math.round(lh * 0.8)}px ui-monospace, monospace`;
+  const w = Math.max(...rows.map(t => c.measureText(t).width)) + pad * 2;
+  c.fillStyle = 'rgba(9,7,20,.78)';
+  c.fillRect(W - w - pad / 2, pad / 2, w, lh * rows.length + pad);
+  c.textBaseline = 'top'; c.fillStyle = '#9bffd0';
+  rows.forEach((t, i) => c.fillText(t, W - w + pad / 2, pad + lh * i));
   c.restore();
 }
 addEventListener('keydown', (e) => {
