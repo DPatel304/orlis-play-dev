@@ -28,7 +28,19 @@ export const IDLE_AFTER = 3;        /* seconds with nobody in view before slowin
 export const IDLE_EVERY_MS = 250;   /* ...to a look this often */
 export const isIdle = (emptyForSeconds) => emptyForSeconds > IDLE_AFTER;
 
-export const MAX_PIXELS = 2.6e6;    /* about a 1080p screen and a bit */
+/* Looking closer at small players (zoom.js, off unless the owner turns it on): how many cut-out looks may follow the full-frame look.
+   None while looks are already being skipped (the machine is struggling), none when the full look plus one crop would run past
+   ZOOM_MAX_MS (a bit under SLOW_MS, where nextSkip starts skipping), else as many as fit, up to MAX_CROPS. A crop costs about what a
+   full look does (the tracker shrinks both to the same small square), so until one has been timed, cropMs is taken as the full look's. */
+export const ZOOM_MAX_MS = 24, MAX_CROPS = 2;
+export function zoomBudget({ skip = 1, fullMs = 0, cropMs = 0 } = {}){
+  if (skip > 1) return 0;
+  const one = cropMs > 0 ? cropMs : fullMs;
+  if (!(fullMs > 0) || !(one > 0)) return 0;                       /* (nothing timed yet: no guessing) */
+  return Math.max(0, Math.min(MAX_CROPS, Math.floor((ZOOM_MAX_MS - fullMs) / one)));
+}
+
+export const MAX_PIXELS = 2.6e6;   /* about a 1080p screen and a bit */
 export function renderScale(cssW, cssH, dpr = 1, maxDpr = 2, maxPixels = MAX_PIXELS){
   let d = Math.min(maxDpr, dpr || 1);
   const px = cssW * cssH * d * d;
