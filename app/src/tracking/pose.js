@@ -1,5 +1,8 @@
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
-import { CAM, HD, posesWanted, nextSkip, isIdle, IDLE_EVERY_MS } from './budget.js';
+import { CAM, HD, posesWanted, nextSkip, isIdle, IDLE_EVERY_MS, zoomBudget, ZOOM_MAX_MS } from './budget.js';
+import { switchOn } from './switches.js';
+import { sampleSignature, sigDistance, appearanceCost, blendSignature, CONTEST, REMEMBER_MS, REJOIN_MAX, SAMPLE_EVERY_MS, LEARN_EVERY_MS } from './appearance.js';
+import { pickTargets, mapLandmarksFromCrop, BODY_PER_TORSO } from './zoom.js';
 
 /* (the names of the body's points, the skeleton, and the players' colours:
    in pose-shared.js, which games can carry without the camera engine) */
@@ -125,6 +128,24 @@ export function onePerPerson(people){
     if (!twin) kept.push(lm);
   }
   return kept;
+}
+
+/* Looking closer (zoom.js): the full-frame bodies plus what the cut-out looks found, one entry per person. A cut-out body counts only if
+   it is plausibly the person it was cut out for (its hips well inside the square, its torso within a factor of two of what was
+   expected); it then competes with any full-frame body of the same person like any twin does (onePerPerson keeps the clearer one), and
+   is simply added where the full frame missed them. `crops`: [{ lm (full-frame, as the tracker gives them), target }]. */
+export const ZOOM_SIZE_RATIO = 2;
+export function mergeZoomed(full, crops){
+  const kept = [];
+  for (const { lm, target } of crops){
+    if (!lm || lm.length < 29) continue;
+    const r = target.region, hx = (lm[L.L_HIP].x + lm[L.R_HIP].x) / 2, hy = (lm[L.L_HIP].y + lm[L.R_HIP].y) / 2;
+    if (hx < r.x0 + r.w * 0.05 || hx > r.x0 + r.w * 0.95 || hy < r.y0 + r.h * 0.05 || hy > r.y0 + r.h * 0.95) continue;
+    const sz = sizeOf(lm);
+    if (!(sz > 0) || (target.expect && (sz > target.expect * ZOOM_SIZE_RATIO || sz * ZOOM_SIZE_RATIO < target.expect))) continue;
+    kept.push(lm);
+  }
+  return kept.length ? onePerPerson([...full, ...kept]) : full;
 }
 
 /* A face the camera can clearly see: the nose and at least one eye, with
@@ -272,6 +293,7 @@ export const pose = {
       }
       try {
         const files = await withTimeout(FilesetResolver.forVisionTasks(wasmDir), 25000);
+        this._files = files; this._model = model;      /* (kept: the zoom's own tracker is made from the same) */
         this.lm = await withTimeout(PoseLandmarker.createFromOptions(files, {
           baseOptions:{ modelAssetPath: model, delegate:'GPU' },
           runningMode:'VIDEO', numPoses:this.wanted,
@@ -300,12 +322,19 @@ export const pose = {
     for (const p of this.players){ p.lm = null; p.present = false; p.lostFor = 99; }
     this.personCount = 0; this.seenCount = 0; this.fps = 0;
     this.skip = 1; this._n = 0; this._acc = 0; this._emptyFor = 0; this._wbusy = false;
+    for (const p of this.players){ p.app = null; p.goneAt = null; p.zoomAt = 0; }
+    this._zoomInfo = null;
   },
   /* Settings can ask for the sharper (and costlier) picture, or for the
      tracker to work off the main thread. Kept as plain flags so nothing here
      breaks when storage is unavailable. */
   sharp(){ try { return localStorage.getItem('orlis_camsharp') === '1'; } catch (e){ return false; } },
   smoother(){ try { return localStorage.getItem('orlis_trackworker') === '1'; } catch (e){ return false; } },
+  /* The owner's two tracking switches (Settings > Testing; off unless turned on): recognise players by their clothes
+     (appearance.js) and look closer at small players (zoom.js). A test sets these directly. */
+  appearanceOn(){ return switchOn('appearance'); },
+  zoomOn(){ return switchOn('zoom'); },
+  infoOn(){ return switchOn('info'); },
   async _open(deviceId, exact){
     this._want = true;
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -440,7 +469,12 @@ export const pose = {
     const t0 = performance.now();
     try { res = this.lm.detectForVideo(v, nowMs); }
     catch (e){ return; }
-    this._took(performance.now() - t0, res, step);
+    let ms = performance.now() - t0;
+    /* Looking closer (off unless the owner switched it on): any failure here leaves res as the full-frame look gave it. */
+    if (this.zoomOn()){
+      try { const z = this._zoom(v, res, ms, wall); if (z){ res = z.res; ms += z.ms; } } catch (e){ this._zoomFailed(wall); }
+    }
+    this._took(ms, res, step);
   },
   /* One look finished (here or in the worker): the timing, the pacing, the people. */
   _took(ms, res, step){
@@ -451,8 +485,108 @@ export const pose = {
 
     const found = (res && res.landmarks) ? res.landmarks : [];
     this._emptyFor = found.length ? 0 : this._emptyFor + step;
-    this._assign(found.map(lm => lm.map(k => ({ x: 1 - k.x, y: k.y, z: k.z, v: k.visibility }))), step);
+    /* Clothes (off unless the owner switched it on): the picture, shrunk, is read only if the tracker asks (when two bodies are close) or
+       at the few-a-second sampling; `_grab` never throws. */
+    this._assign(found.map(lm => lm.map(k => ({ x: 1 - k.x, y: k.y, z: k.z, v: k.visibility }))), step, this.appearanceOn() ? () => this._grab() : undefined);
   },
+  /* A small copy of the video's picture (80 px wide), for reading clothes' colours: the same picture is not copied twice. It is read
+     into a handful of colour counts straight away and dropped - never shown, sent or kept (decisions 0007, 0011). Never throws;
+     gives null when it can't (and after three failures in a row, stops trying). */
+  _grab(){
+    const src = this.video;
+    if (this._got && this._gotAt === this._lastT) return this._got;
+    if ((this._grabFails || 0) >= 3 || !src || !src.videoWidth) return null;
+    try {
+      const W = 80, H = Math.max(1, Math.round(W * src.videoHeight / src.videoWidth));
+      if (!this._small || this._small.width !== W || this._small.height !== H){
+        const cv = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(W, H) : Object.assign(document.createElement('canvas'), { width: W, height: H });
+        this._small = cv; this._smallCx = cv.getContext('2d', { willReadFrequently: true });
+      }
+      this._smallCx.drawImage(src, 0, 0, W, H);
+      this._got = this._smallCx.getImageData(0, 0, W, H); this._gotAt = this._lastT; this._grabFails = 0;
+      return this._got;
+    } catch (e){ this._grabFails = (this._grabFails || 0) + 1; return null; }
+  },
+
+  /* Looking closer at small players (zoom.js). After the full-frame look: the (at most MAX_CROPS) players who are small, or who have
+     just gone missing, are cut out of the video (padded, square), the tracker is run on each, and the answers are mapped back into the
+     full-frame look's coordinates and merged with it (mergeZoomed). The cut-outs are looked at by a SECOND tracker, in IMAGE mode:
+     the one that watches the video (VIDEO mode) follows bodies from one picture to the next and needs its timestamps to climb, so
+     feeding it crops of other places between pictures would confuse that following. Gives { res, ms } to use instead of the full look
+     (ms: what the crops cost), or null for no change: no zoom this time (no one to look at, no time to spare, looks being skipped,
+     the second tracker still loading) - never an error; the caller treats a throw as "use the full look". The worker path has no zoom
+     (its tracker lives in the worker, a frame behind, and a second one on the main thread would undo what the worker is for). */
+  _zoom(v, res, fullMs, wall){
+    this.fullMs = this.fullMs ? this.fullMs + (fullMs - this.fullMs) * 0.1 : fullMs;
+    if (this.worker || this._zoomDead || wall < (this._zoomOffUntil || 0) || !this._zoomerReady()) return null;
+    const n = zoomBudget({ skip: this.skip, fullMs: this.fullMs, cropMs: this.cropMs || 0 });
+    const vw = v.videoWidth, vh = v.videoHeight;
+    if (!n || !vw || !vh) return null;
+    const raw = (res && res.landmarks) || [];
+    const now = this.clock();
+    const dets = raw.filter(lm => lm && lm.length >= 29).map(lm => ({ x: 1 - (lm[L.L_HIP].x + lm[L.R_HIP].x) / 2, y: (lm[L.L_HIP].y + lm[L.R_HIP].y) / 2, size: sizeOf(lm) }));
+    let targets = pickTargets(this.players, dets, { vw, vh, now, max: n });
+    /* small players are looked at on every other look; someone gone missing, on every one */
+    if ((this._zn = (this._zn || 0) + 1) % 2) targets = targets.filter(t => t.kind === 'missing');
+    if (!targets.length) return null;
+    const crops = [], info = this._zoomInfo || (this._zoomInfo = {});
+    let spent = 0;
+    for (const t of targets){
+      const c0 = performance.now();
+      const out = this.zoomer.detect(v, t.region);
+      const took = performance.now() - c0; spent += took;
+      this.cropMs = this.cropMs ? this.cropMs + (took - this.cropMs) * 0.2 : took;
+      const lm = out && out.landmarks && out.landmarks[0];
+      if (lm && lm.length >= 29) crops.push({ lm: mapLandmarksFromCrop(lm.map(k => ({ x: k.x, y: k.y, z: k.z, visibility: k.visibility })), t.region), target: t });
+      this.players[t.slot].zoomAt = now;
+      info[t.slot] = { at: now, hit: false };
+    }
+    this._zoomFails = 0;
+    if (spent > ZOOM_MAX_MS) this._zoomOffUntil = wall + 3000;        /* too slow here: leave it alone for a while */
+    const merged = mergeZoomed(raw, crops);
+    for (const c of crops) if (merged.includes(c.lm)) info[c.target.slot].hit = true;
+    return { res: { landmarks: merged }, ms: spent };
+  },
+  _zoomFailed(wall){
+    if ((this._zoomFails = (this._zoomFails || 0) + 1) >= 3){ this._zoomOffUntil = wall + 30000; this._zoomFails = 0; }
+  },
+  /* The second tracker (IMAGE mode, one body), made once, in the background, from the files the first one was made from. A test (or
+     anything else) can set pose.zoomer = { detect(video, region) -> { landmarks: [[...]] } } instead. */
+  _zoomerReady(){
+    if (this.zoomer) return true;
+    if (this._zoomMaking || this._zoomDead || !this._files) return false;
+    this._zoomMaking = true;
+    const make = (delegate) => PoseLandmarker.createFromOptions(this._files, {
+      baseOptions: { modelAssetPath: this._model, delegate }, runningMode: 'IMAGE', numPoses: 1,
+      minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5 });
+    (async () => {
+      try {
+        let lm2; try { lm2 = await withTimeout(make('GPU'), 40000); } catch (e){ lm2 = await withTimeout(make('CPU'), 40000); }
+        const S = 256, cv = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(S, S) : Object.assign(document.createElement('canvas'), { width: S, height: S });
+        const cx = cv.getContext('2d');
+        this.zoomer = { lm: lm2, detect(src, r){ cx.drawImage(src, r.px.x, r.px.y, r.px.size, r.px.size, 0, 0, S, S); return lm2.detect(cv); } };
+      } catch (e){ this._zoomDead = true; }
+      this._zoomMaking = false;
+    })();
+    return false;
+  },
+
+  /* What the on-screen tracking details show (Settings > Testing > Show tracking details): per player in the game the slot, body size (as a
+     share of the picture's height), whether the zoom looked at them lately (and whether it found them), and how well their clothes
+     match the ones learned (1 = the same). */
+  trackInfo(){
+    const now = this.clock(), z = this._zoomInfo || {};
+    const zoom = !this.zoomOn() ? 'off' : this.worker ? 'off (worker)' : this._zoomDead ? 'unavailable' : this.skip > 1 ? 'paused (slow)' : this.zoomer ? 'on' : 'loading';
+    const rows = [];
+    this.players.forEach((p, i) => {
+      if (!p.present) return;
+      const zi = z[i];
+      rows.push({ slot: i + 1, body: p.at && p.at.size ? Math.min(1, p.at.size * BODY_PER_TORSO) : null,
+        zoom: !!zi && now - zi.at < 1000, found: !!zi && zi.hit, match: p.app && p.app.score != null ? p.app.score : null });
+    });
+    return { zoom, clothes: this.appearanceOn(), cropMs: this.cropMs || 0, rows };
+  },
+
   /* The off-the-main-thread way: hand over a bitmap of this frame, and take
      whatever came back from the last one (a frame behind - fine for a body). */
   _viaWorker(v, nowMs, step){
@@ -491,8 +625,15 @@ export const pose = {
 
   /* Who's who. Landmarks arrive mirrored, so screen left is the player's own
      left as they face the TV. */
-  _assign(people, dt){
+  /* `frame` (only when the owner has Recognise players by clothes on): the picture to read clothes from - { data, width, height } or a
+     function that gives one (or null) - used to tell two close bodies apart, to learn each player's clothes now and then, and to give a
+     returning player their own place back. Absent, nothing about clothes happens. */
+  _assign(people, dt, frame){
     people = onePerPerson(people);
+    const clothes = frame != null, now = this.clock();
+    let pic;   /* (the picture, fetched at most once a look, and only when something asks) */
+    const picture = () => { if (pic === undefined){ try { pic = (typeof frame === 'function' ? frame() : frame) || null; } catch (e){ pic = null; } } return pic; };
+    const sigOf = (d) => { if (d.sig === undefined){ try { const f = picture(); d.sig = f ? sampleSignature(f, d.lm) : null; } catch (e){ d.sig = null; } } return d.sig; };
     this.seenCount = people.length;
     const biggest = Math.max(0, ...people.map(sizeOf));
     const dets = people.map(lm => ({
@@ -523,11 +664,12 @@ export const pose = {
         pairs.push({ i, j, dist: cost });
       });
     });
+    if (clothes) this._byClothes(pairs, dets, sigOf);
     pairs.sort((a, b) => a.dist - b.dist);
-    const matched = new Set();
+    const matched = new Set(), got = new Map();
     for (const { i, j } of pairs){
       if (matched.has(i) || dets[j].taken) continue;
-      matched.add(i); dets[j].taken = true;
+      matched.add(i); dets[j].taken = true; got.set(i, dets[j]);
       const p = this.players[i], d = dets[j];
       p.head = d.head;
       this._apply(p, d.lm, dt);
@@ -536,7 +678,7 @@ export const pose = {
       /* In a game that says so (squats are a move in Tower Defense), a
          player who sits or crouches stays in; stepping back still counts. */
       p.watching = d.playing || (this.keepSitters && d.close) ? 0 : p.watching + dt;
-      if (p.watching > WATCH_AFTER){ p.present = false; p.lm = null; p.watching = 0; }
+      if (p.watching > WATCH_AFTER){ p.present = false; p.lm = null; p.watching = 0; p.goneAt = now; }
     }
     /* A player not found where their hips were heading - they moved fast,
        or the hips were misread - picks up a body left over by its head. */
@@ -549,7 +691,7 @@ export const pose = {
         const dist = apart(d.head, p.head); if (dist < bd){ bd = dist; best = d; }
       }
       if (!best) return;
-      matched.add(i); best.taken = true; p.head = best.head;
+      matched.add(i); best.taken = true; p.head = best.head; got.set(i, best);
       this._apply(p, best.lm, dt); p.at = null; this._track(p, best, dt);
       p.lostFor = 0;
     });
@@ -557,8 +699,10 @@ export const pose = {
     this.players.forEach((p, i) => {
       if (matched.has(i) || !p.present) return;
       p.lostFor += dt;
-      if (p.lostFor > LOST_AFTER) p.present = false;
+      if (p.lostFor > LOST_AFTER){ p.present = false; p.goneAt = now; }
     });
+    /* Clothes: each player clearly seen and clear of everyone else is read a few times a second when new, then now and then. */
+    if (clothes) for (const [i, d] of got) this._learn(this.players[i], d, dets, now, picture, sigOf);
     /* Newcomers: someone standing up front with their face in view is a
        candidate, followed from frame to frame; one seen steadily for
        JOIN_AFTER takes an empty place, left to right. A candidate who
@@ -583,14 +727,71 @@ export const pose = {
     const free = this.players.filter((p, i) => !p.present && i < this.cap);
     const joiners = this._cands.filter(c => c.hit && c.seen >= JOIN_AFTER).map(c => c.hit).sort((a, b) => a.x - b.x);
     for (const d of joiners) this._cands = this._cands.filter(c => c.hit !== d);
-    for (const p of free){
-      const d = joiners.shift();
+    /* Someone who left a moment ago and is back (their clothes the same) gets their own place, and colour, back. */
+    const slots = new Map();
+    if (clothes && joiners.length && free.some(p => p.app && p.app.sig && p.goneAt != null && now - p.goneAt <= REMEMBER_MS)){
+      try {
+        const all = [];
+        for (const p of free){
+          if (!(p.app && p.app.sig && p.goneAt != null && now - p.goneAt <= REMEMBER_MS)) continue;
+          for (const d of joiners){ const s = sigOf(d); if (s){ const dist = sigDistance(p.app.sig, s); if (dist <= REJOIN_MAX) all.push({ p, d, dist }); } }
+        }
+        all.sort((a, b) => a.dist - b.dist);
+        for (const { p, d } of all) if (!slots.has(p) && ![...slots.values()].includes(d)) slots.set(p, d);
+      } catch (e){ slots.clear(); }
+    }
+    const rest = joiners.filter(d => ![...slots.values()].includes(d));
+    /* the others take the other free places, left to right - those kept for someone who left a moment ago last */
+    const kept = (p) => clothes && p.app && p.app.sig && p.goneAt != null && now - p.goneAt <= REMEMBER_MS;
+    const order = [...slots.keys(), ...free.filter(p => !slots.has(p) && !kept(p)), ...free.filter(p => !slots.has(p) && kept(p))];
+    for (const p of order){
+      const d = slots.get(p) || rest.shift();
       if (!d) break;
       p.lm = null; this._apply(p, d.lm, dt); p.head = d.head;
       p.at = null; this._track(p, d, dt);
-      p.present = true; p.lostFor = 0; p.watching = 0;
+      p.present = true; p.lostFor = 0; p.watching = 0; p.goneAt = null;
+      if (clothes){ if (!slots.has(p)) p.app = null; this._learn(p, d, dets, now, picture, sigOf); }
     }
     this.personCount = this.players.filter(p => p.present).length;
+  },
+
+  /* Clothes in the choice of who is who. Only where it is close: a player whose two best bodies cost within CONTEST of each other, or a
+     body that two players want about equally - crossing, or standing side by side - gets appearanceCost (0 to APPEAR_COST picture
+     heights, by how different the clothes are) added for each body, against the colours learned for that player. Everywhere else
+     the costs are as they were, and the picture isn't even read. A player with no learned colours, or a body that can't be read, adds
+     nothing; any failure leaves the costs as they are. */
+  _byClothes(pairs, dets, sigOf){
+    try {
+      const byI = new Map(), byJ = new Map();
+      for (const q of pairs){ (byI.get(q.i) || byI.set(q.i, []).get(q.i)).push(q); (byJ.get(q.j) || byJ.set(q.j, []).get(q.j)).push(q); }
+      const close = (l) => { if (l.length < 2) return false; const c = l.map(q => q.dist).sort((a, b) => a - b); return c[1] - c[0] < CONTEST; };
+      const adds = [];
+      for (const q of pairs){
+        if (!close(byI.get(q.i)) && !close(byJ.get(q.j))) continue;
+        const a = this.players[q.i].app;
+        if (!a || !a.sig) continue;
+        const s = sigOf(dets[q.j]);
+        if (s) adds.push([q, sigDistance(a.sig, s)]);
+      }
+      for (const [q, dist] of adds){ q.dist += appearanceCost(dist); q.look = dist; }
+    } catch (e){ /* (as it was) */ }
+  },
+  /* Learning a player's clothes: when they are new, a few samples a second, then now and then; only while their torso is clearly seen
+     and nobody is on top of them; a sample that is nothing like what is known is not learned (a hand-over, a wrong body). */
+  _learn(p, d, dets, now, picture, sigOf){
+    try {
+      const a = p.app;
+      if (a && now - a.t < (a.n < 4 ? SAMPLE_EVERY_MS : LEARN_EVERY_MS)) return;
+      if (dets.some(o => o !== d && apart(o, d) < Math.max(o.size, d.size) * 0.9)) return;
+      if (![L.L_SHOULDER, L.R_SHOULDER, L.L_HIP, L.R_HIP].every(k => (d.lm[k].v ?? d.lm[k].visibility ?? 1) >= 0.7)) return;
+      const s = sigOf(d);
+      if (!s) return;
+      if (!a || !a.sig){ p.app = { sig: s, n: 1, t: now, score: null }; return; }
+      const dist = sigDistance(a.sig, s);
+      a.t = now; a.score = 1 - dist;
+      if (dist > 0.7) return;
+      a.sig = blendSignature(a.sig, s, a.n < 4 ? 0.4 : 0.1); a.n++;
+    } catch (e){ /* (nothing learned this time) */ }
   },
 
   /* Where a player's hips are and how they're moving, unsmoothed. */
