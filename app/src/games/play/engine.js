@@ -293,7 +293,7 @@ class PlayRound {
     /* the orbs follow the hands; what a hand can touch (a good thing, never a thing to dodge) draws it a little toward that thing */
     this.feel.aspect = aspect;
     this.feel.targets(this.things.filter(th => !th.dead && !th.leaving && !this._under(th.x, th.y) && this._live(th) && this._touchable(th) && th.x > -0.05 && th.x < 1.05 && th.y > -0.05 && th.y < 1.05).map(th => ({ x: th.x, y: th.y, r: th.sz / 2 })));
-    this.feel.step(dt, hands.map(({ i, h }, k) => ({ key: i + (h === this.env.pose.players[i].hands.left ? 'L' : 'R'), who: i, x: h.x, y: h.y, col: this._colorOf(i) })),
+    this.feel.step(dt, hands.map(({ i, h }, k) => ({ key: i + (h === this.env.pose.players[i].hands.left ? 'L' : 'R'), who: i, x: h.dx ?? h.x, y: h.dy ?? h.y, col: this._colorOf(i) })),   /* (the orb is drawn where Steadier hands leads it; hits above use h.x, h.y) */
       (k) => { const f = this.env.sfx.handWhoosh; if (f) f.call(this.env.sfx, k); });
     for (const th of this.things){
       if (th.dead) continue;

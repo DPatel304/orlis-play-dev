@@ -37,6 +37,7 @@ import { countText } from './ui/units.js';
 import { usesPads, createPads, padHub, peopleFrom, skipJoinCard } from './session/pads.js';
 import { joinCard } from './ui/join-card.js';
 import { framingCheck } from './ui/framing-check.js';
+import { screenLight } from './ui/screenlight.js';
 import { padWaitPill } from './ui/pause-pill.js';
 import { IdleWatch } from './session/idle.js';
 import { normalizeLook } from './ui/look.js';
@@ -550,6 +551,10 @@ function tick(now){
   pose.paused = !!paused;
   fxState.hidden = !!paused;      /* (frozen bursts and "+1"s would hang over the pause card) */
   if (!away && (!CALM.has(mode) || BODY_PAGES.has(mode))) pose.update(now, dt);
+  /* Brighten the screen in dark rooms (Settings > Testing): the room's brightness from the camera, a veil on the screen eased in and out */
+  { const li = pose.lightLook(); screenLight.step(dt, mode, li ? li.mean : null); }
+  /* Record tracking (Settings > Testing; points only): kept while a round is playing */
+  if (account.role === 'owner') pose.recordRound(mode === 'play' && !paused && game ? { game: game.id, lineup: players } : null);
 
   /* paper, under the menus; dark under a game while it loads */
   c.fillStyle = mode === 'play' || mode === 'outro' || mode === 'results' || mode === 'starting' || mode === 'framing' ? '#0d0b1a' : PAPER;
@@ -651,8 +656,13 @@ function drawTrackInfo(){
   if (account.role !== 'owner' || !pose.infoOn()) return;
   let info; try { info = pose.trackInfo(); } catch (e){ return; }
   const pad = Math.max(8, H * 0.015), lh = Math.max(13, H * 0.022);
-  const rows = ['zoom ' + info.zoom + (info.cropMs ? ' ' + info.cropMs.toFixed(0) + 'ms' : ''), 'clothes ' + (info.clothes ? 'on' : 'off')];
-  for (const r of info.rows) rows.push(`P${r.slot} body ${r.body == null ? '-' : Math.round(r.body * 100) + '%'} ${r.zoom ? (r.found ? 'Z+' : 'Z ') : '  '} ${r.match == null ? ' - ' : r.match.toFixed(2)}`);
+  const rows = ['zoom ' + info.zoom + (info.cropMs ? ' ' + info.cropMs.toFixed(0) + 'ms' : ''), 'clothes ' + (info.clothes ? 'on' : 'off') + ', apart ' + (info.apart ? 'on' : 'off') + ', steady ' + (info.steady ? 'on' : 'off')];
+  /* each player: body size, Z / Z+ (closer look), clothes match, shape match (S 0.97), HOLD while overlapping someone */
+  for (const r of info.rows) rows.push(`P${r.slot} body ${r.body == null ? '-' : Math.round(r.body * 100) + '%'} ${r.zoom ? (r.found ? 'Z+' : 'Z ') : '  '} ${r.match == null ? ' - ' : r.match.toFixed(2)} S ${r.shape == null ? ' - ' : r.shape.toFixed(2)}${r.holding ? ' HOLD' : ''}`);
+  if (info.record) rows.push(`rec ${info.record.recording ? 'on' : 'waiting'} ${Math.floor(info.record.seconds / 60)}:${String(Math.floor(info.record.seconds % 60)).padStart(2, '0')}`);
+  if (info.camera) rows.push(`camera ${info.camera.fps == null ? '?' : info.camera.fps + ' fps'}, exposure ${info.camera.controls ? info.camera.exposure : 'no controls'}`);
+  { const sl = screenLight.state(); if (sl) rows.push('room: ' + sl); }
+  if (info.light && info.light.person != null && info.light.gap > 0.22 && info.light.background >= 0.5) rows.push('room: window behind?');
   c.save();
   c.font = `700 ${Math.round(lh * 0.8)}px ui-monospace, monospace`;
   const w = Math.max(...rows.map(t => c.measureText(t).width)) + pad * 2;

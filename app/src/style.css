@@ -783,6 +783,7 @@ canvas.avface{ display:block; border-radius:22%; }
 .frmwho{ font-size:2vh; font-weight:700; color:var(--ink-soft); }
 .frmwho:empty{ display:none; }
 .frmsay{ font-size:3.8vh; font-weight:700; letter-spacing:-.01em; line-height:1.15; }
+.frmtip{ padding:.7vh 2.2vh; font-size:2.8vh; font-weight:700; line-height:1.15; max-width:70vw; }
 .framego{ position:absolute; right:3vw; bottom:3vh; pointer-events:auto; }
 .framego.hide{ display:none; }
 

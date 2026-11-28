@@ -3,6 +3,11 @@ import { CAM, HD, posesWanted, nextSkip, isIdle, IDLE_EVERY_MS, zoomBudget, ZOOM
 import { switchOn } from './switches.js';
 import { sampleSignature, sigDistance, appearanceCost, blendSignature, CONTEST, REMEMBER_MS, REJOIN_MAX, SAMPLE_EVERY_MS, LEARN_EVERY_MS } from './appearance.js';
 import { pickTargets, mapLandmarksFromCrop, BODY_PER_TORSO } from './zoom.js';
+import { Recorder } from './recorder.js';
+import { steadyFilter, led } from './steady.js';
+import { frameRateIdeal, describeTrack, fpsPlan, exposurePlan, MIN_LOOK_GAP_MS } from './camera.js';
+import { meanLuminance, estimateLight } from './lighting.js';
+import { shapeOf, learnShape, shapeDistance, shapeCost, bestAssignment, Hold, SHAPE_REJOIN, SHAPE_MIN_N, SHAPE_FAST_MS, SHAPE_SLOW_MS, MEMORY_MS, HOLD_ON, HOLD_OFF, HOLD_MAX_S, HOLD_OVER, HOLD_TOUCH, HOLD_MARGIN } from './shape.js';
 
 /* (the names of the body's points, the skeleton, and the players' colours:
    in pose-shared.js, which games can carry without the camera engine) */
@@ -40,6 +45,8 @@ export function between(a, b, before, iv, since){
 /* The hand that drives the cursor only changes when the other one is
    clearly better seen - not back and forth every frame. */
 const HAND_SWAP = 0.2;
+let LEAD_OFF = false;                 /* (a test turns the drawn lead off, to show hits and scores do not depend on it) */
+export const setLead = (on) => { LEAD_OFF = !on; };
 const LOST_AFTER = 0.6;     /* seconds without a detection before a player counts as gone */
 
 /* Players and watchers. Everyone the camera can see is looked at, but only
@@ -322,8 +329,8 @@ export const pose = {
     for (const p of this.players){ p.lm = null; p.present = false; p.lostFor = 99; }
     this.personCount = 0; this.seenCount = 0; this.fps = 0;
     this.skip = 1; this._n = 0; this._acc = 0; this._emptyFor = 0; this._wbusy = false;
-    for (const p of this.players){ p.app = null; p.goneAt = null; p.zoomAt = 0; }
-    this._zoomInfo = null;
+    for (const p of this.players){ p.app = null; p.goneAt = null; p.zoomAt = 0; p.shape = null; }
+    this._zoomInfo = null; this._hold = [];
   },
   /* Settings can ask for the sharper (and costlier) picture, or for the
      tracker to work off the main thread. Kept as plain flags so nothing here
@@ -340,7 +347,7 @@ export const pose = {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: Object.assign(
         (() => { const c = this.sharp() ? HD : CAM;
-                 return { width:{ideal:c.width}, height:{ideal:c.height}, frameRate:{ideal:c.frameRate} }; })(),
+                 return { width:{ideal:c.width}, height:{ideal:c.height}, frameRate:(switchOn('camera') && frameRateIdeal(true)) || {ideal:c.frameRate} }; })(),
         /* Ask for the remembered camera by id. The moment a second one exists -
            a phone running Camo, a USB webcam beside the laptop's built-in -
            whatever Windows calls default is as likely to be the wrong one, and
@@ -354,6 +361,38 @@ export const pose = {
     this.activeId = stream.getVideoTracks()[0].getSettings().deviceId || deviceId || '';
     this.video.srcObject = stream;
     await this.video.play();
+    /* Sharper camera (camera.js; Settings > Testing, off unless on): never holds up the start, never throws */
+    if (switchOn('camera')) this._sharpen(stream.getVideoTracks()[0]);
+  },
+  /* Ask for 60 fps once more if the camera can and isn't, and start watching the light for a shorter exposure. */
+  async _sharpen(track){
+    try {
+      this._camTrack = track; this._camState = null; this._camLum = null; this._lumAt = 0;
+      let d = describeTrack(track);
+      const plan = fpsPlan(d);
+      if (plan){ try { await track.applyConstraints(plan); } catch (e){ /* (it stays as it is) */ } d = describeTrack(track); }
+      this.camInfo = d;
+    } catch (e){ this._camTrack = null; }
+  },
+  /* every look, when Sharper camera is on and the camera was opened with it: the smoothed brightness (twice a second, from the tracker's
+     small picture copy), and the exposure plan from it */
+  _camTick(wall){
+    try {
+      const track = this._camTrack;
+      if (!track) return;
+      if (!switchOn('camera')){
+        if (this._camState && this._camState.mode === 'short'){ this._camState = null; track.applyConstraints({ advanced: [{ exposureMode: 'continuous' }] }).catch(() => {}); }
+        this._camTrack = null; return;
+      }
+      if (wall - this._lumAt < 500) return;
+      this._lumAt = wall;
+      const pic = this._grab(), l = pic ? meanLuminance(pic, 2) : null;
+      if (l == null) return;
+      this._camLum = this._camLum == null ? l : this._camLum + (l - this._camLum) * 0.15;
+      const d = describeTrack(track), r = exposurePlan(d, this._camLum, this._camState, wall);
+      this.camInfo = d; this._camState = r.state;
+      if (r.constraints) track.applyConstraints(r.constraints).catch(() => { this._camState = { mode: 'auto', at: wall + 60000 }; });
+    } catch (e){ this._camTrack = null; }
   },
   /* Quietly starting the camera over, with no screen and nothing to press (there's no Re-calibrate button to ask
      for it): when its pictures stop coming (a frozen or unplugged-and-back camera), or when nobody's been seen for
@@ -374,6 +413,7 @@ export const pose = {
     return true;
   },
   _close(){
+    this._camTrack = null;
     try { this.video.srcObject && this.video.srcObject.getTracks().forEach(t => t.stop()); } catch (e){}
     try { this.video.srcObject = null; } catch (e){}
     this._lastT = undefined;
@@ -453,6 +493,9 @@ export const pose = {
 
     /* The pause screen has no use for bodies. */
     if (this.paused){ this._decay(dt); return; }
+    /* Sharper camera: a 60 fps camera is looked at about 38 times a second at most (more pictures, a fresher one each look, not more work) */
+    if (this._camTrack && wall - (this._lookAt || 0) < MIN_LOOK_GAP_MS) return;
+    this._lookAt = wall;
     /* Nobody there for a few seconds: look a few times a second, not thirty. */
     this._acc += dt;
     if (isIdle(this._emptyFor)){
@@ -487,7 +530,44 @@ export const pose = {
     this._emptyFor = found.length ? 0 : this._emptyFor + step;
     /* Clothes (off unless the owner switched it on): the picture, shrunk, is read only if the tracker asks (when two bodies are close) or
        at the few-a-second sampling; `_grab` never throws. */
-    this._assign(found.map(lm => lm.map(k => ({ x: 1 - k.x, y: k.y, z: k.z, v: k.visibility }))), step, this.appearanceOn() ? () => this._grab() : undefined);
+    if (this._camTrack) this._camTick(performance.now());
+    const people = found.map(lm => lm.map(k => ({ x: 1 - k.x, y: k.y, z: k.z, v: k.visibility })));
+    if (this._recRound) this._record(people, step);
+    this._assign(people, step, this.appearanceOn() ? () => this._grab() : undefined);
+  },
+  /* Recording tracking (recorder.js; Settings > Testing, off unless on): main.js says each frame whether a round is playing
+     (recordRound), and each look's people list - points only, as _assign gets it - is kept in memory. Never throws. */
+  recordRound(info){
+    try {
+      if (!info || !switchOn('record')){ this._recRound = false; return; }
+      if (!this.recorder) this.recorder = new Recorder();
+      if (!this._recRound){ this._recRound = true; this.recorder.begin(info); }
+    } catch (e){ this._recRound = false; }
+  },
+  _record(people, step){
+    try {
+      let sigs = null;
+      if (this.appearanceOn() && people.length > 1){
+        const pic = this._grab();
+        if (pic) sigs = people.map(lm => { try { return sampleSignature(pic, lm); } catch (e){ return null; } });
+      }
+      const v = this.video;
+      this.recorder.add(this.clock(), step, people, sigs, v && v.videoWidth ? { w: v.videoWidth, h: v.videoHeight } : null);
+    } catch (e){ /* (this look is not kept) */ }
+  },
+  recordingInfo(){ const r = this.recorder; return { on: switchOn('record'), recording: !!this._recRound, seconds: r ? r.seconds : 0, count: r ? r.count : 0 }; },
+  /* How bright the room looks (Settings > Testing > Lighting tips, and Brighten the screen in dark rooms): numbers from the small picture copy
+     (see lighting.js), a couple of times a second, or null when neither switch is on or the picture cannot be read. */
+  lightLook(){
+    try {
+      if (!this.on || !this.ready || (!switchOn('light') && !switchOn('screenlight'))) return null;
+      const wall = performance.now();
+      if (this._light !== undefined && wall - (this._lightAt || 0) < 400) return this._light;
+      this._lightAt = wall;
+      const pic = this._grab();
+      this._light = pic ? estimateLight(pic, this.players.filter(p => p.present && p.lm).map(p => p.lm)) : null;
+      return this._light;
+    } catch (e){ return null; }
   },
   /* A small copy of the video's picture (80 px wide), for reading clothes' colours: the same picture is not copied twice. It is read
      into a handful of colour counts straight away and dropped - never shown, sent or kept (decisions 0007, 0011). Never throws;
@@ -582,9 +662,14 @@ export const pose = {
       if (!p.present) return;
       const zi = z[i];
       rows.push({ slot: i + 1, body: p.at && p.at.size ? Math.min(1, p.at.size * BODY_PER_TORSO) : null,
-        zoom: !!zi && now - zi.at < 1000, found: !!zi && zi.hit, match: p.app && p.app.score != null ? p.app.score : null });
+        zoom: !!zi && now - zi.at < 1000, found: !!zi && zi.hit, match: p.app && p.app.score != null ? p.app.score : null,
+        shape: p.shape && p.shape.score != null ? p.shape.score : null, holding: !!this._holdOf(i) });
     });
-    return { zoom, clothes: this.appearanceOn(), cropMs: this.cropMs || 0, rows };
+    const rec = this.recordingInfo(), cam = this.camInfo, ex = this._camState;
+    return { zoom, clothes: this.appearanceOn(), apart: switchOn('apart'), steady: switchOn('steady'), cropMs: this.cropMs || 0, rows,
+      record: rec.on ? { recording: rec.recording, seconds: rec.seconds } : null,
+      camera: switchOn('camera') ? { fps: cam && cam.fpsNow != null ? Math.round(cam.fpsNow) : null, exposure: ex && ex.mode === 'short' ? 'short' : 'auto', controls: !!(cam && cam.exposureTime) } : null,
+      light: switchOn('light') || switchOn('screenlight') ? this._light || null : null };
   },
 
   /* The off-the-main-thread way: hand over a bitmap of this frame, and take
@@ -631,9 +716,10 @@ export const pose = {
   _assign(people, dt, frame){
     people = onePerPerson(people);
     const clothes = frame != null, now = this.clock();
+    const apartOn = switchOn('apart');      /* Tell players apart better (shape.js): the best whole pairing, shape, the overlap hold, a longer memory */
     let pic;   /* (the picture, fetched at most once a look, and only when something asks) */
     const picture = () => { if (pic === undefined){ try { pic = (typeof frame === 'function' ? frame() : frame) || null; } catch (e){ pic = null; } } return pic; };
-    const sigOf = (d) => { if (d.sig === undefined){ try { const f = picture(); d.sig = f ? sampleSignature(f, d.lm) : null; } catch (e){ d.sig = null; } } return d.sig; };
+    const sigOf = (d) => { if (d.sig === undefined){ try { const f = picture(); d.sig = f ? (f.sigFor ? f.sigFor(d.lm) : sampleSignature(f, d.lm)) : null; } catch (e){ d.sig = null; } } return d.sig; };
     this.seenCount = people.length;
     const biggest = Math.max(0, ...people.map(sizeOf));
     const dets = people.map(lm => ({
@@ -650,7 +736,8 @@ export const pose = {
     const pairs = [];
     this.players.forEach((p, i) => {
       if (!p.present || !p.at) return;
-      const k = Math.min(p.lostFor + dt, 0.5), px = p.at.x + p.at.vx * k, py = p.at.y + p.at.vy * k;
+      const k = Math.min(p.lostFor + dt, 0.5);
+      const px = p.at.x + p.at.vx * k, py = p.at.y + p.at.vy * k;
       /* nearest hips win - but the shoulders and head have to agree too, and the size: someone walking past at the back crosses a
          player's hips without taking their place (a smaller body, its head and shoulders somewhere else) */
       const sz = p.at.size, dx = px - p.at.x, dy = py - p.at.y, ps = p.lm && upper(p.lm), psat = !!p.lm && seated(p.lm);
@@ -665,9 +752,16 @@ export const pose = {
       });
     });
     if (clothes) this._byClothes(pairs, dets, sigOf);
-    pairs.sort((a, b) => a.dist - b.dist);
+    let chosen = pairs;
+    if (apartOn){
+      try {
+        this._byShape(pairs, dets);
+        chosen = this._holdsAndBest(pairs, dets, dt, clothes ? sigOf : null);
+      } catch (e){ chosen = pairs; this._hold = []; }
+    }
+    chosen.sort((a, b) => a.dist - b.dist);
     const matched = new Set(), got = new Map();
-    for (const { i, j } of pairs){
+    for (const { i, j } of chosen){
       if (matched.has(i) || dets[j].taken) continue;
       matched.add(i); dets[j].taken = true; got.set(i, dets[j]);
       const p = this.players[i], d = dets[j];
@@ -698,11 +792,13 @@ export const pose = {
     /* Everyone in the game who wasn't seen this time ages toward gone. */
     this.players.forEach((p, i) => {
       if (matched.has(i) || !p.present) return;
+      if (apartOn && this._holdOf(i)) return;       /* (overlapping someone: kept, not aged toward gone, for a few seconds) */
       p.lostFor += dt;
       if (p.lostFor > LOST_AFTER){ p.present = false; p.goneAt = now; }
     });
     /* Clothes: each player clearly seen and clear of everyone else is read a few times a second when new, then now and then. */
     if (clothes) for (const [i, d] of got) this._learn(this.players[i], d, dets, now, picture, sigOf);
+    if (apartOn) for (const [i, d] of got) this._learnShape(this.players[i], d, dets, now);
     /* Newcomers: someone standing up front with their face in view is a
        candidate, followed from frame to frame; one seen steadily for
        JOIN_AFTER takes an empty place, left to right. A candidate who
@@ -727,14 +823,26 @@ export const pose = {
     const free = this.players.filter((p, i) => !p.present && i < this.cap);
     const joiners = this._cands.filter(c => c.hit && c.seen >= JOIN_AFTER).map(c => c.hit).sort((a, b) => a.x - b.x);
     for (const d of joiners) this._cands = this._cands.filter(c => c.hit !== d);
-    /* Someone who left a moment ago and is back (their clothes the same) gets their own place, and colour, back. */
+    /* Someone who left a moment ago and is back (their clothes the same) gets their own place, and colour, back. With Tell players apart
+       better: for up to MEMORY_MS, by clothes and/or the shape of their body. */
+    const memMs = apartOn ? MEMORY_MS : REMEMBER_MS;
+    const known = (p) => p.goneAt != null && now - p.goneAt <= memMs && ((clothes && p.app && p.app.sig) || (apartOn && p.shape && p.shape.looks >= SHAPE_MIN_N));
     const slots = new Map();
-    if (clothes && joiners.length && free.some(p => p.app && p.app.sig && p.goneAt != null && now - p.goneAt <= REMEMBER_MS)){
+    if ((clothes || apartOn) && joiners.length && free.some(known)){
       try {
         const all = [];
         for (const p of free){
-          if (!(p.app && p.app.sig && p.goneAt != null && now - p.goneAt <= REMEMBER_MS)) continue;
-          for (const d of joiners){ const s = sigOf(d); if (s){ const dist = sigDistance(p.app.sig, s); if (dist <= REJOIN_MAX) all.push({ p, d, dist }); } }
+          if (!known(p)) continue;
+          for (const d of joiners){
+            let score = 0, any = false, bad = false;
+            if (clothes && p.app && p.app.sig){
+              const s = sigOf(d); if (s){ const dist = sigDistance(p.app.sig, s); any = true; if (dist > REJOIN_MAX) bad = true; score += dist / REJOIN_MAX; }
+            }
+            if (apartOn && p.shape && p.shape.looks >= SHAPE_MIN_N){
+              const sd = shapeDistance(p.shape, this._shapeOfDet(d)); if (sd != null){ any = true; if (sd > SHAPE_REJOIN) bad = true; score += sd / SHAPE_REJOIN; }
+            }
+            if (any && !bad) all.push({ p, d, dist: score });
+          }
         }
         all.sort((a, b) => a.dist - b.dist);
         for (const { p, d } of all) if (!slots.has(p) && ![...slots.values()].includes(d)) slots.set(p, d);
@@ -742,7 +850,7 @@ export const pose = {
     }
     const rest = joiners.filter(d => ![...slots.values()].includes(d));
     /* the others take the other free places, left to right - those kept for someone who left a moment ago last */
-    const kept = (p) => clothes && p.app && p.app.sig && p.goneAt != null && now - p.goneAt <= REMEMBER_MS;
+    const kept = (p) => known(p);
     const order = [...slots.keys(), ...free.filter(p => !slots.has(p) && !kept(p)), ...free.filter(p => !slots.has(p) && kept(p))];
     for (const p of order){
       const d = slots.get(p) || rest.shift();
@@ -751,8 +859,10 @@ export const pose = {
       p.at = null; this._track(p, d, dt);
       p.present = true; p.lostFor = 0; p.watching = 0; p.goneAt = null;
       if (clothes){ if (!slots.has(p)) p.app = null; this._learn(p, d, dets, now, picture, sigOf); }
+      if (apartOn){ if (!slots.has(p)) p.shape = null; this._learnShape(p, d, dets, now); }
     }
     this.personCount = this.players.filter(p => p.present).length;
+    this.lastAssign = got;      /* (who got which body this look: the replay tool and the rig's measures read it) */
   },
 
   /* Clothes in the choice of who is who. Only where it is close: a player whose two best bodies cost within CONTEST of each other, or a
@@ -775,6 +885,101 @@ export const pose = {
       }
       for (const [q, dist] of adds){ q.dist += appearanceCost(dist); q.look = dist; }
     } catch (e){ /* (as it was) */ }
+  },
+  /* Tell players apart better (shape.js). A body's proportions, once a look. */
+  _shapeOfDet(d){ if (d.shp === undefined){ try { d.shp = shapeOf(d.lm); } catch (e){ d.shp = null; } } return d.shp; },
+  /* Shape in the choice of who is who: like clothes, only where it is close (a player whose two best bodies cost within CONTEST of each other,
+     or a body two players want about equally): SHAPE_COST at most added for a body built differently from the one learned for that player. */
+  _byShape(pairs, dets){
+    const byI = new Map(), byJ = new Map();
+    for (const q of pairs){ (byI.get(q.i) || byI.set(q.i, []).get(q.i)).push(q); (byJ.get(q.j) || byJ.set(q.j, []).get(q.j)).push(q); }
+    const close = (l) => { if (l.length < 2) return false; const c = l.map(q => q.dist).sort((a, b) => a - b); return c[1] - c[0] < CONTEST; };
+    const adds = [];
+    for (const q of pairs){
+      if (!close(byI.get(q.i)) && !close(byJ.get(q.j))) continue;
+      const sd = shapeDistance(this.players[q.i].shape, this._shapeOfDet(dets[q.j]));
+      if (sd != null) adds.push([q, sd]);
+    }
+    for (const [q, sd] of adds){ q.dist += shapeCost(sd); q.shapeD = sd; }
+  },
+  _learnShape(p, d, dets, now){
+    try {
+      const s = p.shape;
+      if (s && now - s.t < (s.looks < 8 ? SHAPE_FAST_MS : SHAPE_SLOW_MS)) return;
+      if (dets.some(o => o !== d && apart(o, d) < Math.max(o.size, d.size) * 0.9)) return;
+      const v = this._shapeOfDet(d);
+      if (!v) return;
+      if (s && s.looks >= SHAPE_MIN_N){ const dist = shapeDistance(s, v); s.score = dist == null ? s.score : 1 - dist; if (dist != null && dist > 0.3) return; }
+      p.shape = learnShape(s || null, v, now);
+    } catch (e){ /* (nothing learned this time) */ }
+  },
+  /* The overlap hold of a player, if any */
+  _holdOf(i){ const hs = this._hold; if (!hs) return null; for (const h of hs) if (h.a === i || h.b === i) return h; return null; },
+  /* Holds begin when two players' bodies overlap heavily (hips close and their boxes overlapping) and are decided once when two bodies come clear
+     of each other: "same" or "swapped", the cheaper by where each was heading, clothes and shape. Then the best whole pairing of what is left.
+     Gives the pairs to apply. */
+  _holdsAndBest(pairs, dets, dt, sigOf){
+    const now = this.clock(), hs = this._hold || (this._hold = []);
+    /* where each player has been over the last second (for how fast they were walking when an overlap began) */
+    for (const p of this.players){ if (!p.present || !p.at){ p.trail = null; continue; } const tr = p.trail || (p.trail = []); tr.push({ t: now, x: p.at.x }); while (tr.length && now - tr[0].t > 1000) tr.shift(); }
+    for (const h of hs) h.age += dt;
+    this._hold = hs.filter(h => h.age <= HOLD_MAX_S && this.players[h.a].present && this.players[h.b].present);
+    const box = (lm) => { const xs = lm.map(k => k.x); return [Math.min(...xs), Math.max(...xs)]; };
+    const idx = this.players.map((p, i) => (p.present && p.at && p.lm ? i : -1)).filter(i => i >= 0);
+    for (let x = 0; x < idx.length; x++) for (let y = x + 1; y < idx.length; y++){
+      const a = idx[x], b = idx[y], pa = this.players[a], pb = this.players[b];
+      if (this._hold.some(h => h.a === a && h.b === b)) continue;
+      const sz = Math.max(pa.at.size || 0.1, pb.at.size || 0.1);
+      if (apart(pa.at, pb.at) >= HOLD_ON * sz) continue;
+      const [a0, a1] = box(pa.lm), [b0, b1] = box(pb.lm), over = Math.min(a1, b1) - Math.max(a0, b0);
+      if (over <= HOLD_OVER * Math.min(a1 - a0, b1 - b0)) continue;
+      const vel = (p) => { const tr = p.trail || [], o = tr.find(q => now - q.t <= 600); return o && now - o.t >= 250 ? { ...p.at, vx: (p.at.x - o.x) / ((now - o.t) / 1000), vy: 0 } : { ...p.at }; };
+      this._hold.push(new Hold(a, b, vel(pa), vel(pb)));
+    }
+    let list = pairs;
+    for (const h of [...this._hold]){
+      const ea = h.expect(h.a), eb = h.expect(h.b), pool = dets.filter(d => Math.min(apart(d, ea), apart(d, eb)) < MATCH);
+      if (pool.length < 2){ h.merged = true; continue; }
+      { let md = Infinity; for (let u = 0; u < pool.length; u++) for (let v = u + 1; v < pool.length; v++) md = Math.min(md, apart(pool[u], pool[v]) / Math.max(pool[u].size, pool[v].size)); h.minD = Math.min(h.minD, md); }
+      /* the two bodies that fit the two players best (sizes within REFIND_SIZE of each player's own, nearest where each was heading), if they are
+         clear of each other; no such pair: the hold goes on */
+      const extra = (who, d) => {
+        let c = 0;
+        const at = this.players[who].at;
+        if (at && at.size){
+          if (d.size > at.size * REFIND_SIZE || d.size * REFIND_SIZE < at.size) return Infinity;      /* (not someone twice or half their size) */
+          c += SIZE_COST * Math.abs(Math.log(d.size / at.size));          /* (a child is not a grown-up, as in the ordinary costs) */
+        }
+        const a = this.players[who].app;
+        if (sigOf && a && a.sig){ const sg = sigOf(d); if (sg) c += appearanceCost(sigDistance(a.sig, sg)); }
+        c += shapeCost(shapeDistance(this.players[who].shape, this._shapeOfDet(d)));
+        return c;
+      };
+      let r = null;
+      for (let u = 0; u < pool.length; u++) for (let v = u + 1; v < pool.length; v++){
+        if (apart(pool[u], pool[v]) < HOLD_OFF * Math.max(pool[u].size, pool[v].size)) continue;
+        const q = h.decide(pool[u], pool[v], extra), c = Math.min(q.same, q.swap);
+        if (Number.isFinite(c) && (!r || c < r.c)) r = { ...q, c };
+      }
+      if (!r) continue;
+      /* nothing was ambiguous (the two stayed two clear bodies): the hold ends and the ordinary pairing stands; and no clear winner, the same */
+      if (!h.merged && h.minD >= HOLD_TOUCH){ this._hold = this._hold.filter(x => x !== h); continue; }
+      if (Math.abs(r.same - r.swap) < HOLD_MARGIN){ this._hold = this._hold.filter(x => x !== h); continue; }
+      this._hold = this._hold.filter(x => x !== h);
+      this.holdLog = (this.holdLog || 0) + 1; if (r.swapped) this.swapLog = (this.swapLog || 0) + 1;
+      const ju = dets.indexOf(r.give[h.a]), jv = dets.indexOf(r.give[h.b]);
+      list = list.filter(q => q.i !== h.a && q.i !== h.b && q.j !== ju && q.j !== jv);
+      list.push({ i: h.a, j: ju, dist: -1 }, { i: h.b, j: jv, dist: -1 });
+    }
+    /* the best whole pairing of everyone left (gates and costs as the greedy pairing has them) */
+    const forced = list.filter(q => q.dist === -1), rest = list.filter(q => q.dist !== -1);
+    const usedI = new Set(forced.map(q => q.i)), usedJ = new Set(forced.map(q => q.j));
+    const players = [...new Set(rest.filter(q => !usedI.has(q.i)).map(q => q.i))].sort((m, n) => m - n);
+    const options = players.map(i => rest.filter(q => q.i === i && !usedJ.has(q.j)).sort((m, n) => m.dist - n.dist || m.j - n.j).map(q => ({ j: q.j, cost: q.dist, q })));
+    const pick = bestAssignment(options);
+    const out = [...forced];
+    pick.forEach((j, pi) => { const o = options[pi].find(o => o.j === j); if (o) out.push(o.q); });
+    return out;
   },
   /* Learning a player's clothes: when they are new, a few samples a second, then now and then; only while their torso is clearly seen
      and nobody is on top of them; a sample that is nothing like what is known is not learned (a hand-over, a wrong body). */
@@ -806,7 +1011,7 @@ export const pose = {
   _apply(p, lm, dt){
     const now = this.clock(), n = lm.length;
     const fresh = !p.lm;
-    if (fresh){ p.lm = lm.map(k => ({...k})); p.filt = null; }
+    if (fresh){ p.lm = lm.map(k => ({...k})); p.filt = null; p.steady = null; }
     const sg = p.seg && p.seg.lm === p.lm && p.seg.n === n ? p.seg : null;
     /* where it is drawn right now (the start of the next stretch), before the new sample lands */
     if (sg){
@@ -814,7 +1019,12 @@ export const pose = {
       for (let j = 0; j < n * 3; j++) sg.a[j] = between(sg.a[j], sg.b[j], sg.before[j], sg.iv, since);
     }
     if (!fresh){
-      for (let i = 0; i < lm.length; i++){
+      /* Steadier hands (steady.js; Settings > Testing, off unless on): its own filtering; if it fails, the plain way below does this look */
+      let done = false;
+      if (switchOn('steady')){
+        try { steadyFilter(p, lm, dt, { oneEuro, MIN_CUTOFF, BETA, sizeOf }); done = true; } catch (e){ p.steady = null; }
+      }
+      if (!done) for (let i = 0; i < lm.length; i++){
         const f = (p.filt ||= [])[i] ||= { x: {}, y: {}, z: {} };
         p.lm[i].x = oneEuro(f.x, lm[i].x, dt);
         p.lm[i].y = oneEuro(f.y, lm[i].y, dt);
@@ -853,7 +1063,20 @@ export const pose = {
         k.z = between(g.a[j+2], g.b[j+2], g.before[j+2], g.iv, since);
       }
       this._body(p, 0);
+      /* Steadier hands: the glow orb's hand, drawn a look ahead (dx, dy). x and y stay the honest position every game hits with. */
+      if (p.steady || p.hands.left.dx !== undefined) this._lead(p, g, now);
     }
+  },
+  _lead(p, g, now){
+    try {
+      const on = switchOn('steady') && p.steady;
+      if (!on) p.steady = null;
+      for (const [h, k] of [[p.hands.left, L.L_WRIST], [p.hands.right, L.R_WRIST]]){
+        if (!on || LEAD_OFF){ if (h.dx !== undefined){ delete h.dx; delete h.dy; } continue; }
+        const d = led(p.steady, k, g, k * 3, now, p.steady.size, h.x, h.y);
+        h.dx = d.x; h.dy = d.y;
+      }
+    } catch (e){ delete p.hands.left.dx; delete p.hands.left.dy; delete p.hands.right.dx; delete p.hands.right.dy; }
   },
 
   /* The centre and size, and the hands, from the landmarks as they are. A new sample (dt > 0) gives the hands' speed; drawing

@@ -113,7 +113,7 @@ export class Person {
     this.seat = spec.role === 'sofa';                                    /* height in the picture (H) */
     this.realM = spec.realM ?? K.realM;
     this.ppm = this.h / this.realM;                              /* picture heights per metre */
-    this.armLen = K.arm * this.h;                                /* shoulder to wrist (H) */
+    this.armLen = K.arm * this.h * (spec.build && spec.build.arm ? spec.build.arm : 1);       /* shoulder to wrist (H) */
     this.x = spec.x; this.homeX = spec.x;                        /* hip centre, before the "closer" scale */
     this.k = 1; this.kGoal = 1;
     this.lift = 0; this.liftV = 0;                               /* jump height (m) */
@@ -128,6 +128,7 @@ export class Person {
     this.breath = rng() * 6; this.fid = { x: 0, y: 0 };
     this.stats = { frames: 0, on: 0, idle: 0, wait: 0, lapse: 0, armsUp: 0, bent: 0, hops: 0, closeTime: 0, offFrame: 0 };
     this.J = null; this.mem = {};
+    this.build = spec.build || null;                             /* { sh, hip, legs, arm }: a body built differently (shoulders, hips, leg and arm length x this); none by default */
     this._joints(0);
   }
   /* screen position of a point given in the person's own frame (before the "closer" scale) */
@@ -141,9 +142,9 @@ export class Person {
     const lean = c.lean * 0.22 * h / A;
     const hipY = yOf(K.hip) + crouchDrop + bendHip, shY = yOf(K.shoulder) + crouchDrop + bendSh, noseY = yOf(K.nose) + crouchDrop + bendHead;
     const fx = this.fid.x, fy = this.fid.y;
-    const hw = K.hipw * h / A, sw = K.shw * h / A, hx = this.x + fx;
+    const bd = this.build, hw = K.hipw * h / A * (bd && bd.hip ? bd.hip : 1), sw = K.shw * h / A * (bd && bd.sh ? bd.sh : 1), hx = this.x + fx;
     const shX = hx + lean, hdX = hx + lean * 1.25;
-    const kneeRest = yOf(K.knee) + crouchDrop * 0.5, ankRest = yOf(K.ankle);
+    const legF = bd && bd.legs ? bd.legs : 1, kneeRest = (legF === 1 ? yOf(K.knee) : yOf(K.hip + (K.knee - K.hip) * legF)) + crouchDrop * 0.5, ankRest = legF === 1 ? yOf(K.ankle) : yOf(K.hip + (K.ankle - K.hip) * legF);
     const lift = (kl) => ({ ky: kneeRest - kl * (kneeRest - hipY) * 0.5, ay: ankRest - kl * 0.16 * h });
     let kl = lift(c.kl), kr = lift(c.kr);
     /* seated on a sofa: the thighs point at the camera, so the knees are nearly level with the hips; the shins hang straight down */
@@ -403,10 +404,10 @@ export function makeWorld(lineup, seed, opts = {}){
 export function resetPose(pose){
   pose.mouse.active = false;
   pose.players.forEach((p, i) => {
-    Object.assign(p, { present: false, lostFor: 99, watching: 0, at: null, lm: null, raw: null, filt: null, seg: null, head: null, app: null, goneAt: null, zoomAt: 0,
+    Object.assign(p, { present: false, lostFor: 99, watching: 0, at: null, lm: null, raw: null, filt: null, seg: null, head: null, app: null, goneAt: null, zoomAt: 0, shape: null, steady: null,
       hands: { left: { x: 0.5, y: 0.5, vx: 0, vy: 0, speed: 0 }, right: { x: 0.5, y: 0.5, vx: 0, vy: 0, speed: 0 } }, centre: { x: 0.5, y: 0.5 }, scale: 0.3 });
   });
-  pose._cands = []; pose.personCount = 0; pose.seenCount = 0;
+  pose._cands = []; pose.personCount = 0; pose.seenCount = 0; pose._hold = []; pose.holdLog = 0; pose.swapLog = 0;
 }
 
 /* Feeds a World through the real tracker. `lib` is { sizeOf, seated, CLOSE, WATCH_AFTER, headOf }.
@@ -414,8 +415,9 @@ export function resetPose(pose){
    would have been out is counted in person.notClose. */
 export class Feeder {
   /* frames: (dets) => a picture ({ data, width, height }) for the tracker to read clothes from (the clothes switch; see crossing.mjs), or none (the default) */
-  constructor(pose, lib, { assist = true, cap = 4, clock = null, frames = null } = {}){
-    this.pose = pose; this.lib = lib; this.assist = assist; this.t = 0; this.frames = frames;
+  /* metrics: a TrackMetrics (tools/playtest/metrics.mjs) to feed each look to, with the truth of who is who (none by default: nothing changes) */
+  constructor(pose, lib, { assist = true, cap = 4, clock = null, frames = null, metrics = null } = {}){
+    this.pose = pose; this.lib = lib; this.assist = assist; this.t = 0; this.frames = frames; this.metrics = metrics;
     pose.cap = cap;
     pose.clock = () => this.t * 1000;
     this.ejectedWhileAssist = 0;
@@ -469,6 +471,7 @@ export class Feeder {
     pose.at(this.t * 1000);
     pose.personCount = pose.players.filter(p => p.present).length;
     this._map(world);
+    if (this.metrics) try { this.metrics.step(this.t, dt, pose, dets.map(d => d.lm), new Map(dets.map(d => [d.lm, d.person.role ? -1 : d.person.idx]))); } catch (e){ /* (a measure never stops a run) */ }
   }
   _slotOf(person){ return person.slot >= 0 && this.pose.players[person.slot] && this.pose.players[person.slot].present && this._near(person, this.pose.players[person.slot]) ? person.slot : -1; }
   _near(person, q){ const c = person.centre(); return Math.hypot((q.centre.x - c.x) * A, q.centre.y - c.y) < 0.35 * Math.max(person.h, 0.3); }

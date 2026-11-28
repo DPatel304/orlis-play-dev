@@ -13,6 +13,8 @@
      node tools/playtest.mjs --sensitivity                     # Sleepy Bear: stars against reaction time and camera jitter
      node tools/playtest.mjs --falsejumps                      # moves that must NOT count as a hop (squat, bend, tiptoe, reach, lean, march, flap), 3 min each; --blind hides the ankles
      node tools/playtest.mjs --crossing                        # two children in different shirts trade places: slot changes with the clothes feature off and on (synthetic frames drawn from the rig's bodies)
+     --track [--only cross,family,leave]                       # who is who and steadiness across the Testing switches, exact swaps (tools/playtest/trackcmp.mjs)
+     --switches steady,apart                                   # run with those Testing switches on (default none)
      --jp rise,speed                                           # try other hop thresholds in --calibrate / --falsejumps / game runs (default: jump.js HOP); --oldjump the old 0.08 / 0.5
      (every game run also reports, per player, jumpsDetected / falseJumps / falseJumpsPer3min: a second hop detector looking on)
      other flags: --cap N (places that can fill; 4 default, the app ships 2), --react X (scale reaction times), --seeds 1,2,3, --force, --fresh
@@ -57,6 +59,9 @@ const { makeWorld, Feeder, resetPose, BRAINS, mulberry32, W, H, A } = rig;
 const lib = { sizeOf, seated, CLOSE, STAY: STAY_CLOSE ?? CLOSE, WATCH_AFTER, headOf };
 music.hold = () => {};
 
+/* --switches steady,apart: run with those Testing switches on (default none: the tracker as it ships) */
+if (opt('switches') && opt('switches') !== true){ const { forceSwitches, SWITCH_KEYS } = await import('../src/tracking/switches.js'); const on = String(opt('switches')).split(','); forceSwitches(Object.fromEntries(Object.keys(SWITCH_KEYS).map(k => [k, on.includes(k)]))); }
+if (opt('nolead')) (await import('../src/tracking/pose.js')).setLead(false);      /* (with steady: the drawn lead off, to show scores do not depend on it) */
 const DT = 1 / 30;
 const GAME_IDS = ['pop-party', 'sky-painter', 'sleepy-bear', 'leaf-pile', 'stack-it-high', 'animal-gym', 'keep-it-up', 'ptero-flight', 'save-the-harvest', 'cubions-long-way-home'];
 const games = String(opt('games', GAME_IDS.join(','))).split(',');   /* (--games made adds the four made-* games) */
@@ -551,6 +556,13 @@ if (opt('crossing')){
   for (const r of rows) console.log(' ', 'seed', r.seed, 'clothes off:', r.off.join(' + '), ' on:', r.on.join(' + '), ' same shirts off:', r.sameOff.join(' + '), ' on:', r.sameOn.join(' + '));
   const sum = (k) => rows.reduce((t, r) => t + r[k].reduce((a, b) => a + b, 0), 0);
   console.log('total wrong slots: off', sum('off'), 'on', sum('on'), '| same shirt off', sum('sameOff'), 'on', sum('sameOn'));
+  process.exit(0);
+}
+if (opt('track')){
+  /* who is who and how steady, across the Testing switches, on the rig's bodies with known truth (tools/playtest/trackcmp.mjs) */
+  const { runAll } = await import('./playtest/trackcmp.mjs');
+  const only = opt('only') && opt('only') !== true ? String(opt('only')).split(',') : null;
+  runAll({ pose, rig, lib, seeds, jitter, only });
   process.exit(0);
 }
 if (opt('watchers')){
