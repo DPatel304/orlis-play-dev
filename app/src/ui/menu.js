@@ -10,6 +10,9 @@ import { createTrust } from '../session/trust.js';
 import { HANDS, handsMode, setHandsMode } from './handshow.js';
 import { testGamesOn, setTestGames, trackingSwitchOn, setTrackingSwitch } from './testing.js';
 import { mayManageGames, openGames } from './mygames.js';
+import { pose } from '../tracking/pose.js';
+import { saveRecording } from '../tracking/recorder.js';
+import { toast } from './toast.js';
 
 /* What the home page (home.js) and the other pages share: a line about each game, each game's icon and look, what was played lately,
    how many can play, Settings, and the profile sheet behind the profile face. */
@@ -307,6 +310,7 @@ function settings(onRecalibrate){
     for (const [key, name, tip] of [
       ['appearance', 'Recognise players by clothes', 'Helps the camera keep players apart when they cross or stand close.'],
       ['zoom', 'Look closer at small players', 'Takes a second look at children who are small or far away. Costs a little speed.'],
+      ['record', 'Record tracking (points only)', 'While a round plays, keeps the body points (never the picture) for the last 10 minutes. Save recording writes them to a file.'],
       ['info', 'Show tracking details', 'A small box in the corner for each player: size, zoom, clothes match.']
     ]){
       const seg = h('div', 'seg'), OO = [[false, 'Off'], [true, 'On']];
@@ -314,7 +318,17 @@ function settings(onRecalibrate){
       for (const [v, label] of OO) seg.appendChild(small(label, () => { if (trackingSwitchOn(key) === v) return; sfx.select?.(); setTrackingSwitch(key, v); mark(); }, 'hands'));
       mark();
       hint = tip;
-      row(name, seg);
+      const more = [];
+      if (key === 'record'){
+        /* the recording goes to a file (the browser's download: a Blob link; in the Windows app, the Downloads folder) */
+        const save = small('Save recording', async () => {
+          sfx.select?.();
+          try { const r = await saveRecording(pose.recorder); toast(`Saved ${r.name} (${Math.round(r.bytes / 1024)} KB)`, { ms: 5000 }); }
+          catch (e){ toast(e && e.message ? e.message : 'Could not save the recording.', { ms: 4000, bad: true }); }
+        }, 'hands');
+        more.push(save);
+      }
+      row(name, seg, ...more);
     }
   }
 

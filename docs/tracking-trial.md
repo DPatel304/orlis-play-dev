@@ -16,6 +16,14 @@ Settings > Testing (owner only). Three rows, each On / Off:
 Turn on **Show tracking details** every time. Then compare three rounds of the same thing: both off, only clothes, only closer look
 (then both). Press P as well to see the frame rate and inference time.
 
+## Record every trial round
+
+Switch on **Record tracking (points only)** before you play. While a round is playing the app keeps the body points of everyone the camera
+saw (never the picture) for the last 10 minutes. After each trial round, open Settings > Testing and press **Save recording**: it writes
+`orlis-track-<date>.json.gz` (your Downloads folder). Put a note of what you did in the file name or a message. Then, on any PC:
+`cd app && node tools/replay.mjs <file> --compare` feeds the same round through the tracker with each switch alone and together, and
+prints dropouts, slot jumps and suspect swaps around crossings, wrist jitter, lag and join time.
+
 ## What to try
 
 Play Pop Party or any game for about a minute each time.

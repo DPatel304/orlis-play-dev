@@ -3,6 +3,7 @@ import { CAM, HD, posesWanted, nextSkip, isIdle, IDLE_EVERY_MS, zoomBudget, ZOOM
 import { switchOn } from './switches.js';
 import { sampleSignature, sigDistance, appearanceCost, blendSignature, CONTEST, REMEMBER_MS, REJOIN_MAX, SAMPLE_EVERY_MS, LEARN_EVERY_MS } from './appearance.js';
 import { pickTargets, mapLandmarksFromCrop, BODY_PER_TORSO } from './zoom.js';
+import { Recorder } from './recorder.js';
 
 /* (the names of the body's points, the skeleton, and the players' colours:
    in pose-shared.js, which games can carry without the camera engine) */
@@ -487,8 +488,31 @@ export const pose = {
     this._emptyFor = found.length ? 0 : this._emptyFor + step;
     /* Clothes (off unless the owner switched it on): the picture, shrunk, is read only if the tracker asks (when two bodies are close) or
        at the few-a-second sampling; `_grab` never throws. */
-    this._assign(found.map(lm => lm.map(k => ({ x: 1 - k.x, y: k.y, z: k.z, v: k.visibility }))), step, this.appearanceOn() ? () => this._grab() : undefined);
+    const people = found.map(lm => lm.map(k => ({ x: 1 - k.x, y: k.y, z: k.z, v: k.visibility })));
+    if (this._recRound) this._record(people, step);
+    this._assign(people, step, this.appearanceOn() ? () => this._grab() : undefined);
   },
+  /* Recording tracking (recorder.js; Settings > Testing, off unless on): main.js says each frame whether a round is playing
+     (recordRound), and each look's people list - points only, as _assign gets it - is kept in memory. Never throws. */
+  recordRound(info){
+    try {
+      if (!info || !switchOn('record')){ this._recRound = false; return; }
+      if (!this.recorder) this.recorder = new Recorder();
+      if (!this._recRound){ this._recRound = true; this.recorder.begin(info); }
+    } catch (e){ this._recRound = false; }
+  },
+  _record(people, step){
+    try {
+      let sigs = null;
+      if (this.appearanceOn() && people.length > 1){
+        const pic = this._grab();
+        if (pic) sigs = people.map(lm => { try { return sampleSignature(pic, lm); } catch (e){ return null; } });
+      }
+      const v = this.video;
+      this.recorder.add(this.clock(), step, people, sigs, v && v.videoWidth ? { w: v.videoWidth, h: v.videoHeight } : null);
+    } catch (e){ /* (this look is not kept) */ }
+  },
+  recordingInfo(){ const r = this.recorder; return { on: switchOn('record'), recording: !!this._recRound, seconds: r ? r.seconds : 0, count: r ? r.count : 0 }; },
   /* A small copy of the video's picture (80 px wide), for reading clothes' colours: the same picture is not copied twice. It is read
      into a handful of colour counts straight away and dropped - never shown, sent or kept (decisions 0007, 0011). Never throws;
      gives null when it can't (and after three failures in a row, stops trying). */
@@ -633,7 +657,7 @@ export const pose = {
     const clothes = frame != null, now = this.clock();
     let pic;   /* (the picture, fetched at most once a look, and only when something asks) */
     const picture = () => { if (pic === undefined){ try { pic = (typeof frame === 'function' ? frame() : frame) || null; } catch (e){ pic = null; } } return pic; };
-    const sigOf = (d) => { if (d.sig === undefined){ try { const f = picture(); d.sig = f ? sampleSignature(f, d.lm) : null; } catch (e){ d.sig = null; } } return d.sig; };
+    const sigOf = (d) => { if (d.sig === undefined){ try { const f = picture(); d.sig = f ? (f.sigFor ? f.sigFor(d.lm) : sampleSignature(f, d.lm)) : null; } catch (e){ d.sig = null; } } return d.sig; };
     this.seenCount = people.length;
     const biggest = Math.max(0, ...people.map(sizeOf));
     const dets = people.map(lm => ({
@@ -753,6 +777,7 @@ export const pose = {
       if (clothes){ if (!slots.has(p)) p.app = null; this._learn(p, d, dets, now, picture, sigOf); }
     }
     this.personCount = this.players.filter(p => p.present).length;
+    this.lastAssign = got;      /* (who got which body this look: the replay tool and the rig's measures read it) */
   },
 
   /* Clothes in the choice of who is who. Only where it is close: a player whose two best bodies cost within CONTEST of each other, or a

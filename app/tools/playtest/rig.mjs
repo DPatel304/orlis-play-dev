@@ -414,8 +414,9 @@ export function resetPose(pose){
    would have been out is counted in person.notClose. */
 export class Feeder {
   /* frames: (dets) => a picture ({ data, width, height }) for the tracker to read clothes from (the clothes switch; see crossing.mjs), or none (the default) */
-  constructor(pose, lib, { assist = true, cap = 4, clock = null, frames = null } = {}){
-    this.pose = pose; this.lib = lib; this.assist = assist; this.t = 0; this.frames = frames;
+  /* metrics: a TrackMetrics (tools/playtest/metrics.mjs) to feed each look to, with the truth of who is who (none by default: nothing changes) */
+  constructor(pose, lib, { assist = true, cap = 4, clock = null, frames = null, metrics = null } = {}){
+    this.pose = pose; this.lib = lib; this.assist = assist; this.t = 0; this.frames = frames; this.metrics = metrics;
     pose.cap = cap;
     pose.clock = () => this.t * 1000;
     this.ejectedWhileAssist = 0;
@@ -469,6 +470,7 @@ export class Feeder {
     pose.at(this.t * 1000);
     pose.personCount = pose.players.filter(p => p.present).length;
     this._map(world);
+    if (this.metrics) try { this.metrics.step(this.t, dt, pose, dets.map(d => d.lm), new Map(dets.map(d => [d.lm, d.person.role ? -1 : d.person.idx]))); } catch (e){ /* (a measure never stops a run) */ }
   }
   _slotOf(person){ return person.slot >= 0 && this.pose.players[person.slot] && this.pose.players[person.slot].present && this._near(person, this.pose.players[person.slot]) ? person.slot : -1; }
   _near(person, q){ const c = person.centre(); return Math.hypot((q.centre.x - c.x) * A, q.centre.y - c.y) < 0.35 * Math.max(person.h, 0.3); }

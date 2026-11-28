@@ -550,6 +550,8 @@ function tick(now){
   pose.paused = !!paused;
   fxState.hidden = !!paused;      /* (frozen bursts and "+1"s would hang over the pause card) */
   if (!away && (!CALM.has(mode) || BODY_PAGES.has(mode))) pose.update(now, dt);
+  /* Record tracking (Settings > Testing; points only): kept while a round is playing */
+  if (account.role === 'owner') pose.recordRound(mode === 'play' && !paused && game ? { game: game.id, lineup: players } : null);
 
   /* paper, under the menus; dark under a game while it loads */
   c.fillStyle = mode === 'play' || mode === 'outro' || mode === 'results' || mode === 'starting' || mode === 'framing' ? '#0d0b1a' : PAPER;
