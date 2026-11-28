@@ -2,6 +2,27 @@
 
 Newest first. Date, package, what, and a suggestion.
 
+## 2026-11-28, tracking: Track coloured wristbands and Exact hands (two more Testing switches, off by default)
+- **The real hand model does load here.** The brief said the real model does not load in this environment; in headless Chromium with the CPU delegate it does (both
+  the hand model and the body model, from `node_modules/@mediapipe/tasks-vision`). I ran `hand_landmarker.task` on five public MediaPipe sample pictures and kept only
+  the 21 landmarks each gave (`test/fixtures/real-hands.json`, numbers, no picture). That is what set the finger thresholds in `hands.js` (`EXT` 0.8, `CURL` 0.6): the
+  first guess (0.95 / 0.75, from my own synthetic hand) called a real, slightly foreshortened open hand "unclear". Open hands read 0.8 to 1.2 hand sizes, fists 0.1 to 0.5.
+  Still not measured on a real camera: how often the model finds a child's hand in a 208 px square cut around the tracker's (filtered) wrist while it moves.
+- **Cost on this box (CPU only, no GPU, headless):** one hand crop (208 px, `numHands` 1) 79 ms, a body look on a 256 px crop 56 ms. So here `handBudget` gives 0 (the full
+  look alone is over `ZOOM_MAX_MS`), as designed; on a machine with a graphics chip both should be a few ms. Please read the P-key numbers from the home trial before trusting any ms.
+- **Bands: the identity cost has two parts.** `BAND_COST` 0.35 picture heights when a body shows another player's band and not this player's (more than `MATCH`, 0.25, but it
+  only ever adds to pairs the existing gate already made, so it cannot bring a far body in), and `BAND_ABSENT` 0.15 when the body's wrists are both in clear view and the
+  player's own band is not on them. The second part was needed: with only the first, the greedy pairing ignored the penalty when a player had no other body to take (rig,
+  one band only: 7386 wrong-who looks, worse than off). Both are in `bands.js`; the rig numbers are in the commit message.
+- **Bands are learnt only in the camera check** (`pose.bandsLearn`, driven by `framing-check.js`), kept for the player in that place, and dropped when a newcomer takes the place or the
+  camera goes to sleep, the same way clothes are (`p.app`). A player who leaves and comes back without clothes/shape memory on has to raise their hands again; I did not add
+  a mid-game relearn. Say if you want one.
+- **A visible change you may want to see before the trial:** the camera check gets one extra card when the bands switch is on ("Raise your hands for a second", with each player's
+  mark). It is owner-only (Testing), so I did not make a mockup first; the wording is plain and short.
+- **Exact hands moves the hand point itself** (`hands.left.x, y` become the palm centre), because the brief wants hit tests on the palm; so scores can change (rig: `node tools/playtest.mjs --palm`).
+  `hands.left.grip` and `palmConf` exist only while the switch is on (turned off, they are deleted), so nothing differs with it off.
+- **No decision records changed.** `docs/tracking-trial.md` has the two new rounds, the readout, and how to add the 7.8 MB hand model file (`npm run offline` now fetches it too).
+
 ## 2026-11-27, tracking: clothes recognition and closer look (both behind Settings > Testing switches, off by default)
 - **A guard test is satisfied by naming, not by intent. Please decide.** `test/no-camera-picture.test.mjs` fails any `drawImage(<video|v|cam>` in `src/`
   (its comment: the camera picture is never shown, copied or kept; only the tracker touches the video). The clothes feature has to copy a small

@@ -40,6 +40,17 @@ export function zoomBudget({ skip = 1, fullMs = 0, cropMs = 0 } = {}){
   return Math.max(0, Math.min(MAX_CROPS, Math.floor((ZOOM_MAX_MS - fullMs) / one)));
 }
 
+/* Exact hands (hands.js, off unless the owner turns it on) shares those rules: no hand crops while looks are being skipped, and the full look, any
+   zoom crops already taken and the hand crops stay under ZOOM_MAX_MS; at most HAND_MAX_CROPS (2) a look. A hand crop costs what it was timed at
+   (handMs), until then what a full look does. */
+export const HAND_MAX_CROPS = 2;
+export function handBudget({ skip = 1, fullMs = 0, spentMs = 0, handMs = 0 } = {}){
+  if (skip > 1) return 0;
+  const one = handMs > 0 ? handMs : fullMs;
+  if (!(fullMs > 0) || !(one > 0)) return 0;
+  return Math.max(0, Math.min(HAND_MAX_CROPS, Math.floor((ZOOM_MAX_MS - fullMs - spentMs) / one)));
+}
+
 export const MAX_PIXELS = 2.6e6;   /* about a 1080p screen and a bit */
 export function renderScale(cssW, cssH, dpr = 1, maxDpr = 2, maxPixels = MAX_PIXELS){
   let d = Math.min(maxDpr, dpr || 1);

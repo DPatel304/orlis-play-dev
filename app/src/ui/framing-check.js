@@ -20,6 +20,7 @@ import { LightWatch } from '../tracking/lighting.js';
 import { switchOn } from '../tracking/switches.js';
 
 export const LIGHT_WAIT = 0.7, TIP_S = 3;       /* (Lighting tips: a moment more to look at the light, and how long a tip alone is shown) */
+export const BANDS_MIN = 0.8, BANDS_MAX = 8;     /* (Track coloured wristbands: at least this long on "raise your hands", at most this long) */
 export const SETTLE = 0.5, SETTLE_EMPTY = 1.2, GOOD_HOLD = 0.8, HELLO = 2, PLAY_ANYWAY_AFTER = 10, FRAMED_FOR = 0.5;
 
 const TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -43,6 +44,14 @@ export function framingCheck({ onDone, players = pose.cap }){
   /* Lighting tips (Settings > Testing; off unless on): too dark or backlit, judged from the tracker's small picture copy (numbers only) */
   const lw = switchOn('light') ? new LightWatch({ sustain: 0.5, clear: 0.5 }) : null;
   let tipEl = null;
+  /* Track coloured wristbands (Settings > Testing; off unless on): "Raise your hands for a second" - each player's band colour is learnt in this room's light */
+  const bw = switchOn('bands') ? { done: false } : null;
+  const after = () => { if (first && !rep.nobody) show('hello'); else if (lw && lw.tip) show('tip'); else finish(); };
+  const bandWords = () => {
+    const st = pose.bandsState().filter(x => x.present && x.slot < players);
+    who.textContent = st.map(x => `${crew.nameOf(x.slot) || 'Player ' + (x.slot + 1)} ${x.state === 'ok' ? '\u2713' : x.state === 'none' ? 'no band' : '...'}`).join('   ');
+    return st.length > 0 && st.every(x => x.state === 'ok' || x.state === 'none');
+  };
 
   function finish(){
     if (finished) return;
@@ -70,6 +79,7 @@ export function framingCheck({ onDone, players = pose.cap }){
     s.classList.toggle('good', next === 'good' || next === 'hello');
     card.style.display = next === 'tip' ? 'none' : '';
     if (next === 'good'){ say.textContent = 'Looking good'; who.textContent = ''; sfx.gold?.(); }
+    if (next === 'bands'){ say.textContent = 'Raise your hands for a second'; who.textContent = ''; pose.bandsLearn(true); }
     if (next === 'hello'){ say.textContent = 'Great - Orlis can see you'; who.textContent = ''; markFramingShown(); sfx.gold?.(); }
   }
   /* Enter or the remote's OK is "Play anyway" at any time (once the button is up, the remote presses that itself) */
@@ -116,9 +126,13 @@ export function framingCheck({ onDone, players = pose.cap }){
         if (t < SETTLE || (rep.nobody && t < SETTLE_EMPTY) || (rep.pending && t < SETTLE_EMPTY + 1)) return;   /* (someone only just joined: judged in a moment) */
         if (lw && t < SETTLE + LIGHT_WAIT) return;
         if (!rep.ok){ show('hint'); words(); return; }
-        if (first && !rep.nobody){ show('hello'); return; }
-        if (lw && lw.tip){ show('tip'); return; }
-        finish();
+        if (bw && !bw.done && !rep.nobody){ show('bands'); return; }
+        after();
+        return;
+      }
+      if (phase === 'bands'){
+        const all = bandWords();
+        if ((all && phaseT >= BANDS_MIN) || phaseT >= BANDS_MAX){ bw.done = true; pose.bandsLearn(false); after(); }
         return;
       }
       if (phase === 'tip'){ if (phaseT >= TIP_S || !lw.tip && phaseT >= 1) finish(); return; }
@@ -172,6 +186,6 @@ export function framingCheck({ onDone, players = pose.cap }){
         c.moveTo(tip - side * k, ay - k); c.lineTo(tip, ay); c.lineTo(tip - side * k, ay + k); c.stroke();
       }
     },
-    leave(){ if (typeof removeEventListener === 'function') removeEventListener('keydown', key); if (s) s.remove(); }
+    leave(){ if (bw && phase === 'bands'){ try { pose.bandsLearn(false); } catch (e){ /* (nothing to settle) */ } } if (typeof removeEventListener === 'function') removeEventListener('keydown', key); if (s) s.remove(); }
   };
 }

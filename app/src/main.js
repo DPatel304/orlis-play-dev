@@ -657,8 +657,16 @@ function drawTrackInfo(){
   let info; try { info = pose.trackInfo(); } catch (e){ return; }
   const pad = Math.max(8, H * 0.015), lh = Math.max(13, H * 0.022);
   const rows = ['zoom ' + info.zoom + (info.cropMs ? ' ' + info.cropMs.toFixed(0) + 'ms' : ''), 'clothes ' + (info.clothes ? 'on' : 'off') + ', apart ' + (info.apart ? 'on' : 'off') + ', steady ' + (info.steady ? 'on' : 'off')];
+  if (info.bands !== 'off' || info.hands !== 'off') rows.push('bands ' + info.bands + (info.bandMs ? ' ' + info.bandMs.toFixed(1) + 'ms' : '') + ', hands ' + info.hands + (info.handMs ? ' ' + info.handMs.toFixed(1) + 'ms' : ''));
   /* each player: body size, Z / Z+ (closer look), clothes match, shape match (S 0.97), HOLD while overlapping someone */
   for (const r of info.rows) rows.push(`P${r.slot} body ${r.body == null ? '-' : Math.round(r.body * 100) + '%'} ${r.zoom ? (r.found ? 'Z+' : 'Z ') : '  '} ${r.match == null ? ' - ' : r.match.toFixed(2)} S ${r.shape == null ? ' - ' : r.shape.toFixed(2)}${r.holding ? ' HOLD' : ''}`);
+  /* wristbands: band ✓ (seen on this body now) / ✗ (known, not seen) / none (no band); exact hands: the grip and how sure, per hand */
+  for (const r of info.rows){
+    const bits = [];
+    if (r.band) bits.push('band ' + (r.band === 'yes' ? '\u2713' : r.band === 'no' ? '\u2717' : r.band === 'none' ? 'none' : '...'));
+    if (r.hands) bits.push('hand: ' + r.hands.map(h => (h && h.grip ? h.grip + ' ' + h.conf.toFixed(2) : '-')).join(' / '));
+    if (bits.length) rows.push(`P${r.slot} ${bits.join('  ')}`);
+  }
   if (info.record) rows.push(`rec ${info.record.recording ? 'on' : 'waiting'} ${Math.floor(info.record.seconds / 60)}:${String(Math.floor(info.record.seconds % 60)).padStart(2, '0')}`);
   if (info.camera) rows.push(`camera ${info.camera.fps == null ? '?' : info.camera.fps + ' fps'}, exposure ${info.camera.controls ? info.camera.exposure : 'no controls'}`);
   { const sl = screenLight.state(); if (sl) rows.push('room: ' + sl); }

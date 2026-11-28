@@ -4,9 +4,11 @@
      info        Show tracking details                                record Record tracking (points only) (recorder.js)
      steady      Steadier hands (steady.js)                           camera Sharper camera (camera.js)
      light       Lighting tips (lighting.js)                          apart  Tell players apart better (shape.js)
-     screenlight Brighten the screen in dark rooms (lighting.js Lift, ui/screenlight.js) */
+     screenlight Brighten the screen in dark rooms (lighting.js Lift, ui/screenlight.js)
+     bands       Track coloured wristbands (bands.js)                 hands  Exact hands (hands.js) */
 export const SWITCH_KEYS = { appearance: 'orlis_appearance', zoom: 'orlis_zoomin', info: 'orlis_trackinfo', record: 'orlis_trackrecord',
-  steady: 'orlis_steadier', camera: 'orlis_sharpercam', light: 'orlis_lighttips', screenlight: 'orlis_screenlight', apart: 'orlis_tellapart' };
+  steady: 'orlis_steadier', camera: 'orlis_sharpercam', light: 'orlis_lighttips', screenlight: 'orlis_screenlight', apart: 'orlis_tellapart',
+  bands: 'orlis_wristbands', hands: 'orlis_exacthands' };
 /* In-memory settings that win over storage: for the replay tool and tests, which run without a browser's storage. null: storage decides. */
 let forced = null;
 export function forceSwitches(map){ forced = map ? { ...map } : null; }

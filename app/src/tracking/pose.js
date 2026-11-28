@@ -1,8 +1,10 @@
-import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
-import { CAM, HD, posesWanted, nextSkip, isIdle, IDLE_EVERY_MS, zoomBudget, ZOOM_MAX_MS } from './budget.js';
+import { FilesetResolver, PoseLandmarker, HandLandmarker } from '@mediapipe/tasks-vision';
+import { CAM, HD, posesWanted, nextSkip, isIdle, IDLE_EVERY_MS, zoomBudget, ZOOM_MAX_MS, handBudget } from './budget.js';
 import { switchOn } from './switches.js';
 import { sampleSignature, sigDistance, appearanceCost, blendSignature, CONTEST, REMEMBER_MS, REJOIN_MAX, SAMPLE_EVERY_MS, LEARN_EVERY_MS } from './appearance.js';
-import { pickTargets, mapLandmarksFromCrop, BODY_PER_TORSO } from './zoom.js';
+import { pickTargets, mapLandmarksFromCrop, squareRegion, BODY_PER_TORSO } from './zoom.js';
+import { ARMS, BAND_PX, MAX_BAND_CROPS, wristWindow, bodyBlobs, bandsSeen, bandCost, refineWrist, sampleBand, BandLearner, torsoShare, bandWeight, drift, packRange, BAND_MIN_CONF, BAND_MAX_MS } from './bands.js';
+import { handRegion, fitHand, takeRun, newFit, ease, palmFrom, gripNow, pickHands, HAND_PX, HOLD_MS, NEAR } from './hands.js';
 import { Recorder } from './recorder.js';
 import { steadyFilter, led } from './steady.js';
 import { frameRateIdeal, describeTrack, fpsPlan, exposurePlan, MIN_LOOK_GAP_MS } from './camera.js';
@@ -300,7 +302,7 @@ export const pose = {
       }
       try {
         const files = await withTimeout(FilesetResolver.forVisionTasks(wasmDir), 25000);
-        this._files = files; this._model = model;      /* (kept: the zoom's own tracker is made from the same) */
+        this._files = files; this._model = model; this._local = local;      /* (kept: the zoom's own tracker, and the hand model, are made from the same) */
         this.lm = await withTimeout(PoseLandmarker.createFromOptions(files, {
           baseOptions:{ modelAssetPath: model, delegate:'GPU' },
           runningMode:'VIDEO', numPoses:this.wanted,
@@ -329,8 +331,8 @@ export const pose = {
     for (const p of this.players){ p.lm = null; p.present = false; p.lostFor = 99; }
     this.personCount = 0; this.seenCount = 0; this.fps = 0;
     this.skip = 1; this._n = 0; this._acc = 0; this._emptyFor = 0; this._wbusy = false;
-    for (const p of this.players){ p.app = null; p.goneAt = null; p.zoomAt = 0; p.shape = null; }
-    this._zoomInfo = null; this._hold = [];
+    for (const p of this.players){ p.app = null; p.goneAt = null; p.zoomAt = 0; p.shape = null; p.band = null; p.bandL = null; p.palm = null; p.wr = null; }
+    this._zoomInfo = null; this._hold = []; this._bandLearning = false; this._bandEv = null;
   },
   /* Settings can ask for the sharper (and costlier) picture, or for the
      tracker to work off the main thread. Kept as plain flags so nothing here
@@ -342,6 +344,8 @@ export const pose = {
   appearanceOn(){ return switchOn('appearance'); },
   zoomOn(){ return switchOn('zoom'); },
   infoOn(){ return switchOn('info'); },
+  bandsOn(){ return switchOn('bands'); },
+  handsOn(){ return switchOn('hands'); },
   async _open(deviceId, exact){
     this._want = true;
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -513,9 +517,15 @@ export const pose = {
     try { res = this.lm.detectForVideo(v, nowMs); }
     catch (e){ return; }
     let ms = performance.now() - t0;
+    const fullMs = ms;
+    let spent = 0;
     /* Looking closer (off unless the owner switched it on): any failure here leaves res as the full-frame look gave it. */
     if (this.zoomOn()){
-      try { const z = this._zoom(v, res, ms, wall); if (z){ res = z.res; ms += z.ms; } } catch (e){ this._zoomFailed(wall); }
+      try { const z = this._zoom(v, res, ms, wall); if (z){ res = z.res; ms += z.ms; spent = z.ms; } } catch (e){ this._zoomFailed(wall); }
+    }
+    /* Exact hands (hands.js; off unless the owner switched it on): hand-model looks at a couple of wrists; any failure leaves the hands as they were. */
+    if (switchOn('hands')){
+      try { ms += this._hands(v, fullMs, wall, spent); } catch (e){ this._handsFailed(wall); }
     }
     this._took(ms, res, step);
   },
@@ -533,7 +543,8 @@ export const pose = {
     if (this._camTrack) this._camTick(performance.now());
     const people = found.map(lm => lm.map(k => ({ x: 1 - k.x, y: k.y, z: k.z, v: k.visibility })));
     if (this._recRound) this._record(people, step);
-    this._assign(people, step, this.appearanceOn() ? () => this._grab() : undefined);
+    this._assign(people, step, this.appearanceOn() ? () => this._grab() : undefined, this._bandSource());
+    if (this._recRound && this.recorder && this._bandEv){ try { this.recorder.bandsOfLast(people.map(lm => this._bandEv.get(lm) || null)); } catch (e){ /* (not kept) */ } }
   },
   /* Recording tracking (recorder.js; Settings > Testing, off unless on): main.js says each frame whether a round is playing
      (recordRound), and each look's people list - points only, as _assign gets it - is kept in memory. Never throws. */
@@ -541,7 +552,7 @@ export const pose = {
     try {
       if (!info || !switchOn('record')){ this._recRound = false; return; }
       if (!this.recorder) this.recorder = new Recorder();
-      if (!this._recRound){ this._recRound = true; this.recorder.begin(info); }
+      if (!this._recRound){ this._recRound = true; this.recorder.begin({ ...info, bands: this._bandKit() }); }
     } catch (e){ this._recRound = false; }
   },
   _record(people, step){
@@ -651,6 +662,81 @@ export const pose = {
     return false;
   },
 
+  /* ---------- Exact hands (hands.js) ---------- */
+  /* After the full-frame look (and any closer looks): the hand model on square cut-outs around a couple of wrists (at most HAND_MAX_CROPS, by
+     budget.js handBudget: none while looks are skipped, and the full look, the zoom's cut-outs and these stay under ZOOM_MAX_MS), the hands that
+     move or are near a target first, the rest in turn. What is found is mapped back to the picture exactly and kept as an offset from the wrist
+     (hands.js), carried forward between runs. Gives the ms spent; 0 for no looks this time (never an error: the caller treats a throw as
+     "carry on as before"). The worker path has none (its tracker is a frame behind the video: a cut-out would be of another moment). */
+  _hands(v, fullMs, wall, spent){
+    this.fullMs2 = this.fullMs2 ? this.fullMs2 + (fullMs - this.fullMs2) * 0.1 : fullMs;
+    if (this.worker || this._handsDead || wall < (this._handsOffUntil || 0) || !this._handerReady()) return 0;
+    const n = handBudget({ skip: this.skip, fullMs: this.fullMs2, spentMs: spent, handMs: this.handMs || 0 });
+    const vw = v.videoWidth, vh = v.videoHeight;
+    if (!n || !vw || !vh) return 0;
+    const now = this.clock(), cands = [];
+    let targets = null;
+    try { targets = typeof this.handTargets === 'function' ? this.handTargets() : null; } catch (e){ targets = null; }
+    this.players.forEach((p, slot) => {
+      if (!p.present || !p.lm) return;
+      for (const side of [0, 1]){
+        const hr = handRegion(p.lm, side, vw, vh);
+        if (!hr) continue;
+        const h = side ? p.hands.right : p.hands.left, fit = this._palmFit(p, side), w = p.lm[side ? L.R_WRIST : L.L_WRIST];
+        const nearTarget = !!targets && targets.some(t => Math.hypot((t.x - w.x) * 16 / 9, t.y - w.y) < (t.r || NEAR));
+        cands.push({ key: slot * 2 + side, slot, side, speed: h.speed || 0, nearTarget, last: fit.runs ? fit.t : -Infinity, hr });
+      }
+    });
+    let took = 0;
+    for (const c of pickHands(cands, { now, max: n })){
+      const p = this.players[c.slot], w = p.lm[c.side ? L.R_WRIST : L.L_WRIST];
+      const c0 = performance.now();
+      const out = this.hander.detect(v, c.hr.region);
+      const ms = performance.now() - c0; took += ms;
+      this.handMs = this.handMs ? this.handMs + (ms - this.handMs) * 0.2 : ms;
+      const hand = out && out.landmarks && out.landmarks[0], score = out && out.handedness && out.handedness[0] && out.handedness[0][0] ? out.handedness[0][0].score : out && out.handednesses && out.handednesses[0] && out.handednesses[0][0] ? out.handednesses[0][0].score : 1;
+      const run = fitHand({ hand: hand && hand.map(k => ({ x: k.x, y: k.y })), score, region: c.hr.region, wrist: { x: w.x, y: w.y }, F: c.hr.F, u: c.hr.u });
+      const fit = this._palmFit(p, c.side), ok = takeRun(fit, run, now);
+      this.handRuns = (this.handRuns || 0) + 1;
+      (this._handInfo || (this._handInfo = {}))[c.key] = { at: now, ok };
+    }
+    this._handsFails = 0;
+    if (took > ZOOM_MAX_MS) this._handsOffUntil = wall + 3000;
+    return took;
+  },
+  _handsFailed(wall){
+    if ((this._handsFails = (this._handsFails || 0) + 1) >= 3){ this._handsOffUntil = wall + 30000; this._handsFails = 0; }
+  },
+  _palmFit(p, side){ const a = p.palm || (p.palm = [newFit(), newFit()]); return a[side]; },
+  /* The hand model (IMAGE mode, one hand), made once in the background from the files the pose model was made from: from /models/ when the app has
+     its own files (the local copy; see docs/tracking-trial.md for how to add it), else from the CDN, and from the CDN if the local one is missing.
+     A test (or anything else) can set pose.hander = { detect(video, region) -> { landmarks: [[21 points]], handedness } } instead. */
+  _handerReady(){
+    if (this.hander) return true;
+    if (this._handMaking || this._handsDead || !this._files) return false;
+    this._handMaking = true;
+    const REMOTE = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+    const make = (modelAssetPath, delegate) => HandLandmarker.createFromOptions(this._files, {
+      baseOptions: { modelAssetPath, delegate }, runningMode: 'IMAGE', numHands: 1,
+      minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5 });
+    (async () => {
+      try {
+        const urls = this._local ? ['/models/hand_landmarker.task', REMOTE] : [REMOTE];
+        let hl = null;
+        for (const url of urls){
+          for (const delegate of ['GPU', 'CPU']){ try { hl = await withTimeout(make(url, delegate), 40000); break; } catch (e){ hl = null; } }
+          if (hl) break;
+        }
+        if (!hl) throw new Error('no hand model');
+        const S = HAND_PX, cv = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(S, S) : Object.assign(document.createElement('canvas'), { width: S, height: S });
+        const cx = cv.getContext('2d');
+        this.hander = { hl, detect(video, r){ cx.drawImage(video, r.px.x, r.px.y, r.px.size, r.px.size, 0, 0, S, S); return hl.detect(cv); } };
+      } catch (e){ this._handsDead = true; }
+      this._handMaking = false;
+    })();
+    return false;
+  },
+
   /* What the on-screen tracking details show (Settings > Testing > Show tracking details): per player in the game the slot, body size (as a
      share of the picture's height), whether the zoom looked at them lately (and whether it found them), and how well their clothes
      match the ones learned (1 = the same). */
@@ -663,10 +749,15 @@ export const pose = {
       const zi = z[i];
       rows.push({ slot: i + 1, body: p.at && p.at.size ? Math.min(1, p.at.size * BODY_PER_TORSO) : null,
         zoom: !!zi && now - zi.at < 1000, found: !!zi && zi.hit, match: p.app && p.app.score != null ? p.app.score : null,
-        shape: p.shape && p.shape.score != null ? p.shape.score : null, holding: !!this._holdOf(i) });
+        shape: p.shape && p.shape.score != null ? p.shape.score : null, holding: !!this._holdOf(i),
+        band: !this.bandsOn() ? null : !p.band || p.band.state === 'none' ? 'none' : p.band.state === 'ok' ? (p.band.seen ? 'yes' : 'no') : 'learning',
+        hands: !this.handsOn() ? null : [0, 1].map(side => { const f = p.palm && p.palm[side]; return f && f.runs ? { grip: gripNow(f, now), conf: f.conf, ago: now - f.t } : null; }) });
     });
     const rec = this.recordingInfo(), cam = this.camInfo, ex = this._camState;
+    const bands = !this.bandsOn() ? 'off' : this.worker ? 'off (worker)' : this.skip > 1 ? 'paused (slow)' : performance.now() < (this._bandOffUntil || 0) ? 'paused (slow)' : 'on';
+    const hands = !this.handsOn() ? 'off' : this.worker ? 'off (worker)' : this._handsDead ? 'unavailable' : this.skip > 1 ? 'paused (slow)' : this.hander ? 'on' : 'loading';
     return { zoom, clothes: this.appearanceOn(), apart: switchOn('apart'), steady: switchOn('steady'), cropMs: this.cropMs || 0, rows,
+      bands, bandMs: this.bandMs || 0, hands, handMs: this.handMs || 0,
       record: rec.on ? { recording: rec.recording, seconds: rec.seconds } : null,
       camera: switchOn('camera') ? { fps: cam && cam.fpsNow != null ? Math.round(cam.fpsNow) : null, exposure: ex && ex.mode === 'short' ? 'short' : 'auto', controls: !!(cam && cam.exposureTime) } : null,
       light: switchOn('light') || switchOn('screenlight') ? this._light || null : null };
@@ -713,7 +804,10 @@ export const pose = {
   /* `frame` (only when the owner has Recognise players by clothes on): the picture to read clothes from - { data, width, height } or a
      function that gives one (or null) - used to tell two close bodies apart, to learn each player's clothes now and then, and to give a
      returning player their own place back. Absent, nothing about clothes happens. */
-  _assign(people, dt, frame){
+  /* `bandSrc` (only when the owner has Track coloured wristbands on, and not while looks are skipped): where the wrist cut-outs come from -
+     { crop(region) -> a crop of the video, picture() -> the small whole-picture copy, vw, vh } (pose.js `_bandSource`, or a test's/rig's),
+     or { blobsFor(lm) -> the band blobs recorded for a body } for a replay. Absent, nothing about bands happens. */
+  _assign(people, dt, frame, bandSrc){
     people = onePerPerson(people);
     const clothes = frame != null, now = this.clock();
     const apartOn = switchOn('apart');      /* Tell players apart better (shape.js): the best whole pairing, shape, the overlap hold, a longer memory */
@@ -721,6 +815,12 @@ export const pose = {
     const picture = () => { if (pic === undefined){ try { pic = (typeof frame === 'function' ? frame() : frame) || null; } catch (e){ pic = null; } } return pic; };
     const sigOf = (d) => { if (d.sig === undefined){ try { const f = picture(); d.sig = f ? (f.sigFor ? f.sigFor(d.lm) : sampleSignature(f, d.lm)) : null; } catch (e){ d.sig = null; } } return d.sig; };
     this.seenCount = people.length;
+    /* Coloured wristbands (bands.js): the band blobs near each body's wrists; none when the switch is off, nobody has a band, or anything fails */
+    let ev = null;
+    if (bandSrc && switchOn('bands')){
+      try { ev = this._bandsLook(people, dt, bandSrc); } catch (e){ ev = null; this._bandFails = (this._bandFails || 0) + 1; }
+    }
+    this._bandEv = ev; this._bandNow = ev;
     const biggest = Math.max(0, ...people.map(sizeOf));
     const dets = people.map(lm => ({
       lm, taken: false,
@@ -752,6 +852,7 @@ export const pose = {
       });
     });
     if (clothes) this._byClothes(pairs, dets, sigOf);
+    if (ev && ev.size) this._byBands(pairs, dets, ev);
     let chosen = pairs;
     if (apartOn){
       try {
@@ -766,7 +867,9 @@ export const pose = {
       matched.add(i); dets[j].taken = true; got.set(i, dets[j]);
       const p = this.players[i], d = dets[j];
       p.head = d.head;
-      this._apply(p, d.lm, dt);
+      const useLm = ev && ev.size ? this._bandWrists(i, d, ev) : d.lm;
+      this._apply(p, useLm, dt);
+      if (ev && p.band && p.band.state === 'ok') this._wristTrack(p, useLm, dt);
       this._track(p, d, dt + p.lostFor);
       p.lostFor = 0;
       /* In a game that says so (squats are a move in Tower Defense), a
@@ -798,6 +901,8 @@ export const pose = {
     });
     /* Clothes: each player clearly seen and clear of everyone else is read a few times a second when new, then now and then. */
     if (clothes) for (const [i, d] of got) this._learn(this.players[i], d, dets, now, picture, sigOf);
+    if (bandSrc && this._bandLearning && switchOn('bands')) this._bandLearnStep(got, bandSrc);
+    if (ev) this._bandSeen(got, ev);
     if (apartOn) for (const [i, d] of got) this._learnShape(this.players[i], d, dets, now);
     /* Newcomers: someone standing up front with their face in view is a
        candidate, followed from frame to frame; one seen steadily for
@@ -858,11 +963,177 @@ export const pose = {
       p.lm = null; this._apply(p, d.lm, dt); p.head = d.head;
       p.at = null; this._track(p, d, dt);
       p.present = true; p.lostFor = 0; p.watching = 0; p.goneAt = null;
+      if (!slots.has(p)){ p.band = null; p.bandL = null; p.palm = null; p.wr = null; }       /* (a newcomer is not whoever had this place: their band, their hands' offsets start over) */
       if (clothes){ if (!slots.has(p)) p.app = null; this._learn(p, d, dets, now, picture, sigOf); }
       if (apartOn){ if (!slots.has(p)) p.shape = null; this._learnShape(p, d, dets, now); }
     }
     this.personCount = this.players.filter(p => p.present).length;
     this.lastAssign = got;      /* (who got which body this look: the replay tool and the rig's measures read it) */
+  },
+
+  /* ---------- Coloured wristbands (bands.js) ---------- */
+  /* Where the wrist cut-outs come from, or undefined when bands are not to be looked at this look: the switch is off, the tracker is in its
+     worker (its answer is a frame behind the video, so a cut-out would be of another moment), looks are being skipped (the machine is
+     struggling), the video has no size yet, or bands cost too much lately (left alone for 3 s). */
+  _bandSource(){
+    try {
+      if (!switchOn('bands') || this.worker) return undefined;
+      const v = this.video;
+      if (!v || !v.videoWidth || this.skip > 1 || performance.now() < (this._bandOffUntil || 0)) return undefined;
+      return this._bandSrc || (this._bandSrc = { crop: (r) => this._cropVideo(r), picture: () => this._grab(), get vw(){ return pose.video.videoWidth; }, get vh(){ return pose.video.videoHeight; } });
+    } catch (e){ return undefined; }
+  },
+  /* A square cut out of the video (BAND_PX pixels a side, from the full picture, never the 80 px copy) for one look at a wrist. Read into a pixel
+     array and dropped by the caller: never shown, kept or sent. Null when it cannot be had (and after three failures in a row, stops trying). */
+  _cropVideo(r){
+    const video = this.video;
+    if ((this._cropFails || 0) >= 3 || !video || !video.videoWidth) return null;
+    try {
+      const S = BAND_PX;
+      if (!this._bandCv){
+        const cv = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(S, S) : Object.assign(document.createElement('canvas'), { width: S, height: S });
+        this._bandCv = cv; this._bandCx = cv.getContext('2d', { willReadFrequently: true });
+      }
+      this._bandCx.drawImage(video, r.px.x, r.px.y, r.px.size, r.px.size, 0, 0, S, S);
+      const id = this._bandCx.getImageData(0, 0, S, S); this._cropFails = 0;
+      return { data: id.data, width: S, height: S, x0: r.x0, y0: r.y0, w: r.w, h: r.h, mirrored: true };
+    } catch (e){ this._cropFails = (this._cropFails || 0) + 1; return null; }
+  },
+  /* The learnt bands, one per place, for a recording's header: { h, hw, smin, vmin } or null (no band / not learnt) */
+  _bandKit(){ try { return this.players.map(p => (p.band && p.band.state === 'ok' ? { ...packRange(p.band.range), weight: p.band.weight } : null)); } catch (e){ return null; } },
+  /* The band blobs near every body's wrists this look: Map(body's landmarks -> [{ k (whose band), side, x, y, size, conf }]). Only players in the game
+     with a learnt band are looked for (nobody: nothing is cut out at all). At most 4 bodies, the biggest first, 2 wrists each: MAX_BAND_CROPS cut-outs. */
+  _bandsLook(people, dt, src){
+    const ranges = [];
+    this.players.forEach((p, i) => { if (p.present && p.band && p.band.state === 'ok') ranges.push({ k: i, range: p.band.range }); });
+    const ev = new Map();
+    if (!ranges.length || !people.length) return ev;
+    const t0 = performance.now();
+    if (src.blobsFor){ for (const lm of people) ev.set(lm, src.blobsFor(lm) || { blobs: [], clear: 0 }); return ev; }
+    if (!src.crop) return ev;
+    const vw = src.vw, vh = src.vh;
+    if (!vw || !vh) return ev;
+    const bodies = people.map(lm => ({ lm, size: sizeOf(lm) })).sort((a, b) => b.size - a.size).slice(0, 4);
+    let used = 0;
+    for (const { lm } of bodies){
+      const hip = { x: (lm[L.L_HIP].x + lm[L.R_HIP].x) / 2, y: (lm[L.L_HIP].y + lm[L.R_HIP].y) / 2 };
+      /* the player this body most likely is (nearest hips, as `_assign` will say): where their hand was heading, for a wrist the tracker has lost */
+      let who = null, bd = MATCH;
+      this.players.forEach((p) => { if (!p.present || !p.at || !p.lm) return; const dd = Math.hypot(p.at.x - hip.x, p.at.y - hip.y); if (dd < bd){ bd = dd; who = p; } });
+      const wins = [0, 1].map(side => {
+        if (used >= MAX_BAND_CROPS) return null;
+        let pred = null;
+        if (who){
+          /* where the wrist was heading: the last wrist that went into the filters (not the filtered one, which lags a fast swing), carried on at its speed */
+          const r = who.wr && who.wr[side], w = who.lm[ARMS[side].w];
+          if (r) pred = { x: r.x + r.vx * dt, y: r.y + r.vy * dt, speed: Math.hypot(r.vx, r.vy) };
+          else if (w) pred = { x: w.x, y: w.y, speed: 0 };
+        }
+        return wristWindow(lm, side, { pred, dt });
+      });
+      const crops = wins.map(win => {
+        if (!win || used >= MAX_BAND_CROPS) return null;
+        const c = src.crop(squareRegion(1 - win.cx, win.cy, win.side, vw, vh));
+        if (c) used++;
+        return c;
+      });
+      const r = bodyBlobs(wins, crops, ranges);
+      for (const b of r.blobs){ const pl = this.players[b.k]; b.conf *= pl.band.weight ?? 1; }
+      ev.set(lm, { blobs: r.blobs.filter(b => b.conf >= BAND_MIN_CONF), clear: r.clear });
+    }
+    const ms = performance.now() - t0;
+    this.bandMs = this.bandMs ? this.bandMs + (ms - this.bandMs) * 0.1 : ms; this.bandCrops = used;
+    if (this.bandMs > BAND_MAX_MS) this._bandOffUntil = performance.now() + 3000;
+    return ev;
+  },
+  /* Who is who by their bands: a body that shows another player's band and not this one's costs BAND_COST more to give to this player. Only pairs
+     the ordinary gating already made are touched, so it can never bring a far body into a match. */
+  _byBands(pairs, dets, ev){
+    try {
+      for (const q of pairs){
+        const e = ev.get(dets[q.j].lm);
+        if (!e) continue;
+        const c = this._bandPrice(dets[q.j], e, q.i);
+        if (c > 0){ q.dist += c; q.bandD = c; }
+      }
+    } catch (e){ /* (as it was) */ }
+  },
+  _bandPrice(d, e, i){
+    const b = this.players[i].band;
+    return bandCost(d.bandBy || (d.bandBy = bandsSeen(e.blobs)), i, { has: !!b && b.state === 'ok' && this.players[i].present, clear: e.clear });
+  },
+  /* The body's landmarks with the player's own band used on the wrists: a lost wrist put on the band, a visible one pulled toward it. A copy: the
+     caller's (and the recording's) landmarks are never touched. Failure: the landmarks as they were. */
+  _bandWrists(i, d, ev){
+    try {
+      const mine = ((ev.get(d.lm) || {}).blobs || []).filter(b => b.k === i);
+      if (!mine.length) return d.lm;
+      const lm = d.lm.map(k => ({ ...k })), band = this.players[i].band;
+      for (const b of mine){
+        const wi = ARMS[b.side].w, r = refineWrist(lm[wi], b);
+        if (!r) continue;
+        lm[wi].x = r.x; lm[wi].y = r.y; lm[wi].v = r.v; lm[wi].visibility = r.v;
+        if (band && band.range && b.hue != null) drift(band.range, b.hue);
+        this.bandsUsed = (this.bandsUsed || 0) + 1; if (r.recovered) this.bandsRecovered = (this.bandsRecovered || 0) + 1;
+      }
+      return lm;
+    } catch (e){ return d.lm; }
+  },
+  /* the wrists as they went into the filters, with a speed (and, through a lost look, carried on at it): where a lost wrist is looked for next */
+  _wristTrack(p, lm, dt){
+    try {
+      const wr = p.wr || (p.wr = [null, null]), k = 0.6, t = Math.max(dt, 1 / 120);
+      for (const side of [0, 1]){
+        const w = lm[ARMS[side].w], r = wr[side];
+        if (!r){ wr[side] = { x: w.x, y: w.y, vx: 0, vy: 0 }; continue; }
+        if ((w.v ?? w.visibility ?? 1) >= 0.3){ r.vx += ((w.x - r.x) / t - r.vx) * k; r.vy += ((w.y - r.y) / t - r.vy) * k; r.x = w.x; r.y = w.y; }
+        else { r.x += r.vx * t; r.y += r.vy * t; }
+      }
+    } catch (e){ p.wr = null; }
+  },
+  /* each matched player: was their band seen on their body this look (for the readout) */
+  _bandSeen(got, ev){
+    for (const [i, d] of got){ const p = this.players[i]; if (p.band && p.band.state === 'ok') p.band.seen = ((ev.get(d.lm) || {}).blobs || []).some(b => b.k === i); }
+  },
+  /* Learning (the camera check): while on, each player in the game with both hands raised is cut out at the wrists; after LEARN_LOOKS good looks a band
+     is learnt, or the player is marked "none". bandsLearn(false) settles whoever is still learning with what there is. */
+  bandsLearn(on){
+    if (on){ this._bandLearning = true; for (const p of this.players){ p.band = null; p.bandL = null; } return; }
+    this._bandLearning = false;
+    for (const p of this.players){
+      if (!p.bandL || (p.band && p.band.state !== 'learning')) continue;
+      this._bandDecide(p, p.bandL.result(true), null, null);
+    }
+  },
+  bandsState(){ return this.players.map((p, i) => ({ slot: i, present: p.present, state: p.band ? p.band.state : null, progress: p.band && p.band.progress || 0 })); },
+  _bandDecide(p, res, pic, lm){
+    if (res.state === 'ok'){
+      let share = null;
+      try { share = pic && lm ? torsoShare(pic, lm, res.range) : null; } catch (e){ share = null; }
+      p.band = { state: 'ok', range: res.range, weight: bandWeight(share), share, seen: false };
+    } else if (res.state === 'none') p.band = { state: 'none' };
+    else p.band = { state: 'learning', progress: res.progress };
+  },
+  _bandLearnStep(got, src){
+    try {
+      if (!src.crop || !src.vw || !src.vh) return;
+      for (const [i, d] of got){
+        const p = this.players[i];
+        if (p.band && p.band.state !== 'learning') continue;
+        const lm = d.lm, shY = (lm[L.L_SHOULDER].y + lm[L.R_SHOULDER].y) / 2;
+        if (![0, 1].every(s => { const w = lm[ARMS[s].w]; return w && (w.v ?? w.visibility ?? 1) >= 0.5 && w.y < shY; })) continue;       /* both hands raised */
+        const samples = [0, 1].map(side => {
+          const win = wristWindow(lm, side, {});
+          const c = win ? src.crop(squareRegion(1 - win.cx, win.cy, win.side, src.vw, src.vh)) : null;
+          return c ? sampleBand(c, win) : null;
+        });
+        const bl = p.bandL || (p.bandL = new BandLearner());
+        bl.add(samples);
+        const res = bl.result(false);
+        let pic = null; try { pic = res.state === 'ok' && src.picture ? src.picture() : null; } catch (e){ pic = null; }
+        this._bandDecide(p, res, pic, lm);
+      }
+    } catch (e){ /* (nobody learnt this look) */ }
   },
 
   /* Clothes in the choice of who is who. Only where it is close: a player whose two best bodies cost within CONTEST of each other, or a
@@ -953,6 +1224,8 @@ export const pose = {
         const a = this.players[who].app;
         if (sigOf && a && a.sig){ const sg = sigOf(d); if (sg) c += appearanceCost(sigDistance(a.sig, sg)); }
         c += shapeCost(shapeDistance(this.players[who].shape, this._shapeOfDet(d)));
+        const bev = this._bandNow && this._bandNow.get(d.lm);
+        if (bev) c += this._bandPrice(d, bev, who);
         return c;
       };
       let r = null;
@@ -1088,6 +1361,21 @@ export const pose = {
     p.centre = { x:(hip.x + sh.x)/2, y:(hip.y + sh.y)/2 };
     p.scale  = Math.max(0.08, Math.hypot(hip.x - sh.x, hip.y - sh.y) * 2.4);
 
+    /* Exact hands (hands.js; off unless the owner switched it on): the hand is where its palm is, the wrist plus the offset the hand model found */
+    if (switchOn('hands')){
+      try {
+        const now = this.clock();
+        for (const [h, side] of [[p.hands.left, 0], [p.hands.right, 1]]){
+          const fit = p.palm && p.palm[side], k = p.lm[side ? L.R_WRIST : L.L_WRIST];
+          let pt = null;
+          if (fit && fit.runs){ pt = palmFrom(k, p.lm[side ? L.R_ELBOW : L.L_ELBOW], ease(fit, now, dt)); }
+          this._hand(h, pt || k, dt);
+          h.grip = fit ? gripNow(fit, now) : null; h.palmConf = fit && fit.runs && pt ? fit.conf : 0;
+        }
+        return;
+      } catch (e){ /* (the wrists, below) */ }
+    }
+    for (const h of [p.hands.left, p.hands.right]) if (h.grip !== undefined){ delete h.grip; delete h.palmConf; }
     this._hand(p.hands.left,  p.lm[L.L_WRIST], dt);
     this._hand(p.hands.right, p.lm[L.R_WRIST], dt);
   },

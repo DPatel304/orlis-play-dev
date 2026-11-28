@@ -9,7 +9,7 @@ const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 test('Settings > Testing has the tracking switches, for the owner, in this order, with a plain name and one hint each', () => {
   const menu = src('../src/ui/menu.js');
   const owner = menu.slice(menu.indexOf("account.role === 'owner'"), menu.indexOf('s.appendChild(card);'));
-  const rows = [['appearance', 'Recognise players by clothes'], ['zoom', 'Look closer at small players'], ['apart', 'Tell players apart better'], ['steady', 'Steadier hands'],
+  const rows = [['appearance', 'Recognise players by clothes'], ['zoom', 'Look closer at small players'], ['apart', 'Tell players apart better'], ['steady', 'Steadier hands'], ['bands', 'Track coloured wristbands'], ['hands', 'Exact hands'],
     ['light', 'Lighting tips'], ['screenlight', 'Brighten the screen in dark rooms'], ['camera', 'Sharper camera'], ['record', 'Record tracking (points only)'], ['info', 'Show tracking details']];
   let at = -1;
   for (const [key, name] of rows){
@@ -23,7 +23,7 @@ test('Settings > Testing has the tracking switches, for the owner, in this order
 });
 
 test('the switches are off by default, kept like the other Testing switches, and read by the tracker', () => {
-  for (const k of ['appearance', 'zoom', 'info', 'record', 'steady', 'camera', 'light', 'screenlight', 'apart']) assert.equal(trackingSwitchOn(k), false);
+  for (const k of ['appearance', 'zoom', 'info', 'record', 'steady', 'camera', 'light', 'screenlight', 'apart', 'bands', 'hands']) assert.equal(trackingSwitchOn(k), false);
   setTrackingSwitch('zoom', true);
   assert.equal(pose.zoomOn(), true); assert.equal(pose.appearanceOn(), false); assert.equal(pose.infoOn(), false);
   assert.equal(localStorage.getItem('orlis_zoomin'), '1');
@@ -36,13 +36,15 @@ test('the tracking details are drawn only for the owner with the switch on, and 
   assert.match(main, /function drawTrackInfo\(\)\{\s*if \(account\.role !== 'owner' \|\| !pose\.infoOn\(\)\) return;/);
   assert.match(main, /drawPerf\(dt\);\s*drawTrackInfo\(\);/);
   const info = pose.trackInfo();
-  assert.deepEqual(Object.keys(info).sort(), ['apart', 'camera', 'clothes', 'cropMs', 'light', 'record', 'rows', 'steady', 'zoom']);
+  assert.deepEqual(Object.keys(info).sort(), ['apart', 'bandMs', 'bands', 'camera', 'clothes', 'cropMs', 'handMs', 'hands', 'light', 'record', 'rows', 'steady', 'zoom']);
   assert.equal(info.record, null); assert.equal(info.camera, null); assert.equal(info.light, null);
-  assert.equal(info.zoom, 'off');
+  assert.equal(info.zoom, 'off'); assert.equal(info.bands, 'off'); assert.equal(info.hands, 'off');
 });
 
 test('the camera picture is only read inside the tracker, and the switches change nothing when off', () => {
   const p = src('../src/tracking/pose.js');
   assert.match(p, /this\.zoomOn\(\)\)\{\s*try \{ const z = this\._zoom/);
   assert.match(p, /this\.appearanceOn\(\) \? \(\) => this\._grab\(\) : undefined/);
+  assert.match(p, /if \(switchOn\('hands'\)\)\{\s*try \{ ms \+= this\._hands/);
+  assert.match(p, /if \(bandSrc && switchOn\('bands'\)\)\{\s*try \{ ev = this\._bandsLook/);
 });

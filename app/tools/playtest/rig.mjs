@@ -16,6 +16,7 @@
    distance matters (reach, speed) it is in "H" units (picture heights; 1 W = 16/9 H) and metres are mapped with the person's
    own picture scale (picture height of the person / real height). */
 import { L } from '../../src/tracking/pose-shared.js';
+import { switchOn } from '../../src/tracking/switches.js';
 
 export const W = 1920, H = 1080, A = 16 / 9;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -270,7 +271,11 @@ export class Person {
       let nx = -uy, ny = ux; if (ny < 0){ nx = -nx; ny = -ny; }                    /* the elbow hangs low */
       if ((side === 'l' ? -1 : 1) * nx < 0 && Math.abs(nx) > 0.2) { nx = -nx; ny = -ny; if (ny < 0){ nx = -nx; ny = -ny; } }
       const ex = (sxH + wxH) / 2 + nx * off, ey = (syH + wyH) / 2 + ny * off;
-      lm[iE] = { x: ex / A, y: ey, z: 0, v: 0.95 }; lm[iW] = { x: wx, y: wy, z: 0, v: 0.95 };
+      /* palmK (only with the world's `palm` option, for the Exact hands rig): the hand (the palm's centre, the place a game's target is aimed at) is
+         palmK forearms beyond the wrist the tracker reports, along the forearm */
+      let tx = wx, ty = wy;
+      if (this.palmK){ const fx = wxH - ex, fy = wyH - ey, fd = Math.hypot(fx, fy) || 1; tx = wx - (fx / fd) * this.palmK * fd / A; ty = wy - (fy / fd) * this.palmK * fd; }
+      lm[iE] = { x: ex / A, y: ey, z: 0, v: 0.95 }; lm[iW] = { x: tx, y: ty, z: 0, v: 0.95 };
       for (const q of side === 'l' ? [17, 19, 21] : [18, 20, 22]) lm[q] = { x: wx + (side === 'l' ? -0.004 : 0.004), y: wy + 0.012, z: 0, v: 0.9 };
     }
     set(L.L_HIP, j.lHip); set(L.R_HIP, j.rHip); set(L.L_KNEE, j.lKnee); set(L.R_KNEE, j.rKnee); set(L.L_ANKLE, j.lAnk); set(L.R_ANKLE, j.rAnk);
@@ -281,8 +286,8 @@ export class Person {
 
 /* The people in a room. */
 export class World {
-  constructor(specs, seed, { jitter = 0.0018, noLapse = false } = {}){
-    this.seed = seed; this.t = 0; this.jitter = jitter; this.noLapse = noLapse;
+  constructor(specs, seed, { jitter = 0.0018, noLapse = false, palm = 0 } = {}){
+    this.seed = seed; this.t = 0; this.jitter = jitter; this.noLapse = noLapse; this.palm = palm;
     this.rng = mulberry32(seed * 7919 + 13);
     /* watchers (a person on the sofa behind, someone walking across the back) are in the picture but never play: the tracker sees them,
        no game drives them, and nothing is scored for them. */
@@ -291,6 +296,7 @@ export class World {
     this.persons = specs.map((s, i) => new Person(s, mulberry32(seed * 104729 + i * 31 + 5), i));
     this.persons.sort((a, b) => a.x - b.x);
     this.persons.forEach((p, i) => { p.idx = i; });
+    if (palm) for (const p of this.everyone) p.palmK = palm;
   }
   get everyone(){ return this.persons.concat(this.watchers); }
   /* one frame: brains first (they set goals), then bodies */
@@ -404,20 +410,27 @@ export function makeWorld(lineup, seed, opts = {}){
 export function resetPose(pose){
   pose.mouse.active = false;
   pose.players.forEach((p, i) => {
-    Object.assign(p, { present: false, lostFor: 99, watching: 0, at: null, lm: null, raw: null, filt: null, seg: null, head: null, app: null, goneAt: null, zoomAt: 0, shape: null, steady: null,
+    Object.assign(p, { present: false, lostFor: 99, watching: 0, at: null, lm: null, raw: null, filt: null, seg: null, head: null, app: null, goneAt: null, zoomAt: 0, shape: null, steady: null, band: null, bandL: null, palm: null, wr: null,
       hands: { left: { x: 0.5, y: 0.5, vx: 0, vy: 0, speed: 0 }, right: { x: 0.5, y: 0.5, vx: 0, vy: 0, speed: 0 } }, centre: { x: 0.5, y: 0.5 }, scale: 0.3 });
   });
   pose._cands = []; pose.personCount = 0; pose.seenCount = 0; pose._hold = []; pose.holdLog = 0; pose.swapLog = 0;
+  pose._bandLearning = false; pose._bandEv = null; pose._bandNow = null; pose._handInfo = null; pose.hander = null; pose.skip = 1;
 }
 
 /* Feeds a World through the real tracker. `lib` is { sizeOf, seated, CLOSE, WATCH_AFTER, headOf }.
    assist: anyone the tracker would not let in (or drops) is let in anyway, so a game can still be judged; the time they
    would have been out is counted in person.notClose. */
+const VIDEO = { videoWidth: 1920, videoHeight: 1080 };
 export class Feeder {
   /* frames: (dets) => a picture ({ data, width, height }) for the tracker to read clothes from (the clothes switch; see crossing.mjs), or none (the default) */
   /* metrics: a TrackMetrics (tools/playtest/metrics.mjs) to feed each look to, with the truth of who is who (none by default: nothing changes) */
-  constructor(pose, lib, { assist = true, cap = 4, clock = null, frames = null, metrics = null } = {}){
+  /* bands: (dets) => the cut-out source for this look (Track coloured wristbands; see tools/playtest/bandcmp.mjs); tamper: (dets, t) => changes what the model
+     "reports" (a wrist lost in a swing); truth: true to measure where the hands are against where the bodies' hands really are (this.err);
+     hander: (world) => a hand model for the Exact hands rig (tools/playtest/palmcmp.mjs) - then `_hands` runs each look, as `_update` runs it. */
+  constructor(pose, lib, { assist = true, cap = 4, clock = null, frames = null, metrics = null, bands = null, tamper = null, truth = false, hander = null } = {}){
     this.pose = pose; this.lib = lib; this.assist = assist; this.t = 0; this.frames = frames; this.metrics = metrics;
+    this.bands = bands; this.tamper = tamper; this.truth = truth; this.hander = hander; this.handMsSpent = 0; this.handLooks = 0;
+    this.err = { n: 0, sum2: 0, max: 0, lostN: 0, lostSum2: 0, big: 0 };
     pose.cap = cap;
     pose.clock = () => this.t * 1000;
     this.ejectedWhileAssist = 0;
@@ -426,6 +439,7 @@ export class Feeder {
     const { pose, lib } = this;
     this.t += dt;
     const dets = world.detect();
+    if (this.tamper) this.tamper(dets, this.t);
     const sizes = dets.map(d => lib.sizeOf(d.lm)), biggest = Math.max(0, ...sizes);
     const stay = lib.STAY ?? lib.CLOSE;
     dets.forEach((d, i) => {
@@ -440,7 +454,10 @@ export class Feeder {
       const inFrame = d.lm[L.NOSE].v > 0.5;
       if (!inFrame || d.lm[L.L_WRIST].v < 0.3 || d.lm[L.R_WRIST].v < 0.3) p.stats.offFrame++;
     });
-    pose._assign(dets.map(d => d.lm), dt, this.frames ? this.frames(dets) : undefined);
+    if (this.hander && switchOn('hands')){
+      try { pose.hander = this.hander(world, dets); const t0 = performance.now(); pose._hands(VIDEO, 8, this.t * 1000, 0); this.handMsSpent += performance.now() - t0; this.handLooks++; } catch (e){ /* (as `_update`: carry on) */ }
+    }
+    pose._assign(dets.map(d => d.lm), dt, this.frames ? this.frames(dets) : undefined, this.bands ? this.bands(dets) : undefined);
     /* a watcher the tracker lets in is the thing to catch: count the frames someone in the picture beside it is a player */
     for (const d of dets){
       const p = d.person; if (!p.role) continue;
@@ -471,7 +488,22 @@ export class Feeder {
     pose.at(this.t * 1000);
     pose.personCount = pose.players.filter(p => p.present).length;
     this._map(world);
+    if (this.truth) this._truth(world, dets);
     if (this.metrics) try { this.metrics.step(this.t, dt, pose, dets.map(d => d.lm), new Map(dets.map(d => [d.lm, d.person.role ? -1 : d.person.idx]))); } catch (e){ /* (a measure never stops a run) */ }
+  }
+  /* where the hands are, against where they really are (the world's hand; with `palm`, the palm's centre): picture heights */
+  _truth(world, dets){
+    const pose = this.pose, e = this.err;
+    for (const p of world.persons){
+      if (!p.inScene || p.slot < 0) continue;
+      const q = pose.players[p.slot];
+      if (!q || !q.present) continue;
+      for (const [h, T, flag] of [[q.hands.left, p.L, p._dropL], [q.hands.right, p.R, p._dropR]]){
+        const d = Math.hypot((h.x - T.x) * A, h.y - T.y);
+        e.n++; e.sum2 += d * d; if (d > e.max) e.max = d; if (d > 0.03) e.big++;
+        if (flag){ e.lostN++; e.lostSum2 += d * d; }
+      }
+    }
   }
   _slotOf(person){ return person.slot >= 0 && this.pose.players[person.slot] && this.pose.players[person.slot].present && this._near(person, this.pose.players[person.slot]) ? person.slot : -1; }
   _near(person, q){ const c = person.centre(); return Math.hypot((q.centre.x - c.x) * A, q.centre.y - c.y) < 0.35 * Math.max(person.h, 0.3); }

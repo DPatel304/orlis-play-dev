@@ -15,6 +15,12 @@ export class PoseLandmarker {
   close(){}
 }
 
+export class HandLandmarker {
+  static async createFromOptions(files, opts){ const h = new HandLandmarker(); h.options = opts; return h; }
+  detect(){ return { landmarks: [] }; }
+  close(){}
+}
+
 export const FilesetResolver = {
   async forVisionTasks(dir){ return { wasmLoaderPath: dir }; }
 };

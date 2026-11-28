@@ -9,8 +9,13 @@
    Settings > Save recording writes a file: JSON, gzipped where the webview can (orlis-track-<date>.json.gz), else plain
    (orlis-track-<date>.json). tools/replay.mjs reads either.
 
+   With "Track coloured wristbands" on, a round's header also holds the learnt band colour ranges (rounds[].bands: per place, { h, hw, smin,
+   vmin, weight } or null: hue in degrees and the like - numbers, never pixels) and each look the band blobs found at each person's wrists
+   (b: per person, [wrists in clear view, [[x*q, y*q, size*q, whose band, side 0 | 1, confidence*100]...]]: the blobs' centres and sizes - never a pixel).
+
    File layout (version 1): { orlis: 'track', v: 1, created, q: 10000, frame: { w, h }, switches: {...}, rounds: [{ at, game, lineup,
-   switches }], frames: [{ t, dt, p: [[x*q, y*q, z*q, v*q] x 33 flattened] per person, s?: [[26 bytes] | null per person] }] }
+   switches, bands? }], frames: [{ t, dt, p: [[x*q, y*q, z*q, v*q] x 33 flattened] per person, s?: [[26 bytes] | null per person],
+   b?: [[clear, [[x*q, y*q, size*q, k, side, conf*100]...]] per person] }] }
    `at` is the index of a round's first look. Numbers are whole (rounded to 1/q), so a replay is the live run to within 0.0001.      */
 import { switchStates } from './switches.js';
 
@@ -32,15 +37,24 @@ export const unpack = (a) => {
   return out;
 };
 const packSig = (s) => s ? Uint8Array.from(s, v => Math.max(0, Math.min(255, Math.round(v * 255)))) : null;
+export const unpackBlobs = (e) => ({ clear: e ? e[0] : 0, blobs: (e ? e[1] : []).map(([x, y, size, k, side, conf]) => ({ x: x / Q, y: y / Q, size: size / Q, k, side, conf: conf / 100 })) });
 export const unpackSig = (a) => a ? Float32Array.from(a, v => v / 255) : null;
 
 export class Recorder {
   constructor({ ms = RECORD_MS } = {}){ this.ms = ms; this.clear(); }
   clear(){ this.frames = []; this.rounds = []; this.frame = { w: 0, h: 0 }; this.dropped = 0; this.created = null; }
   /* a round starts: its game and how many are lined up, and which switches are on now */
-  begin({ game = '', lineup = 0 } = {}){
+  begin({ game = '', lineup = 0, bands = null } = {}){
     if (!this.created) this.created = new Date().toISOString();
-    this.rounds.push({ at: this.frames.length + this.dropped, game: String(game), lineup: lineup | 0, switches: switchStates() });
+    const r = { at: this.frames.length + this.dropped, game: String(game), lineup: lineup | 0, switches: switchStates() };
+    if (bands && bands.some(Boolean)) r.bands = bands;
+    this.rounds.push(r);
+  }
+  /* the band blobs found in the look just added (one list per person, in the order of add's people; null for none) */
+  bandsOfLast(list){
+    const f = this.frames[this.frames.length - 1];
+    if (!f || !list || !list.some(l => l && (l.clear || l.blobs.length))) return;
+    f.b = list.map(l => l ? [l.clear | 0, l.blobs.map(b => [Math.round(b.x * Q), Math.round(b.y * Q), Math.round(b.size * Q), b.k, b.side, Math.round(b.conf * 100)])] : [0, []]);
   }
   /* one look: t (ms, the tracker's clock), dt (seconds since the last look), people (landmark lists, as given to _assign), sigs (optional,
      a torso colour-count list per person), size (the video's pixels) */
@@ -64,6 +78,7 @@ export class Recorder {
     this.frames.forEach((f, i) => {
       const o = { t: f.t, dt: f.dt, p: f.p.map(a => Array.from(a)) };
       if (f.s) o.s = f.s.map(a => a ? Array.from(a) : null);
+      if (f.b) o.b = f.b;
       parts.push((i ? ',' : '') + JSON.stringify(o));
     });
     parts.push(']}');

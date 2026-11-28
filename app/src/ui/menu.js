@@ -312,6 +312,8 @@ function settings(onRecalibrate){
       ['zoom', 'Look closer at small players', 'Takes a second look at children who are small or far away. Costs a little speed.'],
       ['apart', 'Tell players apart better', 'Keeps players in their own place when they cross, overlap, or leave and come back.'],
       ['steady', 'Steadier hands', 'Calmer hands: no twitches or spikes. The glow orb is drawn a touch ahead.'],
+      ['bands', 'Track coloured wristbands', 'A coloured band on each wrist helps find your hands and tell players apart. The camera check asks you to raise your hands.'],
+      ['hands', 'Exact hands', 'Finds the palm and whether a hand is open, closed or pointing, so the glow orb sits on the hand.'],
       ['light', 'Lighting tips', 'In the camera check, says when the room is too dark or a window is behind you.'],
       ['screenlight', 'Brighten the screen in dark rooms', 'In a dark room the screen gives out a little more light, eased in and out.'],
       ['camera', 'Sharper camera', 'Asks for 60 pictures a second and less blur in bright rooms (next game start).'],

@@ -14,6 +14,8 @@
      node tools/playtest.mjs --falsejumps                      # moves that must NOT count as a hop (squat, bend, tiptoe, reach, lean, march, flap), 3 min each; --blind hides the ankles
      node tools/playtest.mjs --crossing                        # two children in different shirts trade places: slot changes with the clothes feature off and on (synthetic frames drawn from the rig's bodies)
      --track [--only cross,family,leave]                       # who is who and steadiness across the Testing switches, exact swaps (tools/playtest/trackcmp.mjs)
+     --bands [--only swing,cross,cushion,shirt,warm]           # coloured wristbands on the rig, off and on, alone and with Tell players apart better (tools/playtest/bandcmp.mjs)
+     --palm [--games a,b] [--lineups ..]                       # Exact hands: the same games with the hand a palm's length beyond the wrist, hands off and on (tools/playtest/palmcmp.mjs)
      --switches steady,apart                                   # run with those Testing switches on (default none)
      --jp rise,speed                                           # try other hop thresholds in --calibrate / --falsejumps / game runs (default: jump.js HOP); --oldjump the old 0.08 / 0.5
      (every game run also reports, per player, jumpsDetected / falseJumps / falseJumpsPer3min: a second hop detector looking on)
@@ -63,6 +65,8 @@ music.hold = () => {};
 if (opt('switches') && opt('switches') !== true){ const { forceSwitches, SWITCH_KEYS } = await import('../src/tracking/switches.js'); const on = String(opt('switches')).split(','); forceSwitches(Object.fromEntries(Object.keys(SWITCH_KEYS).map(k => [k, on.includes(k)]))); }
 if (opt('nolead')) (await import('../src/tracking/pose.js')).setLead(false);      /* (with steady: the drawn lead off, to show scores do not depend on it) */
 const DT = 1 / 30;
+let PALM = 0;      /* (--palm: the bodies' hands are a palm's length past the wrist the model reports; see tools/playtest/palmcmp.mjs) */
+const { palmHander } = await import('./playtest/palmcmp.mjs');
 const GAME_IDS = ['pop-party', 'sky-painter', 'sleepy-bear', 'leaf-pile', 'stack-it-high', 'animal-gym', 'keep-it-up', 'ptero-flight', 'save-the-harvest', 'cubions-long-way-home'];
 const games = String(opt('games', GAME_IDS.join(','))).split(',');   /* (--games made adds the four made-* games) */
 if (games.includes('made')) games.splice(games.indexOf('made'), 1, ...madeMod.MADE_IDS);
@@ -386,8 +390,8 @@ function runOne(gid, lineup, seed, o = {}){
   if (!game) throw new Error('no game ' + gid);
   reseed(seed * 7919 + hash(gid));
   resetPose(pose);
-  const world = makeWorld(lineup, seed, { jitter: o.jitter ?? jitter, react: o.react ?? REACT });
-  const feeder = new Feeder(pose, lib, { assist: o.assist ?? assist, cap: o.cap ?? CAP });
+  const world = makeWorld(lineup, seed, { jitter: o.jitter ?? jitter, react: o.react ?? REACT, palm: PALM });
+  const feeder = new Feeder(pose, lib, { assist: o.assist ?? assist, cap: o.cap ?? CAP, hander: PALM ? palmHander : null });
   pose.keepSitters = !!game.keepSitters;
   const passive = !!game.passive;
   /* before the round: everyone stands in view for a moment and the tracker lets them in */
@@ -563,6 +567,19 @@ if (opt('track')){
   const { runAll } = await import('./playtest/trackcmp.mjs');
   const only = opt('only') && opt('only') !== true ? String(opt('only')).split(',') : null;
   runAll({ pose, rig, lib, seeds, jitter, only });
+  process.exit(0);
+}
+if (opt('bands')){
+  /* coloured wristbands, off and on, alone and with Tell players apart better, on the rig's bodies with known truth (tools/playtest/bandcmp.mjs) */
+  const { runAll } = await import('./playtest/bandcmp.mjs');
+  const only = opt('only') && opt('only') !== true ? String(opt('only')).split(',') : null;
+  runAll({ pose, rig, lib, seeds, jitter, only });
+  process.exit(0);
+}
+if (opt('palm')){
+  /* Exact hands: games played with the hand a palm's length past the wrist the model reports, hands off and on (tools/playtest/palmcmp.mjs) */
+  const { runPalm } = await import('./playtest/palmcmp.mjs');
+  await runPalm({ pose, rig, lib, byId, games, lineups, seeds, jitter, runOne, setPalm: (k) => { PALM = k; } });
   process.exit(0);
 }
 if (opt('watchers')){
