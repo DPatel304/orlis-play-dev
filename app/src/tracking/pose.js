@@ -5,6 +5,8 @@ import { sampleSignature, sigDistance, appearanceCost, blendSignature, CONTEST, 
 import { pickTargets, mapLandmarksFromCrop, BODY_PER_TORSO } from './zoom.js';
 import { Recorder } from './recorder.js';
 import { steadyFilter, led } from './steady.js';
+import { frameRateIdeal, describeTrack, fpsPlan, exposurePlan, MIN_LOOK_GAP_MS } from './camera.js';
+import { meanLuminance } from './lighting.js';
 
 /* (the names of the body's points, the skeleton, and the players' colours:
    in pose-shared.js, which games can carry without the camera engine) */
@@ -344,7 +346,7 @@ export const pose = {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: Object.assign(
         (() => { const c = this.sharp() ? HD : CAM;
-                 return { width:{ideal:c.width}, height:{ideal:c.height}, frameRate:{ideal:c.frameRate} }; })(),
+                 return { width:{ideal:c.width}, height:{ideal:c.height}, frameRate:(switchOn('camera') && frameRateIdeal(true)) || {ideal:c.frameRate} }; })(),
         /* Ask for the remembered camera by id. The moment a second one exists -
            a phone running Camo, a USB webcam beside the laptop's built-in -
            whatever Windows calls default is as likely to be the wrong one, and
@@ -358,6 +360,38 @@ export const pose = {
     this.activeId = stream.getVideoTracks()[0].getSettings().deviceId || deviceId || '';
     this.video.srcObject = stream;
     await this.video.play();
+    /* Sharper camera (camera.js; Settings > Testing, off unless on): never holds up the start, never throws */
+    if (switchOn('camera')) this._sharpen(stream.getVideoTracks()[0]);
+  },
+  /* Ask for 60 fps once more if the camera can and isn't, and start watching the light for a shorter exposure. */
+  async _sharpen(track){
+    try {
+      this._camTrack = track; this._camState = null; this._camLum = null; this._lumAt = 0;
+      let d = describeTrack(track);
+      const plan = fpsPlan(d);
+      if (plan){ try { await track.applyConstraints(plan); } catch (e){ /* (it stays as it is) */ } d = describeTrack(track); }
+      this.camInfo = d;
+    } catch (e){ this._camTrack = null; }
+  },
+  /* every look, when Sharper camera is on and the camera was opened with it: the smoothed brightness (twice a second, from the tracker's
+     small picture copy), and the exposure plan from it */
+  _camTick(wall){
+    try {
+      const track = this._camTrack;
+      if (!track) return;
+      if (!switchOn('camera')){
+        if (this._camState && this._camState.mode === 'short'){ this._camState = null; track.applyConstraints({ advanced: [{ exposureMode: 'continuous' }] }).catch(() => {}); }
+        this._camTrack = null; return;
+      }
+      if (wall - this._lumAt < 500) return;
+      this._lumAt = wall;
+      const pic = this._grab(), l = pic ? meanLuminance(pic, 2) : null;
+      if (l == null) return;
+      this._camLum = this._camLum == null ? l : this._camLum + (l - this._camLum) * 0.15;
+      const d = describeTrack(track), r = exposurePlan(d, this._camLum, this._camState, wall);
+      this.camInfo = d; this._camState = r.state;
+      if (r.constraints) track.applyConstraints(r.constraints).catch(() => { this._camState = { mode: 'auto', at: wall + 60000 }; });
+    } catch (e){ this._camTrack = null; }
   },
   /* Quietly starting the camera over, with no screen and nothing to press (there's no Re-calibrate button to ask
      for it): when its pictures stop coming (a frozen or unplugged-and-back camera), or when nobody's been seen for
@@ -378,6 +412,7 @@ export const pose = {
     return true;
   },
   _close(){
+    this._camTrack = null;
     try { this.video.srcObject && this.video.srcObject.getTracks().forEach(t => t.stop()); } catch (e){}
     try { this.video.srcObject = null; } catch (e){}
     this._lastT = undefined;
@@ -457,6 +492,9 @@ export const pose = {
 
     /* The pause screen has no use for bodies. */
     if (this.paused){ this._decay(dt); return; }
+    /* Sharper camera: a 60 fps camera is looked at about 38 times a second at most (more pictures, a fresher one each look, not more work) */
+    if (this._camTrack && wall - (this._lookAt || 0) < MIN_LOOK_GAP_MS) return;
+    this._lookAt = wall;
     /* Nobody there for a few seconds: look a few times a second, not thirty. */
     this._acc += dt;
     if (isIdle(this._emptyFor)){
@@ -491,6 +529,7 @@ export const pose = {
     this._emptyFor = found.length ? 0 : this._emptyFor + step;
     /* Clothes (off unless the owner switched it on): the picture, shrunk, is read only if the tracker asks (when two bodies are close) or
        at the few-a-second sampling; `_grab` never throws. */
+    if (this._camTrack) this._camTick(performance.now());
     const people = found.map(lm => lm.map(k => ({ x: 1 - k.x, y: k.y, z: k.z, v: k.visibility })));
     if (this._recRound) this._record(people, step);
     this._assign(people, step, this.appearanceOn() ? () => this._grab() : undefined);
