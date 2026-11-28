@@ -9,7 +9,9 @@
                  within a body or so), after (within AFTER_S seconds of a crossing), or other
    suspectSwaps  after each crossing (two players' hips close, then apart again): the two slots now stand where the OTHER one was heading
                  (a proxy for a swap where there is no ground truth)
-   swaps         (the rig only: truth known) times a slot changed from following one person to following another
+   swaps         (the rig only: truth known) times a slot changed from following one person to following another while the two bodies
+                 were clear of each other (a torso length apart); mergedFlips: the same change while they overlapped or the model reported them as one
+                 skeleton (which of them it reports is its own doing, and a hold decides it once they part)
    jitterRaw / jitterDrawn
                  mean speed (H/s) of the raw / drawn wrist while the raw wrist is near-still (within STILL of itself for +-STILL_S); lower is
                  steadier, and drawn should be well under raw
@@ -27,12 +29,13 @@ const mean = (a) => a.length ? a.reduce((s, x) => s + x, 0) / a.length : null;
 
 export const DROP_NEAR = 0.3, MATCH = 0.25, JUMP_DIST = 0.06, JUMP_SPEED = 2.0, AFTER_S = 1.0;
 export const STILL = 0.02, STILL_S = 0.4, PEAK_MIN = 0.4, GAP_S = 0.25;
+const CLEAR_K = 1.0;            /* a swap counts only when the two bodies are this many torso lengths apart (clear of each other) */
 const CROSS_K = 1.4;            /* two players are "crossing" when their hips are within this many torso lengths */
 
 export class TrackMetrics {
   constructor(){
     this.n = 0; this.t0 = null; this.t = 0;
-    this.dropouts = 0; this.missFrames = 0; this.jumps = { during: 0, after: 0, other: 0 }; this.suspectSwaps = 0; this.crossings = 0; this.swaps = 0;
+    this.dropouts = 0; this.mergedFlips = 0; this.wrongLooks = 0; this.missFrames = 0; this.jumps = { during: 0, after: 0, other: 0 }; this.suspectSwaps = 0; this.crossings = 0; this.swaps = 0;
     this.slot = [];                 /* per slot: { present, hip, t, owner, vx, vy, trail } */
     this.series = {};               /* 'slot:side' -> { raw: [{t,x,y,v}], drawn: [{t,x,y}] } */
     this.cross = new Map();         /* 'i:j' -> { from: {a:{x,y,vx,vy}, b:...}, t, apartFor } */
@@ -103,15 +106,25 @@ export class TrackMetrics {
           }
         }
         if (ids){
-          const who = ids.has(d.lm) ? ids.get(d.lm) : null;
-          if (who != null && s.owner != null && who !== s.owner && was) this.swaps++;
+          const who = ids.has(d.lm) ? ids.get(d.lm) : null, here = new Set(people.map(lm => ids.get(lm)));
+          /* a swap: the slot goes from one person to another while both are seen as separate bodies (when the model reports two people as one
+             skeleton, which one it reports is its own doing: counted apart, as mergedFlips) */
+          if (who != null && s.owner != null && who !== s.owner && was){
+            const old = people.find(lm => ids.get(lm) === s.owner);
+            if (old && apart(hipOf(old), hip) > CLEAR_K * Math.max(sizeOf(old), sizeOf(d.lm))) this.swaps++; else this.mergedFlips++;
+          }
+          if (who != null && s.home == null) s.home = who;
+          if (who != null && s.home != null && who !== s.home){
+            const hm = people.find(lm => ids.get(lm) === s.home);
+            if (hm && apart(hipOf(hm), hip) > CLEAR_K * Math.max(sizeOf(hm), sizeOf(d.lm))) this.wrongLooks++;
+          }
           if (who != null) s.owner = who;
         }
         s.hip = hip; s.t = t; s.trail.push({ t, x: hip.x, y: hip.y }); while (s.trail.length > 1 && t - s.trail[0].t > 0.4) s.trail.shift();
       }
       if (p.present && !was) this._joined(t, i, p);
       s.present = !!p.present;
-      if (!p.present){ s.owner = null; s.trail.length = 0; }
+      if (!p.present){ s.owner = null; s.home = null; s.trail.length = 0; }
       /* wrists: the raw one the body gave and the one drawn */
       for (const [side, k] of [[0, L.L_WRIST], [1, L.R_WRIST]]){
         const ser = this._ser(i, side);
@@ -185,7 +198,7 @@ export class TrackMetrics {
     const dur = this.n > 1 ? this.t - this.t0 : 0;
     return {
       looks: this.n, seconds: dur, dropouts: this.dropouts, missFrames: this.missFrames, jumps: { ...this.jumps }, crossings: this.crossings,
-      suspectSwaps: this.suspectSwaps, swaps: this.swaps,
+      suspectSwaps: this.suspectSwaps, swaps: this.swaps, mergedFlips: this.mergedFlips, wrongLooks: this.wrongLooks,
       jitterRaw: mean(jr), jitterDrawn: mean(jd), stillLooks: jr.length, lagMs: median(lags), lagPeaks: lags.length,
       join: { n: this.joins.length, medianMs: median(this.joins), maxMs: this.joins.length ? Math.max(...this.joins) : null }
     };
@@ -196,7 +209,7 @@ export function merge(rs){
   const avg = (f) => mean(rs.map(f).filter(x => x != null));
   return {
     runs: rs.length, dropouts: sum(r => r.dropouts), missFrames: sum(r => r.missFrames), jumps: sum(r => r.jumps.during + r.jumps.after + r.jumps.other),
-    jumpsDuring: sum(r => r.jumps.during), jumpsAfter: sum(r => r.jumps.after), crossings: sum(r => r.crossings), suspectSwaps: sum(r => r.suspectSwaps), swaps: sum(r => r.swaps),
+    jumpsDuring: sum(r => r.jumps.during), jumpsAfter: sum(r => r.jumps.after), crossings: sum(r => r.crossings), suspectSwaps: sum(r => r.suspectSwaps), swaps: sum(r => r.swaps), wrongLooks: sum(r => r.wrongLooks),
     jitterRaw: avg(r => r.jitterRaw), jitterDrawn: avg(r => r.jitterDrawn), lagMs: avg(r => r.lagMs), joinMs: avg(r => r.join.medianMs), joins: sum(r => r.join.n)
   };
 }

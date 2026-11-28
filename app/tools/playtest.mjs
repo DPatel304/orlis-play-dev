@@ -13,6 +13,7 @@
      node tools/playtest.mjs --sensitivity                     # Sleepy Bear: stars against reaction time and camera jitter
      node tools/playtest.mjs --falsejumps                      # moves that must NOT count as a hop (squat, bend, tiptoe, reach, lean, march, flap), 3 min each; --blind hides the ankles
      node tools/playtest.mjs --crossing                        # two children in different shirts trade places: slot changes with the clothes feature off and on (synthetic frames drawn from the rig's bodies)
+     --track [--only cross,family,leave]                       # who is who and steadiness across the Testing switches, exact swaps (tools/playtest/trackcmp.mjs)
      --switches steady,apart                                   # run with those Testing switches on (default none)
      --jp rise,speed                                           # try other hop thresholds in --calibrate / --falsejumps / game runs (default: jump.js HOP); --oldjump the old 0.08 / 0.5
      (every game run also reports, per player, jumpsDetected / falseJumps / falseJumpsPer3min: a second hop detector looking on)
@@ -555,6 +556,13 @@ if (opt('crossing')){
   for (const r of rows) console.log(' ', 'seed', r.seed, 'clothes off:', r.off.join(' + '), ' on:', r.on.join(' + '), ' same shirts off:', r.sameOff.join(' + '), ' on:', r.sameOn.join(' + '));
   const sum = (k) => rows.reduce((t, r) => t + r[k].reduce((a, b) => a + b, 0), 0);
   console.log('total wrong slots: off', sum('off'), 'on', sum('on'), '| same shirt off', sum('sameOff'), 'on', sum('sameOn'));
+  process.exit(0);
+}
+if (opt('track')){
+  /* who is who and how steady, across the Testing switches, on the rig's bodies with known truth (tools/playtest/trackcmp.mjs) */
+  const { runAll } = await import('./playtest/trackcmp.mjs');
+  const only = opt('only') && opt('only') !== true ? String(opt('only')).split(',') : null;
+  runAll({ pose, rig, lib, seeds, jitter, only });
   process.exit(0);
 }
 if (opt('watchers')){
