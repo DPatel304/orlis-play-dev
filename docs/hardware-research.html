@@ -1,0 +1,239 @@
+<title>Orlis Hardware Research</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one readable column of sections; wide comparison tables scroll inside their own boxes; verdicts as coloured chips */
+:root{
+  --bg:#f6f7fb; --card:#ffffff; --ink:#1d1b2e; --soft:#5d5b72; --line:#dfe1ec;
+  --sky:#2f8fe0; --sky-wash:#e6f2fd;
+  --go:#1f8a5b; --go-wash:#e3f5ec; --maybe:#b06a00; --maybe-wash:#fdf1dc; --no:#b4384a; --no-wash:#fbe7ea;
+  --display:"Outfit", "Segoe UI", system-ui, sans-serif; --body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif; --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#14131d; --card:#1d1c29; --ink:#ecebf5; --soft:#a6a4bb; --line:#33324a; --sky:#6db8ff; --sky-wash:#1d2c40;
+  --go:#5fd39d; --go-wash:#173226; --maybe:#f0b35a; --maybe-wash:#3a2b14; --no:#f08797; --no-wash:#3b1c23; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#14131d; --card:#1d1c29; --ink:#ecebf5; --soft:#a6a4bb; --line:#33324a; --sky:#6db8ff; --sky-wash:#1d2c40;
+  --go:#5fd39d; --go-wash:#173226; --maybe:#f0b35a; --maybe-wash:#3a2b14; --no:#f08797; --no-wash:#3b1c23; color-scheme:dark }
+body{ background:var(--bg); color:var(--ink); font:15px/1.6 var(--body); }
+.wrap{ max-width:1040px; margin:0 auto; padding-block:40px 64px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:grid; gap:40px; }
+header{ display:grid; gap:10px; }
+.eyebrow{ font:600 12px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; color:var(--sky); }
+h1{ font:700 clamp(30px,5vw,44px)/1.1 var(--display); margin:0; text-wrap:balance; }
+h2{ font:600 24px/1.2 var(--display); margin:0 0 6px; text-wrap:balance; }
+h3{ font:600 17px/1.3 var(--display); margin:0; }
+p{ margin:0; max-width:68ch; }
+.lede{ font-size:17px; color:var(--soft); }
+section{ display:grid; gap:14px; min-width:0; }
+.cols{ display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; }
+.card{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; display:grid; gap:8px; align-content:start; min-width:0; }
+.card ul{ margin:0; padding-left:18px; } .card li{ margin:2px 0; }
+.tw{ overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:12px; }
+table{ border-collapse:collapse; width:100%; min-width:720px; font-size:14px; }
+th,td{ text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line); }
+th{ font:600 12px/1.3 var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--soft); background:var(--bg); position:sticky; top:0; }
+tr:last-child td{ border-bottom:0; }
+td.num, th.num{ text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); font-size:13px; }
+.chip{ display:inline-block; font:600 12px/1 var(--body); padding:5px 9px; border-radius:999px; white-space:nowrap; }
+.go{ background:var(--go-wash); color:var(--go); } .maybe{ background:var(--maybe-wash); color:var(--maybe); } .no{ background:var(--no-wash); color:var(--no); } .now{ background:var(--sky-wash); color:var(--sky); }
+.note{ font-size:13px; color:var(--soft); }
+.order{ counter-reset:s; display:grid; gap:10px; margin:0; padding:0; list-style:none; }
+.order li{ counter-increment:s; display:grid; grid-template-columns:32px 1fr; gap:10px; align-items:start; }
+.order li::before{ content:counter(s); font:600 14px/32px var(--display); text-align:center; width:32px; height:32px; border-radius:50%; background:var(--sky-wash); color:var(--sky); }
+.bar{ display:grid; grid-template-columns:150px 1fr 56px; gap:10px; align-items:center; font-size:13px; }
+.bar .t{ height:12px; background:var(--bg); border-radius:6px; position:relative; overflow:hidden; border:1px solid var(--line); }
+.bar .f{ position:absolute; inset:0 auto 0 0; background:var(--sky); border-radius:6px; }
+.bar .f.s{ background:var(--go); }
+.bars{ display:grid; gap:6px; }
+.legend{ display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--soft); }
+.legend span::before{ content:""; display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; background:var(--sky); vertical-align:-1px; }
+.legend span.s::before{ background:var(--go); }
+.src{ font-size:13px; color:var(--soft); columns:2 280px; gap:24px; padding-left:18px; margin:0; }
+.src li{ break-inside:avoid; margin-bottom:4px; }
+a{ color:var(--sky); }
+@media (max-width:560px){ .bar{ grid-template-columns:110px 1fr 48px; } }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Orlis · research notes · 28 Nov 2026</div>
+  <h1>Hardware for Orlis: what to use, what to sell, what to skip</h1>
+  <p class="lede">Everything we looked at for running Orlis, tracking bodies better, and whether to sell any hardware. Prices marked ~ are rough and unverified; check before buying. Nothing here changes the beta.</p>
+</header>
+
+<section>
+  <h2>The short answer</h2>
+  <div class="cols">
+    <div class="card"><span class="chip now">Now</span><h3>Use what families own</h3><p>A Windows laptop with its webcam, on the TV by HDMI. Improve tracking in software first: clothes colours and a closer look at small players (built, behind Testing switches).</p></div>
+    <div class="card"><span class="chip go">After the beta</span><h3>Optional extras, never required</h3><p>Any gamepad on the Orlis pad (Backbone One USB-C recommended), colour wristbands, a wide-angle webcam. Affiliate links only: Orlis stocks nothing.</p></div>
+    <div class="card"><span class="chip maybe">If a box</span><h3>N150 mini PC + webcam</h3><p>Runs today's app unchanged at 1080p. Linux + Chrome kiosk is the non-Windows version. A Ryzen 780M mini PC for headroom.</p></div>
+    <div class="card"><span class="chip no">Skip for now</span><h3>Own hardware, LiDAR, Apple TV</h3><p>A Pi sensor bar, depth cameras and LiDAR solve problems we haven't measured; an Apple TV route is a full rewrite. Revisit only if tracking proves to be the bottleneck.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>What can run Orlis</h2>
+  <p>Orlis is web technology in a Windows wrapper today. Anything with real Chrome and decent graphics can run it.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Device</th><th>Price</th><th>Runs our app</th><th>Notes</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>Family's Windows laptop + webcam</td><td>owned</td><td>Yes, today</td><td>What the beta uses. Setup (HDMI cable, webcam placement, charging) is the real hurdle to watch.</td><td><span class="chip now">Now</span></td></tr>
+      <tr><td>Intel N100 / N150 mini PC (Beelink, GMKtec…)</td><td>~$150–220</td><td>Yes, unchanged (Windows)</td><td>Get 16 GB, two USB-A, HDMI 2.0+. Intel graphics on Windows or Linux draw our games well; room for webcam tracking.</td><td><span class="chip go">Best box</span></td></tr>
+      <tr><td>Same mini PC, Linux + Chrome kiosk ("Orlis OS")</td><td>~$130–200</td><td>Yes, in Chrome</td><td>No Windows licence or pop-ups; boots straight into Orlis. We'd own Wi-Fi/Bluetooth setup screens and OS updates.</td><td><span class="chip go">Best non-Windows</span></td></tr>
+      <tr><td>Ryzen 7 mini PC, Radeon 780M (Beelink SER8, Minisforum UM780…)</td><td>~$350–500</td><td>Yes</td><td>Several times the N150's graphics: 1080p60 with headroom, room for two cameras or 3D.</td><td><span class="chip go">Headroom</span></td></tr>
+      <tr><td>Steam Deck (docked)</td><td>~$399+ plus dock</td><td>Yes, Chrome on SteamOS</td><td>Plenty fast; can launch Chrome from Game Mode. Pricier than a mini PC, fan noise, often someone's own device. Good Linux test machine.</td><td><span class="chip maybe">If owned</span></td></tr>
+      <tr><td>Raspberry Pi 5 (+ AI HAT+)</td><td>~$150–200</td><td>Yes, in Chrome</td><td>Weak graphics: about 720p at ~30 fps by our estimate (below), no headroom. Fine for a sensor-bar prototype.</td><td><span class="chip maybe">Prototype</span></td></tr>
+      <tr><td>RK3588 boards (Orange Pi 5, Rock 5B)</td><td>~$100–180</td><td>Probably</td><td>Stronger than the Pi on paper, built-in AI chip; rougher drivers and tools.</td><td><span class="chip maybe">Tinkering</span></td></tr>
+      <tr><td>NVIDIA Jetson Orin Nano (Super)</td><td>~$250</td><td>Probably</td><td>Best on-device AI; developer-grade Linux.</td><td><span class="chip maybe">Tinkering</span></td></tr>
+      <tr><td>Mac mini (Apple silicon)</td><td>~$599</td><td>Yes, in Chrome</td><td>Very fast; too expensive as a box.</td><td><span class="chip no">Too pricey</span></td></tr>
+      <tr><td>USB-C iPad + hub + USB webcam</td><td>owned + ~$30–60</td><td>Unknown</td><td>iPadOS 17+ supports USB webcams in apps; not confirmed in Safari. Some webcams need a powered hub. Worth a short trial.</td><td><span class="chip maybe">Trial later</span></td></tr>
+      <tr><td>Phone casting to the TV</td><td>owned</td><td>Needs a port</td><td>Nex's first product (Active Arcade, 2021) did this; they later moved to a console. Casting lag, heat, camera placement.</td><td><span class="chip no">No</span></td></tr>
+      <tr><td>Apple TV 4K + iPhone (Continuity Camera)</td><td>owned</td><td>No: full tvOS rewrite</td><td>No USB port; camera only via iPhone/iPad (tvOS 17+). See lag and heat below.</td><td><span class="chip no">Much later</span></td></tr>
+      <tr><td>Android TV / Google TV boxes</td><td>~$50–200</td><td>No real Chrome</td><td>Patchy USB webcam support; would need an Android app.</td><td><span class="chip no">No</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Measured: what each frame costs</h2>
+  <p>Each game with four scripted players, 90 frames, on a 4-core 2.1 GHz cloud machine with no graphics card (all drawing in software, a pessimistic stand-in). Game logic is under 1 ms everywhere; drawing is the whole cost and roughly halves at 720p.</p>
+  <div class="legend"><span>Drawing at 1080p (ms)</span><span class="s">Drawing at 720p (ms)</span></div>
+  <div class="card bars" role="img" aria-label="Drawing time per frame for each game at 1080p and 720p">
+    <div class="bar"><span>Pop Party</span><span class="t"><span class="f" style="width:77.5%"></span></span><span class="num">31.0</span></div>
+    <div class="bar"><span></span><span class="t"><span class="f s" style="width:42%"></span></span><span class="num">16.8</span></div>
+    <div class="bar"><span>Leaf Pile</span><span class="t"><span class="f" style="width:76.3%"></span></span><span class="num">30.5</span></div>
+    <div class="bar"><span></span><span class="t"><span class="f s" style="width:35%"></span></span><span class="num">14.0</span></div>
+    <div class="bar"><span>Keep It Up</span><span class="t"><span class="f" style="width:72.8%"></span></span><span class="num">29.1</span></div>
+    <div class="bar"><span></span><span class="t"><span class="f s" style="width:40.3%"></span></span><span class="num">16.1</span></div>
+    <div class="bar"><span>Sleepy Bear</span><span class="t"><span class="f" style="width:68.5%"></span></span><span class="num">27.4</span></div>
+    <div class="bar"><span></span><span class="t"><span class="f s" style="width:39%"></span></span><span class="num">15.6</span></div>
+    <div class="bar"><span>Stack It High</span><span class="t"><span class="f" style="width:64.3%"></span></span><span class="num">25.7</span></div>
+    <div class="bar"><span></span><span class="t"><span class="f s" style="width:36.5%"></span></span><span class="num">14.6</span></div>
+    <div class="bar"><span>Animal Gym</span><span class="t"><span class="f" style="width:59.5%"></span></span><span class="num">23.8</span></div>
+    <div class="bar"><span></span><span class="t"><span class="f s" style="width:34.3%"></span></span><span class="num">13.7</span></div>
+    <div class="bar"><span>Ptero Flight</span><span class="t"><span class="f" style="width:51.3%"></span></span><span class="num">20.5</span></div>
+    <div class="bar"><span></span><span class="t"><span class="f s" style="width:32.8%"></span></span><span class="num">13.1</span></div>
+    <div class="bar"><span>Save the Harvest</span><span class="t"><span class="f" style="width:27.5%"></span></span><span class="num">11.0</span></div>
+    <div class="bar"><span></span><span class="t"><span class="f s" style="width:11.8%"></span></span><span class="num">4.7</span></div>
+    <div class="bar"><span>Sky Painter</span><span class="t"><span class="f" style="width:15%"></span></span><span class="num">6.0</span></div>
+    <div class="bar"><span></span><span class="t"><span class="f s" style="width:8.3%"></span></span><span class="num">3.3</span></div>
+  </div>
+  <p class="note">Scale: full bar = 40 ms. 60 fps needs a frame under 16.7 ms; 30 fps under 33 ms.</p>
+  <div class="cols">
+    <div class="card"><h3>Raspberry Pi 5 (estimate)</h3><p>Roughly 1.3–2× slower processor, weak graphics: 1080p about 15–25 fps in the heavy games; 720p scaled up about 25–35 fps, no headroom. ±2×.</p></div>
+    <div class="card"><h3>Intel N100 / N150 (estimate)</h3><p>Similar processor, and Chrome draws on its Intel graphics: 60 fps at 1080p likely in most games, with room for tracking.</p></div>
+    <div class="card"><h3>Worth doing anyway</h3><p>Drawing dominates on every device. Caching backgrounds and drawing fewer particles could plausibly halve the heavy games' cost.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Tracking: cameras and add-ons</h2>
+  <p>What matters most, in order: hands and arms (almost every game), kids hidden behind grown-ups, telling players apart, near and far, dim light.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Setup</th><th>Hands</th><th>Hidden kids</th><th>Who's who</th><th>Near/far</th><th>Dim light</th><th>Cost and effort</th></tr></thead>
+    <tbody>
+      <tr><td><b>1 webcam + our software</b></td><td>Good</td><td>Weak</td><td>Fair–good</td><td>Rough</td><td>Weak</td><td>Free. Clothes colours and closer look built; owner trial pending</td></tr>
+      <tr><td>2 webcams, spread apart</td><td>Better</td><td><b>Best</b></td><td>Good</td><td>Good</td><td>Weak</td><td>Calibration; twice the tracking (tight on N150, fine on Ryzen 780M)</td></tr>
+      <tr><td>Webcam + phone as 2nd view (tracking on the phone)</td><td>Better</td><td><b>Best</b></td><td>Good</td><td>Good</td><td>Weak</td><td>Phone tied up and warm; no extra load on the box</td></tr>
+      <tr><td>Dual-lens USB stereo webcam (ELP, Arducam)</td><td>Good</td><td>Weak</td><td>Good</td><td>Fair</td><td>Weak</td><td>~$50–100; works in our app as a normal webcam</td></tr>
+      <tr><td>OAK-D Lite (stereo + on-camera AI)</td><td>Good</td><td>Weak–fair</td><td>Good</td><td>Good</td><td>Fair</td><td>~$150; needs a small native helper</td></tr>
+      <tr><td>Depth camera (Orbbec Femto Bolt, RealSense, ZED 2i)</td><td>Good</td><td>Weak</td><td>Good</td><td><b>Best</b></td><td><b>Best</b></td><td>~$300–700; native SDKs; ZED needs NVIDIA</td></tr>
+      <tr><td>Pi 5 sensor bar (2 cameras, Hailo AI)</td><td>Good</td><td>Good</td><td>Good</td><td>Good</td><td>Weak</td><td>~$150–250 parts; large engineering effort</td></tr>
+      <tr><td>Webcam + 2D LiDAR</td><td>Same</td><td>Barely</td><td>Good</td><td>Good (floor)</td><td>Floor only</td><td>Sees where you stand, not your arms</td></tr>
+      <tr><td>Colour wristbands (player colours)</td><td>Exact wrist</td><td>Weak</td><td><b>Best</b></td><td>Rough</td><td>Fair</td><td>A few dollars; optional ritual</td></tr>
+      <tr><td>Phone as wand (screen colour + motion sensors)</td><td>Best (one hand)</td><td>Weak</td><td><b>Best</b></td><td>Rough</td><td>Fair</td><td>Free; drops risk; gentle games only</td></tr>
+      <tr><td>Smartwatch</td><td>No position</td><td>No</td><td>Good</td><td>No</td><td>Unaffected</td><td>Great jump and swing sensing plus buzz; one grown-up only; two watch apps</td></tr>
+      <tr><td>Dance pad / balance board</td><td>No</td><td>No</td><td>One per player</td><td>Floor position</td><td>Unaffected</td><td>~$30–40; exact jumps and steps; trip risk</td></tr>
+      <tr><td>Glowing headband / IR markers</td><td>No</td><td>No</td><td>Fair</td><td>No</td><td>Fair</td><td>Webcams fight bright LEDs and block infrared. Skip</td></tr>
+    </tbody>
+  </table></div>
+  <ol class="order">
+    <li><div><b>Software first.</b> Home trial of "Recognise players by clothes" and "Look closer at small players" with the tracking-details box (docs/tracking-trial.md). Also lighting tips in the camera check, and telling families to turn on the TV's Game Mode.</div></li>
+    <li><div><b>If hidden kids remain the problem:</b> a second viewpoint: a family phone with tracking on the phone, or two webcams on a Ryzen 780M box.</div></li>
+    <li><div><b>If exact hands or who's-who remain the problem:</b> optional colour wristbands, then the phone as a wand.</div></li>
+    <li><div><b>Only for our own hardware someday:</b> a stereo or depth camera. LiDAR last.</div></li>
+  </ol>
+</section>
+
+<section>
+  <h2>The Orlis pad and controllers</h2>
+  <div class="cols">
+    <div class="card"><span class="chip go">Recommend</span><h3>Backbone One (USB-C, 2nd gen)</h3><p>~$99.99. iPhone 15+ and Android, plug and play, comfortable for smaller hands. Say "USB-C version": a Lightning one is still sold.</p></div>
+    <div class="card"><span class="chip maybe">Budget</span><h3>GameSir G8 Galileo</h3><p>Cheaper, USB-C on iPhone 15+ and Android, headphone jack.</p></div>
+    <div class="card"><span class="chip maybe">Premium</span><h3>Razer Kishi Ultra / V2 Pro</h3><p>Kishi Ultra ~$149.99, best-feeling. Kishi V2 Pro ~$129.99 but Android only; its haptics won't work from a web page; not certified with phone cases.</p></div>
+    <div class="card"><span class="chip no">Skip</span><h3>Razer Edge</h3><p>An Android handheld (2023, $399.99 Wi-Fi), not a phone controller. Its camera faces the player's hands, not the room.</p></div>
+  </div>
+  <p><b>Plan:</b> make the pad page and the TV menus read <i>any</i> standard gamepad, keep the touch stick for families without one, and confirm on a real Backbone (iPhone and Android) before recommending it. Not before the beta unless tested on hardware first.</p>
+</section>
+
+<section>
+  <h2>Selling hardware</h2>
+  <div class="cols">
+    <div class="card"><h3>No hardware to buy (the plan)</h3><p>A box plus a pad is too big a price hurdle. Orlis plays on what families own; money comes from the family plan and creators; extras are affiliate links.</p></div>
+    <div class="card"><h3>Reselling a Backbone or camera</h3><p>Generally legal in the US (first sale), but: no logos or implied endorsement without permission, keep original boxes, warranty may need an authorised seller, no margin at retail, children's-product labelling rules if sold to under-12s. Not legal advice.</p></div>
+    <div class="card"><h3>If Orlis ever sells a camera</h3><ul><li>Recommend an existing camera (affiliate)</li><li>Then OEM / white-label (Luxonis, Orbbec) in small batches</li><li>Own design on a Raspberry Pi <i>Compute Module</i> board only at thousands of units, never a Pi 5 with HATs in a case</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2>Apple TV + iPhone, if ever</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Step</th><th class="num">Laptop + webcam</th><th class="num">Apple TV + iPhone camera</th></tr></thead>
+    <tbody>
+      <tr><td>Camera takes the picture</td><td class="num">20–35 ms</td><td class="num">20–35 ms</td></tr>
+      <tr><td>Picture reaches the game device</td><td class="num">~0</td><td class="num">50–150+ ms</td></tr>
+      <tr><td>Finding the body</td><td class="num">20–40 ms</td><td class="num">10–20 ms</td></tr>
+      <tr><td>Drawing the next frame</td><td class="num">16–33 ms</td><td class="num">~16 ms</td></tr>
+      <tr><td>TV (Game Mode on)</td><td class="num">15–30 ms</td><td class="num">15–30 ms</td></tr>
+      <tr><td><b>Total, hand to screen</b></td><td class="num"><b>90–140 ms</b></td><td class="num"><b>120–250+ ms</b></td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Estimates. Under ~100–120 ms feels responsive; 150–200 ms floaty; over 200 ms sluggish. Tracking on the iPhone and sending only points would be ~80–130 ms, but needs two native apps.</p>
+  <p><b>Heat:</b> camera, tracking, Wi-Fi and screen on for 20–40 minutes while charging makes an iPhone warm; long sessions can make iOS slow it down. Help: 30 fps, points not video, dim screen, back off when warm, wired charging. Streamer gear helps too: a TV-top MagSafe mount (~$30–50) plus a magnetic Peltier cooler (~$20–60, e.g. Razer Phone Cooler Chroma).</p>
+</section>
+
+<section>
+  <h2>A Pi sensor bar, if you build one</h2>
+  <div class="cols">
+    <div class="card"><h3>Parts (~$200–300)</h3><ul><li>Raspberry Pi 5 (8 GB), 27 W supply, Active Cooler</li><li>AI HAT+ (Hailo, 26 TOPS)</li><li>2× Camera Module 3 Wide + Pi 5 cables</li><li>A rigid 40–60 cm bar, mounts, printed checkerboard</li></ul></div>
+    <div class="card"><h3>Software</h3><ul><li>Hailo YOLOv8 pose on each camera</li><li>OpenCV stereo calibration, once</li><li>Match people across views, triangulate, smooth</li><li>Send body points only, never pictures</li></ul></div>
+    <div class="card"><h3>Connection</h3><p>Wi-Fi for a prototype, Ethernet to rule out Wi-Fi stutter. A single USB cable is best for a product, but a Pi 5 with the AI chip needs more power than a laptop port gives, so it means a custom Compute Module board.</p></div>
+  </div>
+  <p>First step either way: let Orlis accept body points from another device (Settings > Testing). That one change serves a phone as a second camera, a sensor bar and an OAK-D.</p>
+</section>
+
+<section>
+  <h2>Borrowed from Nex Playground</h2>
+  <p>$249 box plus Play Pass ($89/year or $49 for three months), about 40–45 games, no making. Worth borrowing: instant player finding, phone-based account setup (a QR code on the TV), and a kid-safety certification (one source says kidSAFE+ COPPA). Reviewers wanted better height recognition, less background interference and steadier hands with two players, which is what our tracking work targets.</p>
+</section>
+
+<section>
+  <h2>Sources</h2>
+  <ul class="src">
+    <li><a href="https://medium.com/nex-inc/welcome-to-a-new-world-of-play-8617dfa9c50">Nex: Active Arcade launch</a></li>
+    <li><a href="https://shop.nexplayground.com/blogs/updates/active-arcade-is-coming-to-nex-playground">Nex: Active Arcade on Playground</a></li>
+    <li><a href="https://www.techradar.com/gaming/nex-playground-review">TechRadar: Nex Playground review</a></li>
+    <li><a href="https://www.engadget.com/gaming/the-nex-playground-is-everything-xbox-kinect-wanted-to-be-133000397.html">Engadget: Nex Playground</a></li>
+    <li><a href="https://www.bigapplebuddy.com/blog/nex-playground-review-the-definitive-guide-to-active-gaming-for-the-whole-family">Big Apple Buddy: kidSAFE+ claim</a></li>
+    <li><a href="https://support.apple.com/en-ca/guide/tv/atvb45658929/tvos">Apple: iPhone as camera with Apple TV 4K</a></li>
+    <li><a href="https://developer.apple.com/documentation/avkit/supporting-continuity-camera-in-your-tvos-app.md">Apple Developer: Continuity Camera on tvOS</a></li>
+    <li><a href="https://www.macrumors.com/2023/06/06/ipados-17-external-usb-camera-support/">MacRumors: iPadOS 17 USB cameras</a></li>
+    <li><a href="https://discussions.apple.com/thread/256105532">Apple Community: webcam power on iPad</a></li>
+    <li><a href="https://en.wikipedia.org/wiki/Razer_Edge">Wikipedia: Razer Edge</a></li>
+    <li><a href="https://www.razer.com/mobile-controllers/razer-kishi-v2-pro">Razer: Kishi V2 Pro</a></li>
+    <li><a href="https://www.trustedreviews.com/reviews/razer-kishi-v2-pro">Trusted Reviews: Kishi V2 Pro</a></li>
+    <li><a href="https://www.popsci.com/gear/best-mobile-game-controllers/">PopSci: best mobile controllers</a></li>
+    <li><a href="https://www.gamesradar.com/best-mobile-controller">GamesRadar: best mobile controller 2026</a></li>
+    <li><a href="https://www.techradar.com/gaming/gamesir-g8-galileo-review">TechRadar: GameSir G8 Galileo</a></li>
+    <li><a href="https://www.raspberrypi.com/products/ai-hat/">Raspberry Pi: AI HAT+</a></li>
+    <li><a href="https://www.raspberrypi.com/news/raspberry-pi-ai-kit/">Raspberry Pi: AI Kit (two cameras)</a></li>
+    <li><a href="https://raspberrypi.com/documentation/accessories/ai-camera.html">Raspberry Pi: AI Camera docs</a></li>
+    <li><a href="https://core-electronics.com.au/guides/raspberry-pi/yolo-pose-estimation-on-the-raspberry-pi-hat-writing-custom-python-code/">Core Electronics: YOLO pose on AI HAT+</a></li>
+    <li><a href="https://marketplace.unity.com/packages/tools/integration/body-tracking-for-orbbec-femto-bolt-mega-azure-kinect-157915">Unity: Femto Bolt body tracking</a></li>
+    <li><a href="https://www.stereolabs.com/en-ma/solutions/digital-twin">Stereolabs: ZED body tracking</a></li>
+    <li><a href="https://store.lips-hci.com/products/lipsense-3d-body-pose-lipsedge-camera-bundle">LIPS: body pose bundle</a></li>
+  </ul>
+  <p class="note">Measurements: app/tools playtest pages, 28 Nov 2026, headless Chrome with software drawing. Pi and N100 figures are scaled estimates, not measurements.</p>
+</section>
+</div>
