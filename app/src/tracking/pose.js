@@ -4,6 +4,7 @@ import { switchOn } from './switches.js';
 import { sampleSignature, sigDistance, appearanceCost, blendSignature, CONTEST, REMEMBER_MS, REJOIN_MAX, SAMPLE_EVERY_MS, LEARN_EVERY_MS } from './appearance.js';
 import { pickTargets, mapLandmarksFromCrop, BODY_PER_TORSO } from './zoom.js';
 import { Recorder } from './recorder.js';
+import { steadyFilter, led } from './steady.js';
 
 /* (the names of the body's points, the skeleton, and the players' colours:
    in pose-shared.js, which games can carry without the camera engine) */
@@ -41,6 +42,8 @@ export function between(a, b, before, iv, since){
 /* The hand that drives the cursor only changes when the other one is
    clearly better seen - not back and forth every frame. */
 const HAND_SWAP = 0.2;
+let LEAD_OFF = false;                 /* (a test turns the drawn lead off, to show hits and scores do not depend on it) */
+export const setLead = (on) => { LEAD_OFF = !on; };
 const LOST_AFTER = 0.6;     /* seconds without a detection before a player counts as gone */
 
 /* Players and watchers. Everyone the camera can see is looked at, but only
@@ -831,7 +834,7 @@ export const pose = {
   _apply(p, lm, dt){
     const now = this.clock(), n = lm.length;
     const fresh = !p.lm;
-    if (fresh){ p.lm = lm.map(k => ({...k})); p.filt = null; }
+    if (fresh){ p.lm = lm.map(k => ({...k})); p.filt = null; p.steady = null; }
     const sg = p.seg && p.seg.lm === p.lm && p.seg.n === n ? p.seg : null;
     /* where it is drawn right now (the start of the next stretch), before the new sample lands */
     if (sg){
@@ -839,7 +842,12 @@ export const pose = {
       for (let j = 0; j < n * 3; j++) sg.a[j] = between(sg.a[j], sg.b[j], sg.before[j], sg.iv, since);
     }
     if (!fresh){
-      for (let i = 0; i < lm.length; i++){
+      /* Steadier hands (steady.js; Settings > Testing, off unless on): its own filtering; if it fails, the plain way below does this look */
+      let done = false;
+      if (switchOn('steady')){
+        try { steadyFilter(p, lm, dt, { oneEuro, MIN_CUTOFF, BETA, sizeOf }); done = true; } catch (e){ p.steady = null; }
+      }
+      if (!done) for (let i = 0; i < lm.length; i++){
         const f = (p.filt ||= [])[i] ||= { x: {}, y: {}, z: {} };
         p.lm[i].x = oneEuro(f.x, lm[i].x, dt);
         p.lm[i].y = oneEuro(f.y, lm[i].y, dt);
@@ -878,7 +886,20 @@ export const pose = {
         k.z = between(g.a[j+2], g.b[j+2], g.before[j+2], g.iv, since);
       }
       this._body(p, 0);
+      /* Steadier hands: the glow orb's hand, drawn a look ahead (dx, dy). x and y stay the honest position every game hits with. */
+      if (p.steady || p.hands.left.dx !== undefined) this._lead(p, g, now);
     }
+  },
+  _lead(p, g, now){
+    try {
+      const on = switchOn('steady') && p.steady;
+      if (!on) p.steady = null;
+      for (const [h, k] of [[p.hands.left, L.L_WRIST], [p.hands.right, L.R_WRIST]]){
+        if (!on || LEAD_OFF){ if (h.dx !== undefined){ delete h.dx; delete h.dy; } continue; }
+        const d = led(p.steady, k, g, k * 3, now, p.steady.size, h.x, h.y);
+        h.dx = d.x; h.dy = d.y;
+      }
+    } catch (e){ delete p.hands.left.dx; delete p.hands.left.dy; delete p.hands.right.dx; delete p.hands.right.dy; }
   },
 
   /* The centre and size, and the hands, from the landmarks as they are. A new sample (dt > 0) gives the hands' speed; drawing

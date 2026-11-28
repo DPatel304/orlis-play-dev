@@ -13,6 +13,7 @@
      node tools/playtest.mjs --sensitivity                     # Sleepy Bear: stars against reaction time and camera jitter
      node tools/playtest.mjs --falsejumps                      # moves that must NOT count as a hop (squat, bend, tiptoe, reach, lean, march, flap), 3 min each; --blind hides the ankles
      node tools/playtest.mjs --crossing                        # two children in different shirts trade places: slot changes with the clothes feature off and on (synthetic frames drawn from the rig's bodies)
+     --switches steady,apart                                   # run with those Testing switches on (default none)
      --jp rise,speed                                           # try other hop thresholds in --calibrate / --falsejumps / game runs (default: jump.js HOP); --oldjump the old 0.08 / 0.5
      (every game run also reports, per player, jumpsDetected / falseJumps / falseJumpsPer3min: a second hop detector looking on)
      other flags: --cap N (places that can fill; 4 default, the app ships 2), --react X (scale reaction times), --seeds 1,2,3, --force, --fresh
@@ -57,6 +58,9 @@ const { makeWorld, Feeder, resetPose, BRAINS, mulberry32, W, H, A } = rig;
 const lib = { sizeOf, seated, CLOSE, STAY: STAY_CLOSE ?? CLOSE, WATCH_AFTER, headOf };
 music.hold = () => {};
 
+/* --switches steady,apart: run with those Testing switches on (default none: the tracker as it ships) */
+if (opt('switches') && opt('switches') !== true){ const { forceSwitches, SWITCH_KEYS } = await import('../src/tracking/switches.js'); const on = String(opt('switches')).split(','); forceSwitches(Object.fromEntries(Object.keys(SWITCH_KEYS).map(k => [k, on.includes(k)]))); }
+if (opt('nolead')) (await import('../src/tracking/pose.js')).setLead(false);      /* (with steady: the drawn lead off, to show scores do not depend on it) */
 const DT = 1 / 30;
 const GAME_IDS = ['pop-party', 'sky-painter', 'sleepy-bear', 'leaf-pile', 'stack-it-high', 'animal-gym', 'keep-it-up', 'ptero-flight', 'save-the-harvest', 'cubions-long-way-home'];
 const games = String(opt('games', GAME_IDS.join(','))).split(',');   /* (--games made adds the four made-* games) */
