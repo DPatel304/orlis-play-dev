@@ -143,7 +143,8 @@ a{ color:var(--sky); }
       <tr><td>Webcam + 2D LiDAR</td><td>Same</td><td>Barely</td><td>Good</td><td>Good (floor)</td><td>Floor only</td><td>Sees where you stand, not your arms</td></tr>
       <tr><td>Colour wristbands (player colours)</td><td>Exact wrist</td><td>Weak</td><td><b>Best</b></td><td>Rough</td><td>Fair</td><td>A few dollars; optional ritual</td></tr>
       <tr><td>Phone as wand (screen colour + motion sensors)</td><td>Best (one hand)</td><td>Weak</td><td><b>Best</b></td><td>Rough</td><td>Fair</td><td>Free; drops risk; gentle games only</td></tr>
-      <tr><td>Smartwatch</td><td>No position</td><td>No</td><td>Good</td><td>No</td><td>Unaffected</td><td>Great jump and swing sensing plus buzz; one grown-up only; two watch apps</td></tr>
+      <tr><td><b>PineTime + colour strap</b></td><td>Exact wrist (strap)</td><td>Weak</td><td><b>Best</b> (strap colour + known watch)</td><td>Rough</td><td>Fair (motion unaffected)</td><td>~$32 a player; open firmware; Web Bluetooth straight from Chrome; charge and pair. See below</td></tr>
+      <tr><td>Smartwatch (Apple, Galaxy)</td><td>No position</td><td>No</td><td>Good</td><td>No</td><td>Unaffected</td><td>Great jump and swing sensing plus buzz; one grown-up only; two watch apps</td></tr>
       <tr><td>Dance pad / balance board</td><td>No</td><td>No</td><td>One per player</td><td>Floor position</td><td>Unaffected</td><td>~$30–40; exact jumps and steps; trip risk</td></tr>
       <tr><td>Glowing headband / IR markers</td><td>No</td><td>No</td><td>Fair</td><td>No</td><td>Fair</td><td>Webcams fight bright LEDs and block infrared. Skip</td></tr>
     </tbody>
@@ -165,6 +166,37 @@ a{ color:var(--sky); }
     <div class="card"><span class="chip no">Skip</span><h3>Razer Edge</h3><p>An Android handheld (2023, $399.99 Wi-Fi), not a phone controller. Its camera faces the player's hands, not the room.</p></div>
   </div>
   <p><b>Plan:</b> make the pad page and the TV menus read <i>any</i> standard gamepad, keep the touch stick for families without one, and confirm on a real Backbone (iPhone and Android) before recommending it. Not before the beta unless tested on hardware first.</p>
+</section>
+
+<section>
+  <h2>Wrist wearables: the PineTime</h2>
+  <p>The best wearable we found is a <b>PineTime with a strap in the player's colour</b>. The strap gives the camera a colour marker (who's who, a steadier wrist), and the watch adds jumps, swings, a buzz on hits and a small screen. It is a premium add-on: plain colour wristbands plus our software cover most of the tracking benefit for a fraction of the cost.</p>
+  <div class="cols">
+    <div class="card"><span class="chip go">Prototype now</span><h3>PineTime (original)</h3><p>~$27, on sale. Accelerometer (no gyroscope, as far as we know), vibration, touch screen, one button, Bluetooth. Open firmware (InfiniTime), so we can stream motion ourselves; Chrome on Windows and Linux can likely connect over Web Bluetooth with no phone or app in between. Adult-sized.</p></div>
+    <div class="card"><span class="chip maybe">Wait and see</span><h3>PineTime Pro</h3><p>Announced at FOSDEM 2026; no date or price yet (one guess: about 1.5x the original). "6D" motion sensor (likely with gyroscope), Bluetooth 5.2, AMOLED screen, digital crown, GPS. Pine64 has paused some products over memory shortages.</p></div>
+    <div class="card"><span class="chip now">Why the strap matters</span><h3>Matching watch to body</h3><p>A plain watch leaves Orlis to work out which body wears which watch by comparing motion. A coloured strap makes it instant: the blue strap is on that body, and that body wears watch 1. Standard 20 mm straps, a few dollars each (confirm the size).</p></div>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>Helps with</th><th>PineTime + colour strap</th></tr></thead>
+    <tbody>
+      <tr><td>Small hops and jumps not counting</td><td><span class="chip go">Yes, reliably</span></td></tr>
+      <tr><td>Swings, punches, flicks, shakes</td><td><span class="chip go">Yes, instantly, even when the camera blurs</span></td></tr>
+      <tr><td>Telling players apart</td><td><span class="chip go">Yes (strap colour + known watch)</span></td></tr>
+      <tr><td>Exact hand position on screen</td><td><span class="chip maybe">Wrist only, via the strap; the watch itself knows motion, not position</span></td></tr>
+      <tr><td>Kids hidden behind grown-ups</td><td><span class="chip no">No</span></td></tr>
+      <tr><td>Dim light</td><td><span class="chip maybe">Motion unaffected; the strap needs light</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="cols">
+    <div class="card"><h3>What the screen could do</h3><ul><li>Glow in your player colour (a camera marker, and "your turn")</li><li><b>Secrets only you see</b>: hider, "you're it", a personal mission</li><li>Your own small HUD: Dodge health, lives, streak</li><li>"JUMP!" or "FREEZE!" with a buzz</li><li>Team or tag colour changes the camera can see</li><li>What you caught; a tiny Cubo cheering</li><li>Tap to confirm in Create; join as yourself</li></ul><p class="note">Rules: glanceable only (a colour or icon for a second), the TV sends short commands and the pictures live on the watch, screen lit only when it matters, no nagging notifications for kids.</p></div>
+    <div class="card"><h3>Other wearables compared</h3><ul><li><b>Bangle.js 2</b> (~$80–100): open, programmed in JavaScript from the browser; best for learning</li><li><b>M5StickC Plus2</b> (~$20–25): accelerometer + gyroscope, chunky; best for prototyping</li><li><b>LILYGO T-Watch S3</b> (~$40–50): hobbyist ESP32 watch</li><li><b>micro:bit V2</b> (~$20–25): schools own them; kids program it; bulky</li><li><b>Seeed XIAO nRF52840 Sense</b> (~$15–25 with battery and strap): tiny, gyroscope; the base for our own band someday</li><li><b>Joy-Con</b>: free for Switch families; motion + vibration over WebHID</li></ul></div>
+    <div class="card"><h3>Catches</h3><ul><li>About $130 for four players (watch + strap each)</li><li>Charge and connect four watches before playing</li><li>Adult-sized on small wrists</li><li>Custom watch firmware to write and maintain</li><li>Bluetooth adds roughly 15–50 ms (estimate)</li></ul></div>
+  </div>
+  <ol class="order">
+    <li><div><b>First, plain colour wristbands</b> plus the software switches, tested in the home trial with recordings.</div></li>
+    <li><div><b>Then one original PineTime with a colour strap:</b> custom firmware streaming motion 50–100 times a second, Web Bluetooth from the Orlis app, jump detection, a buzz on hits, matching by strap colour. Try an M5StickC Plus2 alongside to see what a gyroscope adds.</div></li>
+    <li><div><b>If hops and swings are still weak, or the extras win families over:</b> an optional "Orlis band kit" (watches with player-colour straps). Plain wristbands stay the cheap and free option.</div></li>
+  </ol>
 </section>
 
 <section>
@@ -233,6 +265,10 @@ a{ color:var(--sky); }
     <li><a href="https://marketplace.unity.com/packages/tools/integration/body-tracking-for-orbbec-femto-bolt-mega-azure-kinect-157915">Unity: Femto Bolt body tracking</a></li>
     <li><a href="https://www.stereolabs.com/en-ma/solutions/digital-twin">Stereolabs: ZED body tracking</a></li>
     <li><a href="https://store.lips-hci.com/products/lipsense-3d-body-pose-lipsedge-camera-bundle">LIPS: body pose bundle</a></li>
+    <li><a href="https://pine64.org/2026/03/28/pinetime_march_2026/">Pine64: Introduction to the PineTime Pro</a></li>
+    <li><a href="https://www.cnx-software.com/2026/03/30/pinetime-pro-smartwatch-to-feature-dual-core-cortex-m33-mcu-2-13-inch-amoled-gps/">CNX Software: PineTime Pro specs</a></li>
+    <li><a href="https://itsfoss.com/news/pinetime-pro-early-look/">It's FOSS: PineTime Pro early look</a></li>
+    <li><a href="https://www.hackster.io/news/pine64-teases-the-pinetime-pro-smartwatch-while-the-ai-bubble-ram-price-storm-halts-production-6b5d9b4af075">Hackster: PineTime Pro and memory shortages</a></li>
   </ul>
   <p class="note">Measurements: app/tools playtest pages, 28 Nov 2026, headless Chrome with software drawing. Pi and N100 figures are scaled estimates, not measurements.</p>
 </section>
