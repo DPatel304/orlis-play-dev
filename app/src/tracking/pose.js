@@ -662,9 +662,14 @@ export const pose = {
       if (!p.present) return;
       const zi = z[i];
       rows.push({ slot: i + 1, body: p.at && p.at.size ? Math.min(1, p.at.size * BODY_PER_TORSO) : null,
-        zoom: !!zi && now - zi.at < 1000, found: !!zi && zi.hit, match: p.app && p.app.score != null ? p.app.score : null });
+        zoom: !!zi && now - zi.at < 1000, found: !!zi && zi.hit, match: p.app && p.app.score != null ? p.app.score : null,
+        shape: p.shape && p.shape.score != null ? p.shape.score : null, holding: !!this._holdOf(i) });
     });
-    return { zoom, clothes: this.appearanceOn(), cropMs: this.cropMs || 0, rows };
+    const rec = this.recordingInfo(), cam = this.camInfo, ex = this._camState;
+    return { zoom, clothes: this.appearanceOn(), apart: switchOn('apart'), steady: switchOn('steady'), cropMs: this.cropMs || 0, rows,
+      record: rec.on ? { recording: rec.recording, seconds: rec.seconds } : null,
+      camera: switchOn('camera') ? { fps: cam && cam.fpsNow != null ? Math.round(cam.fpsNow) : null, exposure: ex && ex.mode === 'short' ? 'short' : 'auto', controls: !!(cam && cam.exposureTime) } : null,
+      light: switchOn('light') || switchOn('screenlight') ? this._light || null : null };
   },
 
   /* The off-the-main-thread way: hand over a bitmap of this frame, and take

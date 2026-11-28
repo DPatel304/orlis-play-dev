@@ -656,8 +656,13 @@ function drawTrackInfo(){
   if (account.role !== 'owner' || !pose.infoOn()) return;
   let info; try { info = pose.trackInfo(); } catch (e){ return; }
   const pad = Math.max(8, H * 0.015), lh = Math.max(13, H * 0.022);
-  const rows = ['zoom ' + info.zoom + (info.cropMs ? ' ' + info.cropMs.toFixed(0) + 'ms' : ''), 'clothes ' + (info.clothes ? 'on' : 'off')];
-  for (const r of info.rows) rows.push(`P${r.slot} body ${r.body == null ? '-' : Math.round(r.body * 100) + '%'} ${r.zoom ? (r.found ? 'Z+' : 'Z ') : '  '} ${r.match == null ? ' - ' : r.match.toFixed(2)}`);
+  const rows = ['zoom ' + info.zoom + (info.cropMs ? ' ' + info.cropMs.toFixed(0) + 'ms' : ''), 'clothes ' + (info.clothes ? 'on' : 'off') + ', apart ' + (info.apart ? 'on' : 'off') + ', steady ' + (info.steady ? 'on' : 'off')];
+  /* each player: body size, Z / Z+ (closer look), clothes match, shape match (S 0.97), HOLD while overlapping someone */
+  for (const r of info.rows) rows.push(`P${r.slot} body ${r.body == null ? '-' : Math.round(r.body * 100) + '%'} ${r.zoom ? (r.found ? 'Z+' : 'Z ') : '  '} ${r.match == null ? ' - ' : r.match.toFixed(2)} S ${r.shape == null ? ' - ' : r.shape.toFixed(2)}${r.holding ? ' HOLD' : ''}`);
+  if (info.record) rows.push(`rec ${info.record.recording ? 'on' : 'waiting'} ${Math.floor(info.record.seconds / 60)}:${String(Math.floor(info.record.seconds % 60)).padStart(2, '0')}`);
+  if (info.camera) rows.push(`camera ${info.camera.fps == null ? '?' : info.camera.fps + ' fps'}, exposure ${info.camera.controls ? info.camera.exposure : 'no controls'}`);
+  { const sl = screenLight.state(); if (sl) rows.push('room: ' + sl); }
+  if (info.light && info.light.person != null && info.light.gap > 0.22 && info.light.background >= 0.5) rows.push('room: window behind?');
   c.save();
   c.font = `700 ${Math.round(lh * 0.8)}px ui-monospace, monospace`;
   const w = Math.max(...rows.map(t => c.measureText(t).width)) + pad * 2;

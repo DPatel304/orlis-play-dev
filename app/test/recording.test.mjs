@@ -86,3 +86,26 @@ test('pose records only while a round is playing and the switch is on', () => {
   pose.recordRound(null); assert.equal(pose._recRound, false);
   forceSwitches(null); pose.recorder = null;
 });
+
+test('clothes can be replayed from the colour counts that were recorded (no picture in the file)', async () => {
+  const { blankFrame, drawFigure, SHIRTS } = await import('./harness/synth-frames.mjs');
+  const { sampleSignature } = await import('../src/tracking/appearance.js');
+  rig.LINEUPS['2x'] = [{ kind: 'child', x: 0.3, layer: 0 }, { kind: 'child', x: 0.7, layer: 1 }];
+  rig.resetPose(pose);
+  forceSwitches({ appearance: true });
+  const world = rig.makeWorld('2x', 2, {});
+  const brain = { act(ctx, p, now){ const home = p.mem.home ??= p.sx; p.walkTo(Math.floor(now / 6) % 2 ? 1 - home : home); } };
+  const rec = new Recorder(); rec.begin({ game: 'test', lineup: 2 });
+  let frame = null;
+  const feeder = new rig.Feeder(pose, lib, { assist: false, cap: 2, frames: (dets) => { frame = blankFrame(); for (const d of dets) drawFigure(frame, d.lm, { shirt: [SHIRTS.red, SHIRTS.blue][d.person.idx % 2] }); return frame; } });
+  const orig = pose._assign.bind(pose);
+  pose._assign = (people, dt, fr) => { rec.add(feeder.t * 1000, dt, people, people.map(lm => sampleSignature(frame, lm)), { w: 640, h: 360 }); return orig(people, dt, fr); };
+  try { for (let i = 0; i < 14 / DT; i++){ world.step(DT, brain, {}); feeder.step(world, DT); } } finally { pose._assign = orig; forceSwitches(null); }
+  const text = rec.parts().join('');
+  assert.ok(!/"data"|rgba/i.test(text.slice(0, 500)));
+  const file = JSON.parse(text);
+  assert.ok(file.frames.some(f => f.s && f.s.some(Boolean)), 'colour counts were recorded');
+  const r = replay(file, ['appearance']);
+  assert.ok(pose.players.some(p => p.app && p.app.sig), 'the clothes were learned in the replay');
+  assert.equal(r.sigsMissing, 0);
+});

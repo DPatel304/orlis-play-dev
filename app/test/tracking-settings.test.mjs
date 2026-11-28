@@ -6,18 +6,24 @@ import { pose } from '../src/tracking/pose.js';
 
 const src = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 
-test('Settings > Testing has the three tracking switches, for the owner, with a plain name and one hint each', () => {
+test('Settings > Testing has the tracking switches, for the owner, in this order, with a plain name and one hint each', () => {
   const menu = src('../src/ui/menu.js');
   const owner = menu.slice(menu.indexOf("account.role === 'owner'"), menu.indexOf('s.appendChild(card);'));
-  for (const [key, name] of [['appearance', 'Recognise players by clothes'], ['zoom', 'Look closer at small players'], ['info', 'Show tracking details']]){
-    assert.ok(owner.includes(`'${key}', '${name}', '`), name + ' is a row in the owner-only part');
+  const rows = [['appearance', 'Recognise players by clothes'], ['zoom', 'Look closer at small players'], ['apart', 'Tell players apart better'], ['steady', 'Steadier hands'],
+    ['light', 'Lighting tips'], ['screenlight', 'Brighten the screen in dark rooms'], ['camera', 'Sharper camera'], ['record', 'Record tracking (points only)'], ['info', 'Show tracking details']];
+  let at = -1;
+  for (const [key, name] of rows){
+    const i = owner.indexOf(`'${key}', '${name}', '`);
+    assert.ok(i > at, name + ' is a row in the owner-only part, after the one before it');
+    at = i;
   }
+  assert.match(owner, /Save recording/);
   assert.match(owner, /\[false, 'Off'\], \[true, 'On'\]/);
-  assert.match(owner, /hint = tip;\s*row\(name, seg\)/, 'a one-line hint under each name, as the other rows');
+  assert.match(owner, /hint = tip;[\s\S]*row\(name, seg(, \.\.\.more)?\)/, 'a one-line hint under each name, as the other rows');
 });
 
 test('the switches are off by default, kept like the other Testing switches, and read by the tracker', () => {
-  for (const k of ['appearance', 'zoom', 'info']) assert.equal(trackingSwitchOn(k), false);
+  for (const k of ['appearance', 'zoom', 'info', 'record', 'steady', 'camera', 'light', 'screenlight', 'apart']) assert.equal(trackingSwitchOn(k), false);
   setTrackingSwitch('zoom', true);
   assert.equal(pose.zoomOn(), true); assert.equal(pose.appearanceOn(), false); assert.equal(pose.infoOn(), false);
   assert.equal(localStorage.getItem('orlis_zoomin'), '1');
@@ -30,7 +36,8 @@ test('the tracking details are drawn only for the owner with the switch on, and 
   assert.match(main, /function drawTrackInfo\(\)\{\s*if \(account\.role !== 'owner' \|\| !pose\.infoOn\(\)\) return;/);
   assert.match(main, /drawPerf\(dt\);\s*drawTrackInfo\(\);/);
   const info = pose.trackInfo();
-  assert.deepEqual(Object.keys(info).sort(), ['clothes', 'cropMs', 'rows', 'zoom']);
+  assert.deepEqual(Object.keys(info).sort(), ['apart', 'camera', 'clothes', 'cropMs', 'light', 'record', 'rows', 'steady', 'zoom']);
+  assert.equal(info.record, null); assert.equal(info.camera, null); assert.equal(info.light, null);
   assert.equal(info.zoom, 'off');
 });
 

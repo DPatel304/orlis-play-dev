@@ -310,13 +310,13 @@ function settings(onRecalibrate){
     for (const [key, name, tip] of [
       ['appearance', 'Recognise players by clothes', 'Helps the camera keep players apart when they cross or stand close.'],
       ['zoom', 'Look closer at small players', 'Takes a second look at children who are small or far away. Costs a little speed.'],
-      ['apart', 'Tell players apart better', 'Keeps players in their own place when they cross or overlap (body shape, the best pairing, a longer memory of who left).'],
-      ['steady', 'Steadier hands', 'Smoother, less twitchy hands: ignores one-off spikes and impossible arm stretches. The glow orb is drawn a touch ahead.'],
-      ['light', 'Lighting tips', 'In the camera check, says when the room is too dark or a bright window is behind you.'],
-      ['screenlight', 'Brighten the screen in dark rooms', 'When the camera finds the room dark, the screen lights up a little (eased in and out) to light you.'],
-      ['camera', 'Sharper camera', 'Asks the camera for 60 pictures a second and a shorter exposure in bright rooms (less blur), where it can. Restart the camera to apply.'],
-      ['record', 'Record tracking (points only)', 'While a round plays, keeps the body points (never the picture) for the last 10 minutes. Save recording writes them to a file.'],
-      ['info', 'Show tracking details', 'A small box in the corner for each player: size, zoom, clothes match.']
+      ['apart', 'Tell players apart better', 'Keeps players in their own place when they cross, overlap, or leave and come back.'],
+      ['steady', 'Steadier hands', 'Calmer hands: no twitches or spikes. The glow orb is drawn a touch ahead.'],
+      ['light', 'Lighting tips', 'In the camera check, says when the room is too dark or a window is behind you.'],
+      ['screenlight', 'Brighten the screen in dark rooms', 'In a dark room the screen gives out a little more light, eased in and out.'],
+      ['camera', 'Sharper camera', 'Asks for 60 pictures a second and less blur in bright rooms (next game start).'],
+      ['record', 'Record tracking (points only)', 'Keeps body points (never the picture) of the last 10 minutes. Save recording writes a file.'],
+      ['info', 'Show tracking details', 'A small box in the corner: size, zoom, clothes and shape match per player, holds.']
     ]){
       const seg = h('div', 'seg'), OO = [[false, 'Off'], [true, 'On']];
       const mark = () => OO.forEach(([v], i) => seg.children[i].classList.toggle('chosen', trackingSwitchOn(key) === v));
