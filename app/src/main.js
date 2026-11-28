@@ -37,6 +37,7 @@ import { countText } from './ui/units.js';
 import { usesPads, createPads, padHub, peopleFrom, skipJoinCard } from './session/pads.js';
 import { joinCard } from './ui/join-card.js';
 import { framingCheck } from './ui/framing-check.js';
+import { screenLight } from './ui/screenlight.js';
 import { padWaitPill } from './ui/pause-pill.js';
 import { IdleWatch } from './session/idle.js';
 import { normalizeLook } from './ui/look.js';
@@ -550,6 +551,8 @@ function tick(now){
   pose.paused = !!paused;
   fxState.hidden = !!paused;      /* (frozen bursts and "+1"s would hang over the pause card) */
   if (!away && (!CALM.has(mode) || BODY_PAGES.has(mode))) pose.update(now, dt);
+  /* Brighten the screen in dark rooms (Settings > Testing): the room's brightness from the camera, a veil on the screen eased in and out */
+  { const li = pose.lightLook(); screenLight.step(dt, mode, li ? li.mean : null); }
   /* Record tracking (Settings > Testing; points only): kept while a round is playing */
   if (account.role === 'owner') pose.recordRound(mode === 'play' && !paused && game ? { game: game.id, lineup: players } : null);
 

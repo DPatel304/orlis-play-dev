@@ -6,7 +6,7 @@ import { pickTargets, mapLandmarksFromCrop, BODY_PER_TORSO } from './zoom.js';
 import { Recorder } from './recorder.js';
 import { steadyFilter, led } from './steady.js';
 import { frameRateIdeal, describeTrack, fpsPlan, exposurePlan, MIN_LOOK_GAP_MS } from './camera.js';
-import { meanLuminance } from './lighting.js';
+import { meanLuminance, estimateLight } from './lighting.js';
 
 /* (the names of the body's points, the skeleton, and the players' colours:
    in pose-shared.js, which games can carry without the camera engine) */
@@ -555,6 +555,19 @@ export const pose = {
     } catch (e){ /* (this look is not kept) */ }
   },
   recordingInfo(){ const r = this.recorder; return { on: switchOn('record'), recording: !!this._recRound, seconds: r ? r.seconds : 0, count: r ? r.count : 0 }; },
+  /* How bright the room looks (Settings > Testing > Lighting tips, and Brighten the screen in dark rooms): numbers from the small picture copy
+     (see lighting.js), a couple of times a second, or null when neither switch is on or the picture cannot be read. */
+  lightLook(){
+    try {
+      if (!this.on || !this.ready || (!switchOn('light') && !switchOn('screenlight'))) return null;
+      const wall = performance.now();
+      if (this._light !== undefined && wall - (this._lightAt || 0) < 400) return this._light;
+      this._lightAt = wall;
+      const pic = this._grab();
+      this._light = pic ? estimateLight(pic, this.players.filter(p => p.present && p.lm).map(p => p.lm)) : null;
+      return this._light;
+    } catch (e){ return null; }
+  },
   /* A small copy of the video's picture (80 px wide), for reading clothes' colours: the same picture is not copied twice. It is read
      into a handful of colour counts straight away and dropped - never shown, sent or kept (decisions 0007, 0011). Never throws;
      gives null when it can't (and after three failures in a row, stops trying). */

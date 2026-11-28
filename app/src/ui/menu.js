@@ -311,6 +311,8 @@ function settings(onRecalibrate){
       ['appearance', 'Recognise players by clothes', 'Helps the camera keep players apart when they cross or stand close.'],
       ['zoom', 'Look closer at small players', 'Takes a second look at children who are small or far away. Costs a little speed.'],
       ['steady', 'Steadier hands', 'Smoother, less twitchy hands: ignores one-off spikes and impossible arm stretches. The glow orb is drawn a touch ahead.'],
+      ['light', 'Lighting tips', 'In the camera check, says when the room is too dark or a bright window is behind you.'],
+      ['screenlight', 'Brighten the screen in dark rooms', 'When the camera finds the room dark, the screen lights up a little (eased in and out) to light you.'],
       ['camera', 'Sharper camera', 'Asks the camera for 60 pictures a second and a shorter exposure in bright rooms (less blur), where it can. Restart the camera to apply.'],
       ['record', 'Record tracking (points only)', 'While a round plays, keeps the body points (never the picture) for the last 10 minutes. Save recording writes them to a file.'],
       ['info', 'Show tracking details', 'A small box in the corner for each player: size, zoom, clothes match.']

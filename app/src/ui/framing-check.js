@@ -16,7 +16,10 @@ import { crew } from './crew.js';
 import { launch } from './launch.js';
 import { color } from '../games/assets/palette.js';
 import { FRAME, FramingWatch, framingShown, markFramingShown, bodyBox, placeCard } from './framing.js';
+import { LightWatch } from '../tracking/lighting.js';
+import { switchOn } from '../tracking/switches.js';
 
+export const LIGHT_WAIT = 0.7, TIP_S = 3;       /* (Lighting tips: a moment more to look at the light, and how long a tip alone is shown) */
 export const SETTLE = 0.5, SETTLE_EMPTY = 1.2, GOOD_HOLD = 0.8, HELLO = 2, PLAY_ANYWAY_AFTER = 10, FRAMED_FOR = 0.5;
 
 const TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -37,6 +40,9 @@ export function framingCheck({ onDone, players = pose.cap }){
   let phase = 'measure', t = 0, phaseT = 0, framedT = 0, finished = false;
   let s = null, card = null, say = null, who = null, go = null, rep = { nobody: true, present: 0, ok: true, bad: [] };
   const seats = () => pose.players.slice(0, players);
+  /* Lighting tips (Settings > Testing; off unless on): too dark or backlit, judged from the tracker's small picture copy (numbers only) */
+  const lw = switchOn('light') ? new LightWatch({ sustain: 0.5, clear: 0.5 }) : null;
+  let tipEl = null;
 
   function finish(){
     if (finished) return;
@@ -53,6 +59,7 @@ export function framingCheck({ onDone, players = pose.cap }){
     const words = h('div', 'frmwords'); words.append(who, say);
     card.append(mark, words);
     s.appendChild(card);
+    if (lw){ tipEl = h('div', 'frmcard frmtip'); tipEl.style.display = 'none'; s.appendChild(tipEl); }
     go = onPick(button('Play anyway', 'big go framego'), () => { sfx.select?.(); finish(); });
     go.classList.add('hide');
     s.appendChild(go);
@@ -61,6 +68,7 @@ export function framingCheck({ onDone, players = pose.cap }){
     phase = next; phaseT = 0; framedT = 0;
     if (!s) build();
     s.classList.toggle('good', next === 'good' || next === 'hello');
+    card.style.display = next === 'tip' ? 'none' : '';
     if (next === 'good'){ say.textContent = 'Looking good'; who.textContent = ''; sfx.gold?.(); }
     if (next === 'hello'){ say.textContent = 'Great - Orlis can see you'; who.textContent = ''; markFramingShown(); sfx.gold?.(); }
   }
@@ -83,8 +91,18 @@ export function framingCheck({ onDone, players = pose.cap }){
     const keep = [];
     if (go && !go.classList.contains('hide')){ const g = go.getBoundingClientRect(); keep.push({ x0: g.left, y0: g.top, x1: g.right, y1: g.bottom }); }
     const w = card.offsetWidth, hh = card.offsetHeight;
-    const { x, y } = placeCard(W, H, w, hh, boxes, keep);
-    card.style.left = x + 'px'; card.style.top = y + 'px';
+    let at = { x: 0, y: 0 };
+    if (phase !== 'tip'){
+      at = placeCard(W, H, w, hh, boxes, keep);
+      card.style.left = at.x + 'px'; card.style.top = at.y + 'px';
+    }
+    /* the light tip is a second, smaller card, kept clear of the figures and the words card */
+    if (tipEl && tipEl.style.display !== 'none'){
+      const tw = tipEl.offsetWidth, th = tipEl.offsetHeight;
+      const other = phase !== 'tip' ? [{ x0: at.x, y0: at.y, x1: at.x + w, y1: at.y + hh }] : [];
+      const t = placeCard(W, H, tw, th, boxes, [...keep, ...other]);
+      tipEl.style.left = t.x + 'px'; tipEl.style.top = t.y + 'px';
+    }
   }
 
   return {
@@ -93,13 +111,17 @@ export function framingCheck({ onDone, players = pose.cap }){
       t += dt; phaseT += dt;
       watch.step(dt, seats());
       rep = watch.report(seats());
+      if (lw){ try { lw.step(dt, pose.lightLook()); } catch (e){ /* (no tip) */ } if (tipEl){ const tx = lw.tip; if (tipEl.textContent !== (tx || '')) tipEl.textContent = tx || ''; tipEl.style.display = tx && phase !== 'measure' ? '' : 'none'; } }
       if (phase === 'measure'){
         if (t < SETTLE || (rep.nobody && t < SETTLE_EMPTY) || (rep.pending && t < SETTLE_EMPTY + 1)) return;   /* (someone only just joined: judged in a moment) */
+        if (lw && t < SETTLE + LIGHT_WAIT) return;
         if (!rep.ok){ show('hint'); words(); return; }
         if (first && !rep.nobody){ show('hello'); return; }
+        if (lw && lw.tip){ show('tip'); return; }
         finish();
         return;
       }
+      if (phase === 'tip'){ if (phaseT >= TIP_S || !lw.tip && phaseT >= 1) finish(); return; }
       if (phase === 'hello'){ if (phaseT >= HELLO) finish(); return; }
       if (phase === 'good'){ if (phaseT >= GOOD_HOLD) finish(); return; }
       /* hint: the words follow whoever is cut now; framed for a moment and it is a tick, then on */
